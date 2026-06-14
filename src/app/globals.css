@@ -1,26 +1,39 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+/* ---- Data/Pro design tokens (from docs/UI_DESIGN.txt) ---- */
+@theme {
+  --color-bg: #f8fafc; /* page background */
+  --color-surface: #ffffff; /* cards */
+  --color-line: #e2e8f0; /* thin borders */
+  --color-ink: #0f172a; /* primary text */
+  --color-muted: #64748b; /* secondary text */
+  --color-accent: #4f46e5; /* brand / active */
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  /* habit mark states */
+  --color-done: #22c55e;
+  --color-missed: #ef4444;
+  --color-skipped: #94a3b8;
+  --color-partial: #f59e0b;
+  --color-empty: #f1f5f9;
+
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* Dark mode: override the token values when <html> has the .dark class.
+   Every Tailwind color utility reads these variables, so the whole UI
+   re-themes automatically. */
+.dark {
+  --color-bg: #0b1120;
+  --color-surface: #111827;
+  --color-line: #1f2a3b;
+  --color-ink: #e5e7eb;
+  --color-muted: #94a3b8;
+  --color-empty: #1e293b;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-bg);
+  color: var(--color-ink);
+  font-family: var(--font-sans), system-ui, sans-serif;
 }

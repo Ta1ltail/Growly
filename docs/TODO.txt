@@ -22,26 +22,26 @@
 
 
 ==========================================================
- STAGE B - SETUP   (mostly DONE)
+ STAGE B - SETUP   (DONE)
 ==========================================================
   [x] Install Node.js
   [x] Install Git
   [x] Install VS Code
   [x] Make a GitHub account
-  [ ] Create the Next.js project (in project_101)
-  [ ] Add the Data/Pro colors + fonts (Tailwind setup)
-  [ ] Run it once (npm run dev) and see it at localhost:3000
-  [ ] Push the project to GitHub (first backup)
+  [x] Create the Next.js project (in project_101)
+  [x] Add the Data/Pro colors + fonts (Tailwind setup)
+  [x] Run it once (npm run dev) and see it at localhost:3000
+  [x] Push the project to GitHub (github.com/Ta1ltail/project_101)
 
 
 ==========================================================
  STAGE C - PHASE 1: CORE APP   (NEXT)
 ==========================================================
-  [ ] 1. Design the DATA SHAPE (what a task + day-mark look like)
-  [ ] 2. TODAY PAGE - add habits, check them off   <-- START HERE
-  [ ] 3. Save to localStorage (data survives closing)
-  [ ] 4. TRACKER GRID (rows = habits, columns = dates)
-  [ ] 5. Edit / delete a task
+  [x] 1. Design the DATA SHAPE (done: src/lib/types.ts + categories.ts)
+  [x] 2. TODAY PAGE - add habits, check them off   <-- DONE
+  [x] 3. Save to localStorage (data survives closing) (src/lib/store.ts)
+  [ ] 4. TRACKER GRID (rows = habits, columns = dates)   <-- NEXT
+  [ ] 5. Edit / delete a task   (delete done; edit still to do)
   >>> When done = a real, usable app.
 
 
