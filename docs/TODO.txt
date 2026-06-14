@@ -1,0 +1,102 @@
+############################################################
+#                                                          #
+#   PROJECT 101 - TODO / PROGRESS CHECKLIST                #
+#   Tick [x] = done   [ ] = not yet                        #
+#   Updated as we go.                                      #
+#                                                          #
+############################################################
+
+
+==========================================================
+ STAGE A - PLANNING & DESIGN   (DONE)
+==========================================================
+  [x] Decide the app concept (habit/task tracker, "Excel but better")
+  [x] Decide business model (Free + Pro subscription, no ads)
+  [x] List all 11 sections
+  [x] Write the build plan  -> FINAL_BUILD_PLAN.txt
+  [x] Review/analyze the plan (fixed weak spots)
+  [x] Choose the tech stack (Next.js, Supabase, Vercel...)
+  [x] Add production-grade tools to the plan
+  [x] Design the UI (wireframes)  -> UI_DESIGN.txt
+  [x] Lock the visual style (DATA / PRO)
+
+
+==========================================================
+ STAGE B - SETUP   (mostly DONE)
+==========================================================
+  [x] Install Node.js
+  [x] Install Git
+  [x] Install VS Code
+  [x] Make a GitHub account
+  [ ] Create the Next.js project (in project_101)
+  [ ] Add the Data/Pro colors + fonts (Tailwind setup)
+  [ ] Run it once (npm run dev) and see it at localhost:3000
+  [ ] Push the project to GitHub (first backup)
+
+
+==========================================================
+ STAGE C - PHASE 1: CORE APP   (NEXT)
+==========================================================
+  [ ] 1. Design the DATA SHAPE (what a task + day-mark look like)
+  [ ] 2. TODAY PAGE - add habits, check them off   <-- START HERE
+  [ ] 3. Save to localStorage (data survives closing)
+  [ ] 4. TRACKER GRID (rows = habits, columns = dates)
+  [ ] 5. Edit / delete a task
+  >>> When done = a real, usable app.
+
+
+==========================================================
+ STAGE D - PHASE 2: STATS & STRUCTURE
+==========================================================
+  [ ] Categories (with colors)
+  [ ] Statistics page (completion %, streaks)
+  [ ] Calendar view
+
+
+==========================================================
+ STAGE E - PHASE 3: ENGAGEMENT
+==========================================================
+  [ ] Goals with progress bars
+  [ ] Notes / journal per day
+  [ ] Templates (gym, student, morning routine)
+  [ ] Reminders (basic on web)
+
+
+==========================================================
+ STAGE F - PHASE 4: ACCOUNTS, CLOUD & SECURITY
+==========================================================
+  [ ] Accounts + sign in (Supabase Auth)
+  [ ] Drizzle ORM + database tables
+  [ ] Move data localStorage -> Supabase (cloud sync)
+  [ ] Row Level Security (RLS)   <- critical
+  [ ] Validate input with Zod
+  [ ] Email (verify + reset) via Resend
+  [ ] Insights / weekly auto-summary
+
+
+==========================================================
+ STAGE G - PHASE 5: BUSINESS & LAUNCH
+==========================================================
+  [ ] Free vs Pro gating
+  [ ] Payments (PayMongo + PayPal)
+  [ ] Payment webhooks (unlock Pro safely)
+  [ ] Privacy Policy + Terms pages
+  [ ] Error monitoring (Sentry) + Analytics
+  [ ] Rate limiting (Upstash)
+  [ ] Tests on login + payment flows
+  [ ] GitHub Actions (auto-test)
+  [ ] Dark mode + CSV/PDF export
+
+
+==========================================================
+ WHERE WE ARE RIGHT NOW
+==========================================================
+  Planning + design: DONE.
+  Tools installed: DONE.
+  NEXT ACTION -> create the Next.js project and build the
+                 Today page (Stage B + start of Stage C).
+
+
+############################################################
+#                 END OF TODO LIST                         #
+############################################################

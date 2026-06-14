@@ -1,0 +1,217 @@
+############################################################
+#                                                          #
+#   PROJECT 101 - UI DESIGN                                #
+#   Working folder name: project_101                       #
+#   (final app name: TBD)                                  #
+#                                                          #
+############################################################
+
+These are WIREFRAMES (layout/structure), not final colors.
+The visual "skin" (colors/theme) is chosen separately.
+
+
+==========================================================
+ LAYOUT RULES
+==========================================================
+  - Mobile: ONE column + bottom navigation bar.
+  - Desktop: a LEFT sidebar nav + wide content area.
+  - Same 5 destinations everywhere:
+        Today . Tracker . Calendar . Stats . Profile
+  - Everything else (Tasks, Categories, Goals, Notes,
+    Templates, Settings) lives inside those or in a menu.
+
+
+==========================================================
+ SCREEN 1 - TODAY (mobile)  <- the main page
+==========================================================
+  +-----------------------------+
+  |  project_101        ( J )   |  <- app name + profile
+  |  Saturday, June 14          |
+  |                             |
+  |  Today's progress           |
+  |  [#########.......] 64%     |  <- progress bar
+  |                             |
+  |  WORKOUT                    |  <- category label
+  |  +-----------------------+  |
+  |  | ( ) Morning run       |  |  <- tap circle = done
+  |  | (v) Pushups      done |  |
+  |  +-----------------------+  |
+  |                             |
+  |  STUDIES                    |
+  |  +-----------------------+  |
+  |  | (v) Read 30 min       |  |
+  |  | ( ) Review notes      |  |
+  |  +-----------------------+  |
+  |                             |
+  |     [  +  Add habit  ]      |  <- big add button
+  |                             |
+  +-----------------------------+
+  | Today Tracker Cal Stats  Me |  <- bottom nav
+  +-----------------------------+
+
+  Tap a circle:  ( ) empty -> (v) done -> (x) missed -> (-) skip
+
+
+==========================================================
+ SCREEN 2 - TRACKER GRID (the "Excel but better" view)
+==========================================================
+  +--------------------------------------------------+
+  |  Tracker                       < June 2026 >     |
+  |                                [ All categories ]|
+  |                                                  |
+  |  Habit        Mo Tu We Th Fr Sa Su   | Streak    |
+  |  ----------------------------------------------- |
+  |  Workout      v  v  x  v  v  -  -    |  2 days   |
+  |  Study        v  x  v  v  x  v  v    |  2 days   |
+  |  Water        v  v  v  v  v  v  v    |  7 days * |
+  |  Read         x  v  v  -  -  -  -    |  0 days   |
+  |                                                  |
+  |  Legend:  v done   x missed   - skipped          |
+  +--------------------------------------------------+
+  - Tap any cell to change its mark.
+  - Color of the cell shows the state at a glance
+    (e.g. green done / red missed / grey skipped).
+  - Scroll sideways to see more dates.
+
+
+==========================================================
+ SCREEN 3 - ADD / EDIT HABIT (popup)
+==========================================================
+  +-----------------------------+
+  |  New habit            [ x ] |
+  |                             |
+  |  Name                       |
+  |  [ Morning run           ]  |
+  |                             |
+  |  Category                   |
+  |  [ Workout            v  ]  |
+  |                             |
+  |  Repeat on                  |
+  |  (M)(T)(W)(T)(F)( )( )      |  <- pick days
+  |                             |
+  |  Color   [o][o][o][o][o]    |
+  |                             |
+  |     [  Cancel  ] [  Save  ] |
+  +-----------------------------+
+
+
+==========================================================
+ SCREEN 4 - STATS (later phase, shown for direction)
+==========================================================
+  +-----------------------------+
+  |  Statistics      This month |
+  |                             |
+  |  Completion        78%      |
+  |  [############.....]        |
+  |                             |
+  |  Best streak     12 days    |
+  |  Current streak   4 days    |
+  |                             |
+  |  By category                |
+  |  Workout   ####### 70%      |
+  |  Study     ######## 85%     |
+  |  Health    ######   60%     |
+  |                             |
+  |  [ weekly bar chart here ]  |
+  +-----------------------------+
+
+
+==========================================================
+ SCREEN 5 - DESKTOP LAYOUT (same app, wider)
+==========================================================
+  +----------+----------------------------------------+
+  | project  |  Today           Saturday, June 14     |
+  |   101     |                                        |
+  |          |  Progress [##########......] 64%       |
+  | > Today  |                                        |
+  |  Tracker |  WORKOUT                               |
+  |  Calendar|  ( ) Morning run                       |
+  |  Stats   |  (v) Pushups                           |
+  |  Profile |                                        |
+  |          |  STUDIES                               |
+  |  ------- |  (v) Read 30 min                       |
+  |  + Add   |  ( ) Review notes                      |
+  |          |                                        |
+  +----------+----------------------------------------+
+  Left sidebar = nav.  Right = the same content as mobile.
+
+
+==========================================================
+ DESIGN PRINCIPLES
+==========================================================
+  1. Fast to mark - tapping a habit done is ONE tap.
+  2. Glanceable - color tells you the state instantly.
+  3. Not cluttered - show today first; details on demand.
+  4. Consistent - same nav, same cards, same buttons everywhere.
+  5. Mobile-first - design for phone, then widen for desktop.
+
+
+############################################################
+#   NEXT: pick the VISUAL STYLE (colors/theme)             #
+#   Then we build Phase 1 starting from the Today page.    #
+############################################################
+
+
+==========================================================
+ CHOSEN VISUAL STYLE:  DATA / PRO   (locked)
+==========================================================
+Direction: dense, spreadsheet-like, data-first, minimal
+decoration. Power-user feel. Fits "Excel but better".
+
+-----------------------------------------
+ THEME
+-----------------------------------------
+  - Base: LIGHT, clean, neutral (Excel/Linear-light feel).
+  - Dark mode: added later (Phase 5) as a toggle./
+  - Minimal decoration: thin borders, no big shadows,
+    information over ornament.
+
+-----------------------------------------
+ COLORS (hex - use these exactly)
+-----------------------------------------
+  Background ....... #F8FAFC  (very light grey)
+  Surface/cards .... #FFFFFF  (white)
+  Border/lines ..... #E2E8F0  (thin grey)
+  Text primary ..... #0F172A  (near-black slate)
+  Text secondary ... #64748B  (muted slate)
+  Accent (brand) ... #4F46E5  (indigo - buttons, links, active nav)
+
+  STATE COLORS (the grid cells + marks):
+  Done ............. #22C55E  (green)
+  Missed ........... #EF4444  (red)
+  Skipped .......... #94A3B8  (grey)
+  Partial .......... #F59E0B  (amber)
+  Empty/none ....... #F1F5F9  (faint grey)
+
+-----------------------------------------
+ TYPOGRAPHY
+-----------------------------------------
+  - UI font: "Inter" (clean, modern, great for data).
+  - Numbers/stats/grid: a MONOSPACE font (e.g. JetBrains Mono)
+    so columns line up like a spreadsheet.
+  - Sizes: small & tight. Body 14px, labels 12px, headings 16-18px.
+
+-----------------------------------------
+ DENSITY / SPACING (the "Pro" feel)
+-----------------------------------------
+  - Compact rows: ~32px tall in the grid.
+  - Tight padding, thin 1px borders between cells.
+  - Fit a LOT on screen; no wasted space.
+  - Sticky header row + sticky habit-name column in the grid
+    (so they stay visible while you scroll dates).
+
+-----------------------------------------
+ COMPONENTS
+-----------------------------------------
+  - Cells: filled with the state color, single letter or icon.
+  - Buttons: small, square-ish, indigo accent for primary.
+  - Cards: white, 1px border, slight 6px rounded corners.
+  - Nav: highlighted with the indigo accent on the active item.
+
+  This whole spec maps directly to Tailwind classes when we build,
+  so the look stays consistent everywhere.
+
+
+############################################################
+#   DESIGN LOCKED. Next: build Phase 1 (Today page).       #
+############################################################

@@ -1,0 +1,195 @@
+############################################################
+#                                                          #
+#   PROJECT 101 - FINAL BUILD PLAN                         #
+#   App: "LifeGrid" (working name)                         #
+#   A spreadsheet-style habit & task tracker               #
+#   Created with Claude | Web-first                        #
+#                                                          #
+############################################################
+
+
+==========================================================
+ 1. THE CONCEPT (one line)
+==========================================================
+"Excel but better" - a daily habit & task tracker where you
+tap a date cell to mark a task done / missed / skipped,
+organized by life categories, with streaks, statistics,
+reminders, and weekly insights.
+
+Business model: Free basic tier + Pro subscription. No ads.
+Build target: WEB FIRST (mobile/desktop later).
+
+
+==========================================================
+ 2. THE 11 SECTIONS (full vision)
+==========================================================
+  1. Today        - main daily page, quick done/missed buttons
+  2. Tracker/Grid - rows = habits, columns = dates (the "Excel view")
+  3. Calendar     - plan by date: daily / weekly / monthly
+  4. Tasks/Habits - create & manage tasks
+  5. Categories   - Lifestyle, Workout, Studies, Work, Hobbies...
+  6. Statistics   - completion rate, streaks, charts
+  7. Goals        - bigger targets with progress bars
+  8. Notes/Journal- daily notes, missed-task reasons, mood
+  9. Insights     - automatic summaries (premium-style)
+ 10. Templates    - pre-made routines
+ 11. Settings     - account, subscription, theme, notifications
+
+Bottom navigation: Today . Tracker . Calendar . Stats . Profile
+
+
+==========================================================
+ 3. THE TECH STACK (all free to start)
+==========================================================
+  -- CORE (needed from day 1) --
+  Framework ........ Next.js  (React + TypeScript built in)
+  Styling .......... Tailwind CSS + shadcn/ui
+  Icons ............ lucide-react
+  Charts (stats) ... Recharts
+  Database ......... Supabase (Postgres) - free tier
+  Login/Accounts ... Supabase Auth - free
+  Hosting .......... Vercel - free tier
+  Code storage ..... GitHub - free
+  Editor ........... VS Code - free
+  Payments ......... PayMongo (GCash + PH cards) + PayPal (international)
+
+  -- PRODUCTION HARDENING (added as we grow, all free tiers) --
+  Validation ....... Zod (check user input is valid & safe)
+  DB access ........ Drizzle ORM (type-safe queries + migrations)
+  Security ......... Supabase Row Level Security (RLS) - CRITICAL
+  Transactional email Resend (verify email, password reset)
+  Error monitoring . Sentry (see crashes from real users)
+  Analytics ........ Vercel Analytics (usage, privacy-friendly)
+  Testing .......... Vitest (logic) + Playwright (clicks/flows)
+  Code quality ..... ESLint + Prettier (auto-format, catch errors)
+  CI/CD ............ GitHub Actions (auto-test on every push)
+  Rate limiting .... Upstash (stop abuse/spam) - free tier
+  Legal ............ Privacy Policy + Terms (REQUIRED for payments)
+
+  KEY NOTES:
+   - Next.js IS your Node.js backend. No separate backend needed.
+   - TOTAL MONTHLY COST TO START: $0 (every tool has a free tier)
+   - Payments are the ONLY non-free part: processors take ~2-4%
+     per transaction, and ONLY when you actually get paid.
+     (Accepting real money needs ID / a basic business account.)
+   - You do NOT install all of this at once. Core first;
+     hardening tools are added in the phases below.
+
+
+==========================================================
+ 4. BUILD ORDER - 4 PHASES (do NOT build all at once)
+==========================================================
+Each phase = a usable app on its own. Ship Phase 1 first.
+
+-----------------------------------------
+PHASE 0 - SETUP (do this first, see SETUP_GUIDE.txt)
+-----------------------------------------
+  [ ] Install Node.js, Git, VS Code
+  [ ] Make a GitHub account
+  [ ] Create the Next.js app (TypeScript + Tailwind + ESLint)
+  [ ] Add Prettier (auto-format) + confirm ESLint runs
+  [ ] Push the empty project to GitHub (first backup)
+  >>> This sets up the professional foundation once, for good.
+
+-----------------------------------------
+PHASE 1 - CORE (the only goal for now)
+-----------------------------------------
+Beginner-friendly order (start simple, not with the grid):
+  [ ] 1. Design the DATA SHAPE
+          (what a task + a day-mark look like in data:
+           name, category, repeat days, done/missed per date)
+  [ ] 2. TODAY PAGE  <-- START HERE
+          add habits, check them off for today
+  [ ] 3. SAVE to localStorage (data survives closing the app)
+  [ ] 4. TRACKER GRID  (rows = habits, columns = dates)
+  [ ] 5. EDIT / DELETE a task
+  >>> Finishing these 5 = a real, usable app.
+
+-----------------------------------------
+PHASE 2 - STATS & STRUCTURE
+-----------------------------------------
+  [ ] Categories (each with a color)
+  [ ] Statistics page: completion %, current streak, best streak
+  [ ] Calendar view (a month at a glance)
+
+-----------------------------------------
+PHASE 3 - ENGAGEMENT
+-----------------------------------------
+  [ ] Goals with progress bars
+  [ ] Notes / journal per day
+  [ ] Templates (gym, student, morning routine, etc.)
+  [ ] Reminders  (NOTE: real notifications are weak on web;
+                  plan them properly for the mobile version)
+
+-----------------------------------------
+PHASE 4 - ACCOUNTS, CLOUD & SECURITY
+-----------------------------------------
+  [ ] Accounts + sign in (email / Google)  via Supabase Auth
+  [ ] Add Drizzle ORM + write the database tables (migrations)
+  [ ] Move data from localStorage to Supabase (cloud sync)
+        (KNOWN REWORK - expected, planned for here)
+  [ ] Row Level Security (RLS) so users only see THEIR data <- CRITICAL
+  [ ] Validate all input with Zod (never trust user input)
+  [ ] Transactional email (verify + password reset) via Resend
+  [ ] Insights / weekly auto-summary
+
+-----------------------------------------
+PHASE 5 - BUSINESS & PRODUCTION LAUNCH
+-----------------------------------------
+  [ ] Free vs Pro subscription gating
+  [ ] Payments (PayMongo for GCash/PH cards + PayPal intl)
+  [ ] Webhooks to confirm payments + unlock Pro safely
+  [ ] Privacy Policy + Terms of Service pages  <- REQUIRED to take money
+  [ ] Error monitoring (Sentry) + Analytics (Vercel)
+  [ ] Rate limiting (Upstash) to stop spam/abuse
+  [ ] Basic tests (Vitest + Playwright) on the money & login paths
+  [ ] GitHub Actions: auto-run tests on every push
+  [ ] Themes / dark mode, CSV / PDF export
+
+
+==========================================================
+ PRODUCTION-READY CHECKLIST (before real launch)
+==========================================================
+Do NOT take real users/money until these are TRUE:
+  [ ] Login works and is secure (RLS on every table)
+  [ ] Secrets are in .env.local / Vercel env vars (never in code)
+  [ ] All user input validated (Zod) - no trusting the browser
+  [ ] Payments verified by webhook, not just the browser saying "ok"
+  [ ] Privacy Policy + Terms published
+  [ ] Error monitoring live (you SEE crashes)
+  [ ] Database backups on (Supabase does daily on paid; export weekly)
+  [ ] Tested the signup -> use -> pay -> get Pro flow end to end
+  [ ] HTTPS only (Vercel gives this free, automatic)
+
+
+==========================================================
+ 5. PLAN REVIEW - LESSONS BAKED IN
+==========================================================
+These risks were found in review and already fixed above:
+  1. Don't start with the hard Excel grid -> start with the
+     simple Today checklist.
+  2. localStorage -> database is a known rework -> scheduled
+     in Phase 4 on purpose, not a surprise.
+  3. Always design the DATA SHAPE before coding.
+  4. Web notifications are weak -> real alerts wait for mobile.
+  5. Scope creep kills projects -> Phase 1 is the whole goal
+     for now; expand only after shipping it.
+
+
+==========================================================
+ 6. NEXT STEPS (what to do right now)
+==========================================================
+  STEP A - Install these 3 free tools on your PC:
+     1. Node.js  -> https://nodejs.org   (get the LTS version)
+     2. VS Code  -> https://code.visualstudio.com
+     3. Git      -> https://git-scm.com
+
+  STEP B - Tell Claude "installed"
+
+  STEP C - We start Phase 1, step 1:
+     designing the data shape, then the Today page.
+
+
+############################################################
+#                  END OF BUILD PLAN                       #
+############################################################
