@@ -3,10 +3,14 @@
 // Templates — add a whole starter routine in one tap.
 
 import { useState } from "react";
+import { Plus, Check, ArrowLeft, LayoutTemplate } from "lucide-react";
+import Link from "next/link";
 import { CATEGORY_COLORS } from "@/lib/categories";
 import { TEMPLATES, type Template } from "@/lib/templates";
 import type { Habit } from "@/lib/types";
 import { addHabit, useAppData } from "@/lib/store";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { Card } from "@/components/ui/Card";
 
 export default function TemplatesPage() {
   const data = useAppData();
@@ -28,52 +32,57 @@ export default function TemplatesPage() {
   }
 
   return (
-    <>
-      <header className="flex items-center justify-between pt-6 pb-4">
-        <h1 className="font-mono text-lg font-semibold tracking-tight">Templates</h1>
-        <a href="/profile" className="text-sm text-muted hover:text-ink">
-          ‹ Profile
-        </a>
-      </header>
+    <div className="animate-fade-in">
+      <PageHeader
+        title="Templates"
+        subtitle={`${data.habits.length} habit${data.habits.length === 1 ? "" : "s"} so far`}
+        action={
+          <Link href="/profile" className="flex items-center gap-1.5 text-sm text-muted transition-colors hover:text-ink">
+            <ArrowLeft className="size-4" /> Profile
+          </Link>
+        }
+      />
 
-      <p className="mb-4 text-sm text-muted">
-        Tap a template to add its habits. You currently have{" "}
-        <span className="font-semibold text-ink">{data.habits.length}</span> habit
-        {data.habits.length === 1 ? "" : "s"}.
-      </p>
-
-      <div className="flex flex-col gap-3">
-        {TEMPLATES.map((template) => (
-          <div key={template.id} className="rounded-md border border-line bg-surface p-4">
-            <div className="flex items-start justify-between gap-2">
-              <div>
-                <h2 className="text-sm font-semibold">{template.name}</h2>
-                <p className="text-xs text-muted">{template.description}</p>
-              </div>
-              <button
-                onClick={() => applyTemplate(template)}
-                className="shrink-0 rounded bg-accent px-3 py-1.5 text-xs font-medium text-white hover:opacity-90"
-              >
-                {added === template.id ? "Added ✓" : "+ Add"}
-              </button>
-            </div>
-            <ul className="mt-3 flex flex-wrap gap-1.5">
-              {template.habits.map((h) => (
-                <li
-                  key={h.name}
-                  className="flex items-center gap-1.5 rounded-full border border-line px-2.5 py-1 text-xs"
+      <div className="grid gap-4 sm:grid-cols-2">
+        {TEMPLATES.map((template) => {
+          const isAdded = added === template.id;
+          return (
+            <Card key={template.id} className="p-5" interactive>
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-start gap-3">
+                  <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-accent/10 text-accent">
+                    <LayoutTemplate className="size-5" />
+                  </span>
+                  <div>
+                    <h2 className="text-sm font-semibold">{template.name}</h2>
+                    <p className="mt-0.5 text-xs text-muted">{template.description}</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => applyTemplate(template)}
+                  className={`flex shrink-0 items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-semibold transition-all active:scale-95 ${
+                    isAdded ? "bg-done/15 text-done" : "bg-accent text-white hover:brightness-110"
+                  }`}
                 >
-                  <span
-                    className="size-2 rounded-sm"
-                    style={{ backgroundColor: CATEGORY_COLORS[h.category] }}
-                  />
-                  {h.name}
-                </li>
-              ))}
-            </ul>
-          </div>
-        ))}
+                  {isAdded ? <Check className="size-3.5" strokeWidth={2.5} /> : <Plus className="size-3.5" strokeWidth={2.5} />}
+                  {isAdded ? "Added" : "Add"}
+                </button>
+              </div>
+              <ul className="mt-4 flex flex-wrap gap-1.5">
+                {template.habits.map((h) => (
+                  <li
+                    key={h.name}
+                    className="flex items-center gap-1.5 rounded-full border border-line px-2.5 py-1 text-xs text-muted"
+                  >
+                    <span className="size-1.5 rounded-full" style={{ backgroundColor: CATEGORY_COLORS[h.category] }} />
+                    {h.name}
+                  </li>
+                ))}
+              </ul>
+            </Card>
+          );
+        })}
       </div>
-    </>
+    </div>
   );
 }

@@ -8,6 +8,23 @@
 
 
 ==========================================================
+ v0.2 - MODERN REWORK   (DONE)  *** latest ***
+==========================================================
+  [x] Dark, modern, glassy redesign (from sample design.PNG)
+  [x] Fixed dark-mode bug (no-flash, data-theme + CSS vars)
+  [x] Responsive: desktop sidebar + mobile bottom nav
+  [x] Theme customization: Light / Dark / System + 6 accents
+  [x] Modern icons (lucide-react) across the app
+  [x] Animations / transitions / hover + press micro-interactions
+  [x] Clean folder structure (layout/ui/habits + hooks/)
+  [x] Rebuilt every page (Today, Tracker, Calendar, Stats,
+        Goals, Templates, Profile)
+  [x] See docs/ARCHITECTURE.txt + UI_DESIGN.txt (v0.2)
+  [x] Verified: tsc + eslint + build all pass; pushed to GitHub
+  (Phase 4 cloud/accounts + Phase 5 payments = still later.)
+
+
+==========================================================
  STAGE A - PLANNING & DESIGN   (DONE)
 ==========================================================
   [x] Decide the app concept (habit/task tracker, "Excel but better")
@@ -35,31 +52,32 @@
 
 
 ==========================================================
- STAGE C - PHASE 1: CORE APP   (NEXT)
+ STAGE C - PHASE 1: CORE APP   (DONE)
 ==========================================================
   [x] 1. Design the DATA SHAPE (done: src/lib/types.ts + categories.ts)
-  [x] 2. TODAY PAGE - add habits, check them off   <-- DONE
+  [x] 2. TODAY PAGE - add habits, check them off
   [x] 3. Save to localStorage (data survives closing) (src/lib/store.ts)
-  [ ] 4. TRACKER GRID (rows = habits, columns = dates)   <-- NEXT
-  [ ] 5. Edit / delete a task   (delete done; edit still to do)
-  >>> When done = a real, usable app.
+  [x] 4. TRACKER GRID (rows = habits, columns = dates)
+  [x] 5. Edit / delete a habit
+  >>> DONE = a real, usable app. Pushed to GitHub.
 
 
 ==========================================================
- STAGE D - PHASE 2: STATS & STRUCTURE
+ STAGE D - PHASE 2: STATS & STRUCTURE   (DONE)
 ==========================================================
-  [ ] Categories (with colors)
-  [ ] Statistics page (completion %, streaks)
-  [ ] Calendar view
+  [x] Categories (with colors)
+  [x] Statistics page (completion %, streaks, 7-day chart)
+  [x] Calendar view (month, shaded by completion)
 
 
 ==========================================================
- STAGE E - PHASE 3: ENGAGEMENT
+ STAGE E - PHASE 3: ENGAGEMENT   (mostly DONE)
 ==========================================================
-  [ ] Goals with progress bars
-  [ ] Notes / journal per day
-  [ ] Templates (gym, student, morning routine)
-  [ ] Reminders (basic on web)
+  [x] Goals with progress bars
+  [x] Notes / journal per day (today's note + shown in calendar)
+  [x] Templates (gym, student, morning, wellbeing)
+  [ ] Reminders (deferred - works best on mobile, Phase 4+)
+  [x] BONUS: Dark mode + CSV export (from Phase 5, done early)
 
 
 ==========================================================

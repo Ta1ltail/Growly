@@ -1,39 +1,140 @@
 @import "tailwindcss";
 
-/* ---- Data/Pro design tokens (from docs/UI_DESIGN.txt) ---- */
-@theme {
-  --color-bg: #f8fafc; /* page background */
-  --color-surface: #ffffff; /* cards */
-  --color-line: #e2e8f0; /* thin borders */
-  --color-ink: #0f172a; /* primary text */
-  --color-muted: #64748b; /* secondary text */
-  --color-accent: #4f46e5; /* brand / active */
+/* ============================================================
+   project_101 — modern design system
+   Dark-first, glassy, electric-accent. Theming is driven by
+   CSS variables so light/dark + accent swap instantly.
+   ============================================================ */
 
-  /* habit mark states */
+@theme {
+  /* Semantic tokens map to runtime CSS variables (set below). */
+  --color-bg: var(--c-bg);
+  --color-bg2: var(--c-bg2);
+  --color-surface: var(--c-surface);
+  --color-surface2: var(--c-surface2);
+  --color-line: var(--c-line);
+  --color-ink: var(--c-ink);
+  --color-muted: var(--c-muted);
+  --color-faint: var(--c-faint);
+
+  --color-accent: var(--c-accent);
+  --color-accent-glow: var(--c-accent-glow);
+
   --color-done: #22c55e;
-  --color-missed: #ef4444;
-  --color-skipped: #94a3b8;
-  --color-partial: #f59e0b;
-  --color-empty: #f1f5f9;
+  --color-missed: #f43f5e;
+  --color-skipped: #64748b;
+  --color-empty: var(--c-empty);
 
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+
+  /* custom animations */
+  --animate-fade-in: fade-in 0.35s ease both;
+  --animate-rise: rise 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+  --animate-pop: pop 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
 
-/* Dark mode: override the token values when <html> has the .dark class.
-   Every Tailwind color utility reads these variables, so the whole UI
-   re-themes automatically. */
-.dark {
-  --color-bg: #0b1120;
-  --color-surface: #111827;
-  --color-line: #1f2a3b;
-  --color-ink: #e5e7eb;
-  --color-muted: #94a3b8;
-  --color-empty: #1e293b;
+/* ---- Light theme (default values) ---- */
+:root {
+  --c-bg: #eef1f7;
+  --c-bg2: #e6eaf2;
+  --c-surface: #ffffff;
+  --c-surface2: #f4f6fb;
+  --c-line: #e2e8f0;
+  --c-ink: #0f172a;
+  --c-muted: #64748b;
+  --c-faint: #94a3b8;
+  --c-empty: #e9edf4;
+  --c-accent: #3b82f6;
+  --c-accent-glow: #60a5fa;
+}
+
+/* ---- Dark theme ---- */
+[data-theme="dark"] {
+  --c-bg: #080b12;
+  --c-bg2: #0c111b;
+  --c-surface: #121826;
+  --c-surface2: #1a2233;
+  --c-line: #222c3e;
+  --c-ink: #e9eef7;
+  --c-muted: #8b98ae;
+  --c-faint: #5b6880;
+  --c-empty: #1a2233;
+  --c-accent: #3b82f6;
+  --c-accent-glow: #60a5fa;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes pop {
+  from {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+html {
+  color-scheme: dark;
 }
 
 body {
-  background: var(--color-bg);
-  color: var(--color-ink);
+  background:
+    radial-gradient(1200px 600px at 100% -10%, color-mix(in srgb, var(--c-accent) 10%, transparent), transparent 60%),
+    var(--c-bg);
+  color: var(--c-ink);
   font-family: var(--font-sans), system-ui, sans-serif;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Glassy surface used by cards/sidebar */
+.glass {
+  background: color-mix(in srgb, var(--c-surface) 85%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+/* Soft, slim scrollbars */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--c-line);
+  border-radius: 9999px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--c-faint);
+  background-clip: content-box;
+}
+
+/* Accent ring helper */
+.ring-accent-soft {
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--c-accent) 40%, transparent),
+    0 8px 30px -12px color-mix(in srgb, var(--c-accent) 50%, transparent);
 }

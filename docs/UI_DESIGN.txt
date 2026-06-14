@@ -1,217 +1,99 @@
 ############################################################
 #                                                          #
-#   PROJECT 101 - UI DESIGN                                #
+#   PROJECT 101 - UI DESIGN  (v0.2 — MODERN REWORK)        #
 #   Working folder name: project_101                       #
-#   (final app name: TBD)                                  #
 #                                                          #
 ############################################################
 
-These are WIREFRAMES (layout/structure), not final colors.
-The visual "skin" (colors/theme) is chosen separately.
+This replaces the old "Data/Pro light" direction.
+New direction (from sample design.PNG): DARK, MODERN, GLASSY,
+electric-accent. Premium feel, lots of interaction.
 
 
 ==========================================================
- LAYOUT RULES
+ VISUAL STYLE  (locked)
 ==========================================================
-  - Mobile: ONE column + bottom navigation bar.
-  - Desktop: a LEFT sidebar nav + wide content area.
-  - Same 5 destinations everywhere:
-        Today . Tracker . Calendar . Stats . Profile
-  - Everything else (Tasks, Categories, Goals, Notes,
-    Templates, Settings) lives inside those or in a menu.
+  - Theme: DARK by default (deep navy-black), with LIGHT and
+    SYSTEM modes the user can switch to.
+  - Accent: customizable. 6 presets — Electric blue (default),
+    Violet, Cyan, Emerald, Rose, Amber.
+  - Surfaces: glassy cards (subtle blur + translucency), soft
+    rounded corners (rounded-2xl), thin borders, gentle glow
+    behind accents.
+  - Motion: fade-in / rise / pop animations, hover lifts,
+    active-press scale, smooth color transitions.
+  - Icons: lucide-react (modern line icons) everywhere.
+
+  COLOR TOKENS (CSS variables, swap per theme):
+    --c-bg / --c-bg2 .... page background (+ accent glow)
+    --c-surface ......... cards
+    --c-surface2 ........ inputs / hovers
+    --c-line ............ borders
+    --c-ink ............. primary text
+    --c-muted/--c-faint . secondary text
+    --c-accent .......... brand (user-chosen)
+    states: done #22c55e, missed #f43f5e, skipped #64748b
 
 
 ==========================================================
- SCREEN 1 - TODAY (mobile)  <- the main page
+ LAYOUT  (responsive)
 ==========================================================
-  +-----------------------------+
-  |  project_101        ( J )   |  <- app name + profile
-  |  Saturday, June 14          |
-  |                             |
-  |  Today's progress           |
-  |  [#########.......] 64%     |  <- progress bar
-  |                             |
-  |  WORKOUT                    |  <- category label
-  |  +-----------------------+  |
-  |  | ( ) Morning run       |  |  <- tap circle = done
-  |  | (v) Pushups      done |  |
-  |  +-----------------------+  |
-  |                             |
-  |  STUDIES                    |
-  |  +-----------------------+  |
-  |  | (v) Read 30 min       |  |
-  |  | ( ) Review notes      |  |
-  |  +-----------------------+  |
-  |                             |
-  |     [  +  Add habit  ]      |  <- big add button
-  |                             |
-  +-----------------------------+
-  | Today Tracker Cal Stats  Me |  <- bottom nav
-  +-----------------------------+
-
-  Tap a circle:  ( ) empty -> (v) done -> (x) missed -> (-) skip
+  DESKTOP (md+): fixed LEFT SIDEBAR (icons + labels, active
+    highlight) + wide content area (max-w-5xl). No wasted space.
+  MOBILE: bottom navigation bar (icon + label, active pill).
+  Same 5 destinations: Today · Tracker · Calendar · Stats · Profile
+  Secondary (Goals, Templates) live inside Profile.
 
 
 ==========================================================
- SCREEN 2 - TRACKER GRID (the "Excel but better" view)
+ SCREENS  (as built)
 ==========================================================
-  +--------------------------------------------------+
-  |  Tracker                       < June 2026 >     |
-  |                                [ All categories ]|
-  |                                                  |
-  |  Habit        Mo Tu We Th Fr Sa Su   | Streak    |
-  |  ----------------------------------------------- |
-  |  Workout      v  v  x  v  v  -  -    |  2 days   |
-  |  Study        v  x  v  v  x  v  v    |  2 days   |
-  |  Water        v  v  v  v  v  v  v    |  7 days * |
-  |  Read         x  v  v  -  -  -  -    |  0 days   |
-  |                                                  |
-  |  Legend:  v done   x missed   - skipped          |
-  +--------------------------------------------------+
-  - Tap any cell to change its mark.
-  - Color of the cell shows the state at a glance
-    (e.g. green done / red missed / grey skipped).
-  - Scroll sideways to see more dates.
+  TODAY
+    - Hero card: circular progress RING + greeting + day's
+      streak + done count, with an accent glow.
+    - Habits grouped by category in glassy cards; tap a round
+      MarkButton to cycle done/missed/skipped (animated).
+    - Hover a habit -> edit (pencil) / delete (trash) icons.
+    - Side column: Today's note (textarea).
+    - Desktop: 2-column (habits | note). Mobile: stacked.
 
+  TRACKER
+    - Glassy table, last 21 days, sticky habit column + header.
+    - Tap cells to cycle; streak column with flame icon.
+    - Category filter as a segmented control.
 
-==========================================================
- SCREEN 3 - ADD / EDIT HABIT (popup)
-==========================================================
-  +-----------------------------+
-  |  New habit            [ x ] |
-  |                             |
-  |  Name                       |
-  |  [ Morning run           ]  |
-  |                             |
-  |  Category                   |
-  |  [ Workout            v  ]  |
-  |                             |
-  |  Repeat on                  |
-  |  (M)(T)(W)(T)(F)( )( )      |  <- pick days
-  |                             |
-  |  Color   [o][o][o][o][o]    |
-  |                             |
-  |     [  Cancel  ] [  Save  ] |
-  +-----------------------------+
+  CALENDAR
+    - Month grid, each day shaded by completion % (accent tints).
+    - Tap a day -> detail list with status icons + that day's note.
+    - Desktop: calendar | detail side-by-side.
 
+  STATS
+    - 4 stat tiles (completion, done, best streak, current).
+    - 7-day bar chart + per-category progress bars.
 
-==========================================================
- SCREEN 4 - STATS (later phase, shown for direction)
-==========================================================
-  +-----------------------------+
-  |  Statistics      This month |
-  |                             |
-  |  Completion        78%      |
-  |  [############.....]        |
-  |                             |
-  |  Best streak     12 days    |
-  |  Current streak   4 days    |
-  |                             |
-  |  By category                |
-  |  Workout   ####### 70%      |
-  |  Study     ######## 85%     |
-  |  Health    ######   60%     |
-  |                             |
-  |  [ weekly bar chart here ]  |
-  +-----------------------------+
+  GOALS / TEMPLATES
+    - Goals: progress bars with +/- steppers, add form.
+    - Templates: one-tap routines, icon cards.
 
-
-==========================================================
- SCREEN 5 - DESKTOP LAYOUT (same app, wider)
-==========================================================
-  +----------+----------------------------------------+
-  | project  |  Today           Saturday, June 14     |
-  |   101     |                                        |
-  |          |  Progress [##########......] 64%       |
-  | > Today  |                                        |
-  |  Tracker |  WORKOUT                               |
-  |  Calendar|  ( ) Morning run                       |
-  |  Stats   |  (v) Pushups                           |
-  |  Profile |                                        |
-  |          |  STUDIES                               |
-  |  ------- |  (v) Read 30 min                       |
-  |  + Add   |  ( ) Review notes                      |
-  |          |                                        |
-  +----------+----------------------------------------+
-  Left sidebar = nav.  Right = the same content as mobile.
+  PROFILE / SETTINGS
+    - Stat summary tiles.
+    - APPEARANCE: theme mode (Light/Dark/System) + accent
+      color picker (6 swatches, live).
+    - Links to Goals / Templates.
+    - Data: export CSV, reset all.
 
 
 ==========================================================
  DESIGN PRINCIPLES
 ==========================================================
-  1. Fast to mark - tapping a habit done is ONE tap.
-  2. Glanceable - color tells you the state instantly.
-  3. Not cluttered - show today first; details on demand.
-  4. Consistent - same nav, same cards, same buttons everywhere.
-  5. Mobile-first - design for phone, then widen for desktop.
+  1. Dark, calm, premium — never harsh/bright.
+  2. Fast to mark — one tap, with satisfying micro-animation.
+  3. Use the whole screen on desktop (sidebar + wide content).
+  4. Customizable — the user owns the look (theme + accent).
+  5. Consistent components everywhere (Card, PageHeader, etc.).
+  6. Responsive first — works phone -> desktop.
 
 
 ############################################################
-#   NEXT: pick the VISUAL STYLE (colors/theme)             #
-#   Then we build Phase 1 starting from the Today page.    #
-############################################################
-
-
-==========================================================
- CHOSEN VISUAL STYLE:  DATA / PRO   (locked)
-==========================================================
-Direction: dense, spreadsheet-like, data-first, minimal
-decoration. Power-user feel. Fits "Excel but better".
-
------------------------------------------
- THEME
------------------------------------------
-  - Base: LIGHT, clean, neutral (Excel/Linear-light feel).
-  - Dark mode: added later (Phase 5) as a toggle./
-  - Minimal decoration: thin borders, no big shadows,
-    information over ornament.
-
------------------------------------------
- COLORS (hex - use these exactly)
------------------------------------------
-  Background ....... #F8FAFC  (very light grey)
-  Surface/cards .... #FFFFFF  (white)
-  Border/lines ..... #E2E8F0  (thin grey)
-  Text primary ..... #0F172A  (near-black slate)
-  Text secondary ... #64748B  (muted slate)
-  Accent (brand) ... #4F46E5  (indigo - buttons, links, active nav)
-
-  STATE COLORS (the grid cells + marks):
-  Done ............. #22C55E  (green)
-  Missed ........... #EF4444  (red)
-  Skipped .......... #94A3B8  (grey)
-  Partial .......... #F59E0B  (amber)
-  Empty/none ....... #F1F5F9  (faint grey)
-
------------------------------------------
- TYPOGRAPHY
------------------------------------------
-  - UI font: "Inter" (clean, modern, great for data).
-  - Numbers/stats/grid: a MONOSPACE font (e.g. JetBrains Mono)
-    so columns line up like a spreadsheet.
-  - Sizes: small & tight. Body 14px, labels 12px, headings 16-18px.
-
------------------------------------------
- DENSITY / SPACING (the "Pro" feel)
------------------------------------------
-  - Compact rows: ~32px tall in the grid.
-  - Tight padding, thin 1px borders between cells.
-  - Fit a LOT on screen; no wasted space.
-  - Sticky header row + sticky habit-name column in the grid
-    (so they stay visible while you scroll dates).
-
------------------------------------------
- COMPONENTS
------------------------------------------
-  - Cells: filled with the state color, single letter or icon.
-  - Buttons: small, square-ish, indigo accent for primary.
-  - Cards: white, 1px border, slight 6px rounded corners.
-  - Nav: highlighted with the indigo accent on the active item.
-
-  This whole spec maps directly to Tailwind classes when we build,
-  so the look stays consistent everywhere.
-
-
-############################################################
-#   DESIGN LOCKED. Next: build Phase 1 (Today page).       #
+#   DESIGN LOCKED (v0.2). Built and shipped.               #
 ############################################################

@@ -1,8 +1,9 @@
 // The core data shapes for the whole app.
-// Phase 1 stores all of this in the browser (localStorage).
+// Phase 1-3 store all of this in the browser (localStorage).
 // In Phase 4 the same shapes move to the Supabase database.
 
 import type { Category } from "./categories";
+import type { ThemeSettings } from "./theme";
 
 // How a habit can be marked for a given day.
 // "none" is represented by the ABSENCE of a mark (keeps storage small).
@@ -30,10 +31,8 @@ export interface Goal {
   createdAt: string;
 }
 
-export type ThemeMode = "light" | "dark";
-
 export interface Settings {
-  theme: ThemeMode;
+  theme: ThemeSettings;
 }
 
 export interface AppData {

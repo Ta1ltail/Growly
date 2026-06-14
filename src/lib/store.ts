@@ -1,15 +1,13 @@
 "use client";
 
 // A tiny shared store for the app's data, backed by localStorage.
-// Uses React's useSyncExternalStore so every screen (Today, Tracker, ...)
-// reads the same data and updates together — no prop drilling, and it is
-// hydration-safe for Next.js server rendering.
-//
-// All mutations go through the action functions below so persistence and
-// notifications happen in one place.
+// Uses React's useSyncExternalStore so every screen reads the same data
+// and updates together — hydration-safe for Next.js server rendering.
+// All mutations go through the action functions below.
 
 import { useSyncExternalStore } from "react";
-import type { AppData, Goal, Habit, ThemeMode } from "./types";
+import type { AppData, Goal, Habit } from "./types";
+import type { ThemeSettings } from "./theme";
 import { emptyData, loadData, saveData } from "./storage";
 import { nextStatus } from "./marks";
 
@@ -17,11 +15,10 @@ let cache: AppData | null = null;
 const listeners = new Set<() => void>();
 
 function getSnapshot(): AppData {
-  if (cache === null) cache = loadData(); // read localStorage once, then reuse
+  if (cache === null) cache = loadData();
   return cache;
 }
 
-// On the server there is no localStorage, so start empty.
 function getServerSnapshot(): AppData {
   return emptyData;
 }
@@ -33,7 +30,6 @@ function subscribe(listener: () => void): () => void {
   };
 }
 
-// Update the data, persist it, and notify every subscribed component.
 function update(updater: (prev: AppData) => AppData): void {
   cache = updater(getSnapshot());
   saveData(cache);
@@ -95,8 +91,11 @@ export function deleteGoal(id: string): void {
   update((prev) => ({ ...prev, goals: prev.goals.filter((g) => g.id !== id) }));
 }
 
-export function setTheme(theme: ThemeMode): void {
-  update((prev) => ({ ...prev, settings: { ...prev.settings, theme } }));
+export function setTheme(patch: Partial<ThemeSettings>): void {
+  update((prev) => ({
+    ...prev,
+    settings: { ...prev.settings, theme: { ...prev.settings.theme, ...patch } },
+  }));
 }
 
 export function clearAllData(): void {

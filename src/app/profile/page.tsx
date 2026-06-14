@@ -1,22 +1,48 @@
 "use client";
 
-// Profile / Settings — theme toggle, data export, reset, and links to
-// the secondary sections (Goals, Templates).
+// Profile / Settings — theme customization (mode + accent), data tools, links.
 
 import { useMemo } from "react";
+import Link from "next/link";
+import {
+  Sun,
+  Moon,
+  Monitor,
+  Target,
+  LayoutTemplate,
+  Download,
+  Trash2,
+  Flame,
+  CircleCheckBig,
+  ListChecks,
+  Palette,
+  ChevronRight,
+  Check,
+} from "lucide-react";
 import { dateKey } from "@/lib/storage";
 import { clearAllData, setTheme, useAppData } from "@/lib/store";
 import { habitStreaks } from "@/lib/stats";
+import { useToday } from "@/hooks/useToday";
+import { ACCENTS, type ThemeMode } from "@/lib/theme";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { Card } from "@/components/ui/Card";
+import { StatCard } from "@/components/ui/StatCard";
+
+const MODES: { id: ThemeMode; label: string; icon: typeof Sun }[] = [
+  { id: "light", label: "Light", icon: Sun },
+  { id: "dark", label: "Dark", icon: Moon },
+  { id: "system", label: "System", icon: Monitor },
+];
 
 export default function ProfilePage() {
   const data = useAppData();
-  const today = useMemo(() => new Date(), []);
+  const today = useToday();
+  const { mode, accent } = data.settings.theme;
 
   const totalMarks = useMemo(
-    () => Object.values(data.marks).reduce((sum, day) => sum + Object.keys(day).length, 0),
+    () => Object.values(data.marks).reduce((s, day) => s + Object.keys(day).length, 0),
     [data.marks],
   );
-
   const bestStreak = useMemo(() => {
     let best = 0;
     for (const h of data.habits) best = Math.max(best, habitStreaks(h, data.marks, today).best);
@@ -24,14 +50,13 @@ export default function ProfilePage() {
   }, [data.habits, data.marks, today]);
 
   function exportCsv() {
-    const rows: string[] = ["date,habit,category,status"];
+    const rows = ["date,habit,category,status"];
     const byId = new Map(data.habits.map((h) => [h.id, h]));
     for (const [date, day] of Object.entries(data.marks)) {
       for (const [habitId, status] of Object.entries(day)) {
         const habit = byId.get(habitId);
         if (!habit) continue;
-        const name = habit.name.replace(/"/g, '""');
-        rows.push(`${date},"${name}",${habit.category},${status}`);
+        rows.push(`${date},"${habit.name.replace(/"/g, '""')}",${habit.category},${status}`);
       }
     }
     const blob = new Blob([rows.join("\n")], { type: "text/csv" });
@@ -49,87 +74,123 @@ export default function ProfilePage() {
     }
   }
 
-  const isDark = data.settings.theme === "dark";
-
   return (
-    <>
-      <header className="flex items-center justify-between pt-6 pb-4">
-        <h1 className="font-mono text-lg font-semibold tracking-tight">Profile</h1>
-        <div className="flex size-9 items-center justify-center rounded-full bg-accent text-sm font-semibold text-white">
-          J
-        </div>
-      </header>
+    <div className="animate-fade-in">
+      <PageHeader title="Profile" subtitle="Your data & appearance" />
 
       {/* Summary */}
-      <div className="grid grid-cols-3 gap-2">
-        <div className="rounded-md border border-line bg-surface p-3 text-center">
-          <div className="font-mono text-xl font-semibold">{data.habits.length}</div>
-          <div className="text-xs text-muted">habits</div>
-        </div>
-        <div className="rounded-md border border-line bg-surface p-3 text-center">
-          <div className="font-mono text-xl font-semibold">{totalMarks}</div>
-          <div className="text-xs text-muted">marks</div>
-        </div>
-        <div className="rounded-md border border-line bg-surface p-3 text-center">
-          <div className="font-mono text-xl font-semibold">{bestStreak}</div>
-          <div className="text-xs text-muted">best streak</div>
-        </div>
+      <div className="grid grid-cols-3 gap-3">
+        <StatCard icon={ListChecks} value={data.habits.length} label="Habits" accent />
+        <StatCard icon={CircleCheckBig} value={totalMarks} label="Marks" />
+        <StatCard icon={Flame} value={bestStreak} label="Best streak" />
       </div>
 
-      {/* Links */}
-      <nav className="mt-6 divide-y divide-line overflow-hidden rounded-md border border-line bg-surface text-sm">
-        <a href="/goals" className="flex items-center justify-between px-4 py-3 hover:bg-empty">
-          <span>🎯 Goals</span>
-          <span className="text-muted">{data.goals.length} ›</span>
-        </a>
-        <a href="/templates" className="flex items-center justify-between px-4 py-3 hover:bg-empty">
-          <span>📋 Templates</span>
-          <span className="text-muted">›</span>
-        </a>
-      </nav>
-
-      {/* Settings */}
+      {/* Appearance */}
       <section className="mt-6">
-        <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">
-          Settings
+        <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-muted">
+          <Palette className="size-4" /> Appearance
         </h2>
-        <div className="divide-y divide-line overflow-hidden rounded-md border border-line bg-surface text-sm">
-          <div className="flex items-center justify-between px-4 py-3">
-            <span>Dark mode</span>
-            <button
-              onClick={() => setTheme(isDark ? "light" : "dark")}
-              className={`relative h-6 w-11 rounded-full transition-colors ${
-                isDark ? "bg-accent" : "bg-line"
-              }`}
-              aria-label="Toggle dark mode"
-            >
-              <span
-                className={`absolute top-0.5 size-5 rounded-full bg-white transition-all ${
-                  isDark ? "left-[22px]" : "left-0.5"
-                }`}
-              />
-            </button>
+        <Card className="p-5">
+          {/* Theme mode */}
+          <p className="mb-2 text-xs font-medium text-muted">Theme</p>
+          <div className="grid grid-cols-3 gap-2">
+            {MODES.map(({ id, label, icon: Icon }) => {
+              const active = mode === id;
+              return (
+                <button
+                  key={id}
+                  onClick={() => setTheme({ mode: id })}
+                  className={`flex flex-col items-center gap-1.5 rounded-xl border py-3 text-xs font-medium transition-all ${
+                    active
+                      ? "border-accent bg-accent/10 text-accent"
+                      : "border-line text-muted hover:bg-surface2 hover:text-ink"
+                  }`}
+                >
+                  <Icon className="size-5" />
+                  {label}
+                </button>
+              );
+            })}
           </div>
+
+          {/* Accent color */}
+          <p className="mb-2 mt-5 text-xs font-medium text-muted">Accent color</p>
+          <div className="flex flex-wrap gap-2.5">
+            {ACCENTS.map((a) => {
+              const active = accent === a.id;
+              return (
+                <button
+                  key={a.id}
+                  onClick={() => setTheme({ accent: a.id })}
+                  aria-label={a.label}
+                  className="flex size-10 items-center justify-center rounded-full transition-transform hover:scale-110 active:scale-95"
+                  style={{
+                    backgroundColor: a.color,
+                    boxShadow: active ? `0 0 0 3px var(--c-surface), 0 0 0 5px ${a.color}` : undefined,
+                  }}
+                >
+                  {active && <Check className="size-4 text-white" strokeWidth={3} />}
+                </button>
+              );
+            })}
+          </div>
+        </Card>
+      </section>
+
+      {/* Sections */}
+      <section className="mt-6">
+        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted">Sections</h2>
+        <Card className="divide-y divide-line overflow-hidden">
+          <LinkRow href="/goals" icon={Target} label="Goals" trailing={`${data.goals.length}`} />
+          <LinkRow href="/templates" icon={LayoutTemplate} label="Templates" />
+        </Card>
+      </section>
+
+      {/* Data */}
+      <section className="mt-6">
+        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted">Data</h2>
+        <Card className="divide-y divide-line overflow-hidden">
           <button
             onClick={exportCsv}
-            className="flex w-full items-center justify-between px-4 py-3 text-left hover:bg-empty"
+            className="flex w-full items-center gap-3 px-4 py-3.5 text-left text-sm transition-colors hover:bg-surface2/50"
           >
-            <span>Export data (CSV)</span>
-            <span className="text-muted">↓</span>
+            <Download className="size-[18px] text-muted" />
+            <span className="flex-1">Export data (CSV)</span>
           </button>
           <button
             onClick={reset}
-            className="flex w-full items-center justify-between px-4 py-3 text-left text-missed hover:bg-empty"
+            className="flex w-full items-center gap-3 px-4 py-3.5 text-left text-sm text-missed transition-colors hover:bg-missed/10"
           >
-            <span>Reset all data</span>
-            <span>⚠</span>
+            <Trash2 className="size-[18px]" />
+            <span className="flex-1">Reset all data</span>
           </button>
-        </div>
+        </Card>
       </section>
 
-      <p className="mt-6 text-center font-mono text-[10px] text-muted">
-        project_101 · Phase 1 · data stored locally on this device
+      <p className="mt-8 text-center font-mono text-[10px] text-faint">
+        project_101 · Phase 1-3 · data stored locally on this device
       </p>
-    </>
+    </div>
+  );
+}
+
+function LinkRow({
+  href,
+  icon: Icon,
+  label,
+  trailing,
+}: {
+  href: string;
+  icon: typeof Target;
+  label: string;
+  trailing?: string;
+}) {
+  return (
+    <Link href={href} className="flex items-center gap-3 px-4 py-3.5 text-sm transition-colors hover:bg-surface2/50">
+      <Icon className="size-[18px] text-muted" />
+      <span className="flex-1">{label}</span>
+      {trailing && <span className="font-mono text-xs text-muted">{trailing}</span>}
+      <ChevronRight className="size-4 text-faint" />
+    </Link>
   );
 }

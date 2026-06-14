@@ -1,0 +1,77 @@
+############################################################
+#   PROJECT 101 - ARCHITECTURE  (v0.2)                     #
+#   Folder structure, theme system, and what got fixed.    #
+############################################################
+
+==========================================================
+ FOLDER STRUCTURE  (src/)
+==========================================================
+  app/                      <- routes (Next.js App Router)
+    layout.tsx                root: fonts, no-flash theme script, AppShell
+    globals.css               design system (tokens, dark/light, animations)
+    page.tsx                  Today
+    tracker/ calendar/ stats/ goals/ templates/ profile/  (one page.tsx each)
+
+  components/
+    ThemeApplier.tsx          syncs saved theme -> <html>
+    layout/                   AppShell, Sidebar, BottomNav, navItems
+    ui/                       Card, PageHeader, ProgressBar, ProgressRing,
+                              StatCard, Segmented, EmptyState
+    habits/                   MarkButton, HabitForm
+
+  hooks/
+    useToday.ts               one stable Date for the session
+
+  lib/                        framework-free logic (easy to test / reuse)
+    types.ts                  data shapes
+    categories.ts             categories + colors
+    marks.ts                  mark cycle + labels
+    storage.ts                localStorage load/save + date helpers
+    store.ts                  shared store (useSyncExternalStore) + actions
+    stats.ts                  streaks + completion math
+    templates.ts              starter routines
+    theme.ts                  theme modes + accent presets
+
+
+==========================================================
+ THEME SYSTEM  (how it works)
+==========================================================
+  - All colors are CSS variables (--c-*). Light values live on
+    :root; dark values on [data-theme="dark"]. Switching the
+    attribute re-themes the whole app instantly.
+  - Accent is its own variable (--c-accent), set from the
+    user's chosen preset — so any accent works with any mode.
+  - layout.tsx runs a tiny inline script BEFORE paint that reads
+    the saved theme from localStorage and applies it -> NO flash
+    of the wrong theme on load.
+  - ThemeApplier (client) keeps it in sync after interaction and
+    reacts to OS changes when mode = "system".
+
+
+==========================================================
+ DATA FLOW
+==========================================================
+  UI  ->  store actions (addHabit, cycleMark, setTheme, ...)
+       ->  update() writes localStorage + notifies subscribers
+       ->  useAppData() (useSyncExternalStore) re-renders every
+           screen with the new data. One source of truth.
+
+
+==========================================================
+ BUGS FIXED IN v0.2
+==========================================================
+  [x] Dark mode didn't apply -> rebuilt on data-theme + CSS vars
+      with a no-flash boot script. Now reliable.
+  [x] Wasted desktop space -> real sidebar + wide content area.
+  [x] Too bright -> dark by default, calmer palette.
+  [x] Flat structure -> organized layout/ui/habits + hooks.
+
+
+==========================================================
+ QUALITY GATES (all green)
+==========================================================
+  TypeScript: 0 errors · ESLint: 0 errors · next build: passes
+  All 8 routes return HTTP 200.
+
+
+############################################################

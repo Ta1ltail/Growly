@@ -3,15 +3,16 @@
 // during server rendering (where `window` does not exist).
 
 import type { AppData } from "./types";
+import { DEFAULT_THEME } from "./theme";
 
-const STORAGE_KEY = "project101.data.v1";
+export const STORAGE_KEY = "project101.data.v1";
 
 export const emptyData: AppData = {
   habits: [],
   marks: {},
   notes: {},
   goals: [],
-  settings: { theme: "light" },
+  settings: { theme: DEFAULT_THEME },
 };
 
 export function loadData(): AppData {
@@ -26,7 +27,12 @@ export function loadData(): AppData {
       marks: parsed.marks ?? {},
       notes: parsed.notes ?? {},
       goals: parsed.goals ?? [],
-      settings: { theme: parsed.settings?.theme ?? "light" },
+      settings: {
+        theme: {
+          mode: parsed.settings?.theme?.mode ?? DEFAULT_THEME.mode,
+          accent: parsed.settings?.theme?.accent ?? DEFAULT_THEME.accent,
+        },
+      },
     };
   } catch {
     return emptyData;
