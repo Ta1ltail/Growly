@@ -36,7 +36,13 @@ import { Segmented } from "@/components/ui/Segmented";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
+import { Pagination } from "@/components/ui/Pagination";
 import { HabitForm } from "@/components/habits/HabitForm";
+
+// Spec §12: list scrolls after 12 rows; paginate 20 active habits per page.
+const PAGE_SIZE = 20;
+const SCROLL_AFTER = 12;
+const ROW_PX = 64; // approx active-habit row height incl. gap
 
 export default function HabitsPage() {
   const data = useAppData();
@@ -46,6 +52,7 @@ export default function HabitsPage() {
   const [adding, setAdding] = useState(false);
   const [editing, setEditing] = useState<Habit | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<Habit | null>(null);
+  const [page, setPage] = useState(0);
 
   const usedCategories = useMemo(
     () => CATEGORIES.filter((c) => data.habits.some((h) => h.category === c)),
@@ -66,6 +73,15 @@ export default function HabitsPage() {
 
   const activeHabits = filtered.filter((h) => !h.archived);
   const archivedHabits = filtered.filter((h) => h.archived);
+
+  // Pagination over the active list. Clamp the page during render so changing
+  // the filter/search (which shrinks the list) can't strand us past the end.
+  const pageCount = Math.max(1, Math.ceil(activeHabits.length / PAGE_SIZE));
+  const safePage = Math.min(page, pageCount - 1);
+  if (safePage !== page) setPage(safePage);
+  const pageHabits = activeHabits.slice(safePage * PAGE_SIZE, (safePage + 1) * PAGE_SIZE);
+  // Cap the visible list to ~12 rows; the rest scrolls within the page.
+  const listScrolls = pageHabits.length > SCROLL_AFTER;
 
   function save(value: Parameters<typeof makeHabit>[0]) {
     if (editing) updateHabit(applyHabitForm(editing, value));
@@ -112,8 +128,11 @@ export default function HabitsPage() {
             <Segmented options={filterOptions} value={filter} onChange={setFilter} />
           </div>
 
-          <div className="flex flex-col gap-2 stagger-children">
-            {activeHabits.map((h) => (
+          <div
+            className={`flex flex-col gap-2 stagger-children ${listScrolls ? "overflow-y-auto pr-1" : ""}`}
+            style={listScrolls ? { maxHeight: SCROLL_AFTER * ROW_PX } : undefined}
+          >
+            {pageHabits.map((h) => (
               <HabitRow
                 key={h.id}
                 habit={h}
@@ -125,6 +144,14 @@ export default function HabitsPage() {
               />
             ))}
           </div>
+
+          <Pagination
+            page={safePage}
+            pageCount={pageCount}
+            total={activeHabits.length}
+            pageSize={PAGE_SIZE}
+            onChange={setPage}
+          />
 
           {archivedHabits.length > 0 && (
             <>

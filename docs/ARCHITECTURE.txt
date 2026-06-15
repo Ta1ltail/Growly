@@ -1,77 +1,143 @@
 ############################################################
-#   PROJECT 101 - ARCHITECTURE  (v0.2)                     #
-#   Folder structure, theme system, and what got fixed.    #
+#   PROJECT 101 - ARCHITECTURE  (v0.5, gamification)       #
+#   Folder structure, gamification model, theme, data flow #
+#   Updated: 2026-06-16                                    #
 ############################################################
+
+  App: "LifeGrid" - a spreadsheet-style habit & task tracker.
+  Stack now: Next.js 16.2.9 (App Router) + TypeScript + Tailwind v4,
+  localStorage persistence (schema v3), Vitest. Cloud/accounts/payments
+  are still future phases (see FINAL_BUILD_PLAN.txt).
+
+  NOTE: this is a MODIFIED Next.js - read node_modules/next/dist/docs/
+  before using Next-specific APIs (see AGENTS.md).
+
 
 ==========================================================
  FOLDER STRUCTURE  (src/)
 ==========================================================
   app/                      <- routes (Next.js App Router)
-    layout.tsx                root: fonts, no-flash theme script, AppShell
-    globals.css               design system (tokens, dark/light, animations)
-    page.tsx                  Today
-    tracker/ calendar/ stats/ goals/ templates/ profile/  (one page.tsx each)
+    layout.tsx                root: fonts, no-flash theme script, AmbientBackground, AppShell
+    globals.css               design system (tokens, dark/light, ALL keyframes)
+    loading.tsx               route-level Suspense skeleton
+    page.tsx                  Today (dashboard widgets + habits + note)
+    tracker/ calendar/ stats/ goals/ templates/ notes/
+    profile/                  character page (level, XP, title, showcase)
+    achievements/             Achievement Gallery (filters + search)
+    settings/                 theme, grace window, data tools
 
   components/
+    AmbientBackground.tsx     fixed drifting blurred accent blobs (part 2)
+    AnimatedCounter.tsx       rAF count-up, hydration-safe (part 3)
+    StreakFlame.tsx           tiered animated flame: small/medium/large (part 3)
+    AchievementBadge.tsx      collectible rarity badge (part 4)
+    Confetti.tsx              celebration particles
     ThemeApplier.tsx          syncs saved theme -> <html>
+    celebrations/             AchievementToast/Popup/Celebration + CelebrationManager (part 4)
+    progression/              XpBar, TitleDisplay, RankAvatar, NextMilestoneWidget (part 5)
+    profile/                  ProfileEditModal (part 5)
+    dashboard/                DashboardWidgets - Today's progress strip (part 6a)
+    stats/                    TrendLineChart - interactive SVG line chart (part 6b)
     layout/                   AppShell, Sidebar, BottomNav, navItems
-    ui/                       Card, PageHeader, ProgressBar, ProgressRing,
-                              StatCard, Segmented, EmptyState
-    habits/                   MarkButton, HabitForm
+    ui/                       Button, Card, Modal, PageHeader, PageSkeleton, Skeleton,
+                              ProgressBar, ProgressRing, StatCard, Segmented,
+                              EmptyState, Pagination (part 6c)
+    habits/ goals/ notes/     feature forms (HabitForm, MarkButton, GoalForm, ...)
 
   hooks/
     useToday.ts               one stable Date for the session
+    useHydrated.ts            true after mount (gate client-only UI)
 
-  lib/                        framework-free logic (easy to test / reuse)
-    types.ts                  data shapes
+  lib/                        framework-free logic (tested + reusable)
+    types.ts                  data shapes (incl. Rarity, AchievementDef, Profile, Unlocks)
     categories.ts             categories + colors
-    marks.ts                  mark cycle + labels
-    storage.ts                localStorage load/save + date helpers
-    store.ts                  shared store (useSyncExternalStore) + actions
+    marks.ts  policy.ts       mark cycle/labels + Honest-Tracking edit rules
+    storage.ts                localStorage load/save (SCHEMA_VERSION = 3) + date helpers
+    store.ts                  shared store (useSyncExternalStore) + all actions
     stats.ts                  streaks + completion math
-    templates.ts              starter routines
+    insights.ts  format.ts    plain-language insights + formatters
+    habits.ts  templates.ts   habit builders + starter routines
     theme.ts                  theme modes + accent presets
+    -- gamification engine (part 1, all PURE + derived) --
+    xp.ts                     XP sources + super-linear level curve (levelInfo)
+    achievements.ts           28 achievement defs, buildGameStats, evaluateAchievements
+    titles.ts                 20 titles -> 5 ranks, titleForLevel
+    progress.ts               summarizeProgress facade + reconcileUnlocks
+    rarity.ts                 RARITY_STYLE (visuals + celebration tier) - UI only
+    ranks.ts                  RANK_STYLE (rank visuals) - UI only (part 5)
+    cosmetics.ts              avatar + banner presets, resolvers (part 5)
+    *.test.ts                 gamification / stats / storage (46 tests, 3 files)
 
 
 ==========================================================
- THEME SYSTEM  (how it works)
+ GAMIFICATION MODEL  (the locked rule)
 ==========================================================
-  - All colors are CSS variables (--c-*). Light values live on
-    :root; dark values on [data-theme="dark"]. Switching the
-    attribute re-themes the whole app instantly.
-  - Accent is its own variable (--c-accent), set from the
-    user's chosen preset — so any accent works with any mode.
-  - layout.tsx runs a tiny inline script BEFORE paint that reads
-    the saved theme from localStorage and applies it -> NO flash
-    of the wrong theme on load.
-  - ThemeApplier (client) keeps it in sync after interaction and
-    reacts to OS changes when mode = "system".
+  ALL gamification - XP, levels, streaks, achievement progress,
+  titles, ranks - is COMPUTED from the immutable mark history by
+  pure functions in lib/. It is NEVER stored as a mutable counter.
+  This keeps it consistent with Honest Tracking (anti-cheat): you
+  cannot inflate progress without real marks, and the numbers can
+  never desync from the record.
+
+  The ONLY persisted gamification state (schema v3):
+    - unlocks: { [achievementId]: { at, seen } }   (for one-time popups)
+    - profile: editable identity (name, username, bio, motto,
+               avatar, banner, showcaseBadgeId)
+
+  One call does it all:
+    summarizeProgress(data, today)
+      -> { stats, achievements, unlockedCount, totalCount,
+           xp, level, title, nextMilestones }
+    (Note: it does NOT return `profile` - read data.profile directly.)
+
+  reconcileUnlocks(data, today, nowIso) folds newly-satisfied
+  achievements into the persisted unlock map (returns the SAME map
+  reference when nothing changed, so callers skip the write).
+  cycleMark() calls it on every mark; CelebrationManager renders the
+  most-prestigious unseen unlock and marks it seen on dismiss.
+
+
+==========================================================
+ THEME SYSTEM
+==========================================================
+  - All colors are CSS variables (--c-*). Light values on :root,
+    dark values on [data-theme="dark"]. Swap the attribute -> the
+    whole app re-themes instantly. Accent is its own var (--c-accent).
+  - layout.tsx runs a tiny inline script BEFORE paint that reads the
+    saved theme from localStorage and applies it -> NO theme flash.
+  - ThemeApplier (client) keeps it in sync and reacts to OS changes
+    when mode = "system".
+  - globals.css holds the full motion language: tokens (--animate-*,
+    --ease-*, --dur-*) + every keyframe (flicker, glow-pulse, ember,
+    burst, confetti-fall, toast-in, celebrate-in, spin-slow,
+    text-sheen, float, ...). A global prefers-reduced-motion rule
+    neutralizes animation for accessibility.
 
 
 ==========================================================
  DATA FLOW
 ==========================================================
-  UI  ->  store actions (addHabit, cycleMark, setTheme, ...)
+  UI  ->  store actions (addHabit, cycleMark, updateProfile,
+          markAchievementsSeen, ...)
        ->  update() writes localStorage + notifies subscribers
        ->  useAppData() (useSyncExternalStore) re-renders every
-           screen with the new data. One source of truth.
+           screen. One source of truth.
+  Derived gamification is recomputed on render via summarizeProgress
+  (memoized per page) - nothing extra to persist or invalidate.
 
 
 ==========================================================
- BUGS FIXED IN v0.2
+ QUALITY GATES
 ==========================================================
-  [x] Dark mode didn't apply -> rebuilt on data-theme + CSS vars
-      with a no-flash boot script. Now reliable.
-  [x] Wasted desktop space -> real sidebar + wide content area.
-  [x] Too bright -> dark by default, calmer palette.
-  [x] Flat structure -> organized layout/ui/habits + hooks.
+  Gates: npx tsc --noEmit && npm run lint && npx vitest run && npm run build
+  Status (2026-06-16): GREEN through Part 5 (tsc 0, eslint 0,
+  vitest 46 passing, next build passes, 14 routes).
+  Part 6 (6a-6c) is written but NOT yet re-run through the gates.
 
-
-==========================================================
- QUALITY GATES (all green)
-==========================================================
-  TypeScript: 0 errors · ESLint: 0 errors · next build: passes
-  All 8 routes return HTTP 200.
-
+  Lint gotcha: React Compiler rule `react-hooks/preserve-manual-
+  memoization` requires useMemo deps to match the props actually
+  read (use [data], not [data.marks, data.habits]). Render-phase
+  setState (clamping a page, seeding a draft) is allowed; sync
+  setState INSIDE an effect is not (react-hooks/set-state-in-effect).
 
 ############################################################

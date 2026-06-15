@@ -27,6 +27,7 @@ import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ProgressRing } from "@/components/ui/ProgressRing";
 import { PageSkeleton } from "@/components/ui/PageSkeleton";
+import { DashboardWidgets } from "@/components/dashboard/DashboardWidgets";
 
 export default function TodayPage() {
   const data = useAppData();
@@ -120,6 +121,9 @@ export default function TodayPage() {
           </div>
         </div>
       </Card>
+
+      {/* Gamified progress dashboard (spec §10) */}
+      <DashboardWidgets />
 
       <div className="grid gap-6 lg:grid-cols-5">
         <div className="lg:col-span-3">

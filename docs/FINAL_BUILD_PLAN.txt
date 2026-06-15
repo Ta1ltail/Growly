@@ -1,11 +1,23 @@
 ############################################################
 #                                                          #
 #   PROJECT 101 - FINAL BUILD PLAN                         #
-#   App: "LifeGrid" (working name)                         #
-#   A spreadsheet-style habit & task tracker               #
-#   Created with Claude | Web-first                        #
+#   App: "LifeGrid" - a spreadsheet-style habit tracker    #
+#   Web-first | Built with Claude                          #
+#   Updated: 2026-06-16                                    #
 #                                                          #
 ############################################################
+
+  STATUS AT A GLANCE
+   Phase 0 SETUP ................................ DONE
+   Phase 1 CORE ................................. DONE
+   Phase 2 STATS & STRUCTURE .................... DONE
+   Phase 3 ENGAGEMENT ........................... DONE
+     +-- Gamification + UI redesign (7 parts) ... IN PROGRESS
+         Parts 1-5 verified; Part 6 mostly done
+         (unverified); 6d + Part 7 remain.
+         Detail/resume: docs/PROGRESS.md + docs/TODO.txt
+   Phase 4 ACCOUNTS, CLOUD & SECURITY ........... NOT STARTED
+   Phase 5 BUSINESS & LAUNCH .................... NOT STARTED
 
 
 ==========================================================
@@ -13,138 +25,112 @@
 ==========================================================
 "Excel but better" - a daily habit & task tracker where you
 tap a date cell to mark a task done / missed / skipped,
-organized by life categories, with streaks, statistics,
-reminders, and weekly insights.
-
-Business model: Free basic tier + Pro subscription. No ads.
+organized by life categories, with streaks, statistics, goals,
+notes, and a gamified progression layer (XP, levels, titles,
+achievements). No ads. Free basic tier + Pro later.
 Build target: WEB FIRST (mobile/desktop later).
 
 
 ==========================================================
- 2. THE 11 SECTIONS (full vision)
+ 2. THE SECTIONS (full vision)
 ==========================================================
-  1. Today        - main daily page, quick done/missed buttons
-  2. Tracker/Grid - rows = habits, columns = dates (the "Excel view")
-  3. Calendar     - plan by date: daily / weekly / monthly
-  4. Tasks/Habits - create & manage tasks
+  1. Today        - daily page + gamified progress dashboard
+  2. Tracker/Grid - rows = habits, columns = dates ("Excel view")
+  3. Calendar     - plan by date: month / week
+  4. Habits       - create & manage habits (paginated)
   5. Categories   - Lifestyle, Workout, Studies, Work, Hobbies...
-  6. Statistics   - completion rate, streaks, charts
-  7. Goals        - bigger targets with progress bars
-  8. Notes/Journal- daily notes, missed-task reasons, mood
-  9. Insights     - automatic summaries (premium-style)
- 10. Templates    - pre-made routines
- 11. Settings     - account, subscription, theme, notifications
+  6. Statistics   - completion %, streaks, interactive charts
+  7. Goals        - bigger targets with progress bars + milestones
+  8. Notes/Journal- daily notes, reasons
+  9. Achievements - gallery: unlocked/locked, progress, filters
+ 10. Profile      - character page: level, XP, title/rank, showcase
+ 11. Templates    - pre-made routines
+ 12. Settings     - theme, grace window, data tools (account later)
 
-Bottom navigation: Today . Tracker . Calendar . Stats . Profile
+Bottom nav: Today . Tracker . Calendar . Stats . Profile
 
 
 ==========================================================
- 3. THE TECH STACK (all free to start)
+ 3. THE TECH STACK
 ==========================================================
-  -- CORE (needed from day 1) --
-  Framework ........ Next.js  (React + TypeScript built in)
-  Styling .......... Tailwind CSS + shadcn/ui
+  -- IN USE NOW --
+  Framework ........ Next.js 16.2.9 (MODIFIED - see AGENTS.md)
+  Language ......... TypeScript
+  Styling .......... Tailwind CSS v4 (CSS-variable theming)
   Icons ............ lucide-react
-  Charts (stats) ... Recharts
-  Database ......... Supabase (Postgres) - free tier
-  Login/Accounts ... Supabase Auth - free
-  Hosting .......... Vercel - free tier
-  Code storage ..... GitHub - free
-  Editor ........... VS Code - free
-  Payments ......... PayMongo (GCash + PH cards) + PayPal (international)
+  Charts ........... hand-built SVG (TrendLineChart) - no chart lib
+  Persistence ...... localStorage (schema v3) via useSyncExternalStore
+  Testing .......... Vitest (46 tests)
+  Hosting/Code ..... Vercel + GitHub
 
-  -- PRODUCTION HARDENING (added as we grow, all free tiers) --
-  Validation ....... Zod (check user input is valid & safe)
-  DB access ........ Drizzle ORM (type-safe queries + migrations)
-  Security ......... Supabase Row Level Security (RLS) - CRITICAL
-  Transactional email Resend (verify email, password reset)
-  Error monitoring . Sentry (see crashes from real users)
-  Analytics ........ Vercel Analytics (usage, privacy-friendly)
-  Testing .......... Vitest (logic) + Playwright (clicks/flows)
-  Code quality ..... ESLint + Prettier (auto-format, catch errors)
-  CI/CD ............ GitHub Actions (auto-test on every push)
-  Rate limiting .... Upstash (stop abuse/spam) - free tier
+  -- PLANNED (Phase 4-5, all free tiers to start) --
+  Database ......... Supabase (Postgres)      Login ... Supabase Auth
+  DB access ........ Drizzle ORM              Security  Supabase RLS (CRITICAL)
+  Validation ....... Zod                      Email ... Resend
+  Payments ......... PayMongo (GCash/PH) + PayPal (intl)
+  Monitoring ....... Sentry + Vercel Analytics
+  E2E tests ........ Playwright               Rate limit  Upstash
   Legal ............ Privacy Policy + Terms (REQUIRED for payments)
 
   KEY NOTES:
-   - Next.js IS your Node.js backend. No separate backend needed.
-   - TOTAL MONTHLY COST TO START: $0 (every tool has a free tier)
-   - Payments are the ONLY non-free part: processors take ~2-4%
-     per transaction, and ONLY when you actually get paid.
-     (Accepting real money needs ID / a basic business account.)
-   - You do NOT install all of this at once. Core first;
-     hardening tools are added in the phases below.
+   - Next.js IS the backend. No separate server needed.
+   - $0/month to start; payment processors take ~2-4% only when paid.
+   - Add hardening tools per phase, not all at once.
 
 
 ==========================================================
- 4. BUILD ORDER - 4 PHASES (do NOT build all at once)
+ 4. BUILD ORDER - PHASES
 ==========================================================
-Each phase = a usable app on its own. Ship Phase 1 first.
+Each phase = a usable app on its own.
 
------------------------------------------
-PHASE 0 - SETUP (do this first, see SETUP_GUIDE.txt)
------------------------------------------
-  [ ] Install Node.js, Git, VS Code
-  [ ] Make a GitHub account
-  [ ] Create the Next.js app (TypeScript + Tailwind + ESLint)
-  [ ] Add Prettier (auto-format) + confirm ESLint runs
-  [ ] Push the empty project to GitHub (first backup)
-  >>> This sets up the professional foundation once, for good.
+PHASE 0 - SETUP ....................................... [x] DONE
+  [x] Node.js, Git, VS Code, GitHub
+  [x] Next.js app (TypeScript + Tailwind + ESLint)
+  [x] Pushed to GitHub (github.com/Ta1ltail/project_101)
 
------------------------------------------
-PHASE 1 - CORE (the only goal for now)
------------------------------------------
-Beginner-friendly order (start simple, not with the grid):
-  [ ] 1. Design the DATA SHAPE
-          (what a task + a day-mark look like in data:
-           name, category, repeat days, done/missed per date)
-  [ ] 2. TODAY PAGE  <-- START HERE
-          add habits, check them off for today
-  [ ] 3. SAVE to localStorage (data survives closing the app)
-  [ ] 4. TRACKER GRID  (rows = habits, columns = dates)
-  [ ] 5. EDIT / DELETE a task
-  >>> Finishing these 5 = a real, usable app.
+PHASE 1 - CORE ........................................ [x] DONE
+  [x] Design the DATA SHAPE
+  [x] Today page (add habits, mark them)
+  [x] localStorage persistence
+  [x] Tracker grid (habits x dates)
+  [x] Edit / delete / archive / duplicate
 
------------------------------------------
-PHASE 2 - STATS & STRUCTURE
------------------------------------------
-  [ ] Categories (each with a color)
-  [ ] Statistics page: completion %, current streak, best streak
-  [ ] Calendar view (a month at a glance)
+PHASE 2 - STATS & STRUCTURE ........................... [x] DONE
+  [x] Categories (with colors)
+  [x] Statistics page (completion %, streaks, charts)
+  [x] Calendar view (month/week, shaded)
 
------------------------------------------
-PHASE 3 - ENGAGEMENT
------------------------------------------
-  [ ] Goals with progress bars
-  [ ] Notes / journal per day
-  [ ] Templates (gym, student, morning routine, etc.)
-  [ ] Reminders  (NOTE: real notifications are weak on web;
-                  plan them properly for the mobile version)
+PHASE 3 - ENGAGEMENT .................................. [x] DONE
+  [x] Goals with progress bars + milestones
+  [x] Notes / journal per day
+  [x] Templates
+  [~] GAMIFICATION + UI REDESIGN (docs/script.txt, 7 parts):
+        [x] 1 Engine (XP/achievements/titles, derived-from-history)
+        [x] 2 Visual base (ambient bg + motion tokens)
+        [x] 3 Streaks + micro-interactions
+        [x] 4 Achievement celebrations + gallery
+        [x] 5 Progression UI + character-page profile
+        [~] 6 Layout/data viz (6a-6c done/unverified; 6d next)
+        [ ] 7 Final a11y / 60fps / polish pass
+  [ ] Reminders (deferred - real notifications need mobile)
 
------------------------------------------
-PHASE 4 - ACCOUNTS, CLOUD & SECURITY
------------------------------------------
-  [ ] Accounts + sign in (email / Google)  via Supabase Auth
-  [ ] Add Drizzle ORM + write the database tables (migrations)
-  [ ] Move data from localStorage to Supabase (cloud sync)
-        (KNOWN REWORK - expected, planned for here)
-  [ ] Row Level Security (RLS) so users only see THEIR data <- CRITICAL
-  [ ] Validate all input with Zod (never trust user input)
-  [ ] Transactional email (verify + password reset) via Resend
+PHASE 4 - ACCOUNTS, CLOUD & SECURITY .................. [ ] NOT STARTED
+  [ ] Accounts + sign in (Supabase Auth)
+  [ ] Drizzle ORM + DB tables (migrations)
+  [ ] Move data localStorage -> Supabase  (KNOWN, PLANNED REWORK)
+  [ ] Row Level Security (RLS)            <- CRITICAL
+  [ ] Validate all input with Zod
+  [ ] Transactional email (verify/reset) via Resend
   [ ] Insights / weekly auto-summary
 
------------------------------------------
-PHASE 5 - BUSINESS & PRODUCTION LAUNCH
------------------------------------------
+PHASE 5 - BUSINESS & PRODUCTION LAUNCH ................ [ ] NOT STARTED
   [ ] Free vs Pro subscription gating
-  [ ] Payments (PayMongo for GCash/PH cards + PayPal intl)
-  [ ] Webhooks to confirm payments + unlock Pro safely
-  [ ] Privacy Policy + Terms of Service pages  <- REQUIRED to take money
-  [ ] Error monitoring (Sentry) + Analytics (Vercel)
-  [ ] Rate limiting (Upstash) to stop spam/abuse
-  [ ] Basic tests (Vitest + Playwright) on the money & login paths
-  [ ] GitHub Actions: auto-run tests on every push
-  [ ] Themes / dark mode, CSV / PDF export
+  [ ] Payments (PayMongo + PayPal) + webhooks
+  [ ] Privacy Policy + Terms pages       <- REQUIRED to take money
+  [ ] Sentry + Analytics + Upstash rate limiting
+  [ ] Vitest + Playwright on money & login paths
+  [ ] GitHub Actions (auto-test on push)
+  [ ] CSV / PDF export
 
 
 ==========================================================
@@ -152,42 +138,38 @@ PHASE 5 - BUSINESS & PRODUCTION LAUNCH
 ==========================================================
 Do NOT take real users/money until these are TRUE:
   [ ] Login works and is secure (RLS on every table)
-  [ ] Secrets are in .env.local / Vercel env vars (never in code)
-  [ ] All user input validated (Zod) - no trusting the browser
-  [ ] Payments verified by webhook, not just the browser saying "ok"
+  [ ] Secrets in env vars (never in code)
+  [ ] All user input validated (Zod)
+  [ ] Payments verified by webhook, not the browser
   [ ] Privacy Policy + Terms published
-  [ ] Error monitoring live (you SEE crashes)
-  [ ] Database backups on (Supabase does daily on paid; export weekly)
-  [ ] Tested the signup -> use -> pay -> get Pro flow end to end
-  [ ] HTTPS only (Vercel gives this free, automatic)
+  [ ] Error monitoring live
+  [ ] Database backups on (export weekly)
+  [ ] Tested signup -> use -> pay -> get Pro end to end
+  [ ] HTTPS only (Vercel: free, automatic)
 
 
 ==========================================================
- 5. PLAN REVIEW - LESSONS BAKED IN
+ 5. LESSONS BAKED IN
 ==========================================================
-These risks were found in review and already fixed above:
-  1. Don't start with the hard Excel grid -> start with the
-     simple Today checklist.
-  2. localStorage -> database is a known rework -> scheduled
-     in Phase 4 on purpose, not a surprise.
+  1. Start with the simple Today checklist, not the hard grid. [done]
+  2. localStorage -> database is a known rework, scheduled Phase 4.
   3. Always design the DATA SHAPE before coding.
   4. Web notifications are weak -> real alerts wait for mobile.
-  5. Scope creep kills projects -> Phase 1 is the whole goal
-     for now; expand only after shipping it.
+  5. Scope creep kills projects -> ship each phase before expanding.
+  6. (new) Keep gamification DERIVED from history, never stored ->
+     no cheating, no desync. Persist only unlocks + profile.
+  7. (new) Run the four gates after every part before moving on;
+     don't let unverified parts stack up.
 
 
 ==========================================================
- 6. NEXT STEPS (what to do right now)
+ 6. NEXT STEPS (right now)
 ==========================================================
-  STEP A - Install these 3 free tools on your PC:
-     1. Node.js  -> https://nodejs.org   (get the LTS version)
-     2. VS Code  -> https://code.visualstudio.com
-     3. Git      -> https://git-scm.com
-
-  STEP B - Tell Claude "installed"
-
-  STEP C - We start Phase 1, step 1:
-     designing the data shape, then the Today page.
+  A. Run the gates (Part 6a-6c is unverified):
+       npx tsc --noEmit && npm run lint && npx vitest run && npm run build
+  B. Finish Part 6d (calendar/tracker alignment), then Part 7.
+  C. After the redesign ships -> begin Phase 4 (accounts/cloud).
+  See docs/PROGRESS.md for the precise resume point.
 
 
 ############################################################

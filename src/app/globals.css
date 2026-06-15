@@ -43,6 +43,7 @@
   --animate-flicker-fast: flicker 0.9s ease-in-out infinite;
   --animate-glow-pulse: glow-pulse 2.2s ease-in-out infinite;
   --animate-burst: burst 0.5s var(--ease-spring) both;
+  --animate-text-sheen: text-sheen 3s linear infinite;
 }
 
 /* Unified motion language — consistent durations + easing curves used across
@@ -243,6 +244,12 @@
 @keyframes spin-slow {
   to {
     transform: rotate(360deg);
+  }
+}
+/* Sweeping sheen across a legendary rank's gradient-filled title text. */
+@keyframes text-sheen {
+  to {
+    background-position: 200% center;
   }
 }
 

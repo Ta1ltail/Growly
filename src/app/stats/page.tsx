@@ -26,6 +26,7 @@ import { StatCard } from "@/components/ui/StatCard";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Segmented } from "@/components/ui/Segmented";
+import { TrendLineChart } from "@/components/stats/TrendLineChart";
 
 const PERIODS = [
   { value: "7" as const, label: "Week" },
@@ -53,6 +54,8 @@ export default function StatsPage() {
     [active, data.marks, today, days],
   );
   const byCategory = useMemo(() => categoryCompletion(active, data.marks, from, today), [active, data.marks, from, today]);
+  const topCategories = useMemo(() => [...byCategory].sort((a, b) => b.rate - a.rate), [byCategory]);
+  const week7 = useMemo(() => lastNDaysCompletion(active, data.marks, today, 7), [active, data.marks, today]);
   const byWeekday = useMemo(() => completionByWeekday(active, data.marks, today, days), [active, data.marks, today, days]);
   const consistency = useMemo(() => consistencyScore(active, data.marks, today, days), [active, data.marks, today, days]);
   const insights = useMemo(() => buildInsights(active, data.marks, today, 4), [active, data.marks, today]);
@@ -104,38 +107,59 @@ export default function StatsPage() {
         </div>
       )}
 
-      <div className="mt-6 grid gap-6 lg:grid-cols-2">
-        {/* Trend chart */}
-        <div>
-          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted">Recent trend</h2>
-          <Card className="p-5">
-            <div className="flex items-end justify-between gap-1.5">
-              {chart.map(({ date, rate }) => (
-                <div key={date.toISOString()} className="flex flex-1 flex-col items-center gap-2">
-                  <div className="flex h-32 w-full items-end justify-center">
-                    <div
-                      className="w-full max-w-8 rounded-t-lg transition-[height] duration-500"
-                      style={{
-                        height: `${Math.max(rate, 4)}%`,
-                        background: rate >= 100 ? "var(--c-done)" : "var(--c-accent)",
-                        opacity: rate === 0 ? 0.25 : 1,
-                      }}
-                      title={`${rate}%`}
-                    />
-                  </div>
-                  <span className="font-mono text-[10px] font-medium text-muted">
-                    {date.toLocaleDateString(undefined, { weekday: "narrow" })}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </Card>
-        </div>
+      {/* Equal-height analytics cards (spec §11). Each card is the same height;
+          dense lists (Top categories, By weekday) scroll internally. */}
+      <div className="mt-6 grid gap-6 sm:grid-cols-2">
+        {/* Recent trends — interactive line chart */}
+        <StatPanel title="Recent trends">
+          <TrendLineChart points={chart} height={180} />
+        </StatPanel>
 
-        {/* By weekday */}
-        <div>
-          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted">By weekday</h2>
-          <Card className="flex flex-col gap-2.5 p-5">
+        {/* Last 7 days */}
+        <StatPanel title="Last 7 days">
+          <div className="flex h-full items-end justify-between gap-2">
+            {week7.map(({ date, rate }) => (
+              <div key={date.toISOString()} className="flex flex-1 flex-col items-center gap-2">
+                <div className="flex w-full flex-1 items-end justify-center">
+                  <div
+                    className="w-full max-w-9 rounded-t-lg transition-[height] duration-500"
+                    style={{
+                      height: `${Math.max(rate, 4)}%`,
+                      background: rate >= 100 ? "var(--color-done)" : "var(--c-accent)",
+                      opacity: rate === 0 ? 0.25 : 1,
+                    }}
+                    title={`${rate}%`}
+                  />
+                </div>
+                <span className="font-mono text-[10px] font-medium text-muted">
+                  {date.toLocaleDateString(undefined, { weekday: "narrow" })}
+                </span>
+              </div>
+            ))}
+          </div>
+        </StatPanel>
+
+        {/* Top categories — scrolls internally */}
+        <StatPanel title="Top categories" scroll>
+          <div className="flex flex-col gap-3.5">
+            {topCategories.map(({ category, rate }) => (
+              <div key={category}>
+                <div className="mb-1.5 flex items-center justify-between text-xs">
+                  <span className="flex items-center gap-1.5 font-medium">
+                    <span className="size-2 rounded-full" style={{ backgroundColor: CATEGORY_COLORS[category] }} />
+                    {category}
+                  </span>
+                  <span className="font-mono text-muted">{rate}%</span>
+                </div>
+                <ProgressBar value={rate} color={CATEGORY_COLORS[category]} />
+              </div>
+            ))}
+          </div>
+        </StatPanel>
+
+        {/* By weekday — scrolls internally */}
+        <StatPanel title="By weekday" scroll>
+          <div className="flex flex-col gap-2.5">
             {byWeekday.map(({ weekday, rate }) => (
               <div key={weekday} className="flex items-center gap-3">
                 <span className="w-9 shrink-0 font-mono text-xs text-muted">{WEEKDAY_SHORT[weekday]}</span>
@@ -143,28 +167,28 @@ export default function StatsPage() {
                 <span className="w-9 shrink-0 text-right font-mono text-xs text-muted">{rate}%</span>
               </div>
             ))}
-          </Card>
-        </div>
-      </div>
-
-      {/* By category */}
-      <div className="mt-6">
-        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted">By category</h2>
-        <Card className="grid gap-x-6 gap-y-3.5 p-5 sm:grid-cols-2">
-          {byCategory.map(({ category, rate }) => (
-            <div key={category}>
-              <div className="mb-1.5 flex items-center justify-between text-xs">
-                <span className="flex items-center gap-1.5 font-medium">
-                  <span className="size-2 rounded-full" style={{ backgroundColor: CATEGORY_COLORS[category] }} />
-                  {category}
-                </span>
-                <span className="font-mono text-muted">{rate}%</span>
-              </div>
-              <ProgressBar value={rate} color={CATEGORY_COLORS[category]} />
-            </div>
-          ))}
-        </Card>
+          </div>
+        </StatPanel>
       </div>
     </div>
+  );
+}
+
+// Equal-height analytics card: fixed height, header, and a body that either
+// fills the card or scrolls internally (keeps every card visually aligned).
+function StatPanel({
+  title,
+  scroll = false,
+  children,
+}: {
+  title: string;
+  scroll?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <Card className="flex h-72 flex-col p-5">
+      <h2 className="mb-3 shrink-0 text-sm font-semibold uppercase tracking-wide text-muted">{title}</h2>
+      <div className={`min-h-0 flex-1 ${scroll ? "overflow-y-auto pr-1" : ""}`}>{children}</div>
+    </Card>
   );
 }
