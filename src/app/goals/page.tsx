@@ -1,40 +1,37 @@
 "use client";
 
-// Goals — track bigger targets with a progress bar and +/- steppers.
+// Goals — bigger targets with progress, milestones, deadlines, linked habits.
+// Add/edit happen in a modal.
 
 import { useState } from "react";
-import { Plus, Minus, Trash2, Target, ArrowLeft, Check } from "lucide-react";
-import Link from "next/link";
+import { Plus, Minus, Trash2, Target, Check, Pencil, Flag, CircleDot } from "lucide-react";
+import { CATEGORY_COLORS } from "@/lib/categories";
 import type { Goal } from "@/lib/types";
 import { addGoal, deleteGoal, updateGoal, useAppData } from "@/lib/store";
+import { parseDateKey } from "@/lib/storage";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Card } from "@/components/ui/Card";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { Modal } from "@/components/ui/Modal";
+import { GoalForm } from "@/components/goals/GoalForm";
 
 export default function GoalsPage() {
   const data = useAppData();
-  const [showAdd, setShowAdd] = useState(false);
-  const [title, setTitle] = useState("");
-  const [target, setTarget] = useState(20);
-
-  function handleAdd() {
-    const trimmed = title.trim();
-    if (!trimmed || target < 1) return;
-    addGoal({
-      id: crypto.randomUUID(),
-      title: trimmed,
-      target,
-      current: 0,
-      createdAt: new Date().toISOString(),
-    });
-    setTitle("");
-    setTarget(20);
-    setShowAdd(false);
-  }
+  const [adding, setAdding] = useState(false);
+  const [editing, setEditing] = useState<Goal | null>(null);
 
   function step(goal: Goal, delta: number) {
-    updateGoal({ ...goal, current: Math.max(0, Math.min(goal.target, goal.current + delta)) });
+    const current = Math.max(0, Math.min(goal.target, goal.current + delta));
+    const milestones = goal.milestones?.map((m) => ({ ...m, done: current >= m.at }));
+    updateGoal({ ...goal, current, milestones });
+  }
+
+  function save(goal: Goal) {
+    if (editing) updateGoal(goal);
+    else addGoal(goal);
+    setAdding(false);
+    setEditing(null);
   }
 
   return (
@@ -43,20 +40,23 @@ export default function GoalsPage() {
         title="Goals"
         subtitle="Bigger targets to work toward"
         action={
-          <Link href="/profile" className="flex items-center gap-1.5 text-sm text-muted transition-colors hover:text-ink">
-            <ArrowLeft className="size-4" /> Profile
-          </Link>
+          <button
+            onClick={() => setAdding(true)}
+            className="flex items-center gap-1.5 rounded-xl bg-accent px-4 py-2 text-sm font-semibold text-white transition-all hover:brightness-110 active:scale-95"
+          >
+            <Plus className="size-4" strokeWidth={2.5} /> New goal
+          </button>
         }
       />
 
-      {data.goals.length === 0 && !showAdd ? (
+      {data.goals.length === 0 ? (
         <EmptyState
           icon={Target}
           title="No goals yet"
           hint="Set a target like “Workout 20 times this month” and watch the bar fill."
           action={
             <button
-              onClick={() => setShowAdd(true)}
+              onClick={() => setAdding(true)}
               className="flex items-center gap-1.5 rounded-xl bg-accent px-4 py-2 text-sm font-semibold text-white transition-all hover:brightness-110 active:scale-95"
             >
               <Plus className="size-4" strokeWidth={2.5} /> Add goal
@@ -69,87 +69,88 @@ export default function GoalsPage() {
             const pct = Math.round((goal.current / goal.target) * 100);
             const complete = goal.current >= goal.target;
             return (
-              <Card key={goal.id} className="p-4" interactive>
+              <Card key={goal.id} className="p-4">
                 <div className="mb-3 flex items-start justify-between gap-2">
-                  <span className="flex items-center gap-2 text-sm font-semibold">
-                    {complete && <Check className="size-4 text-done" strokeWidth={3} />}
-                    {goal.title}
-                  </span>
-                  <button
-                    onClick={() => deleteGoal(goal.id)}
-                    className="rounded-lg p-1 text-muted transition-colors hover:bg-missed/10 hover:text-missed"
-                    aria-label="Delete goal"
-                  >
-                    <Trash2 className="size-3.5" />
-                  </button>
+                  <div className="min-w-0">
+                    <span className="flex items-center gap-2 text-sm font-semibold">
+                      {complete && <Check className="size-4 text-done" strokeWidth={3} />}
+                      {goal.title}
+                    </span>
+                    <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px] text-muted">
+                      {goal.category && (
+                        <span className="flex items-center gap-1">
+                          <span className="size-2 rounded-full" style={{ backgroundColor: CATEGORY_COLORS[goal.category] }} />
+                          {goal.category}
+                        </span>
+                      )}
+                      {goal.deadline && (
+                        <span className="flex items-center gap-1">
+                          <Flag className="size-3" />
+                          {parseDateKey(goal.deadline).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex gap-0.5">
+                    <button onClick={() => setEditing(goal)} className="rounded-lg p-1 text-muted transition-colors hover:bg-surface2 hover:text-ink" aria-label="Edit goal">
+                      <Pencil className="size-3.5" />
+                    </button>
+                    <button onClick={() => deleteGoal(goal.id)} className="rounded-lg p-1 text-muted transition-colors hover:bg-missed/10 hover:text-missed" aria-label="Delete goal">
+                      <Trash2 className="size-3.5" />
+                    </button>
+                  </div>
                 </div>
+
                 <ProgressBar value={pct} color={complete ? "var(--c-done)" : undefined} />
+
                 <div className="mt-3 flex items-center justify-between">
-                  <span className="font-mono text-xs text-muted">
-                    {goal.current} / {goal.target} · {pct}%
-                  </span>
+                  <span className="font-mono text-xs text-muted">{goal.current} / {goal.target} · {pct}%</span>
                   <div className="flex gap-1.5">
-                    <button
-                      onClick={() => step(goal, -1)}
-                      className="flex size-8 items-center justify-center rounded-lg border border-line text-muted transition-all hover:bg-surface2 active:scale-90"
-                    >
+                    <button onClick={() => step(goal, -1)} className="flex size-8 items-center justify-center rounded-lg border border-line text-muted transition-all hover:bg-surface2 active:scale-90">
                       <Minus className="size-4" />
                     </button>
-                    <button
-                      onClick={() => step(goal, 1)}
-                      className="flex size-8 items-center justify-center rounded-lg bg-accent text-white transition-all hover:brightness-110 active:scale-90"
-                    >
+                    <button onClick={() => step(goal, 1)} className="flex size-8 items-center justify-center rounded-lg bg-accent text-white transition-all hover:brightness-110 active:scale-90">
                       <Plus className="size-4" />
                     </button>
                   </div>
                 </div>
+
+                {goal.milestones && goal.milestones.length > 0 && (
+                  <ul className="mt-3 flex flex-col gap-1 border-t border-line pt-3">
+                    {goal.milestones.map((m) => (
+                      <li key={m.id} className={`flex items-center gap-2 text-xs ${m.done ? "text-done" : "text-muted"}`}>
+                        {m.done ? <Check className="size-3.5" strokeWidth={3} /> : <CircleDot className="size-3.5" />}
+                        <span className={m.done ? "line-through" : ""}>{m.title}</span>
+                        <span className="ml-auto font-mono text-faint">@ {m.at}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </Card>
             );
           })}
-
-          {showAdd && (
-            <Card className="p-4 sm:col-span-2">
-              <input
-                autoFocus
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="Goal — e.g. Read 12 books this year"
-                className="w-full rounded-xl border border-line bg-surface2 px-3.5 py-2.5 text-sm outline-none placeholder:text-faint focus:border-accent"
-              />
-              <label className="mt-3 block text-xs font-semibold uppercase tracking-wide text-muted">
-                Target number
-              </label>
-              <input
-                type="number"
-                min={1}
-                value={target}
-                onChange={(e) => setTarget(Number(e.target.value))}
-                className="mt-1.5 w-full rounded-xl border border-line bg-surface2 px-3.5 py-2.5 text-sm outline-none focus:border-accent"
-              />
-              <div className="mt-4 flex justify-end gap-2">
-                <button onClick={() => setShowAdd(false)} className="rounded-xl px-4 py-2 text-sm font-medium text-muted hover:text-ink">
-                  Cancel
-                </button>
-                <button
-                  onClick={handleAdd}
-                  className="flex items-center gap-1.5 rounded-xl bg-accent px-4 py-2 text-sm font-semibold text-white transition-all hover:brightness-110 active:scale-95"
-                >
-                  <Check className="size-4" strokeWidth={2.5} /> Add goal
-                </button>
-              </div>
-            </Card>
-          )}
         </div>
       )}
 
-      {!showAdd && data.goals.length > 0 && (
-        <button
-          onClick={() => setShowAdd(true)}
-          className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-2xl border border-dashed border-line py-3 text-sm font-medium text-muted transition-all hover:border-accent hover:text-accent"
-        >
-          <Plus className="size-4" strokeWidth={2.5} /> Add goal
-        </button>
-      )}
+      <Modal
+        open={adding || editing !== null}
+        onClose={() => {
+          setAdding(false);
+          setEditing(null);
+        }}
+        title={editing ? "Edit goal" : "Add goal"}
+        size="lg"
+      >
+        <GoalForm
+          initial={editing ?? undefined}
+          habits={data.habits.filter((h) => !h.archived)}
+          onSave={save}
+          onCancel={() => {
+            setAdding(false);
+            setEditing(null);
+          }}
+        />
+      </Modal>
     </div>
   );
 }

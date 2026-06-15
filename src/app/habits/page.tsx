@@ -1,0 +1,281 @@
+"use client";
+
+// Manage Habits — the single place to edit, delete, archive, duplicate, and
+// reschedule habits (kept out of Today so daily tracking stays focused).
+// Search + category filter; add/edit happen in a modal.
+
+import { useMemo, useState } from "react";
+import {
+  Plus,
+  Pencil,
+  Copy,
+  Archive,
+  ArchiveRestore,
+  Trash2,
+  Search,
+  ListTodo,
+} from "lucide-react";
+import { CATEGORIES, CATEGORY_COLORS, type Category } from "@/lib/categories";
+import type { Habit } from "@/lib/types";
+import {
+  addHabit,
+  updateHabit,
+  deleteHabit,
+  duplicateHabit,
+  setHabitArchived,
+  useAppData,
+} from "@/lib/store";
+import { makeHabit, applyHabitForm } from "@/lib/habits";
+import { habitStreaks } from "@/lib/stats";
+import { habitScheduleText, PRIORITY_COLOR, PRIORITY_LABEL } from "@/lib/format";
+import { useToday } from "@/hooks/useToday";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { Card } from "@/components/ui/Card";
+import { Segmented } from "@/components/ui/Segmented";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { Modal } from "@/components/ui/Modal";
+import { HabitForm } from "@/components/habits/HabitForm";
+
+export default function HabitsPage() {
+  const data = useAppData();
+  const today = useToday();
+  const [filter, setFilter] = useState<Category | "All">("All");
+  const [query, setQuery] = useState("");
+  const [adding, setAdding] = useState(false);
+  const [editing, setEditing] = useState<Habit | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<Habit | null>(null);
+
+  const usedCategories = useMemo(
+    () => CATEGORIES.filter((c) => data.habits.some((h) => h.category === c)),
+    [data.habits],
+  );
+  const filterOptions = useMemo(
+    () => [{ value: "All" as const, label: "All" }, ...usedCategories.map((c) => ({ value: c, label: c }))],
+    [usedCategories],
+  );
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return data.habits.filter(
+      (h) =>
+        (filter === "All" || h.category === filter) && (q === "" || h.name.toLowerCase().includes(q)),
+    );
+  }, [data.habits, filter, query]);
+
+  const activeHabits = filtered.filter((h) => !h.archived);
+  const archivedHabits = filtered.filter((h) => h.archived);
+
+  function save(value: Parameters<typeof makeHabit>[0]) {
+    if (editing) updateHabit(applyHabitForm(editing, value));
+    else addHabit(makeHabit(value));
+    setAdding(false);
+    setEditing(null);
+  }
+
+  return (
+    <div className="animate-fade-in">
+      <PageHeader
+        title="Manage Habits"
+        subtitle={`${data.habits.filter((h) => !h.archived).length} active`}
+        action={
+          <button
+            onClick={() => setAdding(true)}
+            className="flex items-center gap-1.5 rounded-xl bg-accent px-4 py-2 text-sm font-semibold text-white transition-all hover:brightness-110 active:scale-95"
+          >
+            <Plus className="size-4" strokeWidth={2.5} /> New habit
+          </button>
+        }
+      />
+
+      {data.habits.length === 0 ? (
+        <EmptyState
+          icon={ListTodo}
+          title="No habits yet"
+          hint="Create a habit with a schedule and it will show up across the app."
+          action={
+            <button
+              onClick={() => setAdding(true)}
+              className="flex items-center gap-1.5 rounded-xl bg-accent px-4 py-2 text-sm font-semibold text-white transition-all hover:brightness-110 active:scale-95"
+            >
+              <Plus className="size-4" strokeWidth={2.5} /> Add habit
+            </button>
+          }
+        />
+      ) : (
+        <>
+          <div className="mb-4 flex flex-wrap items-center gap-3">
+            <div className="relative flex-1 min-w-48">
+              <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-faint" />
+              <input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search habits…"
+                className="w-full rounded-xl border border-line bg-surface2 py-2 pl-9 pr-3 text-sm outline-none placeholder:text-faint focus:border-accent"
+              />
+            </div>
+            <Segmented options={filterOptions} value={filter} onChange={setFilter} />
+          </div>
+
+          <div className="flex flex-col gap-2">
+            {activeHabits.map((h) => (
+              <HabitRow
+                key={h.id}
+                habit={h}
+                streak={habitStreaks(h, data.marks, today).current}
+                onEdit={() => setEditing(h)}
+                onDuplicate={() => duplicateHabit(h.id)}
+                onArchive={() => setHabitArchived(h.id, true)}
+                onDelete={() => setConfirmDelete(h)}
+              />
+            ))}
+          </div>
+
+          {archivedHabits.length > 0 && (
+            <>
+              <h2 className="mb-2 mt-6 text-xs font-semibold uppercase tracking-wide text-faint">Archived</h2>
+              <div className="flex flex-col gap-2">
+                {archivedHabits.map((h) => (
+                  <HabitRow
+                    key={h.id}
+                    habit={h}
+                    streak={0}
+                    archived
+                    onEdit={() => setEditing(h)}
+                    onDuplicate={() => duplicateHabit(h.id)}
+                    onArchive={() => setHabitArchived(h.id, false)}
+                    onDelete={() => setConfirmDelete(h)}
+                  />
+                ))}
+              </div>
+            </>
+          )}
+        </>
+      )}
+
+      {/* Add / edit modal */}
+      <Modal
+        open={adding || editing !== null}
+        onClose={() => {
+          setAdding(false);
+          setEditing(null);
+        }}
+        title={editing ? "Edit habit" : "Add habit"}
+        size="lg"
+      >
+        <HabitForm
+          initial={editing ?? undefined}
+          onSave={save}
+          onCancel={() => {
+            setAdding(false);
+            setEditing(null);
+          }}
+        />
+      </Modal>
+
+      {/* Delete confirm */}
+      <Modal
+        open={confirmDelete !== null}
+        onClose={() => setConfirmDelete(null)}
+        title="Delete habit?"
+        size="sm"
+        footer={
+          <>
+            <button
+              onClick={() => setConfirmDelete(null)}
+              className="rounded-xl px-4 py-2 text-sm font-medium text-muted hover:text-ink"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => {
+                if (confirmDelete) deleteHabit(confirmDelete.id);
+                setConfirmDelete(null);
+              }}
+              className="rounded-xl bg-missed px-4 py-2 text-sm font-semibold text-white transition-all hover:brightness-110 active:scale-95"
+            >
+              Delete
+            </button>
+          </>
+        }
+      >
+        <p className="text-sm text-muted">
+          Delete “{confirmDelete?.name}”? Its past marks stay in your history (Honest Tracking), but it
+          will no longer be scheduled. This cannot be undone.
+        </p>
+      </Modal>
+    </div>
+  );
+}
+
+function HabitRow({
+  habit,
+  streak,
+  archived = false,
+  onEdit,
+  onDuplicate,
+  onArchive,
+  onDelete,
+}: {
+  habit: Habit;
+  streak: number;
+  archived?: boolean;
+  onEdit: () => void;
+  onDuplicate: () => void;
+  onArchive: () => void;
+  onDelete: () => void;
+}) {
+  const priority = habit.priority ?? "med";
+  return (
+    <Card className={`flex items-center gap-3 px-4 py-3 ${archived ? "opacity-60" : ""}`}>
+      <span className="size-2.5 shrink-0 rounded-full" style={{ backgroundColor: CATEGORY_COLORS[habit.category] }} />
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-2">
+          <span className="truncate text-sm font-medium">{habit.name}</span>
+          <span
+            className="rounded-full px-1.5 py-0.5 text-[10px] font-semibold"
+            style={{ color: PRIORITY_COLOR[priority], backgroundColor: `${PRIORITY_COLOR[priority]}1a` }}
+          >
+            {PRIORITY_LABEL[priority]}
+          </span>
+        </div>
+        <p className="mt-0.5 truncate text-xs text-muted">
+          {habit.category} · {habitScheduleText(habit)}
+          {streak > 0 && ` · 🔥 ${streak}`}
+        </p>
+      </div>
+      <div className="flex items-center gap-0.5">
+        <IconBtn label="Edit" onClick={onEdit}><Pencil className="size-4" /></IconBtn>
+        <IconBtn label="Duplicate" onClick={onDuplicate}><Copy className="size-4" /></IconBtn>
+        <IconBtn label={archived ? "Restore" : "Archive"} onClick={onArchive}>
+          {archived ? <ArchiveRestore className="size-4" /> : <Archive className="size-4" />}
+        </IconBtn>
+        <IconBtn label="Delete" danger onClick={onDelete}><Trash2 className="size-4" /></IconBtn>
+      </div>
+    </Card>
+  );
+}
+
+function IconBtn({
+  children,
+  label,
+  onClick,
+  danger = false,
+}: {
+  children: React.ReactNode;
+  label: string;
+  onClick: () => void;
+  danger?: boolean;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      aria-label={label}
+      title={label}
+      className={`rounded-lg p-1.5 text-muted transition-colors ${
+        danger ? "hover:bg-missed/10 hover:text-missed" : "hover:bg-surface2 hover:text-ink"
+      }`}
+    >
+      {children}
+    </button>
+  );
+}

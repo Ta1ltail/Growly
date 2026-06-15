@@ -1,18 +1,28 @@
 "use client";
 
-// Calendar — month grid shaded by completion %, tap a day for its detail.
+// Calendar — plan and review by date. Month/Week views shaded by completion,
+// a clear "today" indicator, and a day detail panel with the day's scheduled
+// habits (time-ordered, with a live "now" marker), notes, and goal deadlines.
 
 import { useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight, Check, X, Minus } from "lucide-react";
+import { ChevronLeft, ChevronRight, Check, X, Minus, Flag, NotebookPen } from "lucide-react";
 import { CATEGORY_COLORS } from "@/lib/categories";
-import { dateKey, prettyDate } from "@/lib/storage";
-import { useAppData } from "@/lib/store";
+import { addDays, dateKey, prettyDate, DEFAULT_GRACE_HOURS } from "@/lib/storage";
+import { cycleMark, useAppData } from "@/lib/store";
 import { dayCompletion, isScheduled } from "@/lib/stats";
+import { canEditMark } from "@/lib/policy";
+import { formatTime } from "@/lib/format";
 import { useToday } from "@/hooks/useToday";
+import { MarkButton } from "@/components/habits/MarkButton";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Card } from "@/components/ui/Card";
+import { Segmented } from "@/components/ui/Segmented";
 
 const WEEKDAY_LABELS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
+const VIEWS = [
+  { value: "month" as const, label: "Month" },
+  { value: "week" as const, label: "Week" },
+];
 
 function shade(rate: number): string {
   if (rate === 0) return "";
@@ -25,50 +35,69 @@ function shade(rate: number): string {
 export default function CalendarPage() {
   const data = useAppData();
   const today = useToday();
-  const [month, setMonth] = useState(() => new Date(today.getFullYear(), today.getMonth(), 1));
+  const grace = data.settings.graceHours ?? DEFAULT_GRACE_HOURS;
+  const active = useMemo(() => data.habits.filter((h) => !h.archived), [data.habits]);
+  const [view, setView] = useState<"month" | "week">("month");
+  const [anchor, setAnchor] = useState(() => new Date(today.getFullYear(), today.getMonth(), 1));
+  const [weekStart, setWeekStart] = useState(() => addDays(today, -today.getDay()));
   const [selected, setSelected] = useState<Date>(today);
 
-  const cells = useMemo(() => {
-    const year = month.getFullYear();
-    const m = month.getMonth();
+  const monthCells = useMemo(() => {
+    const year = anchor.getFullYear();
+    const m = anchor.getMonth();
     const firstWeekday = new Date(year, m, 1).getDay();
     const daysInMonth = new Date(year, m + 1, 0).getDate();
     const out: (Date | null)[] = [];
     for (let i = 0; i < firstWeekday; i++) out.push(null);
     for (let day = 1; day <= daysInMonth; day++) out.push(new Date(year, m, day));
     return out;
-  }, [month]);
+  }, [anchor]);
 
-  const selectedHabits = useMemo(
-    () => data.habits.filter((h) => isScheduled(h, selected)),
-    [data.habits, selected],
+  const weekCells = useMemo(
+    () => Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)),
+    [weekStart],
   );
 
-  function changeMonth(delta: number) {
-    setMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() + delta, 1));
+  const selectedKey = dateKey(selected);
+  const selectedHabits = useMemo(
+    () =>
+      active
+        .filter((h) => isScheduled(h, selected))
+        .sort((a, b) => (a.timeOfDay ?? "99") < (b.timeOfDay ?? "99") ? -1 : 1),
+    [active, selected],
+  );
+  const dayNotes = data.notes.filter((n) => n.links.date === selectedKey);
+  const deadlines = data.goals.filter((g) => g.deadline === selectedKey);
+  const editable = canEditMark(selectedKey, today, grace);
+  const nowHHMM = `${String(today.getHours()).padStart(2, "0")}:${String(today.getMinutes()).padStart(2, "0")}`;
+  const selectedIsToday = selectedKey === dateKey(today);
+
+  function shift(delta: number) {
+    if (view === "month") setAnchor((p) => new Date(p.getFullYear(), p.getMonth() + delta, 1));
+    else setWeekStart((p) => addDays(p, delta * 7));
   }
+
+  const headerLabel =
+    view === "month"
+      ? anchor.toLocaleDateString(undefined, { month: "long", year: "numeric" })
+      : `${weekCells[0].toLocaleDateString(undefined, { month: "short", day: "numeric" })} – ${weekCells[6].toLocaleDateString(undefined, { month: "short", day: "numeric" })}`;
 
   return (
     <div className="animate-fade-in">
       <PageHeader
         title="Calendar"
         action={
-          <div className="flex items-center gap-1">
-            <button
-              onClick={() => changeMonth(-1)}
-              className="flex size-9 items-center justify-center rounded-xl border border-line text-muted transition-colors hover:bg-surface2 hover:text-ink"
-            >
-              <ChevronLeft className="size-4" />
-            </button>
-            <span className="w-32 text-center text-sm font-semibold">
-              {month.toLocaleDateString(undefined, { month: "long", year: "numeric" })}
-            </span>
-            <button
-              onClick={() => changeMonth(1)}
-              className="flex size-9 items-center justify-center rounded-xl border border-line text-muted transition-colors hover:bg-surface2 hover:text-ink"
-            >
-              <ChevronRight className="size-4" />
-            </button>
+          <div className="flex items-center gap-2">
+            <Segmented options={VIEWS} value={view} onChange={setView} />
+            <div className="flex items-center gap-1">
+              <button onClick={() => shift(-1)} className="flex size-9 items-center justify-center rounded-xl border border-line text-muted transition-colors hover:bg-surface2 hover:text-ink">
+                <ChevronLeft className="size-4" />
+              </button>
+              <span className="w-36 text-center text-sm font-semibold">{headerLabel}</span>
+              <button onClick={() => shift(1)} className="flex size-9 items-center justify-center rounded-xl border border-line text-muted transition-colors hover:bg-surface2 hover:text-ink">
+                <ChevronRight className="size-4" />
+              </button>
+            </div>
           </div>
         }
       />
@@ -82,27 +111,27 @@ export default function CalendarPage() {
               ))}
             </div>
             <div className="grid grid-cols-7 gap-1.5">
-              {cells.map((d, i) => {
+              {(view === "month" ? monthCells : weekCells).map((d, i) => {
                 if (!d) return <div key={`b-${i}`} />;
-                const rate = dayCompletion(data.habits, data.marks, d);
+                const rate = dayCompletion(active, data.marks, d);
                 const isToday = dateKey(d) === dateKey(today);
-                const isSelected = dateKey(d) === dateKey(selected);
+                const isSelected = dateKey(d) === selectedKey;
+                const hasNote = data.notes.some((n) => n.links.date === dateKey(d));
+                const hasDeadline = data.goals.some((g) => g.deadline === dateKey(d));
                 return (
                   <button
                     key={dateKey(d)}
                     onClick={() => setSelected(d)}
-                    className={`flex aspect-square flex-col items-center justify-center rounded-xl border font-mono text-xs transition-all hover:scale-105 ${shade(
-                      rate,
-                    )} ${
-                      isSelected
-                        ? "border-accent ring-accent-soft"
-                        : isToday
-                          ? "border-accent/50"
-                          : "border-transparent"
+                    className={`relative flex aspect-square flex-col items-center justify-center rounded-xl border font-mono text-xs transition-all hover:scale-105 ${shade(rate)} ${
+                      isSelected ? "border-accent ring-accent-soft" : isToday ? "border-accent/50" : "border-transparent"
                     } ${rate === 0 ? "bg-surface2/40 text-muted" : ""}`}
                   >
-                    <span className="font-semibold">{d.getDate()}</span>
+                    <span className={`font-semibold ${isToday ? "text-accent" : ""}`}>{d.getDate()}</span>
                     {rate > 0 && <span className="text-[9px] opacity-80">{rate}%</span>}
+                    <span className="absolute bottom-1 flex gap-0.5">
+                      {hasNote && <span className="size-1 rounded-full bg-current opacity-60" />}
+                      {hasDeadline && <span className="size-1 rounded-full bg-amber-500" />}
+                    </span>
                   </button>
                 );
               })}
@@ -110,47 +139,82 @@ export default function CalendarPage() {
           </Card>
         </div>
 
-        {/* Selected day */}
+        {/* Day detail */}
         <div className="lg:col-span-2">
-          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted">
-            {prettyDate(selected)}
+          <h2 className="mb-3 flex items-center justify-between text-sm font-semibold uppercase tracking-wide text-muted">
+            <span>{prettyDate(selected)}</span>
+            {selectedIsToday && <span className="rounded-full bg-accent/15 px-2 py-0.5 text-[10px] text-accent">Today</span>}
           </h2>
-          {selectedHabits.length === 0 ? (
-            <Card className="p-6 text-center text-sm text-muted">
-              No habits scheduled this day.
+
+          {deadlines.length > 0 && (
+            <Card className="mb-3 p-3">
+              {deadlines.map((g) => (
+                <div key={g.id} className="flex items-center gap-2 text-sm">
+                  <Flag className="size-4 text-amber-500" />
+                  <span className="flex-1">Goal due: {g.title}</span>
+                  <span className="font-mono text-xs text-muted">{g.current}/{g.target}</span>
+                </div>
+              ))}
             </Card>
+          )}
+
+          {selectedHabits.length === 0 ? (
+            <Card className="p-6 text-center text-sm text-muted">No habits scheduled this day.</Card>
           ) : (
             <Card className="divide-y divide-line overflow-hidden">
               {selectedHabits.map((h) => {
-                const status = data.marks[dateKey(selected)]?.[h.id];
+                const status = data.marks[selectedKey]?.[h.id];
+                const showNowBefore = selectedIsToday && h.timeOfDay && h.timeOfDay >= nowHHMM;
                 return (
-                  <div key={h.id} className="flex items-center gap-2.5 px-4 py-2.5 text-sm">
-                    <span
-                      className="size-2 shrink-0 rounded-full"
-                      style={{ backgroundColor: CATEGORY_COLORS[h.category] }}
-                    />
-                    <span className="flex-1">{h.name}</span>
-                    {status === "done" ? (
-                      <Check className="size-4 text-done" strokeWidth={2.5} />
-                    ) : status === "missed" ? (
-                      <X className="size-4 text-missed" strokeWidth={2.5} />
-                    ) : status === "skipped" ? (
-                      <Minus className="size-4 text-skipped" strokeWidth={2.5} />
-                    ) : (
-                      <span className="text-faint">—</span>
-                    )}
+                  <div key={h.id}>
+                    {showNowBefore && <NowLine time={nowHHMM} />}
+                    <div className="flex items-center gap-2.5 px-4 py-2.5 text-sm">
+                      {editable ? (
+                        <MarkButton status={status} onClick={() => cycleMark(selectedKey, h.id)} size={22} />
+                      ) : (
+                        <span className="size-2 shrink-0 rounded-full" style={{ backgroundColor: CATEGORY_COLORS[h.category] }} />
+                      )}
+                      <span className="flex-1">{h.name}</span>
+                      {h.timeOfDay && <span className="font-mono text-[11px] text-faint">{formatTime(h.timeOfDay)}</span>}
+                      {!editable &&
+                        (status === "done" ? (
+                          <Check className="size-4 text-done" strokeWidth={2.5} />
+                        ) : status === "missed" ? (
+                          <X className="size-4 text-missed" strokeWidth={2.5} />
+                        ) : status === "skipped" ? (
+                          <Minus className="size-4 text-skipped" strokeWidth={2.5} />
+                        ) : (
+                          <span className="text-faint">—</span>
+                        ))}
+                    </div>
                   </div>
                 );
               })}
             </Card>
           )}
-          {data.notes[dateKey(selected)] && (
-            <Card className="mt-3 p-4 text-sm italic text-muted">
-              “{data.notes[dateKey(selected)]}”
+
+          {dayNotes.length > 0 && (
+            <Card className="mt-3 p-4">
+              <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted">
+                <NotebookPen className="size-3.5" /> Notes
+              </p>
+              {dayNotes.map((n) => (
+                <p key={n.id} className="text-sm italic text-muted">“{n.body}”</p>
+              ))}
             </Card>
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+function NowLine({ time }: { time: string }) {
+  return (
+    <div className="flex items-center gap-2 px-4 py-1">
+      <span className="size-1.5 rounded-full bg-accent" />
+      <span className="h-px flex-1 bg-accent/40" />
+      <span className="font-mono text-[10px] font-semibold text-accent">now {formatTime(time)}</span>
     </div>
   );
 }

@@ -4,14 +4,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { NAV_ITEMS, isActive } from "./navItems";
+import { NAV_BOTTOM, isActive } from "./navItems";
 
 export function BottomNav() {
   const pathname = usePathname();
   return (
     <nav className="glass fixed inset-x-0 bottom-0 z-20 border-t border-line md:hidden">
       <div className="mx-auto flex max-w-md items-stretch justify-around px-2 pb-[env(safe-area-inset-bottom)]">
-        {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
+        {NAV_BOTTOM.map(({ href, label, icon: Icon }) => {
           const active = isActive(pathname, href);
           return (
             <Link

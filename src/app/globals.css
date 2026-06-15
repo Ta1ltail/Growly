@@ -34,34 +34,40 @@
   --animate-pop: pop 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
 
-/* ---- Light theme (default values) ---- */
+/* ---- Light theme (default values) ----
+   Soft off-white surfaces (no harsh pure white), gentle contrast, subtle
+   borders + shadows instead of strong lines. Easy on the eyes for long use. */
 :root {
-  --c-bg: #eef1f7;
-  --c-bg2: #e6eaf2;
-  --c-surface: #ffffff;
-  --c-surface2: #f4f6fb;
-  --c-line: #e2e8f0;
-  --c-ink: #0f172a;
-  --c-muted: #64748b;
-  --c-faint: #94a3b8;
-  --c-empty: #e9edf4;
+  --c-bg: #eef1f6;
+  --c-bg2: #e7ebf2;
+  --c-surface: #fbfcfe;
+  --c-surface2: #f1f4f9;
+  --c-line: #e1e6ef;
+  --c-ink: #1a2332;
+  --c-muted: #5d6b80;
+  --c-faint: #97a2b4;
+  --c-empty: #e6ebf3;
   --c-accent: #3b82f6;
   --c-accent-glow: #60a5fa;
+  --c-shadow: 220 25% 30%;
 }
 
-/* ---- Dark theme ---- */
+/* ---- Dark theme ----
+   Modern dark gray (not a black void). Cards/panels sit clearly above the
+   background with more separation and softer text. */
 [data-theme="dark"] {
-  --c-bg: #080b12;
-  --c-bg2: #0c111b;
-  --c-surface: #121826;
-  --c-surface2: #1a2233;
-  --c-line: #222c3e;
-  --c-ink: #e9eef7;
-  --c-muted: #8b98ae;
-  --c-faint: #5b6880;
-  --c-empty: #1a2233;
-  --c-accent: #3b82f6;
-  --c-accent-glow: #60a5fa;
+  --c-bg: #11151d;
+  --c-bg2: #161b25;
+  --c-surface: #1c2330;
+  --c-surface2: #252e3e;
+  --c-line: #303a4d;
+  --c-ink: #eaeef6;
+  --c-muted: #94a1b8;
+  --c-faint: #677387;
+  --c-empty: #252e3e;
+  --c-accent: #4b8bf7;
+  --c-accent-glow: #6ba2f9;
+  --c-shadow: 222 47% 4%;
 }
 
 @keyframes fade-in {
@@ -137,4 +143,16 @@ body {
 .ring-accent-soft {
   box-shadow: 0 0 0 1px color-mix(in srgb, var(--c-accent) 40%, transparent),
     0 8px 30px -12px color-mix(in srgb, var(--c-accent) 50%, transparent);
+}
+
+/* Respect users who prefer less motion (accessibility). */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
 }

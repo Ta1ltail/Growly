@@ -1,0 +1,230 @@
+Improve the entire UI/UX and system logic of the Habit Tracking Web Application. Think like a senior product designer, UX designer, and software architect. Focus on usability, anti-cheat mechanics, scalability, and a premium user experience.
+
+### Core UI/UX Improvements
+
+* Reduce excessive page scrolling throughout the application.
+* Use fixed-height containers with internal scrolling and pagination where appropriate.
+* Design the interface for desktop/web-first usage.
+* Improve spacing, visual hierarchy, responsiveness, and accessibility.
+* Create a cleaner, more modern, premium dashboard experience.
+
+### Navigation & Structure
+
+Create dedicated sections/pages for:
+
+* Dashboard
+* Today
+* Habits
+* Tracker
+* Calendar
+* Goals
+* Templates
+* Statistics
+* Notes
+* Habit Management
+* Settings
+* Profile
+
+Settings should be a standalone section, not hidden inside the profile page.
+
+### Modal-Based Actions
+
+Instead of displaying forms inline below content, use modal/pop-up dialogs for:
+
+* Add Habit
+* Add Goal
+* Add Note
+* Add Template
+* Add Tracker Entry
+* Add Statistics Configuration
+* Calendar Events
+
+The interface should remain clean and uncluttered.
+
+### Habit Templates System
+
+* Add a "View Templates" option when creating a habit.
+* Users can create habits from templates.
+* Once a template has been used, it should not appear again in the selection list unless manually re-enabled.
+* Templates should have their own management section.
+
+### Today Section
+
+* Cleaner daily overview.
+* Show upcoming habits by scheduled time.
+* Display progress, streaks, and completion status.
+* Allow quick completion actions.
+* Add motivational insights and summaries.
+
+### Habit Scheduling
+
+Every habit should support:
+
+* Time of day
+* Start date
+* Frequency
+* Daily/Weekly/Monthly recurrence
+* Reminder settings
+* Priority level
+* Category assignment
+
+Habits should automatically appear in the Today view based on their schedule.
+
+### Calendar Improvements
+
+Redesign the calendar completely.
+
+Add:
+
+* Current date indicator
+* Current time indicator
+* Monthly view
+* Weekly view
+* Daily view
+* Scheduled habits
+* Goals
+* Notes
+* Habit completion history
+* Event timeline
+* Upcoming reminders
+
+Improve layout, readability, and navigation.
+
+### Statistics & Analytics
+
+Allow users to configure:
+
+* Target completion times
+* Habit schedules
+* Daily completion rates
+* Weekly performance
+* Monthly performance
+* Success trends
+* Streak analysis
+* Consistency scores
+
+Provide meaningful insights rather than only raw numbers.
+
+### Habit Management Section
+
+Create a dedicated "Manage Habits" section where users can:
+
+* Edit habits
+* Delete habits
+* Archive habits
+* Duplicate habits
+* Change schedules
+* Modify reminders
+
+Editing and deletion should NOT happen directly from the Today view.
+
+### Anti-Cheat System
+
+The application should enforce an "Honest Tracking Policy."
+
+Rules:
+
+1. Past records become permanently locked after the day ends.
+2. Users cannot modify yesterday's completion status.
+3. Users cannot retroactively mark habits as completed.
+4. Users cannot edit historical statistics.
+5. Users cannot manipulate streak data.
+6. All habit history should remain immutable once archived.
+7. Maintain an audit log of changes to habits and schedules.
+
+This ensures accountability and accurate long-term tracking.
+
+### Better Weekly Indicators
+
+Replace confusing text indicators such as:
+
+TWTFSSMTTF
+
+with clear visual representations:
+
+* Monday icon/label
+* Tuesday icon/label
+* Wednesday icon/label
+* Thursday icon/label
+* Friday icon/label
+* Saturday icon/label
+* Sunday icon/label
+
+Use color coding, tooltips, badges, or icons to improve readability.
+
+### Notes System
+
+* Notes should open in a modal editor.
+* Support rich text formatting.
+* Support tagging.
+* Support search and filtering.
+* Link notes to habits, goals, and dates.
+
+### Goals System
+
+Goals should support:
+
+* Milestones
+* Progress tracking
+* Deadlines
+* Linked habits
+* Goal categories
+* Completion analytics
+
+### Additional Improvements
+
+Implement any missing functionality that would logically improve a professional daily habit tracking platform, including:
+
+* Better empty states
+* Keyboard shortcuts
+* Search functionality
+* Filters
+* Dark mode
+* Data backup/export
+* Responsive layouts
+* Loading states
+* Error handling
+* Notifications
+* Performance optimizations
+
+Overall objective: transform the application into a professional, scalable, anti-cheat, web-first habit tracking platform with excellent UX, strong data integrity, logical workflows, and minimal unnecessary scrolling.
+
+
+### Theme & Visual Comfort Improvements
+
+Improve both Light Mode and Dark Mode for better long-term usability and eye comfort.
+
+#### Light Mode
+
+Current light mode is too bright and harsh on the eyes.
+
+Requirements:
+
+* Replace pure white backgrounds with soft off-white tones.
+* Use better contrast balancing.
+* Reduce visual glare during extended use.
+* Create a cleaner, premium, productivity-focused appearance.
+* Use subtle shadows and borders instead of strong contrasts.
+
+#### Dark Mode
+
+Current dark mode is too dark and visually heavy.
+
+Requirements:
+
+* Avoid pure black backgrounds.
+* Use modern dark gray surfaces instead.
+* Improve readability and visual hierarchy.
+* Increase contrast between cards, panels, and backgrounds.
+* Create a softer, more comfortable viewing experience for long sessions.
+
+#### Theme System
+
+* Implement a professional design system for both themes.
+* Ensure all components work consistently across light and dark modes.
+* Support automatic system theme detection.
+* Add theme preview options in Settings.
+* Maintain accessibility standards and proper contrast ratios.
+* Ensure charts, calendars, statistics, modals, and dashboards remain visually clear in both modes.
+
+Goal: Create balanced, premium themes that are comfortable for daily use. Light mode should not feel blinding, and dark mode should not feel like a black void. Both should feel modern, professional, and easy on the eyes during long productivity sessions.

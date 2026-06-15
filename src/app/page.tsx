@@ -1,243 +1,196 @@
 "use client";
 
-// Today — hero progress ring, habits grouped by category, and a daily note.
+// Dashboard — the at-a-glance command center: today's progress, momentum
+// stats, a 7-day trend, top categories, and smart insights. Links into the
+// deeper screens. Designed to fit without excessive scrolling.
 
-import { useMemo, useState } from "react";
-import { Plus, Pencil, Trash2, Flame, NotebookPen, ListChecks } from "lucide-react";
-import { CATEGORIES, CATEGORY_COLORS, type Category } from "@/lib/categories";
-import type { Habit } from "@/lib/types";
-import { dateKey } from "@/lib/storage";
-import {
-  addHabit,
-  cycleMark,
-  deleteHabit,
-  setNote,
-  updateHabit,
-  useAppData,
-} from "@/lib/store";
-import { habitStreaks, isScheduled } from "@/lib/stats";
+import { useMemo } from "react";
+import Link from "next/link";
+import { Flame, TrendingUp, Activity, ArrowRight, ListChecks, Sparkles } from "lucide-react";
+import { CATEGORY_COLORS } from "@/lib/categories";
+import { useAppData } from "@/lib/store";
 import { useToday } from "@/hooks/useToday";
-import { MarkButton } from "@/components/habits/MarkButton";
-import { HabitForm } from "@/components/habits/HabitForm";
+import { dateKey, addDays } from "@/lib/storage";
+import {
+  categoryCompletion,
+  consistencyScore,
+  dayCompletion,
+  habitStreaks,
+  isScheduled,
+  lastNDaysCompletion,
+} from "@/lib/stats";
+import { buildInsights } from "@/lib/insights";
+import { PageHeader } from "@/components/ui/PageHeader";
 import { Card } from "@/components/ui/Card";
-import { EmptyState } from "@/components/ui/EmptyState";
+import { StatCard } from "@/components/ui/StatCard";
 import { ProgressRing } from "@/components/ui/ProgressRing";
+import { ProgressBar } from "@/components/ui/ProgressBar";
+import { EmptyState } from "@/components/ui/EmptyState";
 
-export default function TodayPage() {
+const TONE: Record<string, string> = {
+  good: "border-done/30 bg-done/5 text-done",
+  info: "border-accent/30 bg-accent/5 text-accent",
+  warn: "border-amber-500/30 bg-amber-500/5 text-amber-500",
+};
+
+export default function DashboardPage() {
   const data = useAppData();
   const today = useToday();
   const todayKey = dateKey(today);
-  const [showAdd, setShowAdd] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
+  const active = useMemo(() => data.habits.filter((h) => !h.archived), [data.habits]);
 
-  const todaysHabits = useMemo(
-    () => data.habits.filter((h) => isScheduled(h, today)),
-    [data.habits, today],
+  const todaysHabits = useMemo(() => active.filter((h) => isScheduled(h, today)), [active, today]);
+  const doneToday = todaysHabits.filter((h) => data.marks[todayKey]?.[h.id] === "done").length;
+  const progress = dayCompletion(active, data.marks, today);
+
+  const consistency = useMemo(() => consistencyScore(active, data.marks, today, 14), [active, data.marks, today]);
+  const week = useMemo(() => lastNDaysCompletion(active, data.marks, today, 7), [active, data.marks, today]);
+  const cats = useMemo(
+    () => categoryCompletion(active, data.marks, addDays(today, -29), today).slice(0, 4),
+    [active, data.marks, today],
   );
-
-  const grouped = useMemo(() => {
-    const map = new Map<Category, Habit[]>();
-    for (const h of todaysHabits) {
-      const list = map.get(h.category) ?? [];
-      list.push(h);
-      map.set(h.category, list);
+  const streaks = useMemo(() => {
+    let best = 0, current = 0;
+    for (const h of active) {
+      const s = habitStreaks(h, data.marks, today);
+      best = Math.max(best, s.best);
+      current = Math.max(current, s.current);
     }
-    return CATEGORIES.map((c) => ({ category: c, habits: map.get(c) ?? [] })).filter(
-      (g) => g.habits.length > 0,
+    return { best, current };
+  }, [active, data.marks, today]);
+  const insights = useMemo(() => buildInsights(active, data.marks, today), [active, data.marks, today]);
+
+  if (active.length === 0) {
+    return (
+      <div className="animate-fade-in">
+        <PageHeader title="Dashboard" subtitle="Your habits at a glance" />
+        <EmptyState
+          icon={Activity}
+          title="Welcome to project_101"
+          hint="Create your first habit to start building momentum. Your dashboard fills in as you go."
+          action={
+            <Link
+              href="/today"
+              className="flex items-center gap-1.5 rounded-xl bg-accent px-4 py-2 text-sm font-semibold text-white transition-all hover:brightness-110 active:scale-95"
+            >
+              Go to Today <ArrowRight className="size-4" />
+            </Link>
+          }
+        />
+      </div>
     );
-  }, [todaysHabits]);
-
-  const doneCount = todaysHabits.filter(
-    (h) => data.marks[todayKey]?.[h.id] === "done",
-  ).length;
-  const progress =
-    todaysHabits.length === 0 ? 0 : Math.round((doneCount / todaysHabits.length) * 100);
-
-  const bestStreakToday = useMemo(() => {
-    let best = 0;
-    for (const h of todaysHabits) best = Math.max(best, habitStreaks(h, data.marks, today).current);
-    return best;
-  }, [todaysHabits, data.marks, today]);
-
-  const greeting = today.getHours() < 12 ? "Good morning" : today.getHours() < 18 ? "Good afternoon" : "Good evening";
-
-  function handleAdd(input: { name: string; category: Category; repeatDays: number[] }) {
-    addHabit({ id: crypto.randomUUID(), createdAt: new Date().toISOString(), ...input });
-    setShowAdd(false);
-  }
-  function handleEdit(base: Habit, input: { name: string; category: Category; repeatDays: number[] }) {
-    updateHabit({ ...base, ...input });
-    setEditingId(null);
   }
 
   return (
     <div className="animate-fade-in">
-      {/* Hero */}
-      <Card className="mb-6 overflow-hidden">
-        <div className="relative flex items-center gap-5 p-5 sm:p-6">
-          <div
-            className="pointer-events-none absolute -right-10 -top-16 size-48 rounded-full opacity-20 blur-3xl"
-            style={{ background: "var(--c-accent)" }}
-          />
-          <ProgressRing value={progress} size={104}>
-            <span className="font-mono text-2xl font-bold">{progress}%</span>
-            <span className="text-[10px] text-muted">done</span>
+      <PageHeader
+        title="Dashboard"
+        subtitle="Your habits at a glance"
+        action={
+          <Link
+            href="/today"
+            className="hidden items-center gap-1.5 rounded-xl bg-accent px-4 py-2 text-sm font-semibold text-white transition-all hover:brightness-110 active:scale-95 sm:flex"
+          >
+            Open Today <ArrowRight className="size-4" />
+          </Link>
+        }
+      />
+
+      <div className="grid gap-6 lg:grid-cols-3">
+        {/* Today summary */}
+        <Card className="flex items-center gap-5 p-5">
+          <ProgressRing value={progress} size={96}>
+            <span className="font-mono text-xl font-bold">{progress}%</span>
           </ProgressRing>
-          <div className="min-w-0">
-            <p className="text-xs font-medium uppercase tracking-wide text-accent">
-              {today.toLocaleDateString(undefined, { weekday: "long" })}
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted">Today</p>
+            <p className="mt-1 text-2xl font-bold">
+              {doneToday}
+              <span className="text-base font-medium text-muted">/{todaysHabits.length}</span>
             </p>
-            <h1 className="truncate text-xl font-bold tracking-tight sm:text-2xl">
-              {greeting}, Justin
-            </h1>
-            <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted">
-              <span className="flex items-center gap-1.5">
-                <ListChecks className="size-4 text-accent" />
-                {doneCount}/{todaysHabits.length} habits
-              </span>
-              <span className="flex items-center gap-1.5">
-                <Flame className="size-4 text-amber-500" />
-                {bestStreakToday} day streak
-              </span>
-            </div>
+            <p className="text-sm text-muted">habits done</p>
+            <Link href="/today" className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-accent hover:underline">
+              Complete them <ArrowRight className="size-3" />
+            </Link>
           </div>
+        </Card>
+
+        {/* Stat tiles */}
+        <div className="grid grid-cols-2 gap-3 lg:col-span-2">
+          <StatCard icon={Activity} value={`${consistency}%`} label="14-day consistency" accent />
+          <StatCard icon={Flame} value={streaks.current} label="Current streak" />
+          <StatCard icon={TrendingUp} value={streaks.best} label="Best streak" />
+          <StatCard icon={ListChecks} value={active.length} label="Active habits" />
         </div>
-      </Card>
+      </div>
 
-      <div className="grid gap-6 lg:grid-cols-5">
-        {/* Habits */}
-        <div className="lg:col-span-3">
-          <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-muted">
-              Today&apos;s habits
-            </h2>
-            {!showAdd && todaysHabits.length > 0 && (
-              <button
-                onClick={() => setShowAdd(true)}
-                className="flex items-center gap-1 rounded-lg bg-accent/10 px-2.5 py-1.5 text-xs font-semibold text-accent transition-colors hover:bg-accent/20"
-              >
-                <Plus className="size-3.5" strokeWidth={2.5} /> Add
-              </button>
-            )}
-          </div>
-
-          {todaysHabits.length === 0 && !showAdd ? (
-            <EmptyState
-              icon={ListChecks}
-              title="No habits for today"
-              hint="Add your first habit, or grab a ready-made routine from Templates."
-              action={
-                <button
-                  onClick={() => setShowAdd(true)}
-                  className="flex items-center gap-1.5 rounded-xl bg-accent px-4 py-2 text-sm font-semibold text-white transition-all hover:brightness-110 active:scale-95"
-                >
-                  <Plus className="size-4" strokeWidth={2.5} /> Add habit
-                </button>
-              }
-            />
-          ) : (
-            <div className="flex flex-col gap-4">
-              {grouped.map((group) => (
-                <div key={group.category}>
-                  <div className="mb-2 flex items-center gap-2 px-1">
-                    <span
-                      className="size-2.5 rounded-full"
-                      style={{ backgroundColor: CATEGORY_COLORS[group.category] }}
+      <div className="mt-6 grid gap-6 lg:grid-cols-2">
+        {/* 7-day trend */}
+        <div>
+          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted">Last 7 days</h2>
+          <Card className="p-5">
+            <div className="flex items-end justify-between gap-2 sm:gap-3">
+              {week.map(({ date, rate }) => (
+                <div key={date.toISOString()} className="flex flex-1 flex-col items-center gap-2">
+                  <div className="flex h-28 w-full items-end justify-center">
+                    <div
+                      className="w-full max-w-9 rounded-t-lg transition-[height] duration-500"
+                      style={{
+                        height: `${Math.max(rate, 4)}%`,
+                        background: rate >= 100 ? "var(--c-done)" : "var(--c-accent)",
+                        opacity: rate === 0 ? 0.25 : 1,
+                      }}
+                      title={`${rate}%`}
                     />
-                    <h3 className="text-xs font-semibold uppercase tracking-wide text-muted">
-                      {group.category}
-                    </h3>
                   </div>
-                  <Card className="divide-y divide-line overflow-hidden">
-                    {group.habits.map((habit) => {
-                      if (editingId === habit.id) {
-                        return (
-                          <div key={habit.id} className="p-2">
-                            <HabitForm
-                              initial={habit}
-                              onSave={(input) => handleEdit(habit, input)}
-                              onCancel={() => setEditingId(null)}
-                            />
-                          </div>
-                        );
-                      }
-                      const status = data.marks[todayKey]?.[habit.id];
-                      return (
-                        <div
-                          key={habit.id}
-                          className="group flex items-center gap-3 px-4 py-3 transition-colors hover:bg-surface2/50"
-                        >
-                          <MarkButton
-                            status={status}
-                            onClick={() => cycleMark(todayKey, habit.id)}
-                            size={26}
-                          />
-                          <span
-                            className={`flex-1 text-sm transition-colors ${
-                              status === "done"
-                                ? "text-muted line-through"
-                                : status === "missed"
-                                  ? "text-missed"
-                                  : "text-ink"
-                            }`}
-                          >
-                            {habit.name}
-                          </span>
-                          <div className="flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
-                            <button
-                              onClick={() => setEditingId(habit.id)}
-                              className="rounded-lg p-1.5 text-muted transition-colors hover:bg-surface2 hover:text-ink"
-                              aria-label="Edit"
-                            >
-                              <Pencil className="size-3.5" />
-                            </button>
-                            <button
-                              onClick={() => deleteHabit(habit.id)}
-                              className="rounded-lg p-1.5 text-muted transition-colors hover:bg-missed/10 hover:text-missed"
-                              aria-label="Delete"
-                            >
-                              <Trash2 className="size-3.5" />
-                            </button>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </Card>
+                  <span className="font-mono text-[11px] font-medium text-muted">
+                    {date.toLocaleDateString(undefined, { weekday: "narrow" })}
+                  </span>
                 </div>
               ))}
-
-              {showAdd && (
-                <HabitForm onSave={handleAdd} onCancel={() => setShowAdd(false)} />
-              )}
-
-              {!showAdd && (
-                <button
-                  onClick={() => setShowAdd(true)}
-                  className="flex w-full items-center justify-center gap-1.5 rounded-2xl border border-dashed border-line py-3 text-sm font-medium text-muted transition-all hover:border-accent hover:text-accent"
-                >
-                  <Plus className="size-4" strokeWidth={2.5} /> Add habit
-                </button>
-              )}
             </div>
-          )}
+          </Card>
         </div>
 
-        {/* Note */}
-        <div className="lg:col-span-2">
-          <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-muted">
-            <NotebookPen className="size-4" /> Today&apos;s note
-          </h2>
-          <Card className="p-1">
-            <textarea
-              value={data.notes[todayKey] ?? ""}
-              onChange={(e) => setNote(todayKey, e.target.value)}
-              placeholder="How did today go? What got in the way?"
-              rows={6}
-              className="w-full resize-none rounded-xl bg-transparent px-3.5 py-3 text-sm outline-none placeholder:text-faint"
-            />
+        {/* Top categories */}
+        <div>
+          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted">Top categories</h2>
+          <Card className="flex flex-col gap-3.5 p-5">
+            {cats.length === 0 ? (
+              <p className="text-sm text-muted">Complete some habits to see category breakdowns.</p>
+            ) : (
+              cats.map(({ category, rate }) => (
+                <div key={category}>
+                  <div className="mb-1.5 flex items-center justify-between text-xs">
+                    <span className="flex items-center gap-1.5 font-medium">
+                      <span className="size-2 rounded-full" style={{ backgroundColor: CATEGORY_COLORS[category] }} />
+                      {category}
+                    </span>
+                    <span className="font-mono text-muted">{rate}%</span>
+                  </div>
+                  <ProgressBar value={rate} color={CATEGORY_COLORS[category]} />
+                </div>
+              ))
+            )}
           </Card>
         </div>
       </div>
+
+      {/* Insights */}
+      {insights.length > 0 && (
+        <div className="mt-6">
+          <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-muted">
+            <Sparkles className="size-4" /> Insights
+          </h2>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {insights.map((ins, i) => (
+              <div key={i} className={`rounded-2xl border px-4 py-3 text-sm ${TONE[ins.tone]}`}>
+                {ins.text}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
