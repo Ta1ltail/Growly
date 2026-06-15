@@ -13,6 +13,7 @@ import { ACCENTS, type ThemeMode } from "@/lib/theme";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Card } from "@/components/ui/Card";
 import { Modal } from "@/components/ui/Modal";
+import { Button } from "@/components/ui/Button";
 
 const MODES: { id: ThemeMode; label: string; icon: typeof Sun }[] = [
   { id: "light", label: "Light", icon: Sun },
@@ -185,18 +186,18 @@ export default function SettingsPage() {
         size="sm"
         footer={
           <>
-            <button onClick={() => setConfirmReset(false)} className="rounded-xl px-4 py-2 text-sm font-medium text-muted hover:text-ink">
+            <Button variant="ghost" onClick={() => setConfirmReset(false)}>
               Cancel
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="danger"
               onClick={() => {
                 clearAllData();
                 setConfirmReset(false);
               }}
-              className="rounded-xl bg-missed px-4 py-2 text-sm font-semibold text-white transition-all hover:brightness-110 active:scale-95"
             >
               Delete everything
-            </button>
+            </Button>
           </>
         }
       >

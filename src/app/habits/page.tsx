@@ -34,6 +34,7 @@ import { Card } from "@/components/ui/Card";
 import { Segmented } from "@/components/ui/Segmented";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Modal } from "@/components/ui/Modal";
+import { Button } from "@/components/ui/Button";
 import { HabitForm } from "@/components/habits/HabitForm";
 
 export default function HabitsPage() {
@@ -78,12 +79,9 @@ export default function HabitsPage() {
         title="Manage Habits"
         subtitle={`${data.habits.filter((h) => !h.archived).length} active`}
         action={
-          <button
-            onClick={() => setAdding(true)}
-            className="flex items-center gap-1.5 rounded-xl bg-accent px-4 py-2 text-sm font-semibold text-white transition-all hover:brightness-110 active:scale-95"
-          >
+          <Button onClick={() => setAdding(true)}>
             <Plus className="size-4" strokeWidth={2.5} /> New habit
-          </button>
+          </Button>
         }
       />
 
@@ -93,12 +91,9 @@ export default function HabitsPage() {
           title="No habits yet"
           hint="Create a habit with a schedule and it will show up across the app."
           action={
-            <button
-              onClick={() => setAdding(true)}
-              className="flex items-center gap-1.5 rounded-xl bg-accent px-4 py-2 text-sm font-semibold text-white transition-all hover:brightness-110 active:scale-95"
-            >
+            <Button onClick={() => setAdding(true)}>
               <Plus className="size-4" strokeWidth={2.5} /> Add habit
-            </button>
+            </Button>
           }
         />
       ) : (
@@ -116,7 +111,7 @@ export default function HabitsPage() {
             <Segmented options={filterOptions} value={filter} onChange={setFilter} />
           </div>
 
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-2 stagger-children">
             {activeHabits.map((h) => (
               <HabitRow
                 key={h.id}
@@ -180,21 +175,18 @@ export default function HabitsPage() {
         size="sm"
         footer={
           <>
-            <button
-              onClick={() => setConfirmDelete(null)}
-              className="rounded-xl px-4 py-2 text-sm font-medium text-muted hover:text-ink"
-            >
+            <Button variant="ghost" onClick={() => setConfirmDelete(null)}>
               Cancel
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="danger"
               onClick={() => {
                 if (confirmDelete) deleteHabit(confirmDelete.id);
                 setConfirmDelete(null);
               }}
-              className="rounded-xl bg-missed px-4 py-2 text-sm font-semibold text-white transition-all hover:brightness-110 active:scale-95"
             >
               Delete
-            </button>
+            </Button>
           </>
         }
       >

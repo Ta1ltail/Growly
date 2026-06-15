@@ -14,6 +14,7 @@ import { Card } from "@/components/ui/Card";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Modal } from "@/components/ui/Modal";
+import { Button } from "@/components/ui/Button";
 import { GoalForm } from "@/components/goals/GoalForm";
 
 export default function GoalsPage() {
@@ -40,12 +41,9 @@ export default function GoalsPage() {
         title="Goals"
         subtitle="Bigger targets to work toward"
         action={
-          <button
-            onClick={() => setAdding(true)}
-            className="flex items-center gap-1.5 rounded-xl bg-accent px-4 py-2 text-sm font-semibold text-white transition-all hover:brightness-110 active:scale-95"
-          >
+          <Button onClick={() => setAdding(true)}>
             <Plus className="size-4" strokeWidth={2.5} /> New goal
-          </button>
+          </Button>
         }
       />
 
@@ -55,16 +53,13 @@ export default function GoalsPage() {
           title="No goals yet"
           hint="Set a target like “Workout 20 times this month” and watch the bar fill."
           action={
-            <button
-              onClick={() => setAdding(true)}
-              className="flex items-center gap-1.5 rounded-xl bg-accent px-4 py-2 text-sm font-semibold text-white transition-all hover:brightness-110 active:scale-95"
-            >
+            <Button onClick={() => setAdding(true)}>
               <Plus className="size-4" strokeWidth={2.5} /> Add goal
-            </button>
+            </Button>
           }
         />
       ) : (
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid gap-3 stagger-children sm:grid-cols-2">
           {data.goals.map((goal) => {
             const pct = Math.round((goal.current / goal.target) * 100);
             const complete = goal.current >= goal.target;

@@ -12,6 +12,7 @@ import { dateKey } from "@/lib/storage";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { Button } from "@/components/ui/Button";
 
 function newId(): string {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) return crypto.randomUUID();
@@ -58,7 +59,7 @@ export default function TemplatesPage() {
           hint="You've applied every starter routine. Re-enable one below to add it again."
         />
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-4 stagger-children sm:grid-cols-2">
           {available.map((template) => (
             <Card key={template.id} className="p-5" interactive>
               <div className="flex items-start justify-between gap-3">
@@ -71,12 +72,9 @@ export default function TemplatesPage() {
                     <p className="mt-0.5 text-xs text-muted">{template.description}</p>
                   </div>
                 </div>
-                <button
-                  onClick={() => applyTemplate(template)}
-                  className="flex shrink-0 items-center gap-1.5 rounded-xl bg-accent px-3 py-2 text-xs font-semibold text-white transition-all hover:brightness-110 active:scale-95"
-                >
+                <Button size="sm" className="shrink-0" onClick={() => applyTemplate(template)}>
                   <Plus className="size-3.5" strokeWidth={2.5} /> Add
-                </button>
+                </Button>
               </div>
               <ul className="mt-4 flex flex-wrap gap-1.5">
                 {template.habits.map((h) => (

@@ -1,0 +1,49 @@
+PS C:\Users\Justin\dev\project_101> npx tsc --noEmit                
+PS C:\Users\Justin\dev\project_101> npm run lint
+
+> project_101@0.1.0 lint
+> eslint
+
+PS C:\Users\Justin\dev\project_101> npx vitest run
+
+
+ ✓ src/lib/stats.test.ts (13 tests) 100ms
+ ✓ src/lib/storage.test.ts (15 tests) 105ms
+
+ Test Files  2 passed (2)
+      Tests  28 passed (28)
+   Start at  18:33:05
+   Duration  3.63s (transform 2.88s, setup 0ms, import 4.48s, tests 205ms, environment 0ms)
+
+PS C:\Users\Justin\dev\project_101> npm run build
+
+> project_101@0.1.0 build
+> next build
+
+▲ Next.js 16.2.9 (Turbopack)
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 79s
+✓ Finished TypeScript in 33.6s    
+✓ Collecting page data using 3 workers in 1326ms    
+✓ Generating static pages using 3 workers (13/13) in 1044ms
+✓ Finalizing page optimization in 6ms    
+
+Route (app)
+┌ ○ /
+├ ○ /_not-found
+├ ○ /calendar
+├ ○ /goals
+├ ○ /habits
+├ ○ /notes
+├ ○ /profile
+├ ○ /settings
+├ ○ /stats
+├ ○ /templates
+├ ○ /today
+└ ○ /tracker
+
+
+○  (Static)  prerendered as static content
+
+PS C:\Users\Justin\dev\project_101> 

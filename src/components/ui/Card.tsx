@@ -14,9 +14,9 @@ export function Card({
 }) {
   return (
     <div
-      className={`rounded-2xl border border-line bg-surface/80 backdrop-blur-sm ${
+      className={`rounded-2xl border border-line bg-surface/80 shadow-[var(--shadow-sm)] backdrop-blur-sm ${
         interactive
-          ? "transition-all duration-200 hover:-translate-y-0.5 hover:border-accent/40 hover:shadow-xl hover:shadow-black/5"
+          ? "transition-all duration-200 hover:-translate-y-0.5 hover:border-accent/40 hover:shadow-[var(--shadow-lg)]"
           : ""
       } ${className}`}
     >

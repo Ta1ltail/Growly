@@ -10,6 +10,7 @@ import { Flame, TrendingUp, Activity, ArrowRight, ListChecks, Sparkles } from "l
 import { CATEGORY_COLORS } from "@/lib/categories";
 import { useAppData } from "@/lib/store";
 import { useToday } from "@/hooks/useToday";
+import { useHydrated } from "@/hooks/useHydrated";
 import { dateKey, addDays } from "@/lib/storage";
 import {
   categoryCompletion,
@@ -26,6 +27,8 @@ import { StatCard } from "@/components/ui/StatCard";
 import { ProgressRing } from "@/components/ui/ProgressRing";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { PageSkeleton } from "@/components/ui/PageSkeleton";
+import { buttonClasses } from "@/components/ui/Button";
 
 const TONE: Record<string, string> = {
   good: "border-done/30 bg-done/5 text-done",
@@ -36,6 +39,7 @@ const TONE: Record<string, string> = {
 export default function DashboardPage() {
   const data = useAppData();
   const today = useToday();
+  const hydrated = useHydrated();
   const todayKey = dateKey(today);
   const active = useMemo(() => data.habits.filter((h) => !h.archived), [data.habits]);
 
@@ -60,6 +64,8 @@ export default function DashboardPage() {
   }, [active, data.marks, today]);
   const insights = useMemo(() => buildInsights(active, data.marks, today), [active, data.marks, today]);
 
+  if (!hydrated) return <PageSkeleton />;
+
   if (active.length === 0) {
     return (
       <div className="animate-fade-in">
@@ -69,10 +75,7 @@ export default function DashboardPage() {
           title="Welcome to project_101"
           hint="Create your first habit to start building momentum. Your dashboard fills in as you go."
           action={
-            <Link
-              href="/today"
-              className="flex items-center gap-1.5 rounded-xl bg-accent px-4 py-2 text-sm font-semibold text-white transition-all hover:brightness-110 active:scale-95"
-            >
+            <Link href="/today" className={buttonClasses()}>
               Go to Today <ArrowRight className="size-4" />
             </Link>
           }
@@ -182,7 +185,7 @@ export default function DashboardPage() {
           <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-muted">
             <Sparkles className="size-4" /> Insights
           </h2>
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid gap-3 stagger-children sm:grid-cols-2">
             {insights.map((ins, i) => (
               <div key={i} className={`rounded-2xl border px-4 py-3 text-sm ${TONE[ins.tone]}`}>
                 {ins.text}

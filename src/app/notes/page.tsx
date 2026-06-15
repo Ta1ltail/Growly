@@ -12,6 +12,7 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Modal } from "@/components/ui/Modal";
+import { Button } from "@/components/ui/Button";
 import { NoteEditor, type NoteDraft } from "@/components/notes/NoteEditor";
 
 export default function NotesPage() {
@@ -51,12 +52,9 @@ export default function NotesPage() {
         title="Notes"
         subtitle={`${data.notes.length} note${data.notes.length === 1 ? "" : "s"}`}
         action={
-          <button
-            onClick={() => setAdding(true)}
-            className="flex items-center gap-1.5 rounded-xl bg-accent px-4 py-2 text-sm font-semibold text-white transition-all hover:brightness-110 active:scale-95"
-          >
+          <Button onClick={() => setAdding(true)}>
             <Plus className="size-4" strokeWidth={2.5} /> New note
-          </button>
+          </Button>
         }
       />
 
@@ -66,12 +64,9 @@ export default function NotesPage() {
           title="No notes yet"
           hint="Capture reflections, missed-task reasons, or weekly reviews. Link them to habits, goals, or dates."
           action={
-            <button
-              onClick={() => setAdding(true)}
-              className="flex items-center gap-1.5 rounded-xl bg-accent px-4 py-2 text-sm font-semibold text-white transition-all hover:brightness-110 active:scale-95"
-            >
+            <Button onClick={() => setAdding(true)}>
               <Plus className="size-4" strokeWidth={2.5} /> Add note
-            </button>
+            </Button>
           }
         />
       ) : (
@@ -96,7 +91,7 @@ export default function NotesPage() {
             )}
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid gap-3 stagger-children sm:grid-cols-2">
             {filtered.map((n) => (
               <Card key={n.id} className="cursor-pointer p-4" interactive>
                 <button onClick={() => setEditing(n)} className="block w-full text-left">

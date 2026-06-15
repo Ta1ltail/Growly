@@ -56,7 +56,7 @@ export default function ProfilePage() {
       </Card>
 
       {/* Summary */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 stagger-children sm:grid-cols-4">
         <StatCard icon={ListChecks} value={active.length} label="Habits" accent />
         <StatCard icon={CircleCheckBig} value={totalMarks} label="Total marks" />
         <StatCard icon={Flame} value={bestStreak} label="Best streak" />

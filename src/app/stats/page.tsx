@@ -83,7 +83,7 @@ export default function StatsPage() {
         action={<Segmented options={PERIODS} value={period} onChange={setPeriod} />}
       />
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+      <div className="grid grid-cols-2 gap-3 stagger-children sm:grid-cols-5">
         <StatCard icon={Target} value={`${range.rate}%`} label="Completion" accent />
         <StatCard icon={Activity} value={`${consistency}%`} label="Consistency" />
         <StatCard icon={CircleCheckBig} value={range.done} label="Done" />

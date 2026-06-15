@@ -16,18 +16,22 @@ import { habitStreaks, isScheduled } from "@/lib/stats";
 import { todayHeadline } from "@/lib/insights";
 import { formatTime } from "@/lib/format";
 import { useToday } from "@/hooks/useToday";
+import { useHydrated } from "@/hooks/useHydrated";
 import { MarkButton } from "@/components/habits/MarkButton";
 import { HabitForm } from "@/components/habits/HabitForm";
 import { Modal } from "@/components/ui/Modal";
+import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ProgressRing } from "@/components/ui/ProgressRing";
+import { PageSkeleton } from "@/components/ui/PageSkeleton";
 
 export default function TodayPage() {
   const data = useAppData();
   const today = useToday();
   const router = useRouter();
   const todayKey = dateKey(today);
+  const hydrated = useHydrated();
   const [showAdd, setShowAdd] = useState(false);
 
   const todaysHabits = useMemo(
@@ -75,6 +79,8 @@ export default function TodayPage() {
     addHabit(makeHabit(value));
     setShowAdd(false);
   }
+
+  if (!hydrated) return <PageSkeleton />;
 
   return (
     <div className="animate-fade-in">
@@ -136,12 +142,9 @@ export default function TodayPage() {
           <div className="mb-3 flex items-center justify-between">
             <h2 className="text-sm font-semibold uppercase tracking-wide text-muted">Today&apos;s habits</h2>
             {todaysHabits.length > 0 && (
-              <button
-                onClick={() => setShowAdd(true)}
-                className="flex items-center gap-1 rounded-lg bg-accent/10 px-2.5 py-1.5 text-xs font-semibold text-accent transition-colors hover:bg-accent/20"
-              >
+              <Button variant="soft" size="sm" onClick={() => setShowAdd(true)}>
                 <Plus className="size-3.5" strokeWidth={2.5} /> Add
-              </button>
+              </Button>
             )}
           </div>
 
@@ -151,12 +154,9 @@ export default function TodayPage() {
               title="No habits for today"
               hint="Add your first habit, or grab a ready-made routine from Templates."
               action={
-                <button
-                  onClick={() => setShowAdd(true)}
-                  className="flex items-center gap-1.5 rounded-xl bg-accent px-4 py-2 text-sm font-semibold text-white transition-all hover:brightness-110 active:scale-95"
-                >
+                <Button onClick={() => setShowAdd(true)}>
                   <Plus className="size-4" strokeWidth={2.5} /> Add habit
-                </button>
+                </Button>
               }
             />
           ) : (

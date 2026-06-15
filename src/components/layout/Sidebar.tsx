@@ -15,7 +15,9 @@ export function Sidebar() {
         <span className="flex size-8 items-center justify-center rounded-lg bg-accent text-white shadow-lg ring-accent-soft">
           <Activity className="size-4" strokeWidth={2.5} />
         </span>
-        <span className="font-mono text-sm font-semibold tracking-tight">project_101</span>
+        <span className="font-mono text-sm font-semibold tracking-tight">
+          project_101
+        </span>
       </div>
 
       <nav className="flex flex-1 flex-col gap-4 overflow-y-auto">
@@ -33,14 +35,18 @@ export function Sidebar() {
                   key={href}
                   href={href}
                   className={`group flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-all ${
-                    active ? "bg-accent/10 text-accent" : "text-muted hover:bg-surface2 hover:text-ink"
+                    active
+                      ? "bg-accent/10 text-accent"
+                      : "text-muted hover:bg-surface2 hover:text-ink"
                   }`}
                 >
                   <Icon
-                    className={`size-[18px] transition-transform group-hover:scale-110 ${active ? "text-accent" : ""}`}
+                    className={`size-4.5 transition-transform group-hover:scale-110 ${active ? "text-accent" : ""}`}
                   />
                   {label}
-                  {active && <span className="ml-auto size-1.5 rounded-full bg-accent" />}
+                  {active && (
+                    <span className="ml-auto size-1.5 rounded-full bg-accent" />
+                  )}
                 </Link>
               );
             })}

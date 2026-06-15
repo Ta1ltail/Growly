@@ -14,7 +14,7 @@ export function StatCard({
   accent?: boolean;
 }) {
   return (
-    <div className="rounded-2xl border border-line bg-surface/80 p-4 backdrop-blur-sm">
+    <div className="rounded-2xl border border-line bg-surface/80 p-4 shadow-[var(--shadow-sm)] backdrop-blur-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-accent/40">
       <span
         className={`mb-3 flex size-9 items-center justify-center rounded-xl ${
           accent ? "bg-accent/15 text-accent" : "bg-surface2 text-muted"
