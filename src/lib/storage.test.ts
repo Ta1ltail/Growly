@@ -190,8 +190,30 @@ describe("loadData validation", () => {
       goals: [{ id: "g", title: "Read", target: 5, current: 1, createdAt: "2026-06-01" }],
       auditLog: [{ id: "a", at: "2026-06-01T00:00:00.000Z", action: "habit.create", summary: "Created R", habitId: "h" }],
       settings: { theme: { mode: "dark", accent: "blue" }, graceHours: 5, usedTemplateIds: [] },
+      profile: { displayName: "Justin", username: "justin" },
+      unlocks: { "streak-7": { at: "2026-06-10T00:00:00.000Z", seen: true } },
     };
     saveData(data);
     expect(loadData()).toEqual(data);
+  });
+
+  it("defaults profile and unlocks for pre-v3 saves", () => {
+    write({ habits: [] });
+    const { profile, unlocks } = loadData();
+    expect(profile.displayName).toBe("Justin");
+    expect(unlocks).toEqual({});
+  });
+
+  it("keeps valid unlocks and drops malformed ones", () => {
+    write({
+      unlocks: {
+        "streak-7": { at: "2026-06-10T00:00:00Z", seen: true },
+        "no-timestamp": { seen: true },
+        "bad-shape": "nope",
+      },
+    });
+    const { unlocks } = loadData();
+    expect(Object.keys(unlocks)).toEqual(["streak-7"]);
+    expect(unlocks["streak-7"]).toEqual({ at: "2026-06-10T00:00:00Z", seen: true });
   });
 });

@@ -15,11 +15,13 @@ import type {
   Habit,
   Note,
   NoteLinks,
+  Profile,
 } from "./types";
 import type { ThemeSettings } from "./theme";
 import { DEFAULT_GRACE_HOURS, dateKey, emptyData, loadData, saveData } from "./storage";
 import { nextStatus } from "./marks";
 import { canEditMark } from "./policy";
+import { reconcileUnlocks } from "./progress";
 
 let cache: AppData | null = null;
 const listeners = new Set<() => void>();
@@ -167,7 +169,10 @@ export function cycleMark(dateK: string, habitId: string): void {
     const next = nextStatus(day[habitId]);
     if (next === undefined) delete day[habitId];
     else day[habitId] = next;
-    return { ...prev, marks: { ...prev.marks, [dateK]: day } };
+    const updated = { ...prev, marks: { ...prev.marks, [dateK]: day } };
+    // Marking can satisfy achievements — persist any new unlocks for popups.
+    const { unlocks } = reconcileUnlocks(updated, new Date(), new Date().toISOString());
+    return unlocks === updated.unlocks ? updated : { ...updated, unlocks };
   });
 }
 
@@ -279,7 +284,54 @@ export function resetTemplateUsage(templateId: string): void {
 }
 
 export function clearAllData(): void {
-  update((prev) => ({ ...emptyData, settings: prev.settings }));
+  // Wipe tracked data + unlocks (history is gone), but keep the user's
+  // settings and profile identity.
+  update((prev) => ({ ...emptyData, settings: prev.settings, profile: prev.profile }));
+}
+
+/* ---------------- gamification ---------------- */
+
+export function updateProfile(patch: Partial<Profile>): void {
+  update((prev) => ({ ...prev, profile: { ...prev.profile, ...patch } }));
+}
+
+// One-time silent seed: record every already-earned achievement as seen so a
+// returning user (or a pre-v3 save migrating to an empty unlock map) doesn't get
+// a flood of celebration popups for history they earned before this session.
+// Only fills GAPS — anything already recorded keeps its existing seen flag.
+// Call once on app mount, before celebrations start watching.
+export function seedUnlocksSeen(): void {
+  update((prev) => {
+    const { unlocks, newlyUnlocked } = reconcileUnlocks(prev, new Date(), new Date().toISOString());
+    if (newlyUnlocked.length === 0) return prev;
+    const seeded = { ...unlocks };
+    for (const id of newlyUnlocked) seeded[id] = { ...seeded[id], seen: true };
+    return { ...prev, unlocks: seeded };
+  });
+}
+
+// Recompute unlocks from history and persist any newly-satisfied achievements.
+// Safe to call on load / on focus; a no-op when nothing changed.
+export function syncAchievements(): void {
+  update((prev) => {
+    const { unlocks } = reconcileUnlocks(prev, new Date(), new Date().toISOString());
+    return unlocks === prev.unlocks ? prev : { ...prev, unlocks };
+  });
+}
+
+export function markAchievementsSeen(ids: string[]): void {
+  update((prev) => {
+    let changed = false;
+    const unlocks = { ...prev.unlocks };
+    for (const id of ids) {
+      const rec = unlocks[id];
+      if (rec && !rec.seen) {
+        unlocks[id] = { ...rec, seen: true };
+        changed = true;
+      }
+    }
+    return changed ? { ...prev, unlocks } : prev;
+  });
 }
 
 // Re-export for convenience in pages that build keys.

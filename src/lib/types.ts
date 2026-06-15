@@ -127,6 +127,57 @@ export interface Settings {
   usedTemplateIds?: string[]; // templates already applied (hidden unless re-enabled)
 }
 
+/* ---- Gamification (derived from immutable history) ----
+ * XP, levels, streaks, titles, and achievement *progress* are all computed
+ * from `marks`/`habits` by pure functions in lib/ — never stored — so they
+ * can't be cheated (Honest Tracking). The only persisted gamification state
+ * is which achievements have been unlocked (for one-time popups) and the
+ * editable profile fields. */
+
+export type Rarity = "common" | "rare" | "epic" | "legendary";
+
+export type AchievementCategory =
+  | "streak"
+  | "completion"
+  | "consistency"
+  | "category"
+  | "special";
+
+// A static achievement definition (lives in code, not storage).
+export interface AchievementDef {
+  id: string;
+  name: string;
+  description: string;
+  category: AchievementCategory;
+  rarity: Rarity;
+  icon: string; // emoji shown on the badge
+  target: number; // threshold on the achievement's metric (for progress bars)
+}
+
+// Persisted unlock record — the only mutable gamification state.
+export interface AchievementUnlock {
+  at: string; // ISO timestamp the achievement was first satisfied
+  seen: boolean; // has the unlock popup been shown?
+}
+export type Unlocks = Record<string, AchievementUnlock>;
+
+// Editable, user-owned profile (the "character page").
+export interface Profile {
+  displayName: string;
+  username: string;
+  bio?: string;
+  motto?: string;
+  avatar?: string; // data URL or preset id
+  banner?: string; // preset id or color token
+  showcaseBadgeId?: string; // achievement id to feature
+}
+
+export const DEFAULT_PROFILE: Profile = {
+  displayName: "Justin",
+  username: "justin",
+  motto: "Small improvements every day lead to remarkable results.",
+};
+
 export interface AppData {
   version: number; // schema version (migration discriminator)
   habits: Habit[];
@@ -135,4 +186,6 @@ export interface AppData {
   goals: Goal[];
   auditLog: AuditEntry[];
   settings: Settings;
+  profile: Profile; // editable character profile (schema v3)
+  unlocks: Unlocks; // achievementId -> unlock record (schema v3)
 }

@@ -13,8 +13,11 @@ import type {
   Milestone,
   Note,
   Priority,
+  Profile,
   Recurrence,
+  Unlocks,
 } from "./types";
+import { DEFAULT_PROFILE } from "./types";
 import { CATEGORIES, type Category } from "./categories";
 import { ACCENTS, DEFAULT_THEME, type ThemeMode } from "./theme";
 
@@ -22,7 +25,8 @@ export const STORAGE_KEY = "project101.data.v1";
 
 // Current schema version. Bumped when the shape of stored data changes so
 // loadData() can migrate older saves forward.
-export const SCHEMA_VERSION = 2;
+// v3: added `profile` + `unlocks` (gamification). Older saves default them.
+export const SCHEMA_VERSION = 3;
 
 // How long after midnight a user may still edit "yesterday" before the day
 // locks permanently (Honest Tracking Policy). Tunable in Settings.
@@ -40,6 +44,8 @@ export const emptyData: AppData = {
     graceHours: DEFAULT_GRACE_HOURS,
     usedTemplateIds: [],
   },
+  profile: DEFAULT_PROFILE,
+  unlocks: {},
 };
 
 /* ---------- validation ----------
@@ -231,6 +237,37 @@ function cleanAudit(v: unknown): AuditEntry | null {
   return entry;
 }
 
+function cleanProfile(v: unknown): Profile {
+  if (!isObject(v)) return DEFAULT_PROFILE;
+  const profile: Profile = {
+    displayName: asString(v.displayName) ?? DEFAULT_PROFILE.displayName,
+    username: asString(v.username) ?? DEFAULT_PROFILE.username,
+  };
+  const bio = asString(v.bio);
+  if (bio !== undefined) profile.bio = bio;
+  const motto = asString(v.motto);
+  if (motto !== undefined) profile.motto = motto;
+  const avatar = asString(v.avatar);
+  if (avatar) profile.avatar = avatar;
+  const banner = asString(v.banner);
+  if (banner) profile.banner = banner;
+  const showcase = asString(v.showcaseBadgeId);
+  if (showcase) profile.showcaseBadgeId = showcase;
+  return profile;
+}
+
+function cleanUnlocks(v: unknown): Unlocks {
+  if (!isObject(v)) return {};
+  const out: Unlocks = {};
+  for (const [id, rec] of Object.entries(v)) {
+    if (!isObject(rec)) continue;
+    const at = asString(rec.at);
+    if (!at) continue;
+    out[id] = { at, seen: rec.seen === true };
+  }
+  return out;
+}
+
 export function loadData(): AppData {
   if (typeof window === "undefined") return emptyData;
   try {
@@ -276,6 +313,8 @@ export function loadData(): AppData {
       goals,
       auditLog,
       settings: { theme: { mode, accent }, graceHours, usedTemplateIds },
+      profile: cleanProfile(parsed.profile),
+      unlocks: cleanUnlocks(parsed.unlocks),
     };
   } catch {
     return emptyData;

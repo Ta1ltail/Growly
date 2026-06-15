@@ -38,6 +38,21 @@
   --animate-rise: rise 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
   --animate-pop: pop 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) both;
   --animate-shimmer: shimmer 1.4s ease-in-out infinite;
+  --animate-float: float 22s ease-in-out infinite;
+  --animate-flicker: flicker 1.6s ease-in-out infinite;
+  --animate-flicker-fast: flicker 0.9s ease-in-out infinite;
+  --animate-glow-pulse: glow-pulse 2.2s ease-in-out infinite;
+  --animate-burst: burst 0.5s var(--ease-spring) both;
+}
+
+/* Unified motion language — consistent durations + easing curves used across
+   buttons, cards, modals, and page transitions. */
+:root {
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --dur-fast: 150ms;
+  --dur-base: 250ms;
+  --dur-slow: 400ms;
 }
 
 /* ---- Light theme (default values) ----
@@ -115,6 +130,121 @@
     opacity: 0.55;
   }
 }
+@keyframes float {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(2%, -3%, 0) scale(1.06);
+  }
+}
+
+/* Streak flame: organic flicker via tiny scale/skew + opacity wobble. */
+@keyframes flicker {
+  0%,
+  100% {
+    transform: scale(1) skewX(0deg);
+    opacity: 0.92;
+  }
+  25% {
+    transform: scale(1.06, 1.1) skewX(-2deg);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(0.97, 1.04) skewX(1.5deg);
+    opacity: 0.85;
+  }
+  75% {
+    transform: scale(1.04, 1.07) skewX(-1deg);
+    opacity: 0.97;
+  }
+}
+/* Halo glow that breathes behind larger flames. */
+@keyframes glow-pulse {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(1.18);
+  }
+}
+/* Rising ember particle for long-term streaks. */
+@keyframes ember {
+  0% {
+    transform: translateY(0) scale(1);
+    opacity: 0;
+  }
+  20% {
+    opacity: 0.9;
+  }
+  100% {
+    transform: translateY(-14px) scale(0.3);
+    opacity: 0;
+  }
+}
+/* One-shot celebratory burst on habit completion. */
+@keyframes burst {
+  0% {
+    transform: scale(0.4);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.25);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Confetti: a piece falls + drifts (X via custom prop) while spinning, then fades. */
+@keyframes confetti-fall {
+  0% {
+    transform: translate3d(0, -10vh, 0) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translate3d(var(--cx, 0), 110vh, 0) rotate(var(--cr, 720deg));
+    opacity: 1;
+  }
+}
+/* Slide-in toast (enters from the right, off the trailing edge). */
+@keyframes toast-in {
+  from {
+    transform: translateX(120%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+/* Major-unlock entrance: badge zooms in past final size then settles. */
+@keyframes celebrate-in {
+  0% {
+    transform: scale(0.3) rotate(-12deg);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.12) rotate(4deg);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+  }
+}
+/* Conic shine sweeping behind a legendary badge. */
+@keyframes spin-slow {
+  to {
+    transform: rotate(360deg);
+  }
+}
 
 * {
   -webkit-tap-highlight-color: transparent;
@@ -134,18 +264,19 @@
   color: var(--c-ink);
 }
 
+/* Base canvas lives on <html> so the fixed ambient background (a negative
+   z-index child of <body>) paints above it but behind page content. */
 html {
   color-scheme: dark;
   scroll-behavior: smooth;
+  background: var(--c-bg);
+  transition: background-color 0.3s ease;
 }
 
 body {
-  background:
-    radial-gradient(1200px 600px at 100% -10%, color-mix(in srgb, var(--c-accent) 10%, transparent), transparent 60%),
-    var(--c-bg);
   color: var(--c-ink);
   font-family: var(--font-sans), system-ui, sans-serif;
-  transition: background-color 0.3s ease, color 0.3s ease;
+  transition: color 0.3s ease;
 }
 
 /* Glassy surface used by cards/sidebar */

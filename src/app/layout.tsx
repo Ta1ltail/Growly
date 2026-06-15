@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeApplier } from "@/components/ThemeApplier";
+import { AmbientBackground } from "@/components/AmbientBackground";
 import { AppShell } from "@/components/layout/AppShell";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
@@ -37,6 +38,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       </head>
       <body className="min-h-full">
         <ThemeApplier />
+        <AmbientBackground />
         <AppShell>{children}</AppShell>
       </body>
     </html>

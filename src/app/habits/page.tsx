@@ -27,6 +27,7 @@ import {
 } from "@/lib/store";
 import { makeHabit, applyHabitForm } from "@/lib/habits";
 import { habitStreaks } from "@/lib/stats";
+import { StreakFlame } from "@/components/StreakFlame";
 import { habitScheduleText, PRIORITY_COLOR, PRIORITY_LABEL } from "@/lib/format";
 import { useToday } from "@/hooks/useToday";
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -230,9 +231,14 @@ function HabitRow({
             {PRIORITY_LABEL[priority]}
           </span>
         </div>
-        <p className="mt-0.5 truncate text-xs text-muted">
-          {habit.category} · {habitScheduleText(habit)}
-          {streak > 0 && ` · 🔥 ${streak}`}
+        <p className="mt-0.5 flex items-center gap-1 truncate text-xs text-muted">
+          <span className="truncate">{habit.category} · {habitScheduleText(habit)}</span>
+          {streak > 0 && (
+            <>
+              <span aria-hidden>·</span>
+              <StreakFlame streak={streak} size={14} />
+            </>
+          )}
         </p>
       </div>
       <div className="flex items-center gap-0.5">

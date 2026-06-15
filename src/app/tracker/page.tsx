@@ -6,6 +6,7 @@
 
 import { useMemo, useState } from "react";
 import { Flame, LayoutGrid, Lock } from "lucide-react";
+import { StreakFlame } from "@/components/StreakFlame";
 import { CATEGORIES, CATEGORY_COLORS, type Category } from "@/lib/categories";
 import { addDays, dateKey, DEFAULT_GRACE_HOURS } from "@/lib/storage";
 import { cycleMark, useAppData } from "@/lib/store";
@@ -138,7 +139,11 @@ export default function TrackerPage() {
                           );
                         })}
                         <td className="px-2 font-semibold">
-                          {current > 0 ? current : <span className="text-faint">0</span>}
+                          {current > 0 ? (
+                            <StreakFlame streak={current} size={15} className="justify-center" />
+                          ) : (
+                            <span className="text-faint">0</span>
+                          )}
                         </td>
                       </tr>
                     );

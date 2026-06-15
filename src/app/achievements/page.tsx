@@ -1,0 +1,170 @@
+"use client";
+
+// Achievement Gallery (spec §14): every achievement with unlock state and
+// progress, plus badge-collection summary, category/rarity/status filters, and
+// search. Everything is derived from history via summarizeProgress — locked
+// items show how close you are, so you always know what to pursue next.
+
+import { useMemo, useState } from "react";
+import { Search } from "lucide-react";
+import { useAppData } from "@/lib/store";
+import { useToday } from "@/hooks/useToday";
+import { summarizeProgress } from "@/lib/progress";
+import { RARITY_ORDER, RARITY_LABEL } from "@/lib/achievements";
+import { RARITY_STYLE } from "@/lib/rarity";
+import type { AchievementCategory, Rarity } from "@/lib/types";
+import { useHydrated } from "@/hooks/useHydrated";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { Card } from "@/components/ui/Card";
+import { Segmented } from "@/components/ui/Segmented";
+import { PageSkeleton } from "@/components/ui/PageSkeleton";
+import { ProgressBar } from "@/components/ui/ProgressBar";
+import { AchievementBadge } from "@/components/AchievementBadge";
+
+const CATEGORY_OPTS: { value: AchievementCategory | "all"; label: string }[] = [
+  { value: "all", label: "All" },
+  { value: "streak", label: "Streak" },
+  { value: "completion", label: "Completion" },
+  { value: "consistency", label: "Consistency" },
+  { value: "category", label: "Category" },
+  { value: "special", label: "Special" },
+];
+
+const STATUS_OPTS: { value: "all" | "unlocked" | "locked"; label: string }[] = [
+  { value: "all", label: "All" },
+  { value: "unlocked", label: "Unlocked" },
+  { value: "locked", label: "Locked" },
+];
+
+export default function AchievementsPage() {
+  const data = useAppData();
+  const today = useToday();
+  const hydrated = useHydrated();
+
+  const summary = useMemo(() => summarizeProgress(data, today), [data, today]);
+
+  const [category, setCategory] = useState<AchievementCategory | "all">("all");
+  const [status, setStatus] = useState<"all" | "unlocked" | "locked">("all");
+  const [query, setQuery] = useState("");
+
+  const rarityCounts = useMemo(() => {
+    const counts: Record<Rarity, { unlocked: number; total: number }> = {
+      common: { unlocked: 0, total: 0 },
+      rare: { unlocked: 0, total: 0 },
+      epic: { unlocked: 0, total: 0 },
+      legendary: { unlocked: 0, total: 0 },
+    };
+    for (const a of summary.achievements) {
+      counts[a.def.rarity].total += 1;
+      if (a.unlocked) counts[a.def.rarity].unlocked += 1;
+    }
+    return counts;
+  }, [summary.achievements]);
+
+  const visible = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return summary.achievements
+      .filter((a) => category === "all" || a.def.category === category)
+      .filter((a) => status === "all" || (status === "unlocked" ? a.unlocked : !a.unlocked))
+      .filter((a) => !q || a.def.name.toLowerCase().includes(q) || a.def.description.toLowerCase().includes(q))
+      .sort((a, b) => {
+        if (a.unlocked !== b.unlocked) return a.unlocked ? -1 : 1;
+        const r = RARITY_ORDER[b.def.rarity] - RARITY_ORDER[a.def.rarity];
+        if (r !== 0) return r;
+        return b.progressPct - a.progressPct;
+      });
+  }, [summary.achievements, category, status, query]);
+
+  if (!hydrated) return <PageSkeleton />;
+
+  return (
+    <div className="animate-fade-in">
+      <PageHeader
+        title="Achievements"
+        subtitle={`${summary.unlockedCount} of ${summary.totalCount} unlocked`}
+      />
+
+      {/* Badge collection summary by rarity */}
+      <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        {(Object.keys(RARITY_STYLE) as Rarity[]).map((rarity) => {
+          const c = rarityCounts[rarity];
+          const r = RARITY_STYLE[rarity];
+          const pct = c.total ? Math.round((c.unlocked / c.total) * 100) : 0;
+          return (
+            <Card key={rarity} className="p-4">
+              <div className="flex items-center justify-between">
+                <span className="text-lg" aria-hidden>{r.medal}</span>
+                <span className="font-mono text-sm font-bold">
+                  {c.unlocked}/{c.total}
+                </span>
+              </div>
+              <p className="mt-1 text-xs font-semibold" style={{ color: r.accent }}>
+                {RARITY_LABEL[rarity]}
+              </p>
+              <ProgressBar className="mt-2" value={pct} color={r.accent} />
+            </Card>
+          );
+        })}
+      </div>
+
+      {/* Filters */}
+      <div className="mb-5 flex flex-col gap-3">
+        <div className="relative">
+          <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-faint" />
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search achievements…"
+            className="w-full rounded-xl border border-line bg-surface py-2.5 pl-10 pr-3 text-sm outline-none focus:border-accent"
+            aria-label="Search achievements"
+          />
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <Segmented options={CATEGORY_OPTS} value={category} onChange={setCategory} />
+          <Segmented options={STATUS_OPTS} value={status} onChange={setStatus} />
+        </div>
+      </div>
+
+      {/* Grid */}
+      {visible.length === 0 ? (
+        <Card className="p-10 text-center text-sm text-muted">No achievements match your filters.</Card>
+      ) : (
+        <div className="grid gap-3 sm:grid-cols-2 stagger-children">
+          {visible.map((a) => {
+            const r = RARITY_STYLE[a.def.rarity];
+            return (
+              <Card
+                key={a.def.id}
+                className={`flex gap-4 p-4 transition-transform hover:-translate-y-0.5 ${a.unlocked ? "" : "opacity-90"}`}
+              >
+                <AchievementBadge def={a.def} size={64} locked={!a.unlocked} shine={a.unlocked && a.def.rarity === "legendary"} />
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <h3 className="truncate text-sm font-semibold">{a.def.name}</h3>
+                    <span
+                      className="shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-bold uppercase"
+                      style={{ background: `${r.accent}1f`, color: r.accent }}
+                    >
+                      {RARITY_LABEL[a.def.rarity]}
+                    </span>
+                  </div>
+                  <p className="mt-0.5 line-clamp-2 text-xs text-muted">{a.def.description}</p>
+                  {a.unlocked ? (
+                    <p className="mt-2 text-xs font-semibold text-done">Unlocked</p>
+                  ) : (
+                    <div className="mt-2">
+                      <ProgressBar value={a.progressPct} color={r.accent} />
+                      <p className="mt-1 font-mono text-[11px] text-faint">
+                        {a.current}/{a.target}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </Card>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}

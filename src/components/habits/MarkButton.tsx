@@ -41,10 +41,17 @@ export function MarkButton({
       disabled={locked && !status}
       aria-label={locked ? `Locked${status ? `, marked ${status}` : ""}` : status ? `Marked ${status}` : "Not marked"}
       style={{ width: size, height: size }}
-      className={`flex shrink-0 items-center justify-center rounded-full border transition-all active:scale-90 ${
-        status ? STYLES[status] : "border-line bg-surface2 hover:border-accent"
+      className={`relative flex shrink-0 items-center justify-center rounded-full border transition-all active:scale-90 ${
+        status ? STYLES[status] : "border-line bg-surface2 hover:border-accent hover:scale-110"
       } ${locked ? "cursor-not-allowed opacity-70" : ""}`}
     >
+      {status === "done" && (
+        <span
+          key="done-burst"
+          aria-hidden
+          className="animate-burst pointer-events-none absolute inset-0 rounded-full ring-2 ring-done/60"
+        />
+      )}
       {icon}
     </button>
   );

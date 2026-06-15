@@ -4,6 +4,7 @@
 import type { ReactNode } from "react";
 import { Sidebar } from "./Sidebar";
 import { BottomNav } from "./BottomNav";
+import { CelebrationManager } from "@/components/celebrations/CelebrationManager";
 
 export function AppShell({ children }: { children: ReactNode }) {
   return (
@@ -15,6 +16,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           {children}
         </main>
       </div>
+      <CelebrationManager />
     </div>
   );
 }

@@ -7,6 +7,8 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Flame, NotebookPen, ListChecks, Clock } from "lucide-react";
+import { StreakFlame } from "@/components/StreakFlame";
+import { AnimatedCounter } from "@/components/AnimatedCounter";
 import { CATEGORIES, CATEGORY_COLORS, type Category } from "@/lib/categories";
 import type { Habit } from "@/lib/types";
 import { dateKey } from "@/lib/storage";
@@ -104,10 +106,14 @@ export default function TodayPage() {
             <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted">
               <span className="flex items-center gap-1.5">
                 <ListChecks className="size-4 text-accent" />
-                {doneCount}/{todaysHabits.length} habits
+                <AnimatedCounter value={doneCount} />/{todaysHabits.length} habits
               </span>
               <span className="flex items-center gap-1.5">
-                <Flame className="size-4 text-amber-500" />
+                {bestStreakToday > 0 ? (
+                  <StreakFlame streak={bestStreakToday} size={18} showCount={false} />
+                ) : (
+                  <Flame className="size-4 text-faint" />
+                )}
                 {bestStreakToday} day streak
               </span>
             </div>
