@@ -15,6 +15,7 @@ import { dateKey } from "@/lib/storage";
 import { addHabit, cycleMark, setDailyNote, useAppData } from "@/lib/store";
 import { makeHabit } from "@/lib/habits";
 import { habitStreaks, isScheduled } from "@/lib/stats";
+import { frozenSet } from "@/lib/economy";
 import { todayHeadline } from "@/lib/insights";
 import { formatTime } from "@/lib/format";
 import { useToday } from "@/hooks/useToday";
@@ -66,11 +67,12 @@ export default function TodayPage() {
     [todaysHabits, data.marks, todayKey],
   );
 
+  const frozen = useMemo(() => frozenSet(data.economy), [data.economy]);
   const bestStreakToday = useMemo(() => {
     let best = 0;
-    for (const h of todaysHabits) best = Math.max(best, habitStreaks(h, data.marks, today).current);
+    for (const h of todaysHabits) best = Math.max(best, habitStreaks(h, data.marks, today, frozen).current);
     return best;
-  }, [todaysHabits, data.marks, today]);
+  }, [todaysHabits, data.marks, today, frozen]);
 
   const greeting =
     today.getHours() < 12 ? "Good morning" : today.getHours() < 18 ? "Good afternoon" : "Good evening";

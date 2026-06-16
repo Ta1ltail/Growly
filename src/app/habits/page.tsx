@@ -27,6 +27,7 @@ import {
 } from "@/lib/store";
 import { makeHabit, applyHabitForm } from "@/lib/habits";
 import { habitStreaks } from "@/lib/stats";
+import { frozenSet } from "@/lib/economy";
 import { StreakFlame } from "@/components/StreakFlame";
 import { habitScheduleText, PRIORITY_COLOR, PRIORITY_LABEL } from "@/lib/format";
 import { useToday } from "@/hooks/useToday";
@@ -63,6 +64,7 @@ export default function HabitsPage() {
     [usedCategories],
   );
 
+  const frozen = useMemo(() => frozenSet(data.economy), [data.economy]);
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return data.habits.filter(
@@ -136,7 +138,7 @@ export default function HabitsPage() {
               <HabitRow
                 key={h.id}
                 habit={h}
-                streak={habitStreaks(h, data.marks, today).current}
+                streak={habitStreaks(h, data.marks, today, frozen).current}
                 onEdit={() => setEditing(h)}
                 onDuplicate={() => duplicateHabit(h.id)}
                 onArchive={() => setHabitArchived(h.id, true)}

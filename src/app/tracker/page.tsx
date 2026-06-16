@@ -5,12 +5,13 @@
 // editable), so cells outside that window are read-only.
 
 import { useMemo, useState } from "react";
-import { Flame, LayoutGrid, Lock } from "lucide-react";
+import { Flame, LayoutGrid, Lock, Snowflake } from "lucide-react";
 import { StreakFlame } from "@/components/StreakFlame";
 import { CATEGORIES, CATEGORY_COLORS, type Category } from "@/lib/categories";
 import { addDays, dateKey, DEFAULT_GRACE_HOURS } from "@/lib/storage";
 import { cycleMark, useAppData } from "@/lib/store";
 import { habitStreaks, isScheduled } from "@/lib/stats";
+import { frozenSet, isFrozen } from "@/lib/economy";
 import { canEditMark, isFutureDay } from "@/lib/policy";
 import { MARK_LABEL } from "@/lib/marks";
 import { useToday } from "@/hooks/useToday";
@@ -51,6 +52,7 @@ export default function TrackerPage() {
     [data.habits, filter],
   );
 
+  const frozen = useMemo(() => frozenSet(data.economy), [data.economy]);
   const usedCategories = useMemo(
     () => CATEGORIES.filter((c) => data.habits.some((h) => !h.archived && h.category === c)),
     [data.habits],
@@ -97,7 +99,7 @@ export default function TrackerPage() {
                 </thead>
                 <tbody>
                   {habits.map((habit) => {
-                    const { current } = habitStreaks(habit, data.marks, today);
+                    const { current } = habitStreaks(habit, data.marks, today, frozen);
                     return (
                       <tr key={habit.id} className="border-t border-line">
                         <td className="sticky left-0 z-10 min-w-36 border-r border-line bg-surface px-3 py-2 text-left">
@@ -113,13 +115,14 @@ export default function TrackerPage() {
                           const editable = canEditMark(key, today, grace);
                           const future = isFutureDay(key, today);
                           const locked = !editable && !future;
+                          const cellFrozen = status === "missed" && isFrozen(frozen, habit.id, key);
                           return (
                             <td key={key} className="p-1">
                               <button
                                 onClick={() => editable && cycleMark(key, habit.id)}
                                 disabled={!editable || (!scheduled && !status)}
-                                title={locked ? "Locked — past days can't be changed" : undefined}
-                                className={`flex size-7 items-center justify-center rounded-md text-[11px] font-bold transition-all ${
+                                title={cellFrozen ? "Protected by a streak freeze" : locked ? "Locked — past days can't be changed" : undefined}
+                                className={`relative flex size-7 items-center justify-center rounded-md text-[11px] font-bold transition-all ${
                                   editable ? "hover:scale-110 active:scale-90" : "cursor-not-allowed"
                                 } ${
                                   status
@@ -134,6 +137,14 @@ export default function TrackerPage() {
                                 }`}
                               >
                                 {status ? MARK_LABEL[status] : locked && scheduled ? <Lock className="size-2.5" /> : ""}
+                                {cellFrozen && (
+                                  <span
+                                    aria-hidden
+                                    className="absolute -right-1 -top-1 grid size-3.5 place-items-center rounded-full bg-sky-500 text-white ring-2 ring-surface"
+                                  >
+                                    <Snowflake className="size-2" strokeWidth={3} />
+                                  </span>
+                                )}
                               </button>
                             </td>
                           );

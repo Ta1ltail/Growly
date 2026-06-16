@@ -11,6 +11,7 @@ import {
 } from "./achievements";
 import { levelInfo, totalXp, type LevelInfo } from "./xp";
 import { titleForLevel, type TitleInfo } from "./titles";
+import { coinBalance, coinsEarned, frozenSet } from "./economy";
 
 export interface Milestone {
   label: string;
@@ -27,6 +28,8 @@ export interface ProgressSummary {
   level: LevelInfo;
   title: TitleInfo;
   nextMilestones: Milestone[];
+  coinsEarned: number; // lifetime coins derived from history
+  coinBalance: number; // spendable: earned − spent
 }
 
 // The closest locked achievement (by fewest remaining, among those started).
@@ -43,12 +46,15 @@ function nearestAchievement(achievements: AchievementProgress[]): Milestone | nu
 }
 
 export function summarizeProgress(data: AppData, today: Date): ProgressSummary {
-  const stats = buildGameStats(data.habits, data.marks, today);
+  const frozen = frozenSet(data.economy);
+  const stats = buildGameStats(data.habits, data.marks, today, frozen);
   const achievements = evaluateAchievements(stats);
   const unlocked = achievements.filter((a) => a.unlocked);
   const xp = totalXp(stats, unlocked.map((a) => a.def));
   const level = levelInfo(xp);
   const title = titleForLevel(level.level);
+  const earned = coinsEarned(stats, unlocked.map((a) => a.def.rarity));
+  const balance = coinBalance(earned, data.economy);
 
   const nextMilestones: Milestone[] = [];
   if (!level.isMax) {
@@ -77,6 +83,8 @@ export function summarizeProgress(data: AppData, today: Date): ProgressSummary {
     level,
     title,
     nextMilestones,
+    coinsEarned: earned,
+    coinBalance: balance,
   };
 }
 
@@ -88,7 +96,7 @@ export function reconcileUnlocks(
   today: Date,
   nowIso: string,
 ): { unlocks: Unlocks; newlyUnlocked: string[] } {
-  const stats = buildGameStats(data.habits, data.marks, today);
+  const stats = buildGameStats(data.habits, data.marks, today, frozenSet(data.economy));
   const achievements = evaluateAchievements(stats);
   const newlyUnlocked: string[] = [];
   let next: Unlocks | null = null;

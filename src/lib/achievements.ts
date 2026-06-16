@@ -35,7 +35,12 @@ function zeroByCategory(): Record<Category, number> {
   return Object.fromEntries(CATEGORIES.map((c) => [c, 0])) as Record<Category, number>;
 }
 
-export function buildGameStats(habits: Habit[], marks: Marks, today: Date): GameStats {
+export function buildGameStats(
+  habits: Habit[],
+  marks: Marks,
+  today: Date,
+  frozen?: Set<string>,
+): GameStats {
   const habitCat = new Map<string, Category>();
   const habitTime = new Map<string, string | undefined>();
   for (const h of habits) {
@@ -69,7 +74,7 @@ export function buildGameStats(habits: Habit[], marks: Marks, today: Date): Game
   let maxBestStreak = 0;
   let maxCurrentStreak = 0;
   for (const h of habits) {
-    const { current, best } = habitStreaks(h, marks, today);
+    const { current, best } = habitStreaks(h, marks, today, frozen);
     maxBestStreak = Math.max(maxBestStreak, best);
     maxCurrentStreak = Math.max(maxCurrentStreak, current);
   }

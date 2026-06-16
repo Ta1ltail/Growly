@@ -192,6 +192,12 @@ describe("loadData validation", () => {
       settings: { theme: { mode: "dark", accent: "blue" }, graceHours: 5, usedTemplateIds: [] },
       profile: { displayName: "Justin", username: "justin" },
       unlocks: { "streak-7": { at: "2026-06-10T00:00:00.000Z", seen: true } },
+      economy: {
+        spent: [{ id: "s1", at: "2026-06-11T00:00:00.000Z", amount: 120, item: "flame-azure" }],
+        owned: ["flame-azure"],
+        equipped: { flame: "flame-azure" },
+        freezes: [{ id: "f1", at: "2026-06-12T00:00:00.000Z", date: "2026-06-09", habitId: "h" }],
+      },
     };
     saveData(data);
     expect(loadData()).toEqual(data);

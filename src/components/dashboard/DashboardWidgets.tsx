@@ -23,6 +23,7 @@ import { AchievementBadge } from "@/components/AchievementBadge";
 import { XpBar } from "@/components/progression/XpBar";
 import { TitleDisplay } from "@/components/progression/TitleDisplay";
 import { NextMilestoneWidget } from "@/components/progression/NextMilestoneWidget";
+import { CoinChip } from "@/components/economy/CoinChip";
 
 const BY_ID = new Map(ACHIEVEMENTS.map((a) => [a.id, a]));
 
@@ -51,9 +52,14 @@ export function DashboardWidgets() {
     <section className="mb-6">
       <div className="mb-3 flex items-center justify-between">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-muted">Your progress</h2>
-        <Link href="/profile" className="flex items-center gap-1 text-xs font-semibold text-accent hover:underline">
-          Character page <ChevronRight className="size-3.5" />
-        </Link>
+        <div className="flex items-center gap-3">
+          <Link href="/shop" aria-label="Open shop" className="transition-transform hover:scale-105">
+            <CoinChip amount={summary.coinBalance} />
+          </Link>
+          <Link href="/profile" className="flex items-center gap-1 text-xs font-semibold text-accent hover:underline">
+            Character page <ChevronRight className="size-3.5" />
+          </Link>
+        </div>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-3">

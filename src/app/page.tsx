@@ -20,6 +20,7 @@ import {
   isScheduled,
   lastNDaysCompletion,
 } from "@/lib/stats";
+import { frozenSet } from "@/lib/economy";
 import { buildInsights } from "@/lib/insights";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Card } from "@/components/ui/Card";
@@ -53,15 +54,16 @@ export default function DashboardPage() {
     () => categoryCompletion(active, data.marks, addDays(today, -29), today).slice(0, 4),
     [active, data.marks, today],
   );
+  const frozen = useMemo(() => frozenSet(data.economy), [data.economy]);
   const streaks = useMemo(() => {
     let best = 0, current = 0;
     for (const h of active) {
-      const s = habitStreaks(h, data.marks, today);
+      const s = habitStreaks(h, data.marks, today, frozen);
       best = Math.max(best, s.best);
       current = Math.max(current, s.current);
     }
     return { best, current };
-  }, [active, data.marks, today]);
+  }, [active, data.marks, today, frozen]);
   const insights = useMemo(() => buildInsights(active, data.marks, today), [active, data.marks, today]);
 
   if (!hydrated) return <PageSkeleton />;

@@ -140,6 +140,29 @@
     transform: translate3d(2%, -3%, 0) scale(1.06);
   }
 }
+/* Ambient aurora drift — two distinct paths so layered blobs never move in
+   lockstep, giving the background organic, parallax-like depth. */
+@keyframes drift-1 {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  33% {
+    transform: translate3d(5%, -3%, 0) scale(1.08);
+  }
+  66% {
+    transform: translate3d(-3%, 4%, 0) scale(0.95);
+  }
+}
+@keyframes drift-2 {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(-6%, 3%, 0) scale(1.1);
+  }
+}
 
 /* Streak flame: organic flicker via tiny scale/skew + opacity wobble. */
 @keyframes flicker {

@@ -4,10 +4,20 @@
 //   • Large  (30+ days)   — fast flicker, dynamic glow, rising ember particles.
 // Pure CSS animation (keyframes in globals.css) so it's GPU-cheap and the
 // global prefers-reduced-motion rule neutralizes it automatically.
+//
+// The per-tier color ramp is the equipped "flame" cosmetic (shop §15), resolved
+// from the store. The free default ramp equals the original hardcoded colors,
+// so users who own no skin see no change (and SSR/first paint is unaffected
+// because the server snapshot has an empty economy → the default ramp).
+
+"use client";
 
 import { Flame } from "lucide-react";
+import { useAppData } from "@/lib/store";
+import { equippedOrDefault, FLAME_SKINS } from "@/lib/economy";
 
 export type FlameTier = "none" | "small" | "medium" | "large";
+export type FlameColors = Record<Exclude<FlameTier, "none">, string>;
 
 export function flameTier(streak: number): FlameTier {
   if (streak <= 0) return "none";
@@ -16,27 +26,29 @@ export function flameTier(streak: number): FlameTier {
   return "large";
 }
 
-const TIER_COLOR: Record<Exclude<FlameTier, "none">, string> = {
-  small: "#fb923c", // amber-400
-  medium: "#f97316", // orange-500
-  large: "#ef4444", // red-500
-};
+const DEFAULT_FLAME_COLORS: FlameColors = FLAME_SKINS["flame-default"];
 
 export function StreakFlame({
   streak,
   size = 16,
   showCount = true,
   className = "",
+  colors,
 }: {
   streak: number;
   size?: number;
   showCount?: boolean;
   className?: string;
+  // Optional override; when omitted the equipped flame skin is used.
+  colors?: FlameColors;
 }) {
+  const data = useAppData();
   const tier = flameTier(streak);
+
+  const ramp = colors ?? FLAME_SKINS[equippedOrDefault(data.economy, "flame")] ?? DEFAULT_FLAME_COLORS;
   if (tier === "none") return null;
 
-  const color = TIER_COLOR[tier];
+  const color = ramp[tier];
   const flickerClass =
     tier === "large" ? "animate-flicker-fast" : tier === "medium" ? "animate-flicker" : "animate-flicker";
 

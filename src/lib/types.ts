@@ -97,7 +97,9 @@ export type AuditAction =
   | "habit.archive"
   | "habit.unarchive"
   | "habit.duplicate"
-  | "habit.schedule";
+  | "habit.schedule"
+  | "shop.buy"
+  | "freeze.use";
 
 export interface AuditEntry {
   id: string;
@@ -161,6 +163,50 @@ export interface AchievementUnlock {
 }
 export type Unlocks = Record<string, AchievementUnlock>;
 
+/* ---- Economy (schema v4) ----
+ * Coins, like XP, are DERIVED from the immutable history (see lib/economy.ts) —
+ * never stored as a balance. The only persisted economy state is the
+ * append-only spend ledger, owned/equipped cosmetics, and a dated freeze-use
+ * log. Spendable balance = coinsEarned(history) − sum(ledger amounts). This
+ * keeps earnings uncheatable (you can't grant yourself coins) while letting the
+ * user spend, mirroring how `unlocks` is the one persisted gamification fact. */
+
+// A single coin expenditure (append-only — never mutated or removed).
+export interface SpendEntry {
+  id: string;
+  at: string; // ISO timestamp
+  amount: number; // coins spent (positive)
+  item: string; // catalog item id this paid for
+}
+
+// A use of a streak-freeze consumable. The targeted day stays a real "missed"
+// mark in history (honest); the freeze only makes the streak walk treat it as
+// neutral. Limited (max 1 / rolling 7 days) and audit-logged.
+export interface FreezeEntry {
+  id: string;
+  at: string; // ISO timestamp the freeze was applied
+  date: string; // dateKey "YYYY-MM-DD" of the protected day
+  habitId: string; // the habit whose miss is protected
+}
+
+// Persisted economy state (the only mutable economy facts).
+export interface Economy {
+  spent: SpendEntry[]; // append-only ledger
+  owned: string[]; // cosmetic catalog ids the user has bought
+  equipped: Partial<Record<CosmeticSlot, string>>; // slot -> equipped item id
+  freezes: FreezeEntry[]; // streak-freeze use log
+}
+
+// Cosmetic categories that can be equipped (one active per slot).
+export type CosmeticSlot = "flame" | "confetti" | "accent";
+
+export const DEFAULT_ECONOMY: Economy = {
+  spent: [],
+  owned: [],
+  equipped: {},
+  freezes: [],
+};
+
 // Editable, user-owned profile (the "character page").
 export interface Profile {
   displayName: string;
@@ -188,4 +234,5 @@ export interface AppData {
   settings: Settings;
   profile: Profile; // editable character profile (schema v3)
   unlocks: Unlocks; // achievementId -> unlock record (schema v3)
+  economy: Economy; // coins ledger + cosmetics + freezes (schema v4)
 }

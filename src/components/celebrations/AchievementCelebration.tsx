@@ -6,6 +6,8 @@
 import { useEffect } from "react";
 import type { AchievementDef } from "@/lib/types";
 import { RARITY_STYLE } from "@/lib/rarity";
+import { useAppData } from "@/lib/store";
+import { equippedOrDefault, CONFETTI_SKINS } from "@/lib/economy";
 import { AchievementBadge } from "@/components/AchievementBadge";
 import { Confetti } from "@/components/Confetti";
 
@@ -30,6 +32,12 @@ export function AchievementCelebration({
   onDismiss: () => void;
 }) {
   const r = RARITY_STYLE[def.rarity];
+  const data = useAppData();
+
+  // Equipped confetti palette (shop §15) overrides the rarity colors; the free
+  // default keeps each rarity's signature colors so legendary still feels special.
+  const equipped = equippedOrDefault(data.economy, "confetti");
+  const confettiColors = equipped === "confetti-default" ? r.confettiColors : CONFETTI_SKINS[equipped] ?? r.confettiColors;
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -46,7 +54,7 @@ export function AchievementCelebration({
       aria-modal="true"
       aria-label={`Legendary achievement unlocked: ${def.name}`}
     >
-      <Confetti colors={r.confettiColors} count={90} seed={seedFromId(def.id)} />
+      <Confetti colors={confettiColors} count={90} seed={seedFromId(def.id)} />
 
       {/* radial glow behind the badge */}
       <div

@@ -1,12 +1,12 @@
 ############################################################
-#   PROJECT 101 - ARCHITECTURE  (v0.5, gamification)       #
+#   PROJECT 101 - ARCHITECTURE  (v0.6, gamification+economy)#
 #   Folder structure, gamification model, theme, data flow #
 #   Updated: 2026-06-16                                    #
 ############################################################
 
   App: "LifeGrid" - a spreadsheet-style habit & task tracker.
   Stack now: Next.js 16.2.9 (App Router) + TypeScript + Tailwind v4,
-  localStorage persistence (schema v3), Vitest. Cloud/accounts/payments
+  localStorage persistence (schema v4), Vitest. Cloud/accounts/payments
   are still future phases (see FINAL_BUILD_PLAN.txt).
 
   NOTE: this is a MODIFIED Next.js - read node_modules/next/dist/docs/
@@ -22,8 +22,9 @@
     loading.tsx               route-level Suspense skeleton
     page.tsx                  Today (dashboard widgets + habits + note)
     tracker/ calendar/ stats/ goals/ templates/ notes/
-    profile/                  character page (level, XP, title, showcase)
+    profile/                  character page (level, XP, title, showcase, coins)
     achievements/             Achievement Gallery (filters + search)
+    shop/                     coin shop: cosmetics + streak-freeze + coin breakdown
     settings/                 theme, grace window, data tools
 
   components/
@@ -38,6 +39,7 @@
     profile/                  ProfileEditModal (part 5)
     dashboard/                DashboardWidgets - Today's progress strip (part 6a)
     stats/                    TrendLineChart - interactive SVG line chart (part 6b)
+    economy/                  CoinChip, CoinBreakdownCard, AccentThemeApplier (economy)
     layout/                   AppShell, Sidebar, BottomNav, navItems
     ui/                       Button, Card, Modal, PageHeader, PageSkeleton, Skeleton,
                               ProgressBar, ProgressRing, StatCard, Segmented,
@@ -52,7 +54,7 @@
     types.ts                  data shapes (incl. Rarity, AchievementDef, Profile, Unlocks)
     categories.ts             categories + colors
     marks.ts  policy.ts       mark cycle/labels + Honest-Tracking edit rules
-    storage.ts                localStorage load/save (SCHEMA_VERSION = 3) + date helpers
+    storage.ts                localStorage load/save (SCHEMA_VERSION = 4) + date helpers
     store.ts                  shared store (useSyncExternalStore) + all actions
     stats.ts                  streaks + completion math
     insights.ts  format.ts    plain-language insights + formatters
@@ -66,28 +68,33 @@
     rarity.ts                 RARITY_STYLE (visuals + celebration tier) - UI only
     ranks.ts                  RANK_STYLE (rank visuals) - UI only (part 5)
     cosmetics.ts              avatar + banner presets, resolvers (part 5)
-    *.test.ts                 gamification / stats / storage (46 tests, 3 files)
+    economy.ts                coins (DERIVED), shop catalog, cosmetic skins,
+                              streak-freeze rules - PURE (mirrors xp.ts)
+    *.test.ts                 gamification / stats / storage / economy (66 tests, 4 files)
 
 
 ==========================================================
  GAMIFICATION MODEL  (the locked rule)
 ==========================================================
   ALL gamification - XP, levels, streaks, achievement progress,
-  titles, ranks - is COMPUTED from the immutable mark history by
-  pure functions in lib/. It is NEVER stored as a mutable counter.
-  This keeps it consistent with Honest Tracking (anti-cheat): you
-  cannot inflate progress without real marks, and the numbers can
+  titles, ranks, AND COINS - is COMPUTED from the immutable mark
+  history by pure functions in lib/. It is NEVER stored as a mutable
+  counter. This keeps it consistent with Honest Tracking (anti-cheat):
+  you cannot inflate progress without real marks, and the numbers can
   never desync from the record.
 
-  The ONLY persisted gamification state (schema v3):
+  The ONLY persisted gamification state (schema v4):
     - unlocks: { [achievementId]: { at, seen } }   (for one-time popups)
     - profile: editable identity (name, username, bio, motto,
                avatar, banner, showcaseBadgeId)
+    - economy: append-only spend ledger + owned/equipped cosmetics +
+               dated streak-freeze log (see ECONOMY MODEL below)
 
   One call does it all:
     summarizeProgress(data, today)
       -> { stats, achievements, unlockedCount, totalCount,
-           xp, level, title, nextMilestones }
+           xp, level, title, nextMilestones,
+           coinsEarned, coinBalance }
     (Note: it does NOT return `profile` - read data.profile directly.)
 
   reconcileUnlocks(data, today, nowIso) folds newly-satisfied
@@ -98,11 +105,52 @@
 
 
 ==========================================================
+ ECONOMY MODEL  (coins, shop, streak-freeze)
+==========================================================
+  Coins mirror XP: DERIVED, never granted. lib/economy.ts.
+    balance = coinsEarned(history) - SUM(spend ledger), clamped >= 0
+    coinsEarned = 2/completion + 10/perfect-day + rarity achievement
+                  bonuses (RARITY_COINS). coinBreakdown() itemizes it
+                  for the /shop "where your coins come from" card.
+
+  Persisted economy state (the ONLY mutable economy facts):
+    - spent:    append-only { id, at, amount, item } ledger
+    - owned:    cosmetic catalog ids bought
+    - equipped: { flame | confetti | accent -> itemId }
+    - freezes:  dated streak-freeze log { id, at, date, habitId }
+
+  Cosmetics (3 slots, free "default" per slot, some level-gated):
+    - flame    -> FLAME_SKINS recolor StreakFlame's tier ramp
+    - confetti -> CONFETTI_SKINS recolor AchievementCelebration
+    - accent   -> ACCENT_SKINS; AccentThemeApplier overrides
+                  --c-accent/--c-accent-glow on <html> app-wide
+                  (default clears the override -> themed accent)
+    equippedOrDefault(economy, slot) resolves the active id.
+
+  Streak-freeze (logged, limited consumable, FREEZE_PRICE coins):
+    - protects ONE genuine recorded miss (status "missed") - the miss
+      STAYS in history; habitStreaks(..., frozen?) just treats that
+      habitId@dateKey as neutral. Honest Tracking holds.
+    - capped 1 per rolling 7 days (canUseFreeze); only past misses are
+      eligible (freezableDays / canFreezeDay).
+    - frozen days show a snowflake badge in the calendar day-detail and
+      the tracker grid (MarkButton `frozen` prop / cell overlay).
+    - frozenSet(economy) is threaded into buildGameStats AND every UI
+      streak readout (today/dashboard/habits/tracker/stats) so the
+      protection is consistent everywhere.
+
+  store actions: buyCosmetic, equipCosmetic, redeemFreeze (NB: not
+  "useFreeze" - the use* prefix trips eslint rules-of-hooks).
+
+
+==========================================================
  THEME SYSTEM
 ==========================================================
   - All colors are CSS variables (--c-*). Light values on :root,
     dark values on [data-theme="dark"]. Swap the attribute -> the
-    whole app re-themes instantly. Accent is its own var (--c-accent).
+    whole app re-themes instantly. Accent is its own var (--c-accent);
+    an equipped "accent" cosmetic overrides it via AccentThemeApplier
+    (inline style on <html>), the default clears the override.
   - layout.tsx runs a tiny inline script BEFORE paint that reads the
     saved theme from localStorage and applies it -> NO theme flash.
   - ThemeApplier (client) keeps it in sync and reacts to OS changes
@@ -130,9 +178,10 @@
  QUALITY GATES
 ==========================================================
   Gates: npx tsc --noEmit && npm run lint && npx vitest run && npm run build
-  Status (2026-06-16): GREEN through Part 5 (tsc 0, eslint 0,
-  vitest 46 passing, next build passes, 14 routes).
-  Part 6 (6a-6c) is written but NOT yet re-run through the gates.
+  Status (2026-06-16): GREEN. All 7 redesign parts + the Coins/Shop
+  economy are done & verified (tsc 0, eslint 0, vitest 66 passing,
+  next build passes, 15 routes incl. /shop). Economy features were
+  also driven in a real browser (Playwright) end-to-end.
 
   Lint gotcha: React Compiler rule `react-hooks/preserve-manual-
   memoization` requires useMemo deps to match the props actually

@@ -11,6 +11,7 @@ import type {
   AppData,
   AuditAction,
   AuditEntry,
+  CosmeticSlot,
   Goal,
   Habit,
   Note,
@@ -21,7 +22,18 @@ import type { ThemeSettings } from "./theme";
 import { DEFAULT_GRACE_HOURS, dateKey, emptyData, loadData, saveData } from "./storage";
 import { nextStatus } from "./marks";
 import { canEditMark } from "./policy";
-import { reconcileUnlocks } from "./progress";
+import { reconcileUnlocks, summarizeProgress } from "./progress";
+import {
+  canFreezeDay,
+  canUseFreeze,
+  coinBalance,
+  coinsEarned,
+  FREEZE_PRICE,
+  frozenSet,
+  makeFreezeEntry,
+  shopItem,
+} from "./economy";
+import { buildGameStats, evaluateAchievements } from "./achievements";
 
 let cache: AppData | null = null;
 const listeners = new Set<() => void>();
@@ -285,7 +297,9 @@ export function resetTemplateUsage(templateId: string): void {
 
 export function clearAllData(): void {
   // Wipe tracked data + unlocks (history is gone), but keep the user's
-  // settings and profile identity.
+  // settings and profile identity. Economy resets too: coins are derived from
+  // history, so wiping history must wipe the ledger or the balance goes
+  // negative/stale. Owned cosmetics are part of that history-derived state.
   update((prev) => ({ ...emptyData, settings: prev.settings, profile: prev.profile }));
 }
 
@@ -332,6 +346,108 @@ export function markAchievementsSeen(ids: string[]): void {
     }
     return changed ? { ...prev, unlocks } : prev;
   });
+}
+
+/* ---------------- economy (coins / shop / freezes) ---------------- */
+
+// Spendable balance for the current data snapshot. Derives earned coins from
+// history (same path as the UI) minus the persisted spend ledger.
+function balanceOf(data: AppData, today: Date): number {
+  const stats = buildGameStats(data.habits, data.marks, today, frozenSet(data.economy));
+  const unlockedRarities = evaluateAchievements(stats)
+    .filter((a) => a.unlocked)
+    .map((a) => a.def.rarity);
+  return coinBalance(coinsEarned(stats, unlockedRarities), data.economy);
+}
+
+// Buy a cosmetic: must exist, not already owned, meet any level gate, and be
+// affordable. Appends an immutable spend-ledger entry + audit row, and marks it
+// owned. No-op (returns prev) if any guard fails — callers should pre-check to
+// show why, but the store stays authoritative.
+export function buyCosmetic(itemId: string): void {
+  update((prev) => {
+    const item = shopItem(itemId);
+    if (!item) return prev;
+    if (prev.economy.owned.includes(itemId)) return prev;
+    const today = new Date();
+    if (item.minLevel) {
+      const summary = summarizeLevel(prev, today);
+      if (summary < item.minLevel) return prev;
+    }
+    if (balanceOf(prev, today) < item.price) return prev;
+
+    const entry = {
+      id: uid(),
+      at: new Date().toISOString(),
+      amount: item.price,
+      item: itemId,
+    };
+    return {
+      ...prev,
+      economy: {
+        ...prev.economy,
+        spent: [...prev.economy.spent, entry],
+        owned: [...prev.economy.owned, itemId],
+        // Auto-equip the freshly-bought item in its slot.
+        equipped: { ...prev.economy.equipped, [item.slot]: itemId },
+      },
+      auditLog: audit(prev, "shop.buy", `Bought “${item.name}” for ${item.price} coins`, undefined, undefined, entry),
+    };
+  });
+}
+
+// Equip an owned cosmetic (or a free default) into its slot.
+export function equipCosmetic(slot: CosmeticSlot, itemId: string): void {
+  update((prev) => {
+    const isDefault = itemId === `${slot}-default`;
+    if (!isDefault) {
+      const item = shopItem(itemId);
+      if (!item || item.slot !== slot) return prev;
+      if (!prev.economy.owned.includes(itemId)) return prev;
+    }
+    return {
+      ...prev,
+      economy: { ...prev.economy, equipped: { ...prev.economy.equipped, [slot]: itemId } },
+    };
+  });
+}
+
+// Apply a streak-freeze to a genuine past miss. Costs coins, is limited to one
+// per rolling 7-day window, and only targets a day actually marked "missed" —
+// the miss stays in history, the freeze just makes the streak walk skip it.
+export function redeemFreeze(habitId: string, dateK: string): void {
+  update((prev) => {
+    const today = new Date();
+    if (!canUseFreeze(prev.economy, today)) return prev;
+    if (!canFreezeDay(prev.economy, prev.marks, habitId, dateK)) return prev;
+    if (balanceOf(prev, today) < FREEZE_PRICE) return prev;
+
+    const nowIso = new Date().toISOString();
+    const freeze = makeFreezeEntry(habitId, dateK, uid(), nowIso);
+    const spend = { id: uid(), at: nowIso, amount: FREEZE_PRICE, item: "freeze" };
+    return {
+      ...prev,
+      economy: {
+        ...prev.economy,
+        spent: [...prev.economy.spent, spend],
+        freezes: [...prev.economy.freezes, freeze],
+      },
+      auditLog: audit(
+        prev,
+        "freeze.use",
+        `Used a streak freeze on ${dateK}`,
+        habitId,
+        undefined,
+        freeze,
+      ),
+    };
+  });
+}
+
+// Level for the current snapshot — used for shop level gates. Local helper to
+// avoid importing the full progress façade into the buy path twice.
+function summarizeLevel(data: AppData, today: Date): number {
+  return summarizeProgress(data, today).level.level;
 }
 
 // Re-export for convenience in pages that build keys.

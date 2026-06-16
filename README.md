@@ -1,36 +1,56 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# LifeGrid
 
-## Getting Started
+A spreadsheet-style habit & task tracker — "Excel but better." Tap a date cell to
+mark a habit **done / missed / skipped**, organized by life categories, with
+streaks, statistics, goals, notes, and a full gamification + economy layer.
 
-First, run the development server:
+Fully local (localStorage) and private — no account required. Cloud sync,
+accounts, and payments are future phases (see `docs/FINAL_BUILD_PLAN.txt`).
+
+## Features
+
+- **Tracker grid** — rows = habits, columns = dates; tap to cycle a mark.
+- **Today / Calendar / Stats** — daily dashboard, month/week planning, and an
+  interactive trends chart with streaks and plain-language insights.
+- **Goals, Notes, Templates** — targets with milestones, daily journal, starter
+  routines.
+- **Gamification** — XP, levels, 28 achievements (5 categories × 4 rarities),
+  titles/ranks, and a character-page profile. All **derived from your mark
+  history** by pure functions — never stored as a counter, so it can't be cheated
+  or desync from the record (the "Honest Tracking" rule).
+- **Coins + Shop** — coins are derived the same way (completions, perfect days,
+  achievement bonuses). Spend them on cosmetics (flame skins, confetti palettes,
+  app-wide accent themes) and a **streak-freeze** that protects one genuine past
+  miss — the miss stays in your history; it just doesn't break the streak.
+
+## Tech
+
+Next.js 16 (App Router) · TypeScript · Tailwind CSS v4 (CSS-variable theming) ·
+lucide-react · hand-built SVG charts · localStorage (schema v4) via
+`useSyncExternalStore` · Vitest.
+
+> ⚠️ This is a **modified** Next.js. Read `node_modules/next/dist/docs/` before
+> using Next-specific APIs — see `AGENTS.md`.
+
+## Getting started
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+npm run dev      # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Quality gates
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Run all four after any change:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npx tsc --noEmit && npm run lint && npx vitest run && npm run build
+```
 
-## Learn More
+## Project docs
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- `docs/ARCHITECTURE.txt` — folder structure, gamification + economy model, data flow
+- `docs/FINAL_BUILD_PLAN.txt` — phases, tech stack, production checklist
+- `docs/TODO.txt` — progress checklist
+- `docs/PROGRESS.md` — detailed status + file inventory
+- `docs/script.txt` — the gamification/UI redesign spec (16 sections)

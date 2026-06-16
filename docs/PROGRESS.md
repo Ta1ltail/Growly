@@ -34,34 +34,135 @@ The four gates: `npx tsc --noEmit && npm run lint && npx vitest run && npm run b
 | 3. Streaks + micro-interactions | Animated flames (S/M/L), completion/counter animations | ✅ verified |
 | 4. Achievements UX | Toast/popup/full-screen celebrations, confetti, Achievement Gallery | ✅ verified |
 | 5. Progression UI | XP bar, level, title/rank, profile-as-character-page, showcase, next-milestone | ✅ verified |
-| 6. Layout/data viz | Dashboard widgets, stats redesign, habits pagination, calendar/tracker alignment | 🟡 in progress |
-| 7. Final pass | A11y, 60fps/reduced-motion audit, polish | ☐ |
+| 6. Layout/data viz | Dashboard widgets, stats redesign, habits pagination, calendar/tracker alignment | ✅ verified |
+| 7. Final pass | A11y, 60fps/reduced-motion audit, polish | ✅ verified |
 
-> **Gates last green: through Part 5 (2026-06-16)** — `tsc` + `lint` +
-> `vitest` (46 passing) + `next build` all clean.
-> **Part 6 (6a–6c) code is written but UNVERIFIED — gates have NOT been run
-> since.** First action next session: run the four gates and fix failures.
+> **Gates last green: through Part 7 (2026-06-16)** — `tsc` + `lint` +
+> `vitest` (46 passing) + `next build` all clean. **All 7 parts complete.**
 
 ---
 
-## ⏭️ Resume here (next session)
+## ✅ Redesign complete
 
-1. **Run the gates first** — Part 6a–6c is unverified:
-   ```bash
-   cd /c/Users/Justin/dev/project_101 && npx tsc --noEmit && npm run lint && npx vitest run && npm run build
-   ```
-   Watch for: React Compiler lint (`react-hooks/preserve-manual-memoization`)
-   wants `useMemo` deps to match the props actually read — use `[data]`, not
-   `[data.marks, data.habits]`. Render-phase `setState` for clamping/seeding is
-   fine (used in habits pagination + ProfileEditModal).
-2. **Finish Part 6:**
-   - **6d — Calendar/tracker alignment (spec §13):** align the calendar page's
-     two panes (`src/app/calendar/page.tsx`: calendar grid `lg:col-span-3` vs
-     day-detail `lg:col-span-2`) to start at the same vertical position with
-     consistent heights; responsive pass. Then a spacing/height consistency
-     pass on `src/app/tracker/page.tsx`. (NOT started.)
-3. **Then Part 7** — a11y + 60fps/reduced-motion audit + polish across the new
-   surfaces.
+All 7 parts implemented and verified (gates green 2026-06-16). The 16-section
+`docs/script.txt` spec is fully executed.
+
+**Part 6 close-out (§13):** 6d added a matching `h2` header to the calendar
+left pane so both panes' `Card`s start at the same vertical position;
+tracker/calendar already responsive + consistent.
+
+**Part 7 a11y/perf pass (§16):**
+- A11y baseline was already strong — `Modal` (role=dialog, Escape, focus trap),
+  `Pagination`, `TrendLineChart` (SVG `aria-hidden` + per-point sr hit-areas),
+  and all celebration dismiss buttons were already labeled.
+- Reduced-motion: global `@media (prefers-reduced-motion: reduce)` blanket
+  override neutralizes every keyframe/transition — no per-component guards needed.
+- Keyboard focus: global `:focus-visible` accent outline covers all grid cells.
+- New surfaces use transform/opacity animations (GPU-friendly, 60fps).
+- Fixed the only unlabeled icon-only buttons: calendar prev/next chevrons
+  (`src/app/calendar/page.tsx`) + goals progress +/- (`src/app/goals/page.tsx`).
+
+Future work would be net-new features, not redesign tasks. Standard loop:
+edit → `npx tsc --noEmit && npm run lint && npx vitest run && npm run build`.
+
+---
+
+## 🪙 Post-redesign: Coins + Shop (✅ COMPLETE — 2026-06-16)
+
+First net-new feature after the redesign: a spendable **coin economy**, a
+**shop** for cosmetics, and a **logged/limited streak-freeze** consumable.
+
+**Gates green 2026-06-16:** `tsc` + `lint` + `vitest` (66 passing) + `next build`
+all clean. `/shop` route prerenders.
+
+### Follow-ups shipped 2026-06-16 (accent slot + coin breakdown)
+
+- **Accent cosmetic slot wired** (was the one reserved loose end). `ACCENT_SKINS`
+  + 4 catalog items (crimson/emerald/violet/amber, amber `minLevel:8`) in
+  `economy.ts`; `equippedAccent()` returns the override or null. New client
+  `AccentThemeApplier` (mounted in `AppShell`) sets `--c-accent`/`--c-accent-glow`
+  on `<html>`, or clears them for the default so the themed accent applies. Shop
+  `SLOTS` now includes `accent` (+ per-slot `DEFAULT_PREVIEW`). **In-app verified:**
+  default `#4b8bf7` → equip Emerald `#10b981` (persists app-wide on `/today`) →
+  revert to Default clears back to `#4b8bf7`.
+- **Coin breakdown** (net-new): `coinBreakdown(stats, rarities, economy)` in
+  `economy.ts` (itemizes completions/perfect-days/achievements − spends, reconciles
+  to `coinBalance`); `CoinBreakdownCard` on `/shop` under the header. **In-app
+  verified:** 42 + 210 + 240 = 492 earned − 120 spent = 372 balance, matches the
+  header chip. +3 `coinBreakdown` unit tests.
+- **Frozen-day indicator** (UX follow-up): a protected miss used to render as a
+  plain miss everywhere. Added an optional `frozen` prop to `MarkButton` (corner
+  snowflake badge + "protected by a streak freeze" in the `aria-label`); wired it
+  in the calendar day-detail (editable `MarkButton` + a faded-✕/snowflake in the
+  read-only branch) and the tracker grid cell (corner snowflake + tooltip). Each
+  page memoizes `frozenSet(data.economy)` and gates on `status === "missed" &&
+  isFrozen(...)`. `/today` intentionally skipped — it only shows today, which can't
+  be frozen (freezes protect past misses). **In-app verified** (Playwright): tracker
+  day-6 = red miss + snowflake; calendar day-detail shows the protected indicator.
+
+**In-app verified (Playwright, 2026-06-16):** seeded coin-earning history, drove
+the real UI — buy Azure Flame (balance 1140→1020), auto-equip, flame color
+changes orange→azure, redeem freeze (→945), persisted ledger correct.
+**Bug found + fixed during verify:** the streak-freeze was only consumed by the
+achievement/progress engine — five UI streak displays (`/today` hero, `/`
+dashboard, habits list, tracker, stats) called `habitStreaks(...)` WITHOUT the
+frozen set, so a frozen miss still broke those streaks (hero showed 10 while the
+freeze-aware widget showed 45). Threaded `frozenSet(data.economy)` through all
+five; both displays now agree (45). Re-verified at the surface.
+
+**Anti-cheat model (locked, same spirit as XP):** coins are DERIVED from the
+immutable history, never stored as a balance. The only persisted economy state
+is an append-only spend ledger + owned/equipped cosmetics + a dated freeze log.
+`balance = coinsEarned(history) − Σ ledger.amount`, clamped ≥ 0. A freeze only
+ever protects a GENUINE recorded miss (status `"missed"`), is capped at 1 per
+rolling 7 days, and is audit-logged — the miss stays visible in history; the
+streak walk just treats that day as neutral. Honest Tracking holds.
+
+### ✅ Done (all four gates green)
+
+Closed out the economy feature:
+- **Lint fix** — renamed store action `useFreeze` → `redeemFreeze` (the `use`
+  prefix tripped eslint `rules-of-hooks` when called in the shop's onClick).
+- **Cosmetic application** — `StreakFlame` now resolves the equipped `flame`
+  skin from the store (`FLAME_SKINS[equippedOrDefault(...)]`, optional `colors`
+  override prop); free default ramp == old hardcoded colors so default users +
+  SSR see no change. `AchievementCelebration` uses the equipped `confetti`
+  palette (`CONFETTI_SKINS`), falling back to rarity colors for the default.
+- **Coin UI** — `CoinChip` added to the dashboard "Your progress" header and a
+  Coins `StatCard` (→ `/shop`) on the profile stat strip.
+- **Tests** — `src/lib/economy.test.ts` (balance math/clamp, freeze window cap,
+  eligibility, `freezableDays`, `frozenSet`) + 2 freeze-aware `habitStreaks`
+  cases in `stats.test.ts`. 63 tests pass.
+
+Engine details below (already done before this session):
+
+DONE (code written, tsc-clean):
+- **Engine** — `src/lib/economy.ts` (new): `coinsEarned` (2/completion,
+  10/perfect-day, rarity bonuses via `RARITY_COINS`), `coinsSpent`,
+  `coinBalance`; `SHOP_ITEMS` catalog (flame skins + confetti palettes, some
+  `minLevel`-gated); `FLAME_SKINS`/`CONFETTI_SKINS` color maps;
+  `equippedOrDefault`; freeze helpers (`frozenSet`, `isFrozen`, `canUseFreeze`,
+  `canFreezeDay`, `freezableDays`, `makeFreezeEntry`, `FREEZE_PRICE=75`,
+  `FREEZE_MAX_PER_WINDOW=1`, `FREEZE_WINDOW_DAYS=7`).
+- **Schema v4** — `src/lib/types.ts`: `Economy`, `SpendEntry`, `FreezeEntry`,
+  `CosmeticSlot`, `DEFAULT_ECONOMY`; `AppData.economy`; audit actions
+  `shop.buy`/`freeze.use`. `src/lib/storage.ts`: `SCHEMA_VERSION = 4`,
+  `cleanEconomy`/`cleanSpend`/`cleanFreeze` validators, `emptyData.economy`,
+  `loadData` wires it (older saves default to empty economy → coins re-derive).
+- **Freeze in streak walk** — `src/lib/stats.ts` `habitStreaks(habit, marks,
+  today, frozen?)`: a frozen `habitId@dateKey` is neutral like `skipped`.
+  Threaded through `buildGameStats(...,frozen?)` (achievements.ts) and
+  `summarizeProgress`/`reconcileUnlocks` (progress.ts, which now also return
+  `coinsEarned`/`coinBalance`).
+- **Store actions** — `src/lib/store.ts`: `buyCosmetic` (guards: exists, not
+  owned, level gate, affordable → ledger + owned + auto-equip + audit),
+  `equipCosmetic`, `useFreeze` (guards: window cap, genuine miss, affordable →
+  ledger + freeze log + audit); helpers `balanceOf`, `summarizeLevel`. Economy
+  imports + `clearAllData` reset already in place.
+- **Test fixture** — `storage.test.ts` round-trip case extended with `economy`.
+
+All three cosmetic slots (flame, confetti, accent) now have catalog items and
+are applied. No known economy loose ends.
 
 ---
 

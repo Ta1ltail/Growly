@@ -6,6 +6,9 @@ import type {
   AppData,
   AuditAction,
   AuditEntry,
+  CosmeticSlot,
+  Economy,
+  FreezeEntry,
   Goal,
   Habit,
   Marks,
@@ -15,9 +18,10 @@ import type {
   Priority,
   Profile,
   Recurrence,
+  SpendEntry,
   Unlocks,
 } from "./types";
-import { DEFAULT_PROFILE } from "./types";
+import { DEFAULT_ECONOMY, DEFAULT_PROFILE } from "./types";
 import { CATEGORIES, type Category } from "./categories";
 import { ACCENTS, DEFAULT_THEME, type ThemeMode } from "./theme";
 
@@ -26,7 +30,9 @@ export const STORAGE_KEY = "project101.data.v1";
 // Current schema version. Bumped when the shape of stored data changes so
 // loadData() can migrate older saves forward.
 // v3: added `profile` + `unlocks` (gamification). Older saves default them.
-export const SCHEMA_VERSION = 3;
+// v4: added `economy` (coins ledger + cosmetics + freezes). Older saves default
+//     it to an empty economy; coins re-derive from history automatically.
+export const SCHEMA_VERSION = 4;
 
 // How long after midnight a user may still edit "yesterday" before the day
 // locks permanently (Honest Tracking Policy). Tunable in Settings.
@@ -46,7 +52,10 @@ export const emptyData: AppData = {
   },
   profile: DEFAULT_PROFILE,
   unlocks: {},
+  economy: DEFAULT_ECONOMY,
 };
+
+const COSMETIC_SLOTS = new Set<CosmeticSlot>(["flame", "confetti", "accent"]);
 
 /* ---------- validation ----------
  * Saved data comes from localStorage, which can be edited, truncated, or
@@ -66,6 +75,8 @@ const AUDIT_ACTIONS = new Set<AuditAction>([
   "habit.unarchive",
   "habit.duplicate",
   "habit.schedule",
+  "shop.buy",
+  "freeze.use",
 ]);
 
 function isObject(v: unknown): v is Record<string, unknown> {
@@ -268,6 +279,45 @@ function cleanUnlocks(v: unknown): Unlocks {
   return out;
 }
 
+function cleanSpend(v: unknown): SpendEntry | null {
+  if (!isObject(v)) return null;
+  const { id, at, amount, item } = v;
+  if (typeof id !== "string" || typeof at !== "string") return null;
+  if (typeof amount !== "number" || !Number.isFinite(amount) || amount < 0) return null;
+  if (typeof item !== "string") return null;
+  return { id, at, amount, item };
+}
+
+function cleanFreeze(v: unknown): FreezeEntry | null {
+  if (!isObject(v)) return null;
+  const { id, at, date, habitId } = v;
+  if (typeof id !== "string" || typeof at !== "string") return null;
+  if (typeof date !== "string" || typeof habitId !== "string") return null;
+  return { id, at, date, habitId };
+}
+
+function cleanEconomy(v: unknown): Economy {
+  if (!isObject(v)) return { spent: [], owned: [], equipped: {}, freezes: [] };
+  const spent = Array.isArray(v.spent)
+    ? v.spent.map(cleanSpend).filter((s): s is SpendEntry => s !== null)
+    : [];
+  const owned = Array.isArray(v.owned)
+    ? v.owned.filter((x): x is string => typeof x === "string")
+    : [];
+  const freezes = Array.isArray(v.freezes)
+    ? v.freezes.map(cleanFreeze).filter((f): f is FreezeEntry => f !== null)
+    : [];
+  const equipped: Partial<Record<CosmeticSlot, string>> = {};
+  if (isObject(v.equipped)) {
+    for (const [slot, id] of Object.entries(v.equipped)) {
+      if (COSMETIC_SLOTS.has(slot as CosmeticSlot) && typeof id === "string") {
+        equipped[slot as CosmeticSlot] = id;
+      }
+    }
+  }
+  return { spent, owned, equipped, freezes };
+}
+
 export function loadData(): AppData {
   if (typeof window === "undefined") return emptyData;
   try {
@@ -315,6 +365,7 @@ export function loadData(): AppData {
       settings: { theme: { mode, accent }, graceHours, usedTemplateIds },
       profile: cleanProfile(parsed.profile),
       unlocks: cleanUnlocks(parsed.unlocks),
+      economy: cleanEconomy(parsed.economy),
     };
   } catch {
     return emptyData;

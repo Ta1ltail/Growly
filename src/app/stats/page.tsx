@@ -18,6 +18,7 @@ import {
   lastNDaysCompletion,
   rangeCompletion,
 } from "@/lib/stats";
+import { frozenSet } from "@/lib/economy";
 import { buildInsights } from "@/lib/insights";
 import { WEEKDAY_SHORT } from "@/lib/format";
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -59,15 +60,16 @@ export default function StatsPage() {
   const byWeekday = useMemo(() => completionByWeekday(active, data.marks, today, days), [active, data.marks, today, days]);
   const consistency = useMemo(() => consistencyScore(active, data.marks, today, days), [active, data.marks, today, days]);
   const insights = useMemo(() => buildInsights(active, data.marks, today, 4), [active, data.marks, today]);
+  const frozen = useMemo(() => frozenSet(data.economy), [data.economy]);
   const streaks = useMemo(() => {
     let best = 0, current = 0;
     for (const h of active) {
-      const s = habitStreaks(h, data.marks, today);
+      const s = habitStreaks(h, data.marks, today, frozen);
       best = Math.max(best, s.best);
       current = Math.max(current, s.current);
     }
     return { best, current };
-  }, [active, data.marks, today]);
+  }, [active, data.marks, today, frozen]);
 
   if (active.length === 0) {
     return (

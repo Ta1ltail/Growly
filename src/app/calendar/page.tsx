@@ -5,11 +5,12 @@
 // habits (time-ordered, with a live "now" marker), notes, and goal deadlines.
 
 import { useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight, Check, X, Minus, Flag, NotebookPen } from "lucide-react";
+import { ChevronLeft, ChevronRight, Check, X, Minus, Flag, NotebookPen, Snowflake } from "lucide-react";
 import { CATEGORY_COLORS } from "@/lib/categories";
 import { addDays, dateKey, prettyDate, DEFAULT_GRACE_HOURS } from "@/lib/storage";
 import { cycleMark, useAppData } from "@/lib/store";
 import { dayCompletion, isScheduled } from "@/lib/stats";
+import { frozenSet, isFrozen } from "@/lib/economy";
 import { canEditMark } from "@/lib/policy";
 import { formatTime } from "@/lib/format";
 import { useToday } from "@/hooks/useToday";
@@ -37,6 +38,7 @@ export default function CalendarPage() {
   const today = useToday();
   const grace = data.settings.graceHours ?? DEFAULT_GRACE_HOURS;
   const active = useMemo(() => data.habits.filter((h) => !h.archived), [data.habits]);
+  const frozen = useMemo(() => frozenSet(data.economy), [data.economy]);
   const [view, setView] = useState<"month" | "week">("month");
   const [anchor, setAnchor] = useState(() => new Date(today.getFullYear(), today.getMonth(), 1));
   const [weekStart, setWeekStart] = useState(() => addDays(today, -today.getDay()));
@@ -90,11 +92,11 @@ export default function CalendarPage() {
           <div className="flex items-center gap-2">
             <Segmented options={VIEWS} value={view} onChange={setView} />
             <div className="flex items-center gap-1">
-              <button onClick={() => shift(-1)} className="flex size-9 items-center justify-center rounded-xl border border-line text-muted transition-colors hover:bg-surface2 hover:text-ink">
+              <button onClick={() => shift(-1)} aria-label={view === "month" ? "Previous month" : "Previous week"} className="flex size-9 items-center justify-center rounded-xl border border-line text-muted transition-colors hover:bg-surface2 hover:text-ink">
                 <ChevronLeft className="size-4" />
               </button>
               <span className="w-36 text-center text-sm font-semibold">{headerLabel}</span>
-              <button onClick={() => shift(1)} className="flex size-9 items-center justify-center rounded-xl border border-line text-muted transition-colors hover:bg-surface2 hover:text-ink">
+              <button onClick={() => shift(1)} aria-label={view === "month" ? "Next month" : "Next week"} className="flex size-9 items-center justify-center rounded-xl border border-line text-muted transition-colors hover:bg-surface2 hover:text-ink">
                 <ChevronRight className="size-4" />
               </button>
             </div>
@@ -104,6 +106,10 @@ export default function CalendarPage() {
 
       <div className="grid gap-6 lg:grid-cols-5">
         <div className="lg:col-span-3">
+          <h2 className="mb-3 flex items-center justify-between text-sm font-semibold uppercase tracking-wide text-muted">
+            <span>{view === "month" ? "Month" : "Week"}</span>
+            <span className="text-[10px] font-normal normal-case tracking-normal text-faint">Tap a day to view</span>
+          </h2>
           <Card className="p-4">
             <div className="mb-2 grid grid-cols-7 gap-1.5 text-center font-mono text-[11px] text-faint">
               {WEEKDAY_LABELS.map((w) => (
@@ -164,13 +170,14 @@ export default function CalendarPage() {
             <Card className="divide-y divide-line overflow-hidden">
               {selectedHabits.map((h) => {
                 const status = data.marks[selectedKey]?.[h.id];
+                const dayFrozen = status === "missed" && isFrozen(frozen, h.id, selectedKey);
                 const showNowBefore = selectedIsToday && h.timeOfDay && h.timeOfDay >= nowHHMM;
                 return (
                   <div key={h.id}>
                     {showNowBefore && <NowLine time={nowHHMM} />}
                     <div className="flex items-center gap-2.5 px-4 py-2.5 text-sm">
                       {editable ? (
-                        <MarkButton status={status} onClick={() => cycleMark(selectedKey, h.id)} size={22} />
+                        <MarkButton status={status} onClick={() => cycleMark(selectedKey, h.id)} size={22} frozen={dayFrozen} />
                       ) : (
                         <span className="size-2 shrink-0 rounded-full" style={{ backgroundColor: CATEGORY_COLORS[h.category] }} />
                       )}
@@ -180,7 +187,14 @@ export default function CalendarPage() {
                         (status === "done" ? (
                           <Check className="size-4 text-done" strokeWidth={2.5} />
                         ) : status === "missed" ? (
-                          <X className="size-4 text-missed" strokeWidth={2.5} />
+                          dayFrozen ? (
+                            <span className="flex items-center gap-1" title="Protected by a streak freeze">
+                              <X className="size-4 text-missed opacity-50" strokeWidth={2.5} />
+                              <Snowflake className="size-3.5 text-sky-400" strokeWidth={2.5} />
+                            </span>
+                          ) : (
+                            <X className="size-4 text-missed" strokeWidth={2.5} />
+                          )
                         ) : status === "skipped" ? (
                           <Minus className="size-4 text-skipped" strokeWidth={2.5} />
                         ) : (

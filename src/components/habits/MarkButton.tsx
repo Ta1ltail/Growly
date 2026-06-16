@@ -4,7 +4,7 @@
 // When `locked` (past day under the Honest Tracking Policy) it is disabled
 // and shows a subtle lock instead of inviting a tap.
 
-import { Check, Lock, Minus, X } from "lucide-react";
+import { Check, Lock, Minus, Snowflake, X } from "lucide-react";
 import type { MarkStatus } from "@/lib/types";
 
 const STYLES: Record<MarkStatus, string> = {
@@ -18,11 +18,15 @@ export function MarkButton({
   onClick,
   size = 24,
   locked = false,
+  frozen = false,
 }: {
   status: MarkStatus | undefined;
   onClick: () => void;
   size?: number;
   locked?: boolean;
+  // A streak-freeze protects this (missed) day — show a snowflake badge so the
+  // protected miss is visually distinct from an unprotected one.
+  frozen?: boolean;
 }) {
   const icon =
     status === "done" ? (
@@ -39,7 +43,7 @@ export function MarkButton({
     <button
       onClick={onClick}
       disabled={locked && !status}
-      aria-label={locked ? `Locked${status ? `, marked ${status}` : ""}` : status ? `Marked ${status}` : "Not marked"}
+      aria-label={`${locked ? `Locked${status ? `, marked ${status}` : ""}` : status ? `Marked ${status}` : "Not marked"}${frozen ? ", protected by a streak freeze" : ""}`}
       style={{ width: size, height: size }}
       className={`relative flex shrink-0 items-center justify-center rounded-full border transition-all active:scale-90 ${
         status ? STYLES[status] : "border-line bg-surface2 hover:border-accent hover:scale-110"
@@ -53,6 +57,16 @@ export function MarkButton({
         />
       )}
       {icon}
+      {frozen && (
+        <span
+          aria-hidden
+          title="Protected by a streak freeze"
+          className="absolute -right-1 -top-1 grid place-items-center rounded-full bg-sky-500 text-white ring-2 ring-surface"
+          style={{ width: Math.round(size * 0.5), height: Math.round(size * 0.5) }}
+        >
+          <Snowflake style={{ width: size * 0.3, height: size * 0.3 }} strokeWidth={3} />
+        </span>
+      )}
     </button>
   );
 }

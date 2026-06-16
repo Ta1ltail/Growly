@@ -3,7 +3,7 @@
 // Kept separate from UI so they are easy to reuse and reason about.
 
 import type { Category } from "./categories";
-import type { Habit, Marks, Recurrence } from "./types";
+import type { Habit, Marks, MarkStatus, Recurrence } from "./types";
 import { addDays, dateKey, parseDateKey, startOfDay } from "./storage";
 
 /* ---------------- scheduling ---------------- */
@@ -47,10 +47,17 @@ function markFor(marks: Marks, key: string, habitId: string) {
 // Current and best "done" streaks for a habit, counting only scheduled days.
 // A scheduled day marked "done" extends the streak; "skipped" is neutral
 // (ignored); anything else (missed / unmarked) breaks it.
+//
+// `frozen` is an optional set of "habitId@dateKey" strings from a streak-freeze
+// consumable (lib/economy). A frozen day is treated as NEUTRAL (like skipped) —
+// the miss still exists in history, it just doesn't break the streak. This is
+// the only sanctioned way a recorded miss is bridged, and it's gated/logged in
+// the store, so Honest Tracking holds.
 export function habitStreaks(
   habit: Habit,
   marks: Marks,
   today: Date,
+  frozen?: Set<string>,
 ): { current: number; best: number } {
   const start = habitStartDay(habit);
   const end = startOfDay(today);
@@ -61,14 +68,18 @@ export function habitStreaks(
   let current = 0;
   let currentBroken = false;
 
+  const isNeutral = (status: MarkStatus | undefined, key: string): boolean =>
+    status === "skipped" || (frozen?.has(`${habit.id}@${key}`) ?? false);
+
   // Walk forward from start day to today.
   for (let d = new Date(start); d.getTime() <= endMs; d = addDays(d, 1)) {
     if (!isScheduled(habit, d)) continue;
-    const status = markFor(marks, dateKey(d), habit.id);
+    const key = dateKey(d);
+    const status = markFor(marks, key, habit.id);
     if (status === "done") {
       run += 1;
       best = Math.max(best, run);
-    } else if (status === "skipped") {
+    } else if (isNeutral(status, key)) {
       // neutral — do nothing
     } else {
       run = 0;
@@ -78,10 +89,11 @@ export function habitStreaks(
   // Current streak = run counting back from today over scheduled days.
   for (let d = new Date(end); d.getTime() >= startMs; d = addDays(d, -1)) {
     if (!isScheduled(habit, d)) continue;
-    const status = markFor(marks, dateKey(d), habit.id);
+    const key = dateKey(d);
+    const status = markFor(marks, key, habit.id);
     if (status === "done") {
       if (!currentBroken) current += 1;
-    } else if (status === "skipped") {
+    } else if (isNeutral(status, key)) {
       // neutral
     } else {
       currentBroken = true;

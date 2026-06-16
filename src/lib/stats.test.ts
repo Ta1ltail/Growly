@@ -116,6 +116,30 @@ describe("habitStreaks", () => {
   it("returns zero when nothing is marked", () => {
     expect(habitStreaks(h, {}, today)).toEqual({ current: 0, best: 0 });
   });
+
+  it("a frozen miss is neutral, bridging the current streak", () => {
+    const marks = marksFor(id, {
+      "2026-06-08": "done",
+      "2026-06-09": "missed", // would break the run...
+      "2026-06-10": "done",
+    });
+    // Unfrozen: the miss breaks it → current = 1.
+    expect(habitStreaks(h, marks, today).current).toBe(1);
+    // Frozen: 06-09 is treated as neutral → done(10) + done(8) = 2.
+    const frozen = new Set([`${id}@2026-06-09`]);
+    expect(habitStreaks(h, marks, today, frozen).current).toBe(2);
+  });
+
+  it("only freezes the exact habit+day key", () => {
+    const marks = marksFor(id, {
+      "2026-06-08": "done",
+      "2026-06-09": "missed",
+      "2026-06-10": "done",
+    });
+    // A freeze keyed to a different habit must not protect h1's miss.
+    const frozen = new Set([`other@2026-06-09`]);
+    expect(habitStreaks(h, marks, today, frozen).current).toBe(1);
+  });
 });
 
 // --- rangeCompletion -------------------------------------------------------

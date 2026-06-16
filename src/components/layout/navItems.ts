@@ -9,6 +9,7 @@ import {
   NotebookPen,
   ChartColumnIncreasing,
   Trophy,
+  ShoppingBag,
   Settings2,
   UserRound,
   type LucideIcon,
@@ -54,6 +55,7 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { href: "/stats", label: "Statistics", icon: ChartColumnIncreasing },
       { href: "/achievements", label: "Achievements", icon: Trophy },
+      { href: "/shop", label: "Shop", icon: ShoppingBag },
     ],
   },
   {

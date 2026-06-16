@@ -101,10 +101,10 @@ export default function GoalsPage() {
                 <div className="mt-3 flex items-center justify-between">
                   <span className="font-mono text-xs text-muted">{goal.current} / {goal.target} · {pct}%</span>
                   <div className="flex gap-1.5">
-                    <button onClick={() => step(goal, -1)} className="flex size-8 items-center justify-center rounded-lg border border-line text-muted transition-all hover:bg-surface2 active:scale-90">
+                    <button onClick={() => step(goal, -1)} aria-label={`Decrease ${goal.title} progress`} className="flex size-8 items-center justify-center rounded-lg border border-line text-muted transition-all hover:bg-surface2 active:scale-90">
                       <Minus className="size-4" />
                     </button>
-                    <button onClick={() => step(goal, 1)} className="flex size-8 items-center justify-center rounded-lg bg-accent text-white transition-all hover:brightness-110 active:scale-90">
+                    <button onClick={() => step(goal, 1)} aria-label={`Increase ${goal.title} progress`} className="flex size-8 items-center justify-center rounded-lg bg-accent text-white transition-all hover:brightness-110 active:scale-90">
                       <Plus className="size-4" />
                     </button>
                   </div>

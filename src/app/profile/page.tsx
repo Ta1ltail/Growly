@@ -20,6 +20,7 @@ import {
   Settings2,
   ChevronRight,
   Repeat,
+  Coins,
 } from "lucide-react";
 import { useAppData } from "@/lib/store";
 import { useToday } from "@/hooks/useToday";
@@ -81,7 +82,7 @@ export default function ProfilePage() {
   if (!hydrated) return <PageSkeleton />;
 
   const { profile } = data;
-  const { stats, level, title, unlockedCount, totalCount } = summary;
+  const { stats, level, title, unlockedCount, totalCount, coinBalance } = summary;
   const rank = RANK_STYLE[title.current.rank];
   const banner = resolveBanner(profile.banner);
 
@@ -134,11 +135,14 @@ export default function ProfilePage() {
         <XpBar level={level} nextUnlock={title.next?.name} />
       </Card>
 
-      <div className="mb-6 grid grid-cols-2 gap-3 stagger-children sm:grid-cols-4">
+      <div className="mb-6 grid grid-cols-2 gap-3 stagger-children sm:grid-cols-5">
         <StatCard icon={Medal} value={`${unlockedCount}/${totalCount}`} label="Badges" accent />
         <StatCard icon={Trophy} value={unlockedCount} label="Achievements" />
         <StatCard icon={Flame} value={stats.maxCurrentStreak} label="Current streak" />
         <StatCard icon={Award} value={stats.maxBestStreak} label="Longest streak" />
+        <Link href="/shop" aria-label="Open shop" className="transition-transform hover:scale-[1.03]">
+          <StatCard icon={Coins} value={coinBalance} label="Coins" />
+        </Link>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">

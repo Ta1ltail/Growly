@@ -12,10 +12,11 @@
    Phase 1 CORE ................................. DONE
    Phase 2 STATS & STRUCTURE .................... DONE
    Phase 3 ENGAGEMENT ........................... DONE
-     +-- Gamification + UI redesign (7 parts) ... IN PROGRESS
-         Parts 1-5 verified; Part 6 mostly done
-         (unverified); 6d + Part 7 remain.
-         Detail/resume: docs/PROGRESS.md + docs/TODO.txt
+     +-- Gamification + UI redesign (7 parts) ... DONE (verified)
+     +-- Coins + Shop economy ................... DONE (verified)
+         All 4 gates green (66 tests); economy
+         also driven in-browser (Playwright).
+         Detail: docs/PROGRESS.md + docs/TODO.txt
    Phase 4 ACCOUNTS, CLOUD & SECURITY ........... NOT STARTED
    Phase 5 BUSINESS & LAUNCH .................... NOT STARTED
 
@@ -43,9 +44,10 @@ Build target: WEB FIRST (mobile/desktop later).
   7. Goals        - bigger targets with progress bars + milestones
   8. Notes/Journal- daily notes, reasons
   9. Achievements - gallery: unlocked/locked, progress, filters
- 10. Profile      - character page: level, XP, title/rank, showcase
- 11. Templates    - pre-made routines
- 12. Settings     - theme, grace window, data tools (account later)
+ 10. Profile      - character page: level, XP, title/rank, showcase, coins
+ 11. Shop         - spend derived coins: cosmetics + streak-freeze
+ 12. Templates    - pre-made routines
+ 13. Settings     - theme, grace window, data tools (account later)
 
 Bottom nav: Today . Tracker . Calendar . Stats . Profile
 
@@ -59,8 +61,8 @@ Bottom nav: Today . Tracker . Calendar . Stats . Profile
   Styling .......... Tailwind CSS v4 (CSS-variable theming)
   Icons ............ lucide-react
   Charts ........... hand-built SVG (TrendLineChart) - no chart lib
-  Persistence ...... localStorage (schema v3) via useSyncExternalStore
-  Testing .......... Vitest (46 tests)
+  Persistence ...... localStorage (schema v4) via useSyncExternalStore
+  Testing .......... Vitest (66 tests)
   Hosting/Code ..... Vercel + GitHub
 
   -- PLANNED (Phase 4-5, all free tiers to start) --
@@ -104,14 +106,15 @@ PHASE 3 - ENGAGEMENT .................................. [x] DONE
   [x] Goals with progress bars + milestones
   [x] Notes / journal per day
   [x] Templates
-  [~] GAMIFICATION + UI REDESIGN (docs/script.txt, 7 parts):
+  [x] GAMIFICATION + UI REDESIGN (docs/script.txt, 7 parts):
         [x] 1 Engine (XP/achievements/titles, derived-from-history)
         [x] 2 Visual base (ambient bg + motion tokens)
         [x] 3 Streaks + micro-interactions
         [x] 4 Achievement celebrations + gallery
         [x] 5 Progression UI + character-page profile
-        [~] 6 Layout/data viz (6a-6c done/unverified; 6d next)
-        [ ] 7 Final a11y / 60fps / polish pass
+        [x] 6 Layout/data viz (dashboard, stats, pagination, alignment)
+        [x] 7 Final a11y / 60fps / polish pass
+  [x] COINS + SHOP ECONOMY (derived coins, cosmetics, streak-freeze)
   [ ] Reminders (deferred - real notifications need mobile)
 
 PHASE 4 - ACCOUNTS, CLOUD & SECURITY .................. [ ] NOT STARTED
@@ -157,19 +160,26 @@ Do NOT take real users/money until these are TRUE:
   4. Web notifications are weak -> real alerts wait for mobile.
   5. Scope creep kills projects -> ship each phase before expanding.
   6. (new) Keep gamification DERIVED from history, never stored ->
-     no cheating, no desync. Persist only unlocks + profile.
+     no cheating, no desync. Persist only unlocks + profile + the
+     economy ledger/owned/freezes. Coins derive the same way as XP.
   7. (new) Run the four gates after every part before moving on;
      don't let unverified parts stack up.
+  8. (new) Gates prove it compiles, not that it works - drive new
+     UI in a real browser too (caught the freeze not protecting the
+     visible streaks, which all 4 gates passed straight through).
 
 
 ==========================================================
  6. NEXT STEPS (right now)
 ==========================================================
-  A. Run the gates (Part 6a-6c is unverified):
+  The redesign + Coins/Shop economy are shipped and verified. Options:
+  A. Begin Phase 4 (accounts/cloud) - the big localStorage->Supabase
+     rework + RLS. Biggest unlock toward a real product.
+  B. More net-new local features (e.g. coin-earn history timeline,
+     daily bonus, shop filters, new cosmetic slots).
+  Gates to run after any change:
        npx tsc --noEmit && npm run lint && npx vitest run && npm run build
-  B. Finish Part 6d (calendar/tracker alignment), then Part 7.
-  C. After the redesign ships -> begin Phase 4 (accounts/cloud).
-  See docs/PROGRESS.md for the precise resume point.
+  See docs/PROGRESS.md for the full file inventory.
 
 
 ############################################################
