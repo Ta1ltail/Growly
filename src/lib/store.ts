@@ -19,7 +19,7 @@ import type {
   Profile,
 } from "./types";
 import type { ThemeSettings } from "./theme";
-import { DEFAULT_GRACE_HOURS, dateKey, emptyData, loadData, saveData } from "./storage";
+import { DEFAULT_GRACE_HOURS, STORAGE_KEY, dateKey, emptyData, loadData, saveData } from "./storage";
 import { nextStatus } from "./marks";
 import { canEditMark } from "./policy";
 import { reconcileUnlocks, summarizeProgress } from "./progress";
@@ -301,6 +301,39 @@ export function clearAllData(): void {
   // history, so wiping history must wipe the ledger or the balance goes
   // negative/stale. Owned cosmetics are part of that history-derived state.
   update((prev) => ({ ...emptyData, settings: prev.settings, profile: prev.profile }));
+}
+
+/* ---------------- developer mode (raw data access) ---------------- */
+
+// Replace the entire data snapshot (Developer Mode data tools). Goes through
+// update() so it persists + notifies like any other mutation.
+export function replaceData(next: AppData): void {
+  update(() => next);
+}
+
+// Re-read from localStorage into the cache and notify. Used after a raw write
+// so the validated/migrated result flows back through the normal load path.
+export function reloadData(): void {
+  cache = loadData();
+  for (const listener of listeners) listener();
+}
+
+// Write a raw JSON string straight to storage, then reload through loadData so
+// every validator/migration runs on it. Returns an error message or null on
+// success. Developer Mode only.
+export function importRawData(text: string): string | null {
+  if (typeof window === "undefined") return "No storage available";
+  try {
+    const parsed = JSON.parse(text);
+    if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
+      return "Root must be a JSON object";
+    }
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed));
+    reloadData();
+    return null;
+  } catch (e) {
+    return e instanceof Error ? e.message : "Invalid JSON";
+  }
 }
 
 /* ---------------- gamification ---------------- */

@@ -96,7 +96,7 @@ export default function GoalsPage() {
                   </div>
                 </div>
 
-                <ProgressBar value={pct} color={complete ? "var(--c-done)" : undefined} />
+                <ProgressBar value={pct} color={complete ? "var(--color-done)" : undefined} />
 
                 <div className="mt-3 flex items-center justify-between">
                   <span className="font-mono text-xs text-muted">{goal.current} / {goal.target} · {pct}%</span>

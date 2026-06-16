@@ -11,7 +11,7 @@
 
 export function AmbientBackground() {
   return (
-    <div aria-hidden className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
+    <div data-ambient aria-hidden className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
       {/* Dotted grid texture — faded toward the edges so it reads as depth, not a sheet. */}
       <div
         className="absolute inset-0 opacity-[0.4]"

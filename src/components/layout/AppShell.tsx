@@ -6,6 +6,7 @@ import { Sidebar } from "./Sidebar";
 import { BottomNav } from "./BottomNav";
 import { CelebrationManager } from "@/components/celebrations/CelebrationManager";
 import { AccentThemeApplier } from "@/components/economy/AccentThemeApplier";
+import { DevMode } from "@/components/devmode/DevMode";
 
 export function AppShell({ children }: { children: ReactNode }) {
   return (
@@ -19,6 +20,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       </div>
       <CelebrationManager />
       <AccentThemeApplier />
+      <DevMode />
     </div>
   );
 }

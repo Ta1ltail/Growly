@@ -1,0 +1,4 @@
+Create a hidden Developer Mode accessible from a floating action button (FAB) located in the bottom-right corner of the screen.
+
+The popup should behave like an advanced settings menu.
+All the General,UI Controls,Performance,Database Tools,User Controls,AI Settings,Debug Tools,System Information,Search etc etc i dont know what else

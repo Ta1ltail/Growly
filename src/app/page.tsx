@@ -142,7 +142,7 @@ export default function DashboardPage() {
                       className="w-full max-w-9 rounded-t-lg transition-[height] duration-500"
                       style={{
                         height: `${Math.max(rate, 4)}%`,
-                        background: rate >= 100 ? "var(--c-done)" : "var(--c-accent)",
+                        background: rate >= 100 ? "var(--color-done)" : "var(--c-accent)",
                         opacity: rate === 0 ? 0.25 : 1,
                       }}
                       title={`${rate}%`}

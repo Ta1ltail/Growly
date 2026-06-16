@@ -1,7 +1,7 @@
 ############################################################
-#   PROJECT 101 - ARCHITECTURE  (v0.6, gamification+economy)#
+#   PROJECT 101 - ARCHITECTURE  (v0.7, +developer mode)    #
 #   Folder structure, gamification model, theme, data flow #
-#   Updated: 2026-06-16                                    #
+#   Updated: 2026-06-17                                    #
 ############################################################
 
   App: "LifeGrid" - a spreadsheet-style habit & task tracker.
@@ -40,6 +40,11 @@
     dashboard/                DashboardWidgets - Today's progress strip (part 6a)
     stats/                    TrendLineChart - interactive SVG line chart (part 6b)
     economy/                  CoinChip, CoinBreakdownCard, AccentThemeApplier (economy)
+    devmode/                  DevMode (FAB + Ctrl/Cmd+Shift+D + style injector +
+                              FPS meter + state logger), DevModePanel, ui kit, and
+                              8 sections/ (General, UI Controls, Performance,
+                              Database Tools, User Controls, AI Settings, Debug
+                              Tools, System Information) - hidden power-user layer
     layout/                   AppShell, Sidebar, BottomNav, navItems
     ui/                       Button, Card, Modal, PageHeader, PageSkeleton, Skeleton,
                               ProgressBar, ProgressRing, StatCard, Segmented,
@@ -56,6 +61,10 @@
     marks.ts  policy.ts       mark cycle/labels + Honest-Tracking edit rules
     storage.ts                localStorage load/save (SCHEMA_VERSION = 4) + date helpers
     store.ts                  shared store (useSyncExternalStore) + all actions
+                              (incl. dev-only replaceData/reloadData/importRawData)
+    devmode.ts                Developer Mode settings store (OWN localStorage key
+                              project101.devmode.v1 - never touches schema v4)
+    devSeed.ts                demo / stress-test data generators (Dev Mode)
     stats.ts                  streaks + completion math
     insights.ts  format.ts    plain-language insights + formatters
     habits.ts  templates.ts   habit builders + starter routines
@@ -70,7 +79,7 @@
     cosmetics.ts              avatar + banner presets, resolvers (part 5)
     economy.ts                coins (DERIVED), shop catalog, cosmetic skins,
                               streak-freeze rules - PURE (mirrors xp.ts)
-    *.test.ts                 gamification / stats / storage / economy (66 tests, 4 files)
+    *.test.ts                 gamification / stats / storage / economy (68 tests, 4 files)
 
 
 ==========================================================
@@ -178,15 +187,42 @@
  QUALITY GATES
 ==========================================================
   Gates: npx tsc --noEmit && npm run lint && npx vitest run && npm run build
-  Status (2026-06-16): GREEN. All 7 redesign parts + the Coins/Shop
-  economy are done & verified (tsc 0, eslint 0, vitest 66 passing,
-  next build passes, 15 routes incl. /shop). Economy features were
-  also driven in a real browser (Playwright) end-to-end.
+  Status (2026-06-17): GREEN. All 7 redesign parts + the Coins/Shop
+  economy + the Developer Mode layer are done & verified (tsc 0,
+  eslint 0, vitest 68 passing, next build passes, 15 routes).
 
   Lint gotcha: React Compiler rule `react-hooks/preserve-manual-
   memoization` requires useMemo deps to match the props actually
   read (use [data], not [data.marks, data.habits]). Render-phase
   setState (clamping a page, seeding a draft) is allowed; sync
   setState INSIDE an effect is not (react-hooks/set-state-in-effect).
+  Hook-name gotcha: a plain helper must NOT start with `use` if it's
+  called from a non-component/non-hook fn (rules-of-hooks).
+
+
+==========================================================
+ DEVELOPER MODE  (hidden power-user layer)
+==========================================================
+  A hidden advanced-settings popup, separate from user Settings.
+  Unlocked (and persisted) with Ctrl/Cmd+Shift+D -> a bottom-right FAB
+  opens a right-side slide-over. Mounted once via <DevMode/> in AppShell.
+
+  Settings live in their OWN store (lib/devmode.ts, key
+  project101.devmode.v1) so they can never corrupt or migrate with the
+  schema-v4 app data. Data tools act on the real store through
+  replaceData / reloadData / importRawData (store.ts).
+
+  Sections: General, UI Controls (theme + debug overlays via an injected
+  <style>), Performance (FPS meter, footprint, stress seed), Database
+  Tools (raw JSON edit/apply, export/import, seed demo, wipe slices),
+  User Controls (live profile edit, grace window, force-unlock/relock
+  achievements), AI Settings (INERT - no AI backend; persisted prototype
+  surface only), Debug Tools (trigger celebration, log state, throw test
+  error, nuke storage), System Information. A search box filters rows
+  across every section (matchQuery on label/hint/terms).
+
+  Derived-gamification invariant still holds: dev tools only edit the
+  PERSISTED facts (marks, unlocks, profile, economy ledger); coins/XP/
+  streaks recompute from history as always.
 
 ############################################################

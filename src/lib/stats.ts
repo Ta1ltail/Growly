@@ -87,6 +87,9 @@ export function habitStreaks(
   }
 
   // Current streak = run counting back from today over scheduled days.
+  // Today is special: if it isn't marked yet, the day isn't over, so it must
+  // NOT break the streak (otherwise a live streak collapses to 0 at midnight
+  // until you tick today). A *missed* today still breaks it.
   for (let d = new Date(end); d.getTime() >= startMs; d = addDays(d, -1)) {
     if (!isScheduled(habit, d)) continue;
     const key = dateKey(d);
@@ -95,6 +98,8 @@ export function habitStreaks(
       if (!currentBroken) current += 1;
     } else if (isNeutral(status, key)) {
       // neutral
+    } else if (status === undefined && d.getTime() === endMs) {
+      // unmarked today — still in progress, treat as neutral
     } else {
       currentBroken = true;
     }

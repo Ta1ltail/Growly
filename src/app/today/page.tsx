@@ -104,7 +104,7 @@ export default function TodayPage() {
             <p className="text-xs font-medium uppercase tracking-wide text-accent">
               {today.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" })}
             </p>
-            <h1 className="truncate text-xl font-bold tracking-tight sm:text-2xl">{greeting}, Justin</h1>
+            <h1 className="truncate text-xl font-bold tracking-tight sm:text-2xl">{greeting}, {data.profile.displayName}</h1>
             <p className="mt-1 text-sm text-muted">{todayHeadline(doneCount, todaysHabits.length)}</p>
             <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted">
               <span className="flex items-center gap-1.5">

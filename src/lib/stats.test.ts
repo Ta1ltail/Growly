@@ -117,6 +117,24 @@ describe("habitStreaks", () => {
     expect(habitStreaks(h, {}, today)).toEqual({ current: 0, best: 0 });
   });
 
+  it("an unmarked today does NOT break the current streak (day in progress)", () => {
+    const marks = marksFor(id, {
+      "2026-06-08": "done",
+      "2026-06-09": "done",
+      // 06-10 (today) unmarked — streak is still alive at 2
+    });
+    expect(habitStreaks(h, marks, today).current).toBe(2);
+  });
+
+  it("a missed today still breaks the current streak", () => {
+    const marks = marksFor(id, {
+      "2026-06-08": "done",
+      "2026-06-09": "done",
+      "2026-06-10": "missed",
+    });
+    expect(habitStreaks(h, marks, today).current).toBe(0);
+  });
+
   it("a frozen miss is neutral, bridging the current streak", () => {
     const marks = marksFor(id, {
       "2026-06-08": "done",
