@@ -17,7 +17,7 @@ PS C:\Users\Justin\dev\project_101> npx vitest
    Start at  20:08:24
    Duration  24.41s (transform 31.85s, setup 0ms, import 39.02s, tests 97ms, environment 1ms)
 
- PASS  Waiting for file changes...
+ PASS  Waiting for file changes....
        press h to show help, press q to quit
 PS C:\Users\Justin\dev\project_101> npx vitest
 
