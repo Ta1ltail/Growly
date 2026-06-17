@@ -19,18 +19,22 @@ import type {
   Profile,
 } from "./types";
 import type { ThemeSettings } from "./theme";
-import { DEFAULT_GRACE_HOURS, STORAGE_KEY, dateKey, emptyData, loadData, saveData } from "./storage";
+import { DEFAULT_GRACE_HOURS, STORAGE_KEY, dateKey, emptyData, loadData, saveData, addDays } from "./storage";
 import { nextStatus } from "./marks";
 import { canEditMark } from "./policy";
+import { uid } from "./util";
 import { reconcileUnlocks, summarizeProgress } from "./progress";
 import {
   canFreezeDay,
   canUseFreeze,
+  checkInReward,
   coinBalance,
   coinsEarned,
   FREEZE_PRICE,
   frozenSet,
+  generateDailyQuest,
   makeFreezeEntry,
+  randomSpinReward,
   shopItem,
 } from "./economy";
 import { buildGameStats, evaluateAchievements } from "./achievements";
@@ -68,11 +72,6 @@ export function useAppData(): AppData {
 }
 
 /* ---------------- audit helpers ---------------- */
-
-function uid(): string {
-  if (typeof crypto !== "undefined" && "randomUUID" in crypto) return crypto.randomUUID();
-  return `id-${Math.random().toString(36).slice(2)}-${Date.now()}`;
-}
 
 function audit(
   prev: AppData,
@@ -173,8 +172,9 @@ export function duplicateHabit(id: string): void {
 /* ---------------- marks (anti-cheat guarded) ---------------- */
 
 // Cycle a mark. Past/future days are locked per the Honest Tracking Policy,
-// so this is a no-op outside the editable window.
-export function cycleMark(dateK: string, habitId: string): void {
+// so this is a no-op outside the editable window. Also progresses the daily
+// quest when a habit is marked "done" today.
+export function cycleMark(dateK: string, habitId: string, habitCategory?: string): void {
   update((prev) => {
     const grace = prev.settings.graceHours ?? DEFAULT_GRACE_HOURS;
     if (!canEditMark(dateK, new Date(), grace)) return prev;
@@ -185,7 +185,18 @@ export function cycleMark(dateK: string, habitId: string): void {
     const updated = { ...prev, marks: { ...prev.marks, [dateK]: day } };
     // Marking can satisfy achievements — persist any new unlocks for popups.
     const { unlocks } = reconcileUnlocks(updated, new Date(), new Date().toISOString());
-    return unlocks === updated.unlocks ? updated : { ...updated, unlocks };
+    // Progress daily quest if marking done today
+    const todayKey = dateKey(new Date());
+    let eco = updated.economy;
+    if (dateK === todayKey && next === "done") {
+      const q = eco.currentQuest;
+      if (q && q.current < q.target && (!q.category || q.category === habitCategory)) {
+        eco = { ...eco, currentQuest: { ...q, current: q.current + 1 } };
+      }
+    }
+    return unlocks === updated.unlocks
+      ? { ...updated, economy: eco }
+      : { ...updated, unlocks, economy: eco };
   });
 }
 
@@ -433,7 +444,7 @@ function balanceOf(data: AppData, today: Date): number {
   const unlockedRarities = evaluateAchievements(stats)
     .filter((a) => a.unlocked)
     .map((a) => a.def.rarity);
-  return coinBalance(coinsEarned(stats, unlockedRarities), data.economy);
+  return coinBalance(coinsEarned(stats, unlockedRarities, data.economy), data.economy);
 }
 
 // Buy a cosmetic: must exist, not already owned, meet any level gate, and be
@@ -524,6 +535,106 @@ export function redeemFreeze(habitId: string, dateK: string): void {
 // avoid importing the full progress façade into the buy path twice.
 function summarizeLevel(data: AppData, today: Date): number {
   return summarizeProgress(data, today).level.level;
+}
+
+/* ---------------- engagement features ---------------- */
+
+// Claim the daily check-in bonus. Returns the reward amount and streak (0/0 if
+// already claimed today, so the UI can skip showing the popup).
+export function claimDailyCheckIn(): { reward: number; streak: number } {
+  let result: { reward: number; streak: number } = { reward: 0, streak: 0 };
+  update((prev) => {
+    const todayKey = dateKey(new Date());
+    if (prev.economy.lastCheckIn === todayKey) return prev; // already claimed
+    const prevStreak = prev.economy.checkInStreak;
+    const yesterday = dateKey(addDays(new Date(), -1));
+    const streak = prev.economy.lastCheckIn === yesterday ? prevStreak + 1 : 1;
+    const reward = checkInReward(streak);
+    result = { reward, streak };
+    return {
+      ...prev,
+      economy: {
+        ...prev.economy,
+        bonusCoins: prev.economy.bonusCoins + reward,
+        lastCheckIn: todayKey,
+        checkInStreak: streak,
+      },
+    };
+  });
+  return result;
+}
+
+// Refresh/generate the daily quest. Safe to call every time Today loads —
+// only generates if the stored quest is from an older date.
+export function refreshDailyQuest(): void {
+  update((prev) => {
+    const todayKey = dateKey(new Date());
+    if (prev.economy.lastQuestDate === todayKey && prev.economy.currentQuest) return prev;
+    const quest = generateDailyQuest(prev.habits);
+    return {
+      ...prev,
+      economy: {
+        ...prev.economy,
+        lastQuestDate: todayKey,
+        currentQuest: quest ? { ...quest, current: 0 } : null,
+      },
+    };
+  });
+}
+
+// Progress the current quest when a habit is marked done.
+export function progressDailyQuest(habitCategory?: string): void {
+  update((prev) => {
+    const q = prev.economy.currentQuest;
+    if (!q || q.current >= q.target) return prev;
+    if (q.category && q.category !== habitCategory) return prev;
+    const updated = { ...q, current: q.current + 1 };
+    return {
+      ...prev,
+      economy: { ...prev.economy, currentQuest: updated },
+    };
+  });
+}
+
+// Claim the daily quest reward. Only works if the quest is completed.
+export function claimDailyQuest(): void {
+  update((prev) => {
+    const q = prev.economy.currentQuest;
+    if (!q || q.current < q.target) return prev;
+    return {
+      ...prev,
+      economy: {
+        ...prev.economy,
+        bonusCoins: prev.economy.bonusCoins + q.reward,
+        currentQuest: null,
+        lastQuestDate: dateKey(new Date()),
+      },
+    };
+  });
+}
+
+// Do the daily spin. Returns the reward won, or null if already spun today.
+export function doDailySpin(): { label: string; amount: number; isFreeze: boolean } | null {
+  let result: { label: string; amount: number; isFreeze: boolean } | null = null;
+  update((prev) => {
+    const todayKey = dateKey(new Date());
+    if (prev.economy.lastSpinDate === todayKey) return prev; // already spun
+    const reward = randomSpinReward();
+    const isFreeze = reward.item === "freeze";
+    result = { label: reward.label, amount: reward.amount, isFreeze };
+    return {
+      ...prev,
+      economy: {
+        ...prev.economy,
+        bonusCoins: prev.economy.bonusCoins + reward.amount,
+        lastSpinDate: todayKey,
+        freezes: isFreeze
+          ? [...prev.economy.freezes, { id: uid(), at: new Date().toISOString(), date: todayKey, habitId: "spin-reward" }]
+          : prev.economy.freezes,
+      },
+    };
+  });
+  return result;
 }
 
 // Re-export for convenience in pages that build keys.

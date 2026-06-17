@@ -6,7 +6,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Flame, NotebookPen, ListChecks, Clock } from "lucide-react";
+import { Plus, Flame, NotebookPen, ListChecks, Clock, Sparkles } from "lucide-react";
 import { StreakFlame } from "@/components/StreakFlame";
 import { AnimatedCounter } from "@/components/AnimatedCounter";
 import { CATEGORIES, CATEGORY_COLORS, type Category } from "@/lib/categories";
@@ -29,6 +29,9 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { ProgressRing } from "@/components/ui/ProgressRing";
 import { PageSkeleton } from "@/components/ui/PageSkeleton";
 import { DashboardWidgets } from "@/components/dashboard/DashboardWidgets";
+import { CheckInPopup } from "@/components/today/CheckInPopup";
+import { DailyQuestCard } from "@/components/today/DailyQuestCard";
+import { DailySpinModal } from "@/components/today/DailySpinModal";
 
 export default function TodayPage() {
   const data = useAppData();
@@ -77,6 +80,8 @@ export default function TodayPage() {
   const greeting =
     today.getHours() < 12 ? "Good morning" : today.getHours() < 18 ? "Good afternoon" : "Good evening";
 
+  const [showSpin, setShowSpin] = useState(false);
+
   const dailyNote =
     data.notes.find((n) => n.links.date === todayKey && !n.links.habitId && !n.links.goalId)?.body ?? "";
 
@@ -85,10 +90,14 @@ export default function TodayPage() {
     setShowAdd(false);
   }
 
+  const mark = (habitId: string, category: Category) => cycleMark(todayKey, habitId, category);
+
   if (!hydrated) return <PageSkeleton />;
 
   return (
     <div className="animate-fade-in">
+      <CheckInPopup />
+
       {/* Hero */}
       <Card className="mb-6 overflow-hidden">
         <div className="relative flex items-center gap-5 p-5 sm:p-6">
@@ -140,7 +149,7 @@ export default function TodayPage() {
                   <div key={h.id} className="flex items-center gap-3 px-4 py-2.5">
                     <MarkButton
                       status={data.marks[todayKey]?.[h.id]}
-                      onClick={() => cycleMark(todayKey, h.id)}
+                      onClick={() => mark(h.id, h.category)}
                       size={24}
                     />
                     <span className="flex-1 text-sm">{h.name}</span>
@@ -184,7 +193,7 @@ export default function TodayPage() {
                       const status = data.marks[todayKey]?.[habit.id];
                       return (
                         <div key={habit.id} className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-surface2/50">
-                          <MarkButton status={status} onClick={() => cycleMark(todayKey, habit.id)} size={26} />
+                          <MarkButton status={status}                          onClick={() => mark(habit.id, habit.category)} size={26} />
                           <span
                             className={`flex-1 text-sm transition-colors ${
                               status === "done"
@@ -209,22 +218,56 @@ export default function TodayPage() {
           )}
         </div>
 
-        {/* Note */}
-        <div className="lg:col-span-2">
-          <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-muted">
-            <NotebookPen className="size-4" /> Today&apos;s note
-          </h2>
-          <Card className="p-1">
-            <textarea
-              value={dailyNote}
-              onChange={(e) => setDailyNote(todayKey, e.target.value)}
-              placeholder="How did today go? What got in the way?"
-              rows={6}
-              className="w-full resize-none rounded-xl bg-transparent px-3.5 py-3 text-sm outline-none placeholder:text-faint"
-            />
+        {/* Engagement sidebar */}
+        <div className="lg:col-span-2 flex flex-col gap-4">
+          {/* Daily Quest */}
+          <DailyQuestCard />
+
+          {/* Daily Spin */}
+          <Card className="p-4">
+            <div className="flex items-center gap-4">
+              <span className="grid size-12 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-amber-400/20 to-rose-400/20 text-2xl">
+                🎰
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold">Daily Spin</p>
+                <p className="text-xs text-muted">
+                  {data.economy.lastSpinDate === todayKey
+                    ? "Come back tomorrow for another spin!"
+                    : "Spin the wheel for a chance to earn coins!"}
+                </p>
+              </div>
+              <Button
+                onClick={() => setShowSpin(true)}
+                disabled={data.economy.lastSpinDate === todayKey}
+                size="sm"
+              >
+                <Sparkles className="size-3.5" aria-hidden />
+                {data.economy.lastSpinDate === todayKey ? "Done" : "Spin"}
+              </Button>
+            </div>
           </Card>
+
+          {/* Note */}
+          <div>
+            <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-muted">
+              <NotebookPen className="size-4" /> Today&apos;s note
+            </h2>
+            <Card className="p-1">
+              <textarea
+                value={dailyNote}
+                onChange={(e) => setDailyNote(todayKey, e.target.value)}
+                placeholder="How did today go? What got in the way?"
+                rows={6}
+                className="w-full resize-none rounded-xl bg-transparent px-3.5 py-3 text-sm outline-none placeholder:text-faint"
+              />
+            </Card>
+          </div>
         </div>
       </div>
+
+      {/* Daily Spin Modal */}
+      <DailySpinModal open={showSpin} onClose={() => setShowSpin(false)} />
 
       <Modal
         open={showAdd}

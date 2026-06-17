@@ -3,7 +3,6 @@
 // the same avatar reads as more prestigious at higher ranks. Legendary adds a
 // slow conic shine (animate-spin-slow, defined in globals.css).
 
-import Image from "next/image";
 import type { Rank } from "@/lib/titles";
 import { RANK_STYLE } from "@/lib/ranks";
 import { resolveAvatar } from "@/lib/cosmetics";
@@ -46,7 +45,7 @@ export function RankAvatar({
         style={{ width: inner, height: inner }}
       >
         {resolved.kind === "image" ? (
-          <Image src={resolved.src} alt="" fill sizes={`${size}px`} className="object-cover" />
+          <img src={resolved.src} alt="" className="size-full object-cover" />
         ) : (
           <span style={{ fontSize: inner * 0.5 }} aria-hidden>
             {resolved.glyph}

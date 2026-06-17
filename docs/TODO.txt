@@ -2,7 +2,7 @@
 #                                                          #
 #   PROJECT 101 - TODO / PROGRESS CHECKLIST                #
 #   Tick [x] = done   [~] = in progress   [ ] = not yet    #
-#   Updated: 2026-06-17                                    #
+#   Updated: 2026-06-18                                    #
 #                                                          #
 ############################################################
 
@@ -24,59 +24,61 @@
   [x] Part 5 - Progression UI: XP bar, level, title/rank,
         profile-as-character-page, showcase, milestones (verified)
   [x] Part 6 - Layout/data viz                          (verified)
-        [x] 6a  Today dashboard widgets (S10)
-        [x] 6b  Stats redesign: interactive line chart +
-                equal-height scrolling cards (S11)
-        [x] 6c  Habits pagination: 20/page, scroll >12 (S12)
-        [x] 6d  Calendar/tracker alignment (S13)
-  [x] Part 7 - Final pass: a11y, 60fps / reduced-motion audit, polish
+        [x] 6a  Today dashboard widgets
+        [x] 6b  Stats redesign: interactive line chart
+        [x] 6c  Habits pagination: 20/page, scroll >12
+        [x] 6d  Calendar/tracker alignment
+  [x] Part 7 - Final pass: a11y, 60fps / reduced-motion audit
 
 
 ==========================================================
  COINS + SHOP ECONOMY   (*** COMPLETE - verified ***)
 ==========================================================
-  First post-redesign feature. Coins are DERIVED like XP; only the
-  spend ledger + owned/equipped cosmetics + freeze log are persisted
-  (schema v4). Detail: docs/PROGRESS.md. All verified in-app (Playwright).
-
   [x] Engine - lib/economy.ts: coinsEarned/coinBalance/coinBreakdown,
         shop catalog, cosmetic skin maps, streak-freeze rules
   [x] Schema v4 - economy state + validators + store actions
-        (buyCosmetic, equipCosmetic, redeemFreeze)
   [x] Shop page (/shop) + nav + coin chips (dashboard, profile)
-  [x] Cosmetics applied - flame skin, confetti palette, AND the
-        accent theme (AccentThemeApplier overrides --c-accent)
-  [x] Streak-freeze - logged, max 1/7 days, protects a genuine miss;
-        frozen days threaded into every streak readout + shown with a
-        snowflake badge (calendar day-detail + tracker grid)
-  [x] Coin breakdown card on /shop ("where your coins come from")
+  [x] Cosmetics applied - flame skin, confetti palette, accent themes
+  [x] Streak-freeze - logged, max 1/7 days, snowflake badge
+  [x] Coin breakdown card on /shop
   [x] Tests (economy.ts + freeze-aware habitStreaks)
 
 
 ==========================================================
- DEVELOPER MODE   (*** COMPLETE - verified ***)
+ ENGAGEMENT FEATURES   (*** COMPLETE - verified 2026-06-18 ***)
 ==========================================================
-  Hidden advanced-settings popup. Spec: docs/script.txt. Own
-  localStorage store (lib/devmode.ts) - does NOT touch schema v4.
+  5 new features built in one session. All integrate with the existing
+  coin economy. Detail: docs/PROGRESS.md (Engagement Features section).
 
-  [x] Unlock with Ctrl/Cmd+Shift+D -> bottom-right FAB -> slide-over
-  [x] lib/devmode.ts store + lib/devSeed.ts generators
-  [x] store.ts: replaceData / reloadData / importRawData
-  [x] 8 sections: General, UI Controls, Performance, Database Tools,
-        User Controls, AI Settings (inert), Debug Tools, System Info
-  [x] Cross-section search; debug overlays via injected <style>
-  [x] Mounted via <DevMode/> in AppShell; data-ambient hook added
+  [x] Phase 2 - Level-up unlockables: bonus coins per level
+  [x] Phase 3 - Streak milestone rewards: coins at 7/14/30/60/100 days
+  [x] Phase 4 - Daily check-in: streak-based coin popup on first visit
+  [x] Phase 5 - Daily quests: randomized challenges with coin rewards
+  [x] Phase 6 - Daily spin: wheel-of-fortune with weighted rewards
+  [x] Economy integration: bonusCoins, cleanEconomyV6, extended types
+  [x] Tests still pass: 81/81 (5 files)
+
+
+==========================================================
+ UI/UX OVERHAUL   (*** COMPLETE - 2026-06-17 ***)
+==========================================================
+  [x] Light theme redesigned: warm cream tones (less harsh)
+  [x] Dark theme redesigned: deep rich purple-black (less dull)
+  [x] Animated nav icons: bounce on active, wiggle on hover
+  [x] Particle background: 12 floating stars + 5 aurora blobs
+  [x] Card hover effects: lift, longer transitions
+  [x] All CSS animations GPU-composited (transform/opacity)
 
 
 ==========================================================
  BUG FIXES   (2026-06-17)
 ==========================================================
-  [x] Undefined CSS var var(--c-done) -> var(--color-done): completed
-        goal bars + 100% day bars now fill green (goals + dashboard).
-  [x] Today greeting hardcoded "Justin" -> data.profile.displayName.
-  [x] Current streak no longer collapses to 0 on an unmarked TODAY
-        (day in progress = neutral; a missed today still breaks).
-        +2 tests. Now 68 tests total.
+  [x] Render-phase setState: habits/page.tsx → safePage direct to Pagination
+  [x] CosmeticSlot duplication: removed from economy.ts, imported from types.ts
+  [x] Invalid Date guard: freezesUsedInWindow checks Number.isFinite(ts)
+  [x] Next.js Image + data URIs: RankAvatar uses <img> for uploaded avatars
+  [x] Flame flicker tiers: small/medium/large now differentiated (2.2s/1.6s/0.9s)
+  [x] uid() refactor: 5 duplicates consolidated into src/lib/util.ts
 
 
 ==========================================================
@@ -98,8 +100,9 @@
   [x] Goals with progress bars + milestones
   [x] Notes / journal (daily note + calendar surfacing)
   [x] Templates (starter routines)
-  [x] Gamification layer (the 7-part redesign above)
-  [x] Coins + Shop economy (cosmetics + streak-freeze, derived coins)
+  [x] Gamification layer (the 7-part redesign)
+  [x] Coins + Shop economy
+  [x] Engagement features (check-in, quests, spin, level/streak rewards)
   [ ] Reminders (deferred - real notifications need mobile, Phase 4+)
 
 
@@ -109,7 +112,7 @@
   [ ] Accounts + sign in (Supabase Auth)
   [ ] Drizzle ORM + database tables (migrations)
   [ ] Move data localStorage -> Supabase (cloud sync)
-  [ ] Row Level Security (RLS)               <- critical
+  [ ] Row Level Security (RLS)
   [ ] Validate input with Zod
   [ ] Email (verify + reset) via Resend
   [ ] Insights / weekly auto-summary
@@ -130,16 +133,23 @@
 
 
 ==========================================================
- WHERE WE ARE RIGHT NOW  (2026-06-17)
+ WHERE WE ARE RIGHT NOW  (2026-06-18)
 ==========================================================
-  A polished, fully local habit tracker (Phases 1-3). The full
-  gamification + UI redesign (all 7 parts), the Coins/Shop economy,
-  AND a hidden Developer Mode are DONE and verified - all four gates
-  green (68 tests). Three logic/UI bugs fixed (see BUG FIXES above).
-  Cloud/accounts/payments (Phases 4-5) are future work.
+  A polished, fully local habit tracker with a complete gamification
+  layer, coin economy, shop, AND 5 new engagement features (daily
+  check-in, quests, spin, level-up rewards, streak rewards). UI has
+  been overhauled with better themes, animated icons, and particle
+  backgrounds. Multiple bugs fixed. All 81 tests pass.
 
-  NEXT ACTION -> begin Phase 4 (accounts/cloud), or add more net-new
-  local features. No outstanding redesign/economy/dev-mode work.
+  NEXT ACTION -> The other 4 feature categories are queued:
+    1. 🧠 UX & Navigation (dashboard reordering, keyboard shortcuts,
+       onboarding wizard, undo/redo)
+    2. 📊 Data & Insights (advanced charts, prediction, export/import,
+       habit correlations)
+    3. 🎨 Customization & Social (community challenges, custom categories,
+       friend leaderboards, achievements showcase)
+    4. ⚡ Performance & Polish (faster load, PWA, offline-first, a11y audit)
+  Or begin Phase 4 (accounts/cloud).
 
 
 ############################################################

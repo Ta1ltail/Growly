@@ -53,7 +53,7 @@ export function summarizeProgress(data: AppData, today: Date): ProgressSummary {
   const xp = totalXp(stats, unlocked.map((a) => a.def));
   const level = levelInfo(xp);
   const title = titleForLevel(level.level);
-  const earned = coinsEarned(stats, unlocked.map((a) => a.def.rarity));
+  const earned = coinsEarned(stats, unlocked.map((a) => a.def.rarity), data.economy);
   const balance = coinBalance(earned, data.economy);
 
   const nextMilestones: Milestone[] = [];

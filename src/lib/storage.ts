@@ -318,8 +318,8 @@ function cleanProgressSeen(v: unknown): ProgressSeen {
   };
 }
 
-function cleanEconomy(v: unknown): Economy {
-  if (!isObject(v)) return { spent: [], owned: [], equipped: {}, freezes: [] };
+function cleanEconomyV6(v: unknown): Economy {
+  if (!isObject(v)) return { spent: [], owned: [], equipped: {}, freezes: [], bonusCoins: 0, lastCheckIn: null, checkInStreak: 0, lastQuestDate: null, currentQuest: null, lastSpinDate: null };
   const spent = Array.isArray(v.spent)
     ? v.spent.map(cleanSpend).filter((s): s is SpendEntry => s !== null)
     : [];
@@ -337,7 +337,38 @@ function cleanEconomy(v: unknown): Economy {
       }
     }
   }
-  return { spent, owned, equipped, freezes };
+  // Engagement features (schema v6)
+  const bonusCoins = typeof v.bonusCoins === "number" && Number.isFinite(v.bonusCoins) && v.bonusCoins >= 0
+    ? v.bonusCoins
+    : 0;
+  const lastCheckIn = asString(v.lastCheckIn) ?? null;
+  const checkInStreak = typeof v.checkInStreak === "number" && Number.isFinite(v.checkInStreak) && v.checkInStreak >= 0
+    ? Math.floor(v.checkInStreak)
+    : 0;
+  const lastQuestDate = asString(v.lastQuestDate) ?? null;
+  const lastSpinDate = asString(v.lastSpinDate) ?? null;
+  
+  // Clean currentQuest
+  let currentQuest = null;
+  if (isObject(v.currentQuest)) {
+    const cq = v.currentQuest as Record<string, unknown>;
+    if (
+      typeof cq.description === "string" &&
+      typeof cq.target === "number" && Number.isFinite(cq.target) && cq.target > 0 &&
+      typeof cq.current === "number" && Number.isFinite(cq.current) && cq.current >= 0 &&
+      typeof cq.reward === "number" && Number.isFinite(cq.reward) && cq.reward >= 0
+    ) {
+      currentQuest = {
+        description: cq.description,
+        target: Math.floor(cq.target),
+        current: Math.min(Math.floor(cq.current), Math.floor(cq.target)),
+        reward: Math.floor(cq.reward),
+      };
+      if (typeof cq.category === "string") (currentQuest as { category?: string }).category = cq.category;
+    }
+  }
+  
+  return { spent, owned, equipped, freezes, bonusCoins, lastCheckIn, checkInStreak, lastQuestDate, currentQuest, lastSpinDate };
 }
 
 export function loadData(): AppData {
@@ -387,7 +418,7 @@ export function loadData(): AppData {
       settings: { theme: { mode, accent }, graceHours, usedTemplateIds },
       profile: cleanProfile(parsed.profile),
       unlocks: cleanUnlocks(parsed.unlocks),
-      economy: cleanEconomy(parsed.economy),
+      economy: cleanEconomyV6(parsed.economy),
       progressSeen: cleanProgressSeen(parsed.progressSeen),
     };
   } catch {

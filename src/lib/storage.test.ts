@@ -197,6 +197,12 @@ describe("loadData validation", () => {
         owned: ["flame-azure"],
         equipped: { flame: "flame-azure" },
         freezes: [{ id: "f1", at: "2026-06-12T00:00:00.000Z", date: "2026-06-09", habitId: "h" }],
+        bonusCoins: 0,
+        lastCheckIn: null,
+        checkInStreak: 0,
+        lastQuestDate: null,
+        currentQuest: null,
+        lastSpinDate: null,
       },
       progressSeen: { seeded: true, level: 4, title: "Procrastination Survivor", shop: ["flame-gold"], streaks: { h: 7 } },
     };

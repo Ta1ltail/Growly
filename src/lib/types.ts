@@ -195,17 +195,40 @@ export interface Economy {
   owned: string[]; // cosmetic catalog ids the user has bought
   equipped: Partial<Record<CosmeticSlot, string>>; // slot -> equipped item id
   freezes: FreezeEntry[]; // streak-freeze use log
+
+  // ---- Engagement features (schema v6) ----
+  bonusCoins: number; // total bonus coins earned from engagement rewards
+  lastCheckIn: string | null; // dateKey of last daily check-in
+  checkInStreak: number; // consecutive daily check-in count
+  lastQuestDate: string | null; // dateKey of last quest generated
+  currentQuest: DailyQuest | null;
+  lastSpinDate: string | null; // dateKey of last daily spin
 }
 
-// Cosmetic categories that can be equipped (one active per slot).
-export type CosmeticSlot = "flame" | "confetti" | "accent";
+// A daily challenge generated once per day.
+export interface DailyQuest {
+  description: string;
+  target: number;
+  current: number;
+  reward: number;
+  category?: Category; // if set, only habits in this category count
+}
 
 export const DEFAULT_ECONOMY: Economy = {
   spent: [],
   owned: [],
   equipped: {},
   freezes: [],
+  bonusCoins: 0,
+  lastCheckIn: null,
+  checkInStreak: 0,
+  lastQuestDate: null,
+  currentQuest: null,
+  lastSpinDate: null,
 };
+
+// Cosmetic categories that can be equipped (one active per slot).
+export type CosmeticSlot = "flame" | "confetti" | "accent";
 
 /* ---- Celebration "seen" markers (schema v5) ----
  * Like `unlocks`, these are the ONLY persisted facts for non-achievement

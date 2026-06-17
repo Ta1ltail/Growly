@@ -50,7 +50,7 @@ export function StreakFlame({
 
   const color = ramp[tier];
   const flickerClass =
-    tier === "large" ? "animate-flicker-fast" : tier === "medium" ? "animate-flicker" : "animate-flicker";
+    tier === "large" ? "animate-flicker-fast" : tier === "medium" ? "animate-flicker-medium" : "animate-flicker";
 
   return (
     <span className={`inline-flex items-center gap-1 ${className}`} aria-label={`${streak} day streak`}>

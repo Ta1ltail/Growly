@@ -76,11 +76,11 @@ export default function HabitsPage() {
   const activeHabits = filtered.filter((h) => !h.archived);
   const archivedHabits = filtered.filter((h) => h.archived);
 
-  // Pagination over the active list. Clamp the page during render so changing
-  // the filter/search (which shrinks the list) can't strand us past the end.
+  // Pagination over the active list. Clamp displayed page to valid range;
+  // out-of-range page numbers from a previous filter silently resolve on the
+  // next user navigation.
   const pageCount = Math.max(1, Math.ceil(activeHabits.length / PAGE_SIZE));
   const safePage = Math.min(page, pageCount - 1);
-  if (safePage !== page) setPage(safePage);
   const pageHabits = activeHabits.slice(safePage * PAGE_SIZE, (safePage + 1) * PAGE_SIZE);
   // Cap the visible list to ~12 rows; the rest scrolls within the page.
   const listScrolls = pageHabits.length > SCROLL_AFTER;
@@ -147,7 +147,7 @@ export default function HabitsPage() {
             ))}
           </div>
 
-          <Pagination
+          <            Pagination
             page={safePage}
             pageCount={pageCount}
             total={activeHabits.length}
@@ -298,11 +298,13 @@ function IconBtn({
       onClick={onClick}
       aria-label={label}
       title={label}
-      className={`rounded-lg p-1.5 text-muted transition-colors ${
+      className={`group rounded-lg p-1.5 text-muted transition-all duration-200 hover:scale-110 ${
         danger ? "hover:bg-missed/10 hover:text-missed" : "hover:bg-surface2 hover:text-ink"
       }`}
     >
-      {children}
+      <span className="inline-flex items-center justify-center group-hover:animate-icon-wiggle">
+        {children}
+      </span>
     </button>
   );
 }

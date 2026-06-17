@@ -20,13 +20,22 @@ export function BottomNav() {
               className="relative flex flex-1 flex-col items-center gap-1 py-2.5 text-[10px] font-medium"
             >
               <span
-                className={`flex size-9 items-center justify-center rounded-xl transition-all ${
+                className={`flex size-9 items-center justify-center rounded-xl transition-all duration-200 ${
                   active ? "bg-accent/15 text-accent" : "text-muted"
                 }`}
               >
-                <Icon className="size-5" strokeWidth={active ? 2.5 : 2} />
+                <Icon
+                  className={`size-5 transition-all duration-300 ${
+                    active ? "animate-icon-bounce stroke-[2.5]" : ""
+                  }`}
+                />
               </span>
-              <span className={active ? "text-accent" : "text-faint"}>{label}</span>
+              <span className={`transition-colors duration-200 ${active ? "text-accent" : "text-faint"}`}>
+                {label}
+              </span>
+              {active && (
+                <span className="absolute -bottom-0 left-1/2 h-0.5 w-5 -translate-x-1/2 rounded-full bg-accent" />
+              )}
             </Link>
           );
         })}

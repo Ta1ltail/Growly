@@ -34,18 +34,25 @@ export function Sidebar() {
                 <Link
                   key={href}
                   href={href}
-                  className={`group flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-all ${
+                  className={`group flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-all duration-200 ${
                     active
                       ? "bg-accent/10 text-accent"
                       : "text-muted hover:bg-surface2 hover:text-ink"
                   }`}
                 >
-                  <Icon
-                    className={`size-4.5 transition-transform group-hover:scale-110 ${active ? "text-accent" : ""}`}
-                  />
+                  <span className="relative">
+                    <Icon
+                      className={`size-4.5 transition-all duration-300 group-hover:animate-icon-wiggle ${
+                        active ? "text-accent animate-icon-bounce" : ""
+                      }`}
+                    />
+                    {active && (
+                      <span className="absolute -inset-2 animate-glow-pulse rounded-full bg-accent/10" />
+                    )}
+                  </span>
                   {label}
                   {active && (
-                    <span className="ml-auto size-1.5 rounded-full bg-accent" />
+                    <span className="ml-auto size-1.5 rounded-full bg-accent animate-icon-pulse" />
                   )}
                 </Link>
               );

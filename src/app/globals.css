@@ -39,11 +39,18 @@
   --animate-pop: pop 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) both;
   --animate-shimmer: shimmer 1.4s ease-in-out infinite;
   --animate-float: float 22s ease-in-out infinite;
-  --animate-flicker: flicker 1.6s ease-in-out infinite;
+  --animate-flicker: flicker 2.2s ease-in-out infinite;
+  --animate-flicker-medium: flicker 1.6s ease-in-out infinite;
   --animate-flicker-fast: flicker 0.9s ease-in-out infinite;
   --animate-glow-pulse: glow-pulse 2.2s ease-in-out infinite;
   --animate-burst: burst 0.5s var(--ease-spring) both;
   --animate-text-sheen: text-sheen 3s linear infinite;
+  /* icon / nav animations */
+  --animate-icon-bounce: icon-bounce 2s ease-in-out infinite;
+  --animate-icon-pulse: icon-pulse 3s ease-in-out infinite;
+  --animate-icon-wiggle: icon-wiggle 0.4s ease-in-out;
+  --animate-particle-float: particle-float 6s ease-in-out infinite;
+  --animate-particle-float-alt: particle-float-alt 8s ease-in-out infinite;
 }
 
 /* Unified motion language — consistent durations + easing curves used across
@@ -57,39 +64,41 @@
 }
 
 /* ---- Light theme (default values) ----
-   Soft off-white surfaces (no harsh pure white), gentle contrast, subtle
-   borders + shadows instead of strong lines. Easy on the eyes for long use. */
+   Warm, creamy off-white surfaces with a subtle golden undertone so they feel
+   inviting rather than clinical. Gentle contrast, soft borders, and warm shadows
+   that avoid the harsh blue-gray of typical light themes. */
 :root {
-  --c-bg: #eef1f6;
-  --c-bg2: #e7ebf2;
-  --c-surface: #fbfcfe;
-  --c-surface2: #f1f4f9;
-  --c-line: #e1e6ef;
-  --c-ink: #1a2332;
-  --c-muted: #5d6b80;
-  --c-faint: #97a2b4;
-  --c-empty: #e6ebf3;
+  --c-bg: #f5f0eb;
+  --c-bg2: #efe9e2;
+  --c-surface: #fcf9f6;
+  --c-surface2: #f3eee7;
+  --c-line: #e6ddd3;
+  --c-ink: #2c1810;
+  --c-muted: #7a6b5e;
+  --c-faint: #b0a396;
+  --c-empty: #ece5dc;
   --c-accent: #3b82f6;
   --c-accent-glow: #60a5fa;
-  --c-shadow: 220 25% 30%;
+  --c-shadow: 30 20% 20%;
 }
 
 /* ---- Dark theme ----
-   Modern dark gray (not a black void). Cards/panels sit clearly above the
-   background with more separation and softer text. */
+   Deep, rich dark with subtle warm-purple undertones instead of flat gray.
+   Cards float with a soft glow, text has excellent contrast, and the overall
+   feel is luxurious rather than utilitarian. */
 [data-theme="dark"] {
-  --c-bg: #11151d;
-  --c-bg2: #161b25;
-  --c-surface: #1c2330;
-  --c-surface2: #252e3e;
-  --c-line: #303a4d;
-  --c-ink: #eaeef6;
-  --c-muted: #94a1b8;
-  --c-faint: #677387;
-  --c-empty: #252e3e;
+  --c-bg: #0f0e17;
+  --c-bg2: #171522;
+  --c-surface: #1f1d2e;
+  --c-surface2: #2a2740;
+  --c-line: #3a3652;
+  --c-ink: #e8e4f0;
+  --c-muted: #a8a2c8;
+  --c-faint: #716b92;
+  --c-empty: #2a2740;
   --c-accent: #4b8bf7;
   --c-accent-glow: #6ba2f9;
-  --c-shadow: 222 47% 4%;
+  --c-shadow: 260 40% 4%;
 }
 
 @keyframes fade-in {
@@ -276,6 +285,85 @@
   }
 }
 
+/* ======= NEW ANIMATIONS: icons, particles, glow ======= */
+
+/* Gentle float-bounce for nav icons — like a heartbeat */
+@keyframes icon-bounce {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(-2px) scale(1.05);
+  }
+}
+
+/* Slow pulse for active nav icons */
+@keyframes icon-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    filter: brightness(1);
+  }
+  50% {
+    opacity: 0.7;
+    filter: brightness(1.15);
+  }
+}
+
+/* Quick playful wiggle on hover (used by IconBtn, nav items) */
+@keyframes icon-wiggle {
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+  20% {
+    transform: rotate(-8deg);
+  }
+  40% {
+    transform: rotate(8deg);
+  }
+  60% {
+    transform: rotate(-5deg);
+  }
+  80% {
+    transform: rotate(5deg);
+  }
+}
+
+/* Floating particle (ambient stars) — rises and fades */
+@keyframes particle-float {
+  0% {
+    transform: translateY(0) scale(0);
+    opacity: 0;
+  }
+  20% {
+    opacity: 0.8;
+    transform: translateY(-20px) scale(1);
+  }
+  80% {
+    opacity: 0.6;
+  }
+  100% {
+    transform: translateY(-120px) scale(0.2);
+    opacity: 0;
+  }
+}
+@keyframes particle-float-alt {
+  0% {
+    transform: translateY(40px) scale(0);
+    opacity: 0;
+  }
+  30% {
+    opacity: 0.6;
+    transform: translateY(-10px) scale(0.8);
+  }
+  100% {
+    transform: translateY(-90px) scale(0);
+    opacity: 0;
+  }
+}
+
 * {
   -webkit-tap-highlight-color: transparent;
 }
@@ -300,13 +388,13 @@ html {
   color-scheme: dark;
   scroll-behavior: smooth;
   background: var(--c-bg);
-  transition: background-color 0.3s ease;
+  transition: background-color 0.4s ease, color 0.4s ease;
 }
 
 body {
   color: var(--c-ink);
   font-family: var(--font-sans), system-ui, sans-serif;
-  transition: color 0.3s ease;
+  transition: color 0.4s ease;
 }
 
 /* Glassy surface used by cards/sidebar */

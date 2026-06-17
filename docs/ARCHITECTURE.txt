@@ -1,12 +1,13 @@
 ############################################################
-#   PROJECT 101 - ARCHITECTURE  (v0.7, +developer mode)    #
-#   Folder structure, gamification model, theme, data flow #
-#   Updated: 2026-06-17                                    #
+#   PROJECT 101 - ARCHITECTURE  (v0.8, +engagement features)#
+#   Folder structure, gamification model, economy model,    #
+#   engagement model, theme, data flow                      #
+#   Updated: 2026-06-18                                     #
 ############################################################
 
   App: "LifeGrid" - a spreadsheet-style habit & task tracker.
-  Stack now: Next.js 16.2.9 (App Router) + TypeScript + Tailwind v4,
-  localStorage persistence (schema v4), Vitest. Cloud/accounts/payments
+  Stack: Next.js 16.2.9 (App Router) + TypeScript + Tailwind v4,
+  localStorage persistence (schema v6), Vitest. Cloud/accounts/payments
   are still future phases (see FINAL_BUILD_PLAN.txt).
 
   NOTE: this is a MODIFIED Next.js - read node_modules/next/dist/docs/
@@ -28,27 +29,28 @@
     settings/                 theme, grace window, data tools
 
   components/
-    AmbientBackground.tsx     fixed drifting blurred accent blobs (part 2)
-    AnimatedCounter.tsx       rAF count-up, hydration-safe (part 3)
-    StreakFlame.tsx           tiered animated flame: small/medium/large (part 3)
-    AchievementBadge.tsx      collectible rarity badge (part 4)
+    AmbientBackground.tsx     fixed drifting blurred accent blobs + particle layer (stars)
+    AnimatedCounter.tsx       rAF count-up, hydration-safe
+    StreakFlame.tsx           tiered animated flame: small/medium/large
+    AchievementBadge.tsx      collectible rarity badge
     Confetti.tsx              celebration particles
     ThemeApplier.tsx          syncs saved theme -> <html>
-    celebrations/             AchievementToast/Popup/Celebration + CelebrationManager (part 4)
-    progression/              XpBar, TitleDisplay, RankAvatar, NextMilestoneWidget (part 5)
-    profile/                  ProfileEditModal (part 5)
-    dashboard/                DashboardWidgets - Today's progress strip (part 6a)
-    stats/                    TrendLineChart - interactive SVG line chart (part 6b)
-    economy/                  CoinChip, CoinBreakdownCard, AccentThemeApplier (economy)
+    celebrations/             AchievementToast/Popup/Celebration + CelebrationManager
+    progression/              XpBar, TitleDisplay, RankAvatar, NextMilestoneWidget
+    profile/                  ProfileEditModal
+    dashboard/                DashboardWidgets - Today's progress strip
+    stats/                    TrendLineChart - interactive SVG line chart
+    economy/                  CoinChip, CoinBreakdownCard, AccentThemeApplier
+    today/                    CheckInPopup, DailyQuestCard, DailySpinModal (engagement)
     devmode/                  DevMode (FAB + Ctrl/Cmd+Shift+D + style injector +
                               FPS meter + state logger), DevModePanel, ui kit, and
                               8 sections/ (General, UI Controls, Performance,
                               Database Tools, User Controls, AI Settings, Debug
-                              Tools, System Information) - hidden power-user layer
+                              Tools, System Information)
     layout/                   AppShell, Sidebar, BottomNav, navItems
     ui/                       Button, Card, Modal, PageHeader, PageSkeleton, Skeleton,
                               ProgressBar, ProgressRing, StatCard, Segmented,
-                              EmptyState, Pagination (part 6c)
+                              EmptyState, Pagination
     habits/ goals/ notes/     feature forms (HabitForm, MarkButton, GoalForm, ...)
 
   hooks/
@@ -56,30 +58,35 @@
     useHydrated.ts            true after mount (gate client-only UI)
 
   lib/                        framework-free logic (tested + reusable)
-    types.ts                  data shapes (incl. Rarity, AchievementDef, Profile, Unlocks)
+    types.ts                  data shapes (incl. Economy, Rarity, AchievementDef,
+                              Profile, Unlocks, DailyQuest, ProgressSeen)
     categories.ts             categories + colors
+    util.ts                   shared uid() (refactored from 5 duplicates)
     marks.ts  policy.ts       mark cycle/labels + Honest-Tracking edit rules
-    storage.ts                localStorage load/save (SCHEMA_VERSION = 4) + date helpers
+    storage.ts                localStorage load/save (SCHEMA_VERSION = 6) + date helpers
     store.ts                  shared store (useSyncExternalStore) + all actions
-                              (incl. dev-only replaceData/reloadData/importRawData)
-    devmode.ts                Developer Mode settings store (OWN localStorage key
-                              project101.devmode.v1 - never touches schema v4)
+                              (incl. claimDailyCheckIn, refreshDailyQuest,
+                               claimDailyQuest, doDailySpin, dev tools)
+    devmode.ts                Developer Mode settings store (OWN localStorage key)
     devSeed.ts                demo / stress-test data generators (Dev Mode)
     stats.ts                  streaks + completion math
     insights.ts  format.ts    plain-language insights + formatters
     habits.ts  templates.ts   habit builders + starter routines
     theme.ts                  theme modes + accent presets
-    -- gamification engine (part 1, all PURE + derived) --
+    -- gamification engine (all PURE + derived from marks) --
     xp.ts                     XP sources + super-linear level curve (levelInfo)
     achievements.ts           28 achievement defs, buildGameStats, evaluateAchievements
     titles.ts                 20 titles -> 5 ranks, titleForLevel
     progress.ts               summarizeProgress facade + reconcileUnlocks
     rarity.ts                 RARITY_STYLE (visuals + celebration tier) - UI only
-    ranks.ts                  RANK_STYLE (rank visuals) - UI only (part 5)
-    cosmetics.ts              avatar + banner presets, resolvers (part 5)
+    ranks.ts                  RANK_STYLE (rank visuals) - UI only
+    cosmetics.ts              avatar + banner presets, resolvers
     economy.ts                coins (DERIVED), shop catalog, cosmetic skins,
-                              streak-freeze rules - PURE (mirrors xp.ts)
-    *.test.ts                 gamification / stats / storage / economy (68 tests, 4 files)
+                              streak-freeze rules + engagement rewards:
+                              levelUpBonus, streakMilestoneBonus, checkInReward,
+                              generateDailyQuest, randomSpinReward
+    celebrations.ts           unified celebration queue (achievements + progress)
+    *.test.ts                 81 tests across 5 files
 
 
 ==========================================================
@@ -88,141 +95,100 @@
   ALL gamification - XP, levels, streaks, achievement progress,
   titles, ranks, AND COINS - is COMPUTED from the immutable mark
   history by pure functions in lib/. It is NEVER stored as a mutable
-  counter. This keeps it consistent with Honest Tracking (anti-cheat):
-  you cannot inflate progress without real marks, and the numbers can
-  never desync from the record.
+  counter. This keeps it consistent with Honest Tracking (anti-cheat).
 
-  The ONLY persisted gamification state (schema v4):
+  The ONLY persisted gamification state (schema v6):
     - unlocks: { [achievementId]: { at, seen } }   (for one-time popups)
-    - profile: editable identity (name, username, bio, motto,
-               avatar, banner, showcaseBadgeId)
-    - economy: append-only spend ledger + owned/equipped cosmetics +
-               dated streak-freeze log (see ECONOMY MODEL below)
+    - profile: editable identity
+    - economy: spend ledger + owned/equipped cosmetics + freeze log +
+               engagement fields (see ECONOMY MODEL below)
 
   One call does it all:
     summarizeProgress(data, today)
       -> { stats, achievements, unlockedCount, totalCount,
            xp, level, title, nextMilestones,
            coinsEarned, coinBalance }
-    (Note: it does NOT return `profile` - read data.profile directly.)
-
-  reconcileUnlocks(data, today, nowIso) folds newly-satisfied
-  achievements into the persisted unlock map (returns the SAME map
-  reference when nothing changed, so callers skip the write).
-  cycleMark() calls it on every mark; CelebrationManager renders the
-  most-prestigious unseen unlock and marks it seen on dismiss.
 
 
 ==========================================================
  ECONOMY MODEL  (coins, shop, streak-freeze)
 ==========================================================
   Coins mirror XP: DERIVED, never granted. lib/economy.ts.
-    balance = coinsEarned(history) - SUM(spend ledger), clamped >= 0
-    coinsEarned = 2/completion + 10/perfect-day + rarity achievement
-                  bonuses (RARITY_COINS). coinBreakdown() itemizes it
-                  for the /shop "where your coins come from" card.
+    balance = coinsEarned(history, unlockedRarities, economy)
+           - SUM(spend ledger), clamped >= 0
+    coinsEarned includes:
+      - 2/completion + 10/perfect-day (from marks)
+      - RARITY_COINS (from achievements)
+      - bonusCoins (from engagement features - stored in economy)
 
   Persisted economy state (the ONLY mutable economy facts):
-    - spent:    append-only { id, at, amount, item } ledger
-    - owned:    cosmetic catalog ids bought
-    - equipped: { flame | confetti | accent -> itemId }
-    - freezes:  dated streak-freeze log { id, at, date, habitId }
+    - spent:       append-only { id, at, amount, item } ledger
+    - owned:       cosmetic catalog ids bought
+    - equipped:    { flame | confetti | accent -> itemId }
+    - freezes:     dated streak-freeze log
+    - bonusCoins:  cumulative engagement reward coins (v6)
+    - lastCheckIn: dateKey of last daily check-in (v6)
+    - checkInStreak: consecutive daily check-in count (v6)
+    - lastQuestDate: dateKey of last quest generation (v6)
+    - currentQuest: active DailyQuest (v6)
+    - lastSpinDate: dateKey of last daily spin (v6)
 
-  Cosmetics (3 slots, free "default" per slot, some level-gated):
-    - flame    -> FLAME_SKINS recolor StreakFlame's tier ramp
-    - confetti -> CONFETTI_SKINS recolor AchievementCelebration
-    - accent   -> ACCENT_SKINS; AccentThemeApplier overrides
-                  --c-accent/--c-accent-glow on <html> app-wide
-                  (default clears the override -> themed accent)
-    equippedOrDefault(economy, slot) resolves the active id.
+  Engagement rewards are added to bonusCoins via store actions:
+    claimDailyCheckIn() -> { reward, streak }
+    refreshDailyQuest() / claimDailyQuest()
+    doDailySpin() -> { label, amount, isFreeze }
 
-  Streak-freeze (logged, limited consumable, FREEZE_PRICE coins):
-    - protects ONE genuine recorded miss (status "missed") - the miss
-      STAYS in history; habitStreaks(..., frozen?) just treats that
-      habitId@dateKey as neutral. Honest Tracking holds.
-    - capped 1 per rolling 7 days (canUseFreeze); only past misses are
-      eligible (freezableDays / canFreezeDay).
-    - frozen days show a snowflake badge in the calendar day-detail and
-      the tracker grid (MarkButton `frozen` prop / cell overlay).
-    - frozenSet(economy) is threaded into buildGameStats AND every UI
-      streak readout (today/dashboard/habits/tracker/stats) so the
-      protection is consistent everywhere.
-
-  store actions: buyCosmetic, equipCosmetic, redeemFreeze (NB: not
-  "useFreeze" - the use* prefix trips eslint rules-of-hooks).
+  Streak-freeze: protects ONE genuine recorded miss. The miss stays
+  in history; habitStreaks(..., frozen?) treats it as neutral.
+    - Capped 1 per rolling 7 days
+    - frozenSet() is threaded into all streak readouts + shown with
+      snowflake badge (calendar day-detail + tracker grid)
 
 
 ==========================================================
  THEME SYSTEM
 ==========================================================
-  - All colors are CSS variables (--c-*). Light values on :root,
-    dark values on [data-theme="dark"]. Swap the attribute -> the
-    whole app re-themes instantly. Accent is its own var (--c-accent);
-    an equipped "accent" cosmetic overrides it via AccentThemeApplier
-    (inline style on <html>), the default clears the override.
-  - layout.tsx runs a tiny inline script BEFORE paint that reads the
-    saved theme from localStorage and applies it -> NO theme flash.
-  - ThemeApplier (client) keeps it in sync and reacts to OS changes
-    when mode = "system".
+  - All colors are CSS variables (--c-*). Light on :root, dark on
+    [data-theme="dark"]. Accent cosmetic overrides --c-accent.
+  - layout.tsx inline script reads saved theme BEFORE paint -> NO flash.
   - globals.css holds the full motion language: tokens (--animate-*,
-    --ease-*, --dur-*) + every keyframe (flicker, glow-pulse, ember,
-    burst, confetti-fall, toast-in, celebrate-in, spin-slow,
-    text-sheen, float, ...). A global prefers-reduced-motion rule
-    neutralizes animation for accessibility.
+    --ease-*, --dur-*) + all keyframes. prefers-reduced-motion blanket.
 
 
 ==========================================================
  DATA FLOW
 ==========================================================
   UI  ->  store actions (addHabit, cycleMark, updateProfile,
-          markAchievementsSeen, ...)
+          claimDailyCheckIn, ...)
        ->  update() writes localStorage + notifies subscribers
        ->  useAppData() (useSyncExternalStore) re-renders every
            screen. One source of truth.
-  Derived gamification is recomputed on render via summarizeProgress
-  (memoized per page) - nothing extra to persist or invalidate.
+  Derived gamification is recomputed on render via summarizeProgress.
+
+
+==========================================================
+ DEVELOPER MODE  (hidden power-user layer)
+==========================================================
+  Unlocked with Ctrl/Cmd+Shift+D -> FAB -> slide-over. Own localStorage
+  store (lib/devmode.ts, key project101.devmode.v1). 8 sections,
+  cross-section search, data tools (JSON edit, export/import, seed,
+  wipe). Derived-gamification invariant still holds: dev tools only
+  edit persisted facts; coins/XP/streaks recompute from history.
 
 
 ==========================================================
  QUALITY GATES
 ==========================================================
   Gates: npx tsc --noEmit && npm run lint && npx vitest run && npm run build
-  Status (2026-06-17): GREEN. All 7 redesign parts + the Coins/Shop
-  economy + the Developer Mode layer are done & verified (tsc 0,
-  eslint 0, vitest 68 passing, next build passes, 15 routes).
+  Status (2026-06-18): GREEN. All 7 redesign parts + economy + developer
+  mode + UI/UX overhaul + engagement features (5 phases) done & verified
+  (tsc 0, eslint 0 errors/1 warning, vitest 81 passing, build clean).
 
   Lint gotcha: React Compiler rule `react-hooks/preserve-manual-
-  memoization` requires useMemo deps to match the props actually
-  read (use [data], not [data.marks, data.habits]). Render-phase
-  setState (clamping a page, seeding a draft) is allowed; sync
-  setState INSIDE an effect is not (react-hooks/set-state-in-effect).
+  memoization` requires useMemo deps to match the props actually read.
+  Sync setState in an effect is forbidden by `react-hooks/set-state-in-effect`.
   Hook-name gotcha: a plain helper must NOT start with `use` if it's
   called from a non-component/non-hook fn (rules-of-hooks).
 
-
-==========================================================
- DEVELOPER MODE  (hidden power-user layer)
-==========================================================
-  A hidden advanced-settings popup, separate from user Settings.
-  Unlocked (and persisted) with Ctrl/Cmd+Shift+D -> a bottom-right FAB
-  opens a right-side slide-over. Mounted once via <DevMode/> in AppShell.
-
-  Settings live in their OWN store (lib/devmode.ts, key
-  project101.devmode.v1) so they can never corrupt or migrate with the
-  schema-v4 app data. Data tools act on the real store through
-  replaceData / reloadData / importRawData (store.ts).
-
-  Sections: General, UI Controls (theme + debug overlays via an injected
-  <style>), Performance (FPS meter, footprint, stress seed), Database
-  Tools (raw JSON edit/apply, export/import, seed demo, wipe slices),
-  User Controls (live profile edit, grace window, force-unlock/relock
-  achievements), AI Settings (INERT - no AI backend; persisted prototype
-  surface only), Debug Tools (trigger celebration, log state, throw test
-  error, nuke storage), System Information. A search box filters rows
-  across every section (matchQuery on label/hint/terms).
-
-  Derived-gamification invariant still holds: dev tools only edit the
-  PERSISTED facts (marks, unlocks, profile, economy ledger); coins/XP/
-  streaks recompute from history as always.
 
 ############################################################

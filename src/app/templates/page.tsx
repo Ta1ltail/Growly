@@ -9,15 +9,11 @@ import { TEMPLATES, type Template } from "@/lib/templates";
 import type { Habit } from "@/lib/types";
 import { addHabit, markTemplateUsed, resetTemplateUsage, useAppData } from "@/lib/store";
 import { dateKey } from "@/lib/storage";
+import { uid } from "@/lib/util";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Button } from "@/components/ui/Button";
-
-function newId(): string {
-  if (typeof crypto !== "undefined" && "randomUUID" in crypto) return crypto.randomUUID();
-  return `id-${Math.random().toString(36).slice(2)}`;
-}
 
 export default function TemplatesPage() {
   const data = useAppData();
@@ -30,7 +26,7 @@ export default function TemplatesPage() {
     const start = dateKey(new Date());
     for (const h of template.habits) {
       const habit: Habit = {
-        id: newId(),
+        id: uid(),
         name: h.name,
         category: h.category,
         repeatDays: h.repeatDays,

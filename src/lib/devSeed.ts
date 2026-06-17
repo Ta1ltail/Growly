@@ -6,11 +6,7 @@
 import type { AppData, Habit, Marks, MarkStatus } from "./types";
 import { CATEGORIES, type Category } from "./categories";
 import { addDays, dateKey } from "./storage";
-
-function uid(): string {
-  if (typeof crypto !== "undefined" && "randomUUID" in crypto) return crypto.randomUUID();
-  return `id-${Math.random().toString(36).slice(2)}-${Date.now()}`;
-}
+import { uid } from "./util";
 
 function pick<T>(arr: readonly T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];

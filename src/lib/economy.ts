@@ -9,14 +9,149 @@
 // Honest Tracking model: you can spend what the record proves you earned, and
 // nothing more.
 
-import type { Economy, FreezeEntry, Marks, MarkStatus, Rarity } from "./types";
+import type { CosmeticSlot, DailyQuest, Economy, FreezeEntry, Marks, MarkStatus, Rarity } from "./types";
 import type { GameStats } from "./achievements";
 import { dateKey, addDays, startOfDay } from "./storage";
+import type { Category } from "./categories";
 
 /* ---------------- earning ---------------- */
 
 export const COINS_PER_COMPLETION = 2;
 export const COINS_PER_PERFECT_DAY = 10;
+
+/* ---------------- engagement rewards ---------------- */
+
+// Level-up bonus: coins granted each time the user levels up.
+export const LEVEL_UP_COINS = [
+  0, // level 1 (starting, no bonus)
+  5,  // level 2
+  10, // level 3
+  15, // level 4
+  25, // level 5
+  35, // level 6
+  50, // level 7
+  65, // level 8
+  85, // level 9
+  100, // level 10
+];
+// For levels beyond 10: 100 + (level - 10) * 25
+export function levelUpBonus(level: number): number {
+  if (level <= 1) return 0;
+  if (level < LEVEL_UP_COINS.length) return LEVEL_UP_COINS[level];
+  return 100 + (level - 10) * 25;
+}
+
+// Streak milestone rewards: bonus coins for reaching streak milestones.
+// Ordered by increasing milestone — computed from maxBestStreak.
+export const STREAK_MILESTONES = [7, 14, 30, 60, 100] as const;
+export const STREAK_MILESTONE_REWARDS: Record<number, number> = {
+  7: 25,
+  14: 50,
+  30: 100,
+  60: 200,
+  100: 500,
+};
+export function streakMilestoneBonus(maxBestStreak: number): number {
+  let total = 0;
+  for (const m of STREAK_MILESTONES) {
+    if (maxBestStreak >= m) total += STREAK_MILESTONE_REWARDS[m];
+  }
+  return total;
+}
+
+// Daily check-in bonus: scales with streak.
+export function checkInReward(streak: number): number {
+  if (streak < 2) return 3; // first check-in
+  if (streak < 5) return 5;
+  if (streak < 10) return 8;
+  if (streak < 21) return 12;
+  if (streak < 30) return 18;
+  if (streak < 60) return 25;
+  if (streak < 100) return 35;
+  return 50; // 100+ day check-in streak
+}
+
+// Daily quest reward.
+export const QUEST_REWARD_MIN = 15;
+export const QUEST_REWARD_MAX = 40;
+
+// Daily spin possible rewards.
+export const SPIN_REWARDS = [
+  { weight: 20, label: "10 coins", amount: 10 },
+  { weight: 20, label: "15 coins", amount: 15 },
+  { weight: 18, label: "20 coins", amount: 20 },
+  { weight: 15, label: "30 coins", amount: 30 },
+  { weight: 10, label: "50 coins", amount: 50 },
+  { weight: 8, label: "75 coins", amount: 75 },
+  { weight: 5, label: "100 coins", amount: 100 },
+  { weight: 3, label: "Streak Freeze", amount: 0, item: "freeze" },
+  { weight: 1, label: "200 coins", amount: 200 },
+];
+export interface SpinReward {
+  weight: number;
+  label: string;
+  amount: number;
+  item?: string;
+}
+
+// Pick a random reward weighted by probability.
+export function randomSpinReward(): SpinReward {
+  const totalWeight = SPIN_REWARDS.reduce((s, r) => s + r.weight, 0);
+  let roll = Math.random() * totalWeight;
+  for (const reward of SPIN_REWARDS) {
+    roll -= reward.weight;
+    if (roll <= 0) return reward;
+  }
+  return SPIN_REWARDS[0];
+}
+
+// Generate a random daily quest based on the user's habits. Expects unarchived
+// habits — the caller (store.refreshDailyQuest) passes the full list from AppData.
+export function generateDailyQuest(habits: { id: string; category: Category; archived?: boolean }[]): DailyQuest | null {
+  const active = habits.filter((h) => !h.archived);
+  if (active.length === 0) return null;
+
+  const questTypes = [
+    () => {
+      // Complete X habits today
+      const count = Math.max(3, Math.min(active.length, Math.floor(active.length * 0.6) + 1));
+      return {
+        description: `Complete ${count} habits today`,
+        target: count,
+        reward: QUEST_REWARD_MIN + count * 3,
+      };
+    },
+    () => {
+      // Perfect day (all habits done)
+      return {
+        description: "Complete every scheduled habit today",
+        target: 1,
+        reward: QUEST_REWARD_MAX,
+      };
+    },
+    () => {
+      // Focus on a specific category
+      const categories = [...new Set(active.map((h) => h.category))];
+      if (categories.length === 0) return null;
+      const cat = categories[Math.floor(Math.random() * categories.length)];
+      const catHabits = active.filter((h) => h.category === cat);
+      const count = Math.max(1, Math.min(catHabits.length, Math.ceil(catHabits.length / 2)));
+      return {
+        description: `Complete ${count} ${cat} habits`,
+        target: count,
+        reward: QUEST_REWARD_MIN + count * 4,
+        category: cat,
+      };
+    },
+  ];
+
+  const pick = questTypes[Math.floor(Math.random() * questTypes.length)]();
+  if (!pick) return generateDailyQuest(habits); // retry
+  return {
+    ...pick,
+    current: 0,
+  };
+}
 
 // Bonus coins minted the first time an achievement is unlocked, by rarity.
 export const RARITY_COINS: Record<Rarity, number> = {
@@ -27,12 +162,13 @@ export const RARITY_COINS: Record<Rarity, number> = {
 };
 
 // Total lifetime coins EARNED from history-derived stats + unlocked
-// achievements. Pure: same inputs always give the same number.
-export function coinsEarned(stats: GameStats, unlockedRarities: Rarity[]): number {
+// achievements + engagement bonuses. Pure history-derived base + stored bonuses.
+export function coinsEarned(stats: GameStats, unlockedRarities: Rarity[], economy?: Economy): number {
   const base = stats.doneCount * COINS_PER_COMPLETION;
   const perfect = stats.perfectDays * COINS_PER_PERFECT_DAY;
   const fromAchievements = unlockedRarities.reduce((sum, r) => sum + RARITY_COINS[r], 0);
-  return base + perfect + fromAchievements;
+  const fromBonuses = economy?.bonusCoins ?? 0;
+  return base + perfect + fromAchievements + fromBonuses;
 }
 
 // Coins already committed via the spend ledger.
@@ -66,7 +202,8 @@ export function coinBreakdown(
   const fromCompletions = stats.doneCount * COINS_PER_COMPLETION;
   const fromPerfectDays = stats.perfectDays * COINS_PER_PERFECT_DAY;
   const fromAchievements = unlockedRarities.reduce((sum, r) => sum + RARITY_COINS[r], 0);
-  const earned = fromCompletions + fromPerfectDays + fromAchievements;
+  const fromBonuses = economy.bonusCoins ?? 0;
+  const earned = fromCompletions + fromPerfectDays + fromAchievements + fromBonuses;
   const spent = coinsSpent(economy);
   return {
     completions: stats.doneCount,
@@ -81,8 +218,6 @@ export function coinBreakdown(
 }
 
 /* ---------------- catalog ---------------- */
-
-export type CosmeticSlot = "flame" | "confetti" | "accent";
 
 export interface ShopItem {
   id: string;
@@ -103,6 +238,10 @@ export const FLAME_SKINS: Record<string, { small: string; medium: string; large:
   "flame-emerald": { small: "#34d399", medium: "#10b981", large: "#059669" },
   "flame-violet": { small: "#c084fc", medium: "#a855f7", large: "#7c3aed" },
   "flame-gold": { small: "#fde047", medium: "#facc15", large: "#f59e0b" },
+  "flame-ice": { small: "#99f6e4", medium: "#5eead4", large: "#2dd4bf" },
+  "flame-lava": { small: "#fca5a5", medium: "#f87171", large: "#dc2626" },
+  "flame-rainbow": { small: "#f472b6", medium: "#a78bfa", large: "#60a5fa" },
+  "flame-solar": { small: "#fde68a", medium: "#fbbf24", large: "#f59e0b" },
 };
 
 // Confetti palettes keyed by item id (consumed by Confetti / celebrations).
@@ -111,6 +250,9 @@ export const CONFETTI_SKINS: Record<string, string[]> = {
   "confetti-mono": ["#e2e8f0", "#94a3b8", "#cbd5e1", "#f8fafc"],
   "confetti-neon": ["#22d3ee", "#a3e635", "#f472b6", "#fb923c"],
   "confetti-fire": ["#fde047", "#fb923c", "#f43f5e", "#ef4444"],
+  "confetti-pastel": ["#fbcfe8", "#c4b5fd", "#a7f3d0", "#fde68a", "#bfdbfe"],
+  "confetti-gold": ["#fef08a", "#fde047", "#facc15", "#eab308", "#ca8a04"],
+  "confetti-ocean": ["#99f6e4", "#67e8f9", "#22d3ee", "#06b6d4", "#0891b2"],
 };
 
 // App-wide accent themes keyed by item id (override --c-accent/--c-accent-glow).
@@ -121,6 +263,9 @@ export const ACCENT_SKINS: Record<string, { accent: string; glow: string }> = {
   "accent-emerald": { accent: "#10b981", glow: "#34d399" },
   "accent-violet": { accent: "#8b5cf6", glow: "#a78bfa" },
   "accent-amber": { accent: "#f59e0b", glow: "#fbbf24" },
+  "accent-pink": { accent: "#ec4899", glow: "#f472b6" },
+  "accent-ocean": { accent: "#06b6d4", glow: "#22d3ee" },
+  "accent-lime": { accent: "#84cc16", glow: "#a3e635" },
 };
 
 export const SHOP_ITEMS: ShopItem[] = [
@@ -129,15 +274,25 @@ export const SHOP_ITEMS: ShopItem[] = [
   { id: "flame-emerald", name: "Emerald Flame", description: "A verdant green streak flame.", slot: "flame", price: 120, preview: "#10b981" },
   { id: "flame-violet", name: "Violet Flame", description: "A mystic purple streak flame.", slot: "flame", price: 200, preview: "#a855f7" },
   { id: "flame-gold", name: "Golden Flame", description: "A radiant gold flame for the dedicated.", slot: "flame", price: 400, minLevel: 10, preview: "#facc15" },
+  { id: "flame-ice", name: "Ice Flame", description: "A frosty blue-cyan streak flame.", slot: "flame", price: 180, preview: "#5eead4" },
+  { id: "flame-lava", name: "Lava Flame", description: "A blazing red-hot streak flame.", slot: "flame", price: 250, minLevel: 6, preview: "#f87171" },
+  { id: "flame-rainbow", name: "Rainbow Flame", description: "A prismatic, color-shifting flame.", slot: "flame", price: 500, minLevel: 15, preview: "#a78bfa" },
+  { id: "flame-solar", name: "Solar Flame", description: "A brilliant golden-white streak flame.", slot: "flame", price: 350, minLevel: 12, preview: "#fbbf24" },
   // ---- Confetti palettes ----
   { id: "confetti-mono", name: "Monochrome Confetti", description: "Clean, minimal celebration.", slot: "confetti", price: 100, preview: "#cbd5e1" },
   { id: "confetti-neon", name: "Neon Confetti", description: "Loud, electric celebration.", slot: "confetti", price: 150, preview: "#22d3ee" },
   { id: "confetti-fire", name: "Firework Confetti", description: "Warm sparks on every unlock.", slot: "confetti", price: 250, minLevel: 5, preview: "#fb923c" },
+  { id: "confetti-pastel", name: "Pastel Confetti", description: "Soft, dreamy celebration colors.", slot: "confetti", price: 120, preview: "#fbcfe8" },
+  { id: "confetti-gold", name: "Gold Confetti", description: "Luxurious golden shower.", slot: "confetti", price: 300, minLevel: 8, preview: "#fde047" },
+  { id: "confetti-ocean", name: "Ocean Confetti", description: "Deep blue-teal celebration.", slot: "confetti", price: 200, preview: "#22d3ee" },
   // ---- Accent themes (recolor the whole app's accent) ----
   { id: "accent-crimson", name: "Crimson Accent", description: "Recolor the app in bold crimson.", slot: "accent", price: 150, preview: "#f43f5e" },
   { id: "accent-emerald", name: "Emerald Accent", description: "Recolor the app in fresh emerald.", slot: "accent", price: 150, preview: "#10b981" },
   { id: "accent-violet", name: "Violet Accent", description: "Recolor the app in deep violet.", slot: "accent", price: 200, preview: "#8b5cf6" },
   { id: "accent-amber", name: "Amber Accent", description: "Recolor the app in warm amber.", slot: "accent", price: 300, minLevel: 8, preview: "#f59e0b" },
+  { id: "accent-pink", name: "Pink Accent", description: "Recolor the app in vibrant pink.", slot: "accent", price: 180, preview: "#ec4899" },
+  { id: "accent-ocean", name: "Ocean Accent", description: "Recolor the app in deep teal.", slot: "accent", price: 220, preview: "#06b6d4" },
+  { id: "accent-lime", name: "Lime Accent", description: "Recolor the app in fresh lime.", slot: "accent", price: 280, minLevel: 6, preview: "#84cc16" },
 ];
 
 // Resolve the equipped accent override, or null when the default (themed) accent
@@ -174,7 +329,10 @@ export function isFrozen(frozen: Set<string>, habitId: string, key: string): boo
 // How many freezes were used within the rolling window ending at `now`.
 export function freezesUsedInWindow(economy: Economy, now: Date): number {
   const cutoff = startOfDay(addDays(now, -FREEZE_WINDOW_DAYS)).getTime();
-  return economy.freezes.filter((f) => new Date(f.at).getTime() >= cutoff).length;
+  return economy.freezes.filter((f) => {
+    const ts = new Date(f.at).getTime();
+    return Number.isFinite(ts) && ts >= cutoff;
+  }).length;
 }
 
 export function canUseFreeze(economy: Economy, now: Date): boolean {

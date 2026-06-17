@@ -12,6 +12,7 @@ import { useAppData, buyCosmetic, equipCosmetic, redeemFreeze } from "@/lib/stor
 import { useToday } from "@/hooks/useToday";
 import { useHydrated } from "@/hooks/useHydrated";
 import { summarizeProgress } from "@/lib/progress";
+import type { CosmeticSlot } from "@/lib/types";
 import {
   SHOP_ITEMS,
   coinBreakdown,
@@ -22,7 +23,6 @@ import {
   freezesUsedInWindow,
   freezableDays,
   equippedOrDefault,
-  type CosmeticSlot,
   type ShopItem,
 } from "@/lib/economy";
 import { prettyDate, parseDateKey } from "@/lib/storage";

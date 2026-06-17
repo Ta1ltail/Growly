@@ -3,7 +3,7 @@
 #   PROJECT 101 - FINAL BUILD PLAN                         #
 #   App: "LifeGrid" - a spreadsheet-style habit tracker    #
 #   Web-first | Built with Claude                          #
-#   Updated: 2026-06-16                                    #
+#   Updated: 2026-06-18                                    #
 #                                                          #
 ############################################################
 
@@ -14,8 +14,9 @@
    Phase 3 ENGAGEMENT ........................... DONE
      +-- Gamification + UI redesign (7 parts) ... DONE (verified)
      +-- Coins + Shop economy ................... DONE (verified)
-         All 4 gates green (66 tests); economy
-         also driven in-browser (Playwright).
+     +-- Engagement features (5 phases) ......... DONE (verified)
+     +-- UI/UX overhaul ......................... DONE (verified)
+         All gates green (81 tests, tsc 0, lint 0 errors).
          Detail: docs/PROGRESS.md + docs/TODO.txt
    Phase 4 ACCOUNTS, CLOUD & SECURITY ........... NOT STARTED
    Phase 5 BUSINESS & LAUNCH .................... NOT STARTED
@@ -36,6 +37,7 @@ Build target: WEB FIRST (mobile/desktop later).
  2. THE SECTIONS (full vision)
 ==========================================================
   1. Today        - daily page + gamified progress dashboard
+                   + engagement features (check-in, quest, spin)
   2. Tracker/Grid - rows = habits, columns = dates ("Excel view")
   3. Calendar     - plan by date: month / week
   4. Habits       - create & manage habits (paginated)
@@ -61,8 +63,8 @@ Bottom nav: Today . Tracker . Calendar . Stats . Profile
   Styling .......... Tailwind CSS v4 (CSS-variable theming)
   Icons ............ lucide-react
   Charts ........... hand-built SVG (TrendLineChart) - no chart lib
-  Persistence ...... localStorage (schema v4) via useSyncExternalStore
-  Testing .......... Vitest (66 tests)
+  Persistence ...... localStorage (schema v6) via useSyncExternalStore
+  Testing .......... Vitest (81 tests)
   Hosting/Code ..... Vercel + GitHub
 
   -- PLANNED (Phase 4-5, all free tiers to start) --
@@ -106,15 +108,17 @@ PHASE 3 - ENGAGEMENT .................................. [x] DONE
   [x] Goals with progress bars + milestones
   [x] Notes / journal per day
   [x] Templates
-  [x] GAMIFICATION + UI REDESIGN (docs/script.txt, 7 parts):
-        [x] 1 Engine (XP/achievements/titles, derived-from-history)
-        [x] 2 Visual base (ambient bg + motion tokens)
-        [x] 3 Streaks + micro-interactions
-        [x] 4 Achievement celebrations + gallery
-        [x] 5 Progression UI + character-page profile
-        [x] 6 Layout/data viz (dashboard, stats, pagination, alignment)
-        [x] 7 Final a11y / 60fps / polish pass
+  [x] GAMIFICATION + UI REDESIGN (7 parts):
+        [x] 1-7 All verified (engine through final polish pass)
   [x] COINS + SHOP ECONOMY (derived coins, cosmetics, streak-freeze)
+  [x] UI/UX OVERHAUL (themes, animated icons, particle bg, card polish)
+  [x] BUG FIXES (6 bugs, uid() refactor from 5 duplicates)
+  [x] ENGAGEMENT FEATURES (5 phases):
+        [x] Level-up unlockables (bonus coins per level)
+        [x] Streak milestone rewards (coins at 7/14/30/60/100)
+        [x] Daily check-in (streak-based popup + coins)
+        [x] Daily quests (random challenges + coins)
+        [x] Daily spin (wheel-of-fortune + weighted rewards)
   [ ] Reminders (deferred - real notifications need mobile)
 
 PHASE 4 - ACCOUNTS, CLOUD & SECURITY .................. [ ] NOT STARTED
@@ -159,24 +163,32 @@ Do NOT take real users/money until these are TRUE:
   3. Always design the DATA SHAPE before coding.
   4. Web notifications are weak -> real alerts wait for mobile.
   5. Scope creep kills projects -> ship each phase before expanding.
-  6. (new) Keep gamification DERIVED from history, never stored ->
-     no cheating, no desync. Persist only unlocks + profile + the
-     economy ledger/owned/freezes. Coins derive the same way as XP.
-  7. (new) Run the four gates after every part before moving on;
-     don't let unverified parts stack up.
-  8. (new) Gates prove it compiles, not that it works - drive new
-     UI in a real browser too (caught the freeze not protecting the
-     visible streaks, which all 4 gates passed straight through).
+  6. Keep gamification DERIVED from history, never stored ->
+     no cheating, no desync.
+  7. Run the four gates after every part before moving on.
+  8. Gates prove it compiles, not that it works - drive new
+     UI in a real browser too.
+  9. Local feature development can continue in parallel with cloud
+     planning. Engagement features proved the app has room to grow
+     before adding accounts/payments.
 
 
 ==========================================================
  6. NEXT STEPS (right now)
 ==========================================================
-  The redesign + Coins/Shop economy are shipped and verified. Options:
-  A. Begin Phase 4 (accounts/cloud) - the big localStorage->Supabase
-     rework + RLS. Biggest unlock toward a real product.
-  B. More net-new local features (e.g. coin-earn history timeline,
-     daily bonus, shop filters, new cosmetic slots).
+  The redesign + economy + engagement features are shipped. Options:
+  A. Feature categories from earlier brainstorming:
+     1. 🧠 UX & Navigation - dashboard reordering, keyboard shortcuts,
+        onboarding wizard, undo/redo
+     2. 📊 Data & Insights - advanced charts, prediction engine,
+        CSV/PDF export, habit correlations
+     3. 🎨 Customization & Social - community challenges, custom
+        categories, friend leaderboards, achievements showcase
+     4. ⚡ Performance & Polish - faster load, PWA install,
+        offline-first, a11y audit
+  B. Begin Phase 4 (accounts/cloud) - localStorage->Supabase rework
+  C. Deploy to production on Vercel
+
   Gates to run after any change:
        npx tsc --noEmit && npm run lint && npx vitest run && npm run build
   See docs/PROGRESS.md for the full file inventory.

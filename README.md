@@ -2,7 +2,8 @@
 
 A spreadsheet-style habit & task tracker — "Excel but better." Tap a date cell to
 mark a habit **done / missed / skipped**, organized by life categories, with
-streaks, statistics, goals, notes, and a full gamification + economy layer.
+streaks, statistics, goals, notes, and a full gamification + economy + engagement
+layer.
 
 Fully local (localStorage) and private — no account required. Cloud sync,
 accounts, and payments are future phases (see `docs/FINAL_BUILD_PLAN.txt`).
@@ -10,8 +11,9 @@ accounts, and payments are future phases (see `docs/FINAL_BUILD_PLAN.txt`).
 ## Features
 
 - **Tracker grid** — rows = habits, columns = dates; tap to cycle a mark.
-- **Today / Calendar / Stats** — daily dashboard, month/week planning, and an
-  interactive trends chart with streaks and plain-language insights.
+- **Today / Calendar / Stats** — daily dashboard with **engagement features**
+  (check-in popup, quest card, spin wheel), month/week planning, and interactive
+  trends chart with streaks and plain-language insights.
 - **Goals, Notes, Templates** — targets with milestones, daily journal, starter
   routines.
 - **Gamification** — XP, levels, 28 achievements (5 categories × 4 rarities),
@@ -22,12 +24,17 @@ accounts, and payments are future phases (see `docs/FINAL_BUILD_PLAN.txt`).
   achievement bonuses). Spend them on cosmetics (flame skins, confetti palettes,
   app-wide accent themes) and a **streak-freeze** that protects one genuine past
   miss — the miss stays in your history; it just doesn't break the streak.
+- **Engagement features** — daily check-in bonus (streak-based coins), daily
+  quests (randomized challenges), daily spin wheel (weighted rewards), level-up
+  bonuses, and streak milestone rewards.
+- **Developer Mode** — hidden power-user panel (Ctrl/Cmd+Shift+D): data tools,
+  debug overlays, FPS meter, state inspector, and cross-section search.
 
 ## Tech
 
 Next.js 16 (App Router) · TypeScript · Tailwind CSS v4 (CSS-variable theming) ·
-lucide-react · hand-built SVG charts · localStorage (schema v4) via
-`useSyncExternalStore` · Vitest.
+lucide-react · hand-built SVG charts · localStorage (schema v6) via
+`useSyncExternalStore` · Vitest (81 tests).
 
 > ⚠️ This is a **modified** Next.js. Read `node_modules/next/dist/docs/` before
 > using Next-specific APIs — see `AGENTS.md`.
@@ -49,7 +56,7 @@ npx tsc --noEmit && npm run lint && npx vitest run && npm run build
 
 ## Project docs
 
-- `docs/ARCHITECTURE.txt` — folder structure, gamification + economy model, data flow
+- `docs/ARCHITECTURE.txt` — folder structure, gamification/economy/engagement model, data flow
 - `docs/FINAL_BUILD_PLAN.txt` — phases, tech stack, production checklist
 - `docs/TODO.txt` — progress checklist
 - `docs/PROGRESS.md` — detailed status + file inventory

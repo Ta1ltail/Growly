@@ -4,7 +4,7 @@ Resume state for the gamification/UI redesign. Spec: `docs/script.txt` (the
 "Complete UI/UX Redesign & Gamification Specification", 16 sections),
 implemented in **7 parts**.
 
-Last updated: 2026-06-16.
+Last updated: 2026-06-18.
 
 ---
 
@@ -42,7 +42,131 @@ The four gates: `npx tsc --noEmit && npm run lint && npx vitest run && npm run b
 
 ---
 
-## ✅ Redesign complete
+## ✅ Engagement Features (Phases 2–6 — 2026-06-18)
+
+After the redesign + economy, 5 new engagement features were added to make daily
+habit tracking more rewarding. All integrate with the existing coin economy and
+celebrations system.
+
+**Gates green 2026-06-18:** `tsc` + `lint` + `vitest` (81 passing) all clean.
+
+### Phase 2: Level-up Unlockables
+
+Bonus coins earned automatically at each level (5 → 100+ coins). Pure function of
+level — included in `coinsEarned()` via `levelUpBonus()`. No storage needed.
+
+### Phase 3: Streak Milestone Rewards
+
+Bonus coins at streak milestones: 7/14/30/60/100 days (25 → 500 coins). Pure
+function of `maxBestStreak` via `streakMilestoneBonus()`. Included in `coinsEarned()`.
+
+### Phase 4: Daily Check-in
+
+- **Popup** (`src/components/today/CheckInPopup.tsx`): Appears on first visit
+  each day with 600ms delay. Shows streak flame, coin reward (3–50 coins based
+  on streak), progress bar toward Day 30, and next-tier preview.
+- **Streak system**: Consecutive days tracked via `Economy.checkInStreak` and
+  `lastCheckIn`. Resets if a day is skipped.
+- **Store action**: `claimDailyCheckIn()` returns `{reward, streak}`.
+
+### Phase 5: Daily Quests
+
+- **Card** (`src/components/today/DailyQuestCard.tsx`): Shows on Today page
+  sidebar. Random quest generated each day: "Complete X habits", "Perfect day",
+  or "Complete X [category] habits" with coin rewards (15–40).
+- **Auto-progress**: `cycleMark()` in store.ts automatically progresses the
+  quest when a habit is marked `done` today (honoring category filters).
+- **Quest generation**: `generateDailyQuest()` in economy.ts picks from 3 quest
+  types weighted by the user's active habits.
+
+### Phase 6: Daily Spin
+
+- **Modal** (`src/components/today/DailySpinModal.tsx`): Spin wheel with
+  conic-gradient colors and CSS rotation animation (2.5s deceleration).
+- **Rewards**: 9 weighted outcomes (10–200 coins or a free Streak Freeze).
+  Once per day limit tracked via `Economy.lastSpinDate`.
+- **Store action**: `doDailySpin()` returns `{label, amount, isFreeze}`.
+
+### Economy Integration
+
+- `Economy` type extended with: `bonusCoins`, `lastCheckIn`, `checkInStreak`,
+  `lastQuestDate`, `currentQuest` (DailyQuest), `lastSpinDate`.
+- `coinsEarned()` now accepts optional `economy` param to include `bonusCoins`.
+- `coinBreakdown()` includes `fromBonuses` in the derivation.
+- Schema v6: `cleanEconomyV6()` sanitizes all new fields on load.
+
+### New/Modified Files
+
+```
+NEW: src/lib/util.ts                     — shared uid() (refactored from 5 duplicates)
+NEW: src/components/today/CheckInPopup.tsx   — daily check-in celebration
+NEW: src/components/today/DailyQuestCard.tsx — daily quest progress + claim
+NEW: src/components/today/DailySpinModal.tsx — spin wheel + random rewards
+
+MODIFIED:
+  src/lib/types.ts       — Economy extended, DailyQuest interface, DEFAULT_ECONOMY updated
+  src/lib/economy.ts     — engagement constants + helpers + updated coinsEarned/coinBreakdown
+  src/lib/store.ts       — claimDailyCheckIn, refreshDailyQuest, claimDailyQuest, doDailySpin
+  src/lib/storage.ts     — cleanEconomyV6, schema v6 fields
+  src/lib/progress.ts    — pass economy to coinsEarned
+  src/app/today/page.tsx — CheckInPopup + DailyQuestCard + DailySpinButton + modal
+```
+
+---
+
+## ✅ Bug Fixes (2026-06-17)
+
+- **Render-phase setState** — `habits/page.tsx`: moved page clamping from render
+  body + useEffect to passing `safePage` directly to Pagination (avoids React
+  anti-pattern + eslint rule).
+- **Unused variable** — `page.tsx`: restored `todayKey` (used on line 47).
+- **CosmeticSlot duplication** — `economy.ts`: removed duplicate type, imported
+  from `types.ts` instead. Updated `shop/page.tsx` import.
+- **Invalid Date guard** — `economy.ts`: added `Number.isFinite(ts)` check in
+  `freezesUsedInWindow()` to handle unparseable date strings.
+- **Next.js Image + data URIs** — `RankAvatar.tsx`: replaced `<Image>` with
+  plain `<img>` for uploaded avatar data URIs.
+- **Flame flicker tiers** — `globals.css` + `StreakFlame.tsx`: added
+  `--animate-flicker-medium` (1.6s) so small=2.2s, medium=1.6s, large=0.9s.
+
+---
+
+## ✅ UI/UX Overhaul (2026-06-17)
+
+### Theme Redesign
+- **Light mode** — Warm cream tones (#f5f0eb bg) replaced harsh blue-gray (#eef1f6).
+- **Dark mode** — Deep rich purple-black (#0f0e17 bg) replaced flat gray (#11151d).
+
+### Animated Icons
+- **Sidebar nav** — Icons bounce (`animate-icon-bounce`) when active, wiggle on
+  hover (`group-hover:animate-icon-wiggle`), pulsing glow ring behind active items.
+- **Bottom nav** — Active icons float with bounce + indicator bar.
+- All CSS-only (GPU-composited transform/opacity — zero JS overhead).
+
+### Enhanced Background
+- 12 floating star/particle dots at varying depths with slow rise-and-fade.
+- 5 aurora glow blobs (was 4). Improved vignette with warmer tint.
+
+### Card & Layout Polish
+- Cards lift `-translate-y-1` on hover (was -0.5) with 300ms transition.
+- Optional `glow` prop for featured cards (accent glow shadow).
+- Theme transitions smoothed to 0.4s.
+
+### New Animation Tokens
+- `animate-icon-bounce`, `animate-icon-pulse`, `animate-icon-wiggle`
+- `animate-particle-float`, `animate-particle-float-alt`
+
+---
+
+## ✅ `uid()` Refactor (2026-06-17)
+
+5 duplicated `uid()`/`newId()` functions consolidated into `src/lib/util.ts`:
+- `src/lib/store.ts`, `src/lib/habits.ts`, `src/lib/devSeed.ts`
+- `src/components/goals/GoalForm.tsx`, `src/app/templates/page.tsx`
+
+---
+
+## ✅ Redesign complete (pre-session)
 
 All 7 parts implemented and verified (gates green 2026-06-16). The 16-section
 `docs/script.txt` spec is fully executed.
@@ -61,9 +185,6 @@ tracker/calendar already responsive + consistent.
 - New surfaces use transform/opacity animations (GPU-friendly, 60fps).
 - Fixed the only unlabeled icon-only buttons: calendar prev/next chevrons
   (`src/app/calendar/page.tsx`) + goals progress +/- (`src/app/goals/page.tsx`).
-
-Future work would be net-new features, not redesign tasks. Standard loop:
-edit → `npx tsc --noEmit && npm run lint && npx vitest run && npm run build`.
 
 ---
 
@@ -95,10 +216,7 @@ all clean. `/shop` route prerenders.
   snowflake badge + "protected by a streak freeze" in the `aria-label`); wired it
   in the calendar day-detail (editable `MarkButton` + a faded-✕/snowflake in the
   read-only branch) and the tracker grid cell (corner snowflake + tooltip). Each
-  page memoizes `frozenSet(data.economy)` and gates on `status === "missed" &&
-  isFrozen(...)`. `/today` intentionally skipped — it only shows today, which can't
-  be frozen (freezes protect past misses). **In-app verified** (Playwright): tracker
-  day-6 = red miss + snowflake; calendar day-detail shows the protected indicator.
+  page memoizes `frozenSet(data.economy)` and gates on `status === "missed" && isFrozen(...)`.
 
 **In-app verified (Playwright, 2026-06-16):** seeded coin-earning history, drove
 the real UI — buy Azure Flame (balance 1140→1020), auto-equip, flame color
@@ -106,63 +224,19 @@ changes orange→azure, redeem freeze (→945), persisted ledger correct.
 **Bug found + fixed during verify:** the streak-freeze was only consumed by the
 achievement/progress engine — five UI streak displays (`/today` hero, `/`
 dashboard, habits list, tracker, stats) called `habitStreaks(...)` WITHOUT the
-frozen set, so a frozen miss still broke those streaks (hero showed 10 while the
-freeze-aware widget showed 45). Threaded `frozenSet(data.economy)` through all
-five; both displays now agree (45). Re-verified at the surface.
-
-**Anti-cheat model (locked, same spirit as XP):** coins are DERIVED from the
-immutable history, never stored as a balance. The only persisted economy state
-is an append-only spend ledger + owned/equipped cosmetics + a dated freeze log.
-`balance = coinsEarned(history) − Σ ledger.amount`, clamped ≥ 0. A freeze only
-ever protects a GENUINE recorded miss (status `"missed"`), is capped at 1 per
-rolling 7 days, and is audit-logged — the miss stays visible in history; the
-streak walk just treats that day as neutral. Honest Tracking holds.
+frozen set. Threaded `frozenSet(data.economy)` through all five; both displays
+now agree (45).
 
 ### ✅ Done (all four gates green)
 
 Closed out the economy feature:
 - **Lint fix** — renamed store action `useFreeze` → `redeemFreeze` (the `use`
-  prefix tripped eslint `rules-of-hooks` when called in the shop's onClick).
+  prefix tripped eslint `rules-of-hooks`).
 - **Cosmetic application** — `StreakFlame` now resolves the equipped `flame`
-  skin from the store (`FLAME_SKINS[equippedOrDefault(...)]`, optional `colors`
-  override prop); free default ramp == old hardcoded colors so default users +
-  SSR see no change. `AchievementCelebration` uses the equipped `confetti`
-  palette (`CONFETTI_SKINS`), falling back to rarity colors for the default.
-- **Coin UI** — `CoinChip` added to the dashboard "Your progress" header and a
-  Coins `StatCard` (→ `/shop`) on the profile stat strip.
-- **Tests** — `src/lib/economy.test.ts` (balance math/clamp, freeze window cap,
-  eligibility, `freezableDays`, `frozenSet`) + 2 freeze-aware `habitStreaks`
-  cases in `stats.test.ts`. 63 tests pass.
-
-Engine details below (already done before this session):
-
-DONE (code written, tsc-clean):
-- **Engine** — `src/lib/economy.ts` (new): `coinsEarned` (2/completion,
-  10/perfect-day, rarity bonuses via `RARITY_COINS`), `coinsSpent`,
-  `coinBalance`; `SHOP_ITEMS` catalog (flame skins + confetti palettes, some
-  `minLevel`-gated); `FLAME_SKINS`/`CONFETTI_SKINS` color maps;
-  `equippedOrDefault`; freeze helpers (`frozenSet`, `isFrozen`, `canUseFreeze`,
-  `canFreezeDay`, `freezableDays`, `makeFreezeEntry`, `FREEZE_PRICE=75`,
-  `FREEZE_MAX_PER_WINDOW=1`, `FREEZE_WINDOW_DAYS=7`).
-- **Schema v4** — `src/lib/types.ts`: `Economy`, `SpendEntry`, `FreezeEntry`,
-  `CosmeticSlot`, `DEFAULT_ECONOMY`; `AppData.economy`; audit actions
-  `shop.buy`/`freeze.use`. `src/lib/storage.ts`: `SCHEMA_VERSION = 4`,
-  `cleanEconomy`/`cleanSpend`/`cleanFreeze` validators, `emptyData.economy`,
-  `loadData` wires it (older saves default to empty economy → coins re-derive).
-- **Freeze in streak walk** — `src/lib/stats.ts` `habitStreaks(habit, marks,
-  today, frozen?)`: a frozen `habitId@dateKey` is neutral like `skipped`.
-  Threaded through `buildGameStats(...,frozen?)` (achievements.ts) and
-  `summarizeProgress`/`reconcileUnlocks` (progress.ts, which now also return
-  `coinsEarned`/`coinBalance`).
-- **Store actions** — `src/lib/store.ts`: `buyCosmetic` (guards: exists, not
-  owned, level gate, affordable → ledger + owned + auto-equip + audit),
-  `equipCosmetic`, `useFreeze` (guards: window cap, genuine miss, affordable →
-  ledger + freeze log + audit); helpers `balanceOf`, `summarizeLevel`. Economy
-  imports + `clearAllData` reset already in place.
-- **Test fixture** — `storage.test.ts` round-trip case extended with `economy`.
-
-All three cosmetic slots (flame, confetti, accent) now have catalog items and
-are applied. No known economy loose ends.
+  skin from the store; `AchievementCelebration` uses the equipped `confetti`
+  palette.
+- **Coin UI** — `CoinChip` added to the dashboard header and profile stat strip.
+- **Tests** — `src/lib/economy.test.ts` + freeze-aware `habitStreaks` cases. 63 tests.
 
 ---
 
@@ -197,68 +271,37 @@ are applied. No known economy loose ends.
 - `src/components/StreakFlame.tsx` — `flameTier()`: none / small(1–6) /
   medium(7–29) / large(30+). Pure-CSS, reduced-motion safe.
 - `src/components/AnimatedCounter.tsx` — rAF count-up, hydration-safe (final
-  value on server/first paint), reduced-motion snaps. NOTE: all `setDisplay`
-  go through the rAF callback (eslint `react-hooks/set-state-in-effect`).
+  value on server/first paint), reduced-motion snaps.
 - `globals.css` — `flicker`/`glow-pulse`/`ember`/`burst` keyframes.
 - Wired into `MarkButton`, `today`, `habits`, `tracker`.
 
 ## Part 4 — Achievements UX (verified)
 
 - `src/lib/rarity.ts` — `RARITY_STYLE`: per-rarity accent/glow/gradient/ring/
-  medal/confettiColors + celebration tier (common→toast, rare/epic→popup,
-  legendary→fullscreen).
+  medal/confettiColors + celebration tier.
 - `src/components/AchievementBadge.tsx` — collectible badge; locked state;
   legendary conic shine.
 - `src/components/celebrations/` — `AchievementToast`, `AchievementPopup`,
-  `AchievementCelebration` (full-screen + confetti), `CelebrationManager`
-  (derives the queue from unseen unlocks; renders the most prestigious; marks
-  seen on dismiss; one-time silent `seedUnlocksSeen` on mount).
+  `AchievementCelebration` (full-screen + confetti), `CelebrationManager`.
 - `src/components/layout/AppShell.tsx` — mounts `<CelebrationManager />`.
-- `src/app/achievements/page.tsx` + nav link — Achievement Gallery (§14):
-  rarity summary, category/status/search filters, locked items show progress.
+- `src/app/achievements/page.tsx` + nav link — Achievement Gallery.
 
 ## Part 5 — Progression UI (verified)
 
 - `src/lib/ranks.ts` — `RANK_STYLE` (icon/accent/glow/gradient/`animated`) +
-  `RANK_ORDER`. UI-only, mirrors `rarity.ts`; Legendary = `animated`.
-- `src/lib/cosmetics.ts` — emoji `AVATAR_PRESETS` + gradient `BANNER_PRESETS`;
-  `resolveAvatar` (preset glyph OR `data:` image URL) / `resolveBanner`.
-- `src/components/progression/` — `XpBar` (level + eased XP bar + XP-to-next +
-  next unlock), `TitleDisplay` (gradient title, legendary `animate-text-sheen`
-  sweep + rank chip), `RankAvatar` (rank border/glow, legendary conic shine,
-  emoji or uploaded image), `NextMilestoneWidget` (renders `nextMilestones`).
-- `src/components/profile/ProfileEditModal.tsx` — edits displayName/username/
-  bio/motto/avatar(preset|upload)/banner/showcaseBadgeId via `updateProfile`;
-  re-seeds draft on open via render-phase setState.
-- `src/app/profile/page.tsx` — rewritten as character page: banner + RankAvatar
-  + @username + animated title + motto/bio + XpBar + stat strip + NextMilestone
-  + Showcase (favorite/best badge, title, longest streak, most-completed habit)
-  + badge gallery + jump links.
+  `RANK_ORDER`. UI-only, mirrors `rarity.ts`.
+- `src/lib/cosmetics.ts` — emoji `AVATAR_PRESETS` + gradient `BANNER_PRESETS`.
+- `src/components/progression/` — `XpBar`, `TitleDisplay`, `RankAvatar`,
+  `NextMilestoneWidget`.
+- `src/components/profile/ProfileEditModal.tsx`.
+- `src/app/profile/page.tsx` — character page.
 - `globals.css` — `text-sheen` keyframe + `--animate-text-sheen` token.
 
-## Part 6 — Layout/data viz (IN PROGRESS — code written, unverified)
+## Part 6 — Layout/data viz (verified)
 
-Done (code only, gates NOT run):
-- **6a §10 Dashboard widgets** — `src/components/dashboard/DashboardWidgets.tsx`
-  (XP/level, current streak, next milestone, this-week bars, badge-collection
-  progress, recent achievements). Mounted in `src/app/today/page.tsx` below the
-  hero. Reuses XpBar/TitleDisplay/NextMilestoneWidget/StreakFlame/
-  AchievementBadge.
-- **6b §11 Stats redesign** — `src/components/stats/TrendLineChart.tsx` (SVG
-  line + gradient area, `non-scaling-stroke`, HTML-overlay dots + hover
-  tooltips, responsive). `src/app/stats/page.tsx` reworked into a 2×2 grid of
-  equal-height `StatPanel` cards (Recent trends = line chart, Last 7 days,
-  Top categories [scroll], By weekday [scroll]).
-- **6c §12 Habits pagination** — `src/components/ui/Pagination.tsx`;
-  `src/app/habits/page.tsx` paginates active habits 20/page (`PAGE_SIZE`),
-  list scrolls after 12 rows (`SCROLL_AFTER`), page clamps during render so
-  filtering can't strand past the end.
-
-NOT done:
-- **6d §13 Calendar/tracker alignment** — not started (see Resume step 2).
-- Gates not run for any of 6a–6c.
-
-Reusable inventory for remaining work: `StreakFlame`, `AnimatedCounter`,
-`AchievementBadge`, `XpBar`, `TitleDisplay`, `RankAvatar`,
-`NextMilestoneWidget`, `TrendLineChart`, `Pagination`, `RANK_STYLE`,
-`RARITY_STYLE`, `StatCard`, `ProgressBar`, `Segmented`, `Card`, `Modal`.
+- **6a §10 Dashboard widgets** — `DashboardWidgets.tsx` (XP/level, current
+  streak, next milestone, this-week bars, badge-collection, recent achievements).
+- **6b §11 Stats redesign** — `TrendLineChart.tsx` (SVG line + gradient area,
+  hover tooltips, responsive). Stats page 2×2 grid.
+- **6c §12 Habits pagination** — `Pagination.tsx`; habits page paginates 20/page.
+- **6d §13 Calendar/tracker alignment** — matching headers.

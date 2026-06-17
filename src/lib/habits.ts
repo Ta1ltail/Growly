@@ -1,16 +1,12 @@
 // Bridge between the habit form and stored Habit records.
 
 import type { Habit, HabitFormValue } from "./types";
-
-function newId(): string {
-  if (typeof crypto !== "undefined" && "randomUUID" in crypto) return crypto.randomUUID();
-  return `id-${Math.random().toString(36).slice(2)}`;
-}
+import { uid } from "./util";
 
 // Create a brand-new Habit from form input.
 export function makeHabit(value: HabitFormValue): Habit {
   return {
-    id: newId(),
+    id: uid(),
     name: value.name,
     category: value.category,
     repeatDays: value.repeatDays,

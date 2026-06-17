@@ -7,11 +7,7 @@ import { useState } from "react";
 import { Check, Plus, X } from "lucide-react";
 import { CATEGORIES, CATEGORY_COLORS, type Category } from "@/lib/categories";
 import type { Goal, Habit, Milestone } from "@/lib/types";
-
-function newId(): string {
-  if (typeof crypto !== "undefined" && "randomUUID" in crypto) return crypto.randomUUID();
-  return `id-${Math.random().toString(36).slice(2)}`;
-}
+import { uid } from "@/lib/util";
 
 export function GoalForm({
   initial,
@@ -40,7 +36,7 @@ export function GoalForm({
   function addMilestone() {
     if (!msTitle.trim() || msAt <= 0) return;
     setMilestones((prev) =>
-      [...prev, { id: newId(), title: msTitle.trim(), at: msAt, done: false }].sort((a, b) => a.at - b.at),
+      [...prev, { id: uid(), title: msTitle.trim(), at: msAt, done: false }].sort((a, b) => a.at - b.at),
     );
     setMsTitle("");
     setMsAt(0);
@@ -50,7 +46,7 @@ export function GoalForm({
     const trimmed = title.trim();
     if (!trimmed || target < 1) return;
     onSave({
-      id: initial?.id ?? newId(),
+      id: initial?.id ?? uid(),
       title: trimmed,
       target,
       current: initial?.current ?? 0,
