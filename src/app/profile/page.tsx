@@ -37,6 +37,7 @@ import { PageSkeleton } from "@/components/ui/PageSkeleton";
 import { AchievementBadge } from "@/components/AchievementBadge";
 import { RankAvatar } from "@/components/progression/RankAvatar";
 import { TitleDisplay } from "@/components/progression/TitleDisplay";
+import { TitlesModal } from "@/components/progression/TitlesModal";
 import { XpBar } from "@/components/progression/XpBar";
 import { NextMilestoneWidget } from "@/components/progression/NextMilestoneWidget";
 import { ProfileEditModal } from "@/components/profile/ProfileEditModal";
@@ -47,6 +48,7 @@ export default function ProfilePage() {
   const today = useToday();
   const hydrated = useHydrated();
   const [editing, setEditing] = useState(false);
+  const [showTitles, setShowTitles] = useState(false);
 
   const summary = useMemo(() => summarizeProgress(data, today), [data, today]);
 
@@ -121,7 +123,7 @@ export default function ProfilePage() {
           <div className="mt-3">
             <h1 className="text-2xl font-bold tracking-tight">{profile.displayName}</h1>
             <p className="text-sm text-muted">@{profile.username}</p>
-            <TitleDisplay title={title} size="md" className="mt-2.5" />
+            <TitleDisplay title={title} size="md" className="mt-2.5" onClick={() => setShowTitles(true)} />
             {profile.motto && (
               <p className="mt-2 text-sm italic text-muted">“{profile.motto}”</p>
             )}
@@ -239,6 +241,13 @@ export default function ProfilePage() {
         onClose={() => setEditing(false)}
         profile={profile}
         unlockedDefs={unlockedDefs}
+      />
+
+      <TitlesModal
+        open={showTitles}
+        onClose={() => setShowTitles(false)}
+        level={level.level}
+        currentTitleName={title.current.name}
       />
     </div>
   );

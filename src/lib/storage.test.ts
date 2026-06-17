@@ -198,9 +198,15 @@ describe("loadData validation", () => {
         equipped: { flame: "flame-azure" },
         freezes: [{ id: "f1", at: "2026-06-12T00:00:00.000Z", date: "2026-06-09", habitId: "h" }],
       },
+      progressSeen: { seeded: true, level: 4, title: "Procrastination Survivor", shop: ["flame-gold"], streaks: { h: 7 } },
     };
     saveData(data);
     expect(loadData()).toEqual(data);
+  });
+
+  it("defaults progressSeen for pre-v5 saves", () => {
+    write({ habits: [] });
+    expect(loadData().progressSeen).toEqual({ seeded: false, level: 1, title: "Habit Newbie", shop: [], streaks: {} });
   });
 
   it("defaults profile and unlocks for pre-v3 saves", () => {

@@ -17,11 +17,12 @@ import type {
   Note,
   Priority,
   Profile,
+  ProgressSeen,
   Recurrence,
   SpendEntry,
   Unlocks,
 } from "./types";
-import { DEFAULT_ECONOMY, DEFAULT_PROFILE } from "./types";
+import { DEFAULT_ECONOMY, DEFAULT_PROFILE, DEFAULT_PROGRESS_SEEN } from "./types";
 import { CATEGORIES, type Category } from "./categories";
 import { ACCENTS, DEFAULT_THEME, type ThemeMode } from "./theme";
 
@@ -32,7 +33,10 @@ export const STORAGE_KEY = "project101.data.v1";
 // v3: added `profile` + `unlocks` (gamification). Older saves default them.
 // v4: added `economy` (coins ledger + cosmetics + freezes). Older saves default
 //     it to an empty economy; coins re-derive from history automatically.
-export const SCHEMA_VERSION = 4;
+// v5: added `progressSeen` (celebration seen-markers for level/title/shop/streak).
+//     Older saves default it to an unseeded baseline; the seed step then records
+//     current progress so existing histories don't re-fire celebrations.
+export const SCHEMA_VERSION = 5;
 
 // How long after midnight a user may still edit "yesterday" before the day
 // locks permanently (Honest Tracking Policy). Tunable in Settings.
@@ -53,6 +57,7 @@ export const emptyData: AppData = {
   profile: DEFAULT_PROFILE,
   unlocks: {},
   economy: DEFAULT_ECONOMY,
+  progressSeen: DEFAULT_PROGRESS_SEEN,
 };
 
 const COSMETIC_SLOTS = new Set<CosmeticSlot>(["flame", "confetti", "accent"]);
@@ -296,6 +301,23 @@ function cleanFreeze(v: unknown): FreezeEntry | null {
   return { id, at, date, habitId };
 }
 
+function cleanProgressSeen(v: unknown): ProgressSeen {
+  if (!isObject(v)) return { ...DEFAULT_PROGRESS_SEEN };
+  const streaks: Record<string, number> = {};
+  if (isObject(v.streaks)) {
+    for (const [habitId, tier] of Object.entries(v.streaks)) {
+      if (typeof tier === "number" && Number.isFinite(tier)) streaks[habitId] = tier;
+    }
+  }
+  return {
+    seeded: v.seeded === true,
+    level: typeof v.level === "number" && Number.isFinite(v.level) ? v.level : DEFAULT_PROGRESS_SEEN.level,
+    title: asString(v.title) ?? DEFAULT_PROGRESS_SEEN.title,
+    shop: Array.isArray(v.shop) ? v.shop.filter((x): x is string => typeof x === "string") : [],
+    streaks,
+  };
+}
+
 function cleanEconomy(v: unknown): Economy {
   if (!isObject(v)) return { spent: [], owned: [], equipped: {}, freezes: [] };
   const spent = Array.isArray(v.spent)
@@ -366,6 +388,7 @@ export function loadData(): AppData {
       profile: cleanProfile(parsed.profile),
       unlocks: cleanUnlocks(parsed.unlocks),
       economy: cleanEconomy(parsed.economy),
+      progressSeen: cleanProgressSeen(parsed.progressSeen),
     };
   } catch {
     return emptyData;

@@ -207,6 +207,28 @@ export const DEFAULT_ECONOMY: Economy = {
   freezes: [],
 };
 
+/* ---- Celebration "seen" markers (schema v5) ----
+ * Like `unlocks`, these are the ONLY persisted facts for non-achievement
+ * celebrations (level-ups, new titles, shop unlocks, streak milestones). The
+ * celebration queue itself is DERIVED each render by diffing current progress
+ * against these markers (see lib/celebrations.ts) — nothing else is stored.
+ * `seeded` is written once on first run so existing histories aren't re-fired. */
+export interface ProgressSeen {
+  seeded: boolean; // has the one-time baseline been written?
+  level: number; // highest level already celebrated
+  title: string; // last celebrated title name (TITLES[].name)
+  shop: string[]; // shop item ids whose level-gate unlock was celebrated
+  streaks: Record<string, number>; // habitId -> highest streak tier celebrated (7/30/100/365)
+}
+
+export const DEFAULT_PROGRESS_SEEN: ProgressSeen = {
+  seeded: false,
+  level: 1,
+  title: "Habit Newbie",
+  shop: [],
+  streaks: {},
+};
+
 // Editable, user-owned profile (the "character page").
 export interface Profile {
   displayName: string;
@@ -235,4 +257,5 @@ export interface AppData {
   profile: Profile; // editable character profile (schema v3)
   unlocks: Unlocks; // achievementId -> unlock record (schema v3)
   economy: Economy; // coins ledger + cosmetics + freezes (schema v4)
+  progressSeen: ProgressSeen; // celebration seen-markers (schema v5)
 }

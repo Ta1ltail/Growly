@@ -11,17 +11,21 @@ export function TitleDisplay({
   title,
   size = "md",
   className = "",
+  onClick,
 }: {
   title: TitleInfo;
   size?: "sm" | "md" | "lg";
   className?: string;
+  // When provided, the whole title becomes a button (e.g. to open the full
+  // titles list on the profile). Omit to render as static text.
+  onClick?: () => void;
 }) {
   const rank = RANK_STYLE[title.current.rank];
   const text =
     size === "lg" ? "text-2xl sm:text-3xl" : size === "sm" ? "text-base" : "text-xl";
 
-  return (
-    <div className={`flex flex-wrap items-center gap-x-2.5 gap-y-1 ${className}`}>
+  const inner = (
+    <>
       <span className="text-xl leading-none" aria-hidden>
         {rank.icon}
       </span>
@@ -42,6 +46,23 @@ export function TitleDisplay({
       >
         {title.current.rank}
       </span>
-    </div>
+    </>
   );
+
+  const base = `flex flex-wrap items-center gap-x-2.5 gap-y-1 ${className}`;
+
+  if (onClick) {
+    return (
+      <button
+        type="button"
+        onClick={onClick}
+        aria-label="View all titles"
+        className={`${base} rounded-lg text-left transition-transform hover:scale-[1.02] active:scale-95`}
+      >
+        {inner}
+      </button>
+    );
+  }
+
+  return <div className={base}>{inner}</div>;
 }

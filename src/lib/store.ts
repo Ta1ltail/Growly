@@ -34,6 +34,7 @@ import {
   shopItem,
 } from "./economy";
 import { buildGameStats, evaluateAchievements } from "./achievements";
+import { baselineProgressSeen, type CelebrationEvent } from "./celebrations";
 
 let cache: AppData | null = null;
 const listeners = new Set<() => void>();
@@ -378,6 +379,48 @@ export function markAchievementsSeen(ids: string[]): void {
       }
     }
     return changed ? { ...prev, unlocks } : prev;
+  });
+}
+
+/* ---------------- celebrations (unified queue) ---------------- */
+
+// One-time baseline: record current level/title/shop/streak progress as already
+// "seen" so a returning user (or a pre-v5 save) doesn't get flooded with
+// celebrations for progress earned before this feature existed. Idempotent — a
+// no-op once `seeded` is set. Call once on app mount (mirrors seedUnlocksSeen).
+export function seedCelebrationsSeen(): void {
+  update((prev) => {
+    if (prev.progressSeen.seeded) return prev;
+    return { ...prev, progressSeen: baselineProgressSeen(prev, new Date()) };
+  });
+}
+
+// Mark a celebration as seen by advancing the matching progressSeen marker (or,
+// for achievements, the unlock's seen flag). Called when the center popup is
+// dismissed, which drops the event from the derived queue and reveals the next.
+export function acknowledgeCelebration(event: CelebrationEvent): void {
+  if (event.kind === "achievement") {
+    if (event.achievementId) markAchievementsSeen([event.achievementId]);
+    return;
+  }
+  update((prev) => {
+    const ps = prev.progressSeen;
+    let next: typeof ps | null = null;
+    if (event.kind === "levelup" && event.level != null && event.level > ps.level) {
+      next = { ...ps, level: event.level };
+    } else if (event.kind === "title" && event.titleName && event.titleName !== ps.title) {
+      next = { ...ps, title: event.titleName };
+    } else if (event.kind === "shop" && event.shopId && !ps.shop.includes(event.shopId)) {
+      next = { ...ps, shop: [...ps.shop, event.shopId] };
+    } else if (
+      event.kind === "streak" &&
+      event.habitId &&
+      event.tier != null &&
+      event.tier > (ps.streaks[event.habitId] ?? 0)
+    ) {
+      next = { ...ps, streaks: { ...ps.streaks, [event.habitId]: event.tier } };
+    }
+    return next ? { ...prev, progressSeen: next } : prev;
   });
 }
 
