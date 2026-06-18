@@ -3,7 +3,7 @@
 #   PROJECT 101 - FINAL BUILD PLAN                         #
 #   App: "LifeGrid" - a spreadsheet-style habit tracker    #
 #   Web-first | Built with Claude                          #
-#   Updated: 2026-06-18                                    #
+#   Updated: 2026-06-18 (v2)                                    #
 #                                                          #
 ############################################################
 
@@ -18,6 +18,8 @@
      +-- UI/UX overhaul ......................... DONE (verified)
      +-- Feature Categories (4 tracks) .......... DONE (verified)
      +-- Bug fixes + Architecture cleanup ....... DONE (verified)
+     +-- Memoization optimization ............... DONE (verified)
+     +-- Layout fixes ........................... DONE (verified)
          All gates green (81 tests, tsc 0, lint 0 errors/1 warning).
    Phase 4 ACCOUNTS, CLOUD & SECURITY ........... NOT STARTED
    Phase 5 BUSINESS & LAUNCH .................... NOT STARTED
@@ -115,11 +117,11 @@ PHASE 5 - BUSINESS & PRODUCTION LAUNCH .. [ ] NOT STARTED
 ==========================================================
  5. NEXT STEPS
 ==========================================================
-  All planned feature categories are complete. Options:
+  All planned feature categories + memoization + layout fixes are complete.
+  Options:
   A. Community challenges + friend leaderboards (social features)
-  B. Memoization optimization
-  C. Begin Phase 4 (accounts/cloud) - localStorage->Supabase rework
-  D. Deploy to production on Vercel
+  B. Begin Phase 4 (accounts/cloud) - localStorage->Supabase rework
+  C. Deploy to production on Vercel
 
   Gates to run after any change:
        npx tsc --noEmit && npm run lint && npx vitest run && npm run build

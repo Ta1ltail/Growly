@@ -1,9 +1,10 @@
+import { memo } from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+
 // Simple page switcher (spec §12). Renders nothing for a single page. Shows
 // prev/next plus the current range so long lists stay navigable.
 
-import { ChevronLeft, ChevronRight } from "lucide-react";
-
-export function Pagination({
+export const Pagination = memo(function Pagination({
   page,
   pageCount,
   total,
@@ -39,7 +40,7 @@ export function Pagination({
       </div>
     </div>
   );
-}
+});
 
 function PageBtn({
   children,

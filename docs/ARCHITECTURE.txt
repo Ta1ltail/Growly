@@ -2,7 +2,7 @@
 #   PROJECT 101 - ARCHITECTURE  (v1.0, +feature categories) #
 #   Folder structure, gamification model, economy model,    #
 #   engagement model, theme, data flow                      #
-#   Updated: 2026-06-18                                     #
+#   Updated: 2026-06-18 (v2)                                     #
 ############################################################
 
   App: "LifeGrid" - a spreadsheet-style habit & task tracker.
@@ -179,10 +179,27 @@
            screen. One source of truth.
   Derived gamification is recomputed on render via summarizeProgress.
 
+  Performance: The store provides both useAppData() (full subscription)
+  and useAppDataSelector<T>() (granular slice subscription). 7 leaf UI
+  components are wrapped in React.memo; StreakFlame uses the selector hook
+  to avoid re-rendering on unrelated store changes. The tracker grid
+  extracts a memoized TrackerCell with a stable useCallback handler so a
+  single cell action doesn't re-render the entire grid.
+
+  Layout system: Pages use calc(100vh - Npx) scroll containers for
+  responsive layouts — prevents page-level scrolling on Today (habits),
+  Goals, Notes, and Templates. Exception: Dashboard, Stats, Achievements,
+  Shop, Settings, and Profile scroll normally. Dashboard widgets use fixed
+  heights (h-[180px] or h-[90px]) to prevent layout shifting.
+
   Keyboard shortcuts: useKeyboardShortcuts() in AppShell dispatches
     custom events (kb:toggle-help, kb:add-habit) and calls router.push
     for g-prefix navigation. Undo/redo via Ctrl+Z / Ctrl+Shift+Z
     calls store actions (undoAction / redoAction) backed by history.ts.
+
+  Dashboard Today card: shows Done/Remaining breakdown, time-of-day
+  indicator (Morning/Afternoon/Evening with hours remaining), and habits
+  remaining count. All in a compact h-[180px] card with no wasted space.
 
   Widget order + onboarding state persisted in settings via store actions
     (setWidgetOrder, completeOnboarding, addCustomCategory, ...).
@@ -213,10 +230,11 @@
  QUALITY GATES
 ==========================================================
   Gates: npx tsc --noEmit && npm run lint && npx vitest run && npm run build
-  Status (2026-06-18): GREEN. All feature categories + economy + developer
-  mode + UI/UX overhaul + engagement features + PWA + bug fixes verified.
-  tsc 0, eslint 0 errors/1 warning (RankAvatar img intentional),
-  vitest 81 passing, build clean.
+  Status (2026-06-18 v2): GREEN. All feature categories + economy +
+  developer mode + UI/UX overhaul + engagement features + PWA + bug fixes
+  + memoization optimization + layout fixes verified. tsc 0, eslint 0
+  errors/1 warning (RankAvatar img intentional), vitest 81 passing,
+  build clean.
 
   Lint gotcha: React Compiler rule `react-hooks/preserve-manual-
   memoization` requires useMemo deps to match the props actually read.

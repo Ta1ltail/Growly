@@ -257,6 +257,17 @@
     opacity: 1;
   }
 }
+/* Slide-out toast (exits to the right with fade). */
+@keyframes toast-out {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(120%);
+    opacity: 0;
+  }
+}
 /* Major-unlock entrance: badge zooms in past final size then settles. */
 @keyframes celebrate-in {
   0% {
@@ -364,6 +375,48 @@
   }
 }
 
+/* Card lift animation — subtle hover elevation */
+@keyframes card-lift {
+  0% {
+    transform: translateY(0);
+    box-shadow: var(--shadow-sm);
+  }
+  100% {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lg);
+  }
+}
+
+/* Staggered fade-in for grid items */
+@keyframes stagger-fade {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Subtle shimmer for decorative elements */
+@keyframes shimmer-slow {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+/* Section transition — smooth page section entrance */
+@keyframes section-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 * {
   -webkit-tap-highlight-color: transparent;
 }
@@ -451,6 +504,136 @@ body {
 .stagger-children > *:nth-child(7) { animation-delay: 0.26s; }
 .stagger-children > *:nth-child(8) { animation-delay: 0.3s; }
 .stagger-children > *:nth-child(n + 9) { animation-delay: 0.34s; }
+
+/* Fixed-size component system — prevents layout shifting */
+.fixed-card {
+  height: 180px;
+  overflow-y: auto;
+}
+.fixed-card-sm {
+  height: 140px;
+  overflow-y: auto;
+}
+.fixed-card-lg {
+  height: 240px;
+  overflow-y: auto;
+}
+.fixed-card-xl {
+  height: 300px;
+  overflow-y: auto;
+}
+
+/* Internal scroll container — content scrolls, container stays fixed */
+.scroll-y {
+  overflow-y: auto;
+  min-height: 0;
+}
+.scroll-x {
+  overflow-x: auto;
+}
+
+/* Split-level scroll shadows: subtle top/bottom fade when content is scrollable */
+.scroll-shadows {
+  background:
+    linear-gradient(var(--c-surface) 30%, transparent) center top,
+    linear-gradient(transparent, var(--c-surface) 70%) center bottom;
+  background-size: 100% 40px, 100% 40px;
+  background-attachment: local, local;
+}
+
+/* Icon color styling system */
+.icon-accent { color: var(--c-accent); }
+.icon-done { color: var(--color-done); }
+.icon-missed { color: var(--color-missed); }
+.icon-amber { color: #f59e0b; }
+.icon-emerald { color: #10b981; }
+.icon-violet { color: #8b5cf6; }
+.icon-rose { color: #f43f5e; }
+.icon-sky { color: #0ea5e9; }
+.icon-orange { color: #f97316; }
+.icon-pink { color: #ec4899; }
+.icon-cyan { color: #06b6d4; }
+
+/* Icon hover animation */
+.icon-hover {
+  transition: transform 0.2s ease, color 0.2s ease;
+}
+.icon-hover:hover {
+  transform: scale(1.15);
+}
+
+/* Idle icon animation — subtle float */
+.icon-idle {
+  animation: icon-bounce 3s ease-in-out infinite;
+}
+.icon-idle-slow {
+  animation: icon-pulse 4s ease-in-out infinite;
+}
+
+/* Glass morphism variants */
+.glass-heavy {
+  background: color-mix(in srgb, var(--c-surface) 70%, transparent);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+.glass-light {
+  background: color-mix(in srgb, var(--c-surface2) 40%, transparent);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+/* Card elevation system */
+.card-lift {
+  transition: transform var(--dur-base) var(--ease-out),
+              box-shadow var(--dur-base) var(--ease-out),
+              border-color var(--dur-base) var(--ease-out);
+}
+.card-lift:hover {
+  transform: translateY(-3px);
+  border-color: color-mix(in srgb, var(--c-accent) 40%, transparent);
+}
+
+/* Section entrance animation */
+.section-enter {
+  animation: section-in 0.4s var(--ease-out) both;
+}
+.section-enter:nth-child(2) { animation-delay: 0.05s; }
+.section-enter:nth-child(3) { animation-delay: 0.1s; }
+.section-enter:nth-child(4) { animation-delay: 0.15s; }
+.section-enter:nth-child(5) { animation-delay: 0.2s; }
+
+/* Gradient text utility */
+.gradient-text {
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Note card styling */
+.note-card {
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+/* Animated border shine for premium elements */
+.border-shine {
+  position: relative;
+  overflow: hidden;
+}
+.border-shine::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg, transparent 40%, var(--c-accent-glow) 50%, transparent 60%);
+  background-size: 200% 200%;
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: shimmer-slow 3s ease-in-out infinite;
+  pointer-events: none;
+}
 
 /* Respect users who prefer less motion (accessibility). */
 @media (prefers-reduced-motion: reduce) {

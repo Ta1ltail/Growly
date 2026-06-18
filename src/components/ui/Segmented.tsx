@@ -1,8 +1,10 @@
 "use client";
 
+import { memo } from "react";
+
 // A segmented control / pill group for filters and toggles.
 
-export function Segmented<T extends string>({
+function SegmentedInner<T extends string>({
   options,
   value,
   onChange,
@@ -32,3 +34,5 @@ export function Segmented<T extends string>({
     </div>
   );
 }
+
+export const Segmented = memo(SegmentedInner) as typeof SegmentedInner;

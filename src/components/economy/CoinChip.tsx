@@ -1,11 +1,12 @@
+import { memo } from "react";
+import { Coins } from "lucide-react";
+import { AnimatedCounter } from "@/components/ui/AnimatedCounter";
+
 // Compact coin-balance pill. Reused on the shop header, profile, and dashboard.
 // The coin glyph is decorative; the number carries the meaning for screen
 // readers via aria-label.
 
-import { Coins } from "lucide-react";
-import { AnimatedCounter } from "@/components/ui/AnimatedCounter";
-
-export function CoinChip({
+export const CoinChip = memo(function CoinChip({
   amount,
   size = "md",
   animate = false,
@@ -30,4 +31,4 @@ export function CoinChip({
       </span>
     </span>
   );
-}
+});

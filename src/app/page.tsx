@@ -1,19 +1,17 @@
 "use client";
 
 // Dashboard — the at-a-glance command center: today's progress, momentum
-// stats, a 7-day trend, top categories, and smart insights. Links into the
-// deeper screens. Designed to fit without excessive scrolling.
+// stats, and smart insights. Links into the deeper screens.
+// All cards use fixed sizes to prevent layout shifting.
 
 import { useMemo } from "react";
 import Link from "next/link";
-import { Flame, TrendingUp, Activity, ArrowRight, ListChecks, Sparkles } from "lucide-react";
-import { CATEGORY_COLORS } from "@/lib/categories";
-import { useAppData } from "@/lib/store";
+import { Flame, TrendingUp, Activity, ArrowRight, ListChecks, Sparkles, ChevronRight, CalendarRange } from "lucide-react";
+import { useAppData, setWidgetOrder } from "@/lib/store";
 import { useToday } from "@/hooks/useToday";
 import { useHydrated } from "@/hooks/useHydrated";
-import { dateKey, addDays } from "@/lib/storage";
+import { dateKey } from "@/lib/storage";
 import {
-  categoryCompletion,
   consistencyScore,
   dayCompletion,
   habitStreaks,
@@ -22,6 +20,10 @@ import {
 } from "@/lib/stats";
 import { frozenSet } from "@/lib/economy";
 import { buildInsights } from "@/lib/insights";
+import { summarizeProgress } from "@/lib/progress";
+import { ACHIEVEMENTS } from "@/lib/achievements";
+import { RARITY_STYLE } from "@/lib/rarity";
+import type { AchievementDef } from "@/lib/types";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Card } from "@/components/ui/Card";
 import { StatCard } from "@/components/ui/StatCard";
@@ -30,12 +32,32 @@ import { ProgressBar } from "@/components/ui/ProgressBar";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { PageSkeleton } from "@/components/ui/PageSkeleton";
 import { buttonClasses } from "@/components/ui/Button";
+import { StreakFlame } from "@/components/habits/StreakFlame";
+import { AchievementBadge } from "@/components/achievements/AchievementBadge";
+import { XpBar } from "@/components/progression/XpBar";
+import { TitleDisplay } from "@/components/progression/TitleDisplay";
+import { NextMilestoneWidget } from "@/components/progression/NextMilestoneWidget";
+import { CoinChip } from "@/components/economy/CoinChip";
+import { ReorderableGrid, type ReorderableItem } from "@/components/ui/ReorderableGrid";
 
 const TONE: Record<string, string> = {
   good: "border-done/30 bg-done/5 text-done",
   info: "border-accent/30 bg-accent/5 text-accent",
   warn: "border-amber-500/30 bg-amber-500/5 text-amber-500",
 };
+
+const BY_ID = new Map(ACHIEVEMENTS.map((a) => [a.id, a]));
+
+const WIDGET_IDS = [
+  "xp-level",
+  "badge-collection",
+  "current-streak",
+  "recent-achievements",
+  "next-milestone",
+  "weekly-trend",
+] as const;
+
+type WidgetId = (typeof WIDGET_IDS)[number];
 
 export default function DashboardPage() {
   const data = useAppData();
@@ -49,11 +71,6 @@ export default function DashboardPage() {
   const progress = dayCompletion(active, data.marks, today);
 
   const consistency = useMemo(() => consistencyScore(active, data.marks, today, 14), [active, data.marks, today]);
-  const week = useMemo(() => lastNDaysCompletion(active, data.marks, today, 7), [active, data.marks, today]);
-  const cats = useMemo(
-    () => categoryCompletion(active, data.marks, addDays(today, -29), today).slice(0, 4),
-    [active, data.marks, today],
-  );
   const frozen = useMemo(() => frozenSet(data.economy), [data.economy]);
   const streaks = useMemo(() => {
     let best = 0, current = 0;
@@ -65,6 +82,166 @@ export default function DashboardPage() {
     return { best, current };
   }, [active, data.marks, today, frozen]);
   const insights = useMemo(() => buildInsights(active, data.marks, today), [active, data.marks, today]);
+
+  // Progress widgets data
+  const summary = useMemo(() => summarizeProgress(data, today), [data, today]);
+  const recent = useMemo<AchievementDef[]>(() => {
+    return Object.entries(data.unlocks)
+      .sort((a, b) => (a[1].at < b[1].at ? 1 : -1))
+      .map(([id]) => BY_ID.get(id))
+      .filter((d): d is AchievementDef => Boolean(d))
+      .slice(0, 5);
+  }, [data.unlocks]);
+
+  // Weekly trend data
+  const weekData = useMemo(() => lastNDaysCompletion(active, data.marks, today, 7), [active, data.marks, today]);
+  const weekAvg = weekData.length ? Math.round(weekData.reduce((s, d) => s + d.rate, 0) / weekData.length) : 0;
+
+  const { level, title, unlockedCount, totalCount } = summary;
+  const badgePct = totalCount ? Math.round((unlockedCount / totalCount) * 100) : 0;
+
+  const widgetContent: Record<WidgetId, { content: React.ReactNode; span?: string }> = {
+    "xp-level": {
+      span: "lg:col-span-3",
+      content: (
+        <Card className="p-5 h-[180px] flex flex-col">
+          <TitleDisplay title={title} size="sm" className="mb-3 shrink-0" />
+          <div className="flex-1 min-h-0">
+            <XpBar level={level} nextUnlock={title.next?.name} />
+          </div>
+        </Card>
+      ),
+    },
+    "badge-collection": {
+      content: (
+        <Card className="p-3 h-[90px] flex items-center gap-3">
+          <span className="flex shrink-0 size-10 items-center justify-center rounded-xl bg-surface2">
+            <Sparkles className="size-5 icon-accent" />
+          </span>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-baseline justify-between gap-2">
+              <span className="text-xs font-semibold">Badges</span>
+              <span className="font-mono text-xs font-bold text-muted">{unlockedCount}/{totalCount}</span>
+            </div>
+            <ProgressBar value={badgePct} className="mt-1.5" />
+            <div className="mt-1 flex flex-wrap gap-1">
+              {(["legendary", "epic", "rare", "common"] as const).map((rarity) => {
+                const n = summary.achievements.filter((a) => a.unlocked && a.def.rarity === rarity).length;
+                if (n === 0) return null;
+                const r = RARITY_STYLE[rarity];
+                return (
+                  <span
+                    key={rarity}
+                    className="rounded-full px-1 py-0 text-[8px] font-bold"
+                    style={{ background: `${r.accent}1f`, color: r.accent }}
+                  >
+                    {r.medal}{n}
+                  </span>
+                );
+              })}
+            </div>
+          </div>
+        </Card>
+      ),
+    },
+    "current-streak": {
+      content: (
+        <Card className="flex items-center gap-3 p-3 h-[90px]">
+          {summary.stats.maxCurrentStreak > 0 ? (
+            <StreakFlame streak={summary.stats.maxCurrentStreak} size={32} showCount={false} />
+          ) : (
+            <Flame className="size-7 text-faint" />
+          )}
+          <div>
+            <div className="font-mono text-xl font-bold tracking-tight">{summary.stats.maxCurrentStreak}</div>
+            <div className="text-[11px] text-muted">day current streak</div>
+          </div>
+        </Card>
+      ),
+    },
+    "recent-achievements": {
+      content: (
+        <Card className="p-3 h-[90px] flex items-center gap-2 overflow-hidden">
+          <span className="flex shrink-0 size-10 items-center justify-center rounded-xl bg-surface2">
+            <Activity className="size-5 icon-accent" />
+          </span>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-xs font-semibold">Recent</span>
+              <Link href="/achievements" className="text-[10px] font-semibold text-accent hover:underline shrink-0">
+                All
+              </Link>
+            </div>
+            <div className="mt-1 flex gap-1 overflow-hidden">
+              {recent.length === 0 ? (
+                <p className="text-[10px] text-faint truncate">Complete habits to unlock achievements.</p>
+              ) : (
+                recent.slice(0, 3).map((def) => (
+                  <div key={def.id} title={`${def.name} · ${def.rarity}`}>
+                    <AchievementBadge def={def} size={28} shine={def.rarity === "legendary"} />
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </Card>
+      ),
+    },
+    "next-milestone": {
+      content: (
+        <Card className="p-5 h-[180px] overflow-y-auto">
+          <NextMilestoneWidget milestones={summary.nextMilestones.slice(0, 2)} />
+        </Card>
+      ),
+    },
+    "weekly-trend": {
+      content: (
+        <Card className="p-5 h-[180px]">
+          <div className="mb-2 flex items-center justify-between shrink-0">
+            <h3 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-muted">
+              <CalendarRange className="size-4 icon-accent" /> Weekly
+            </h3>
+            <span className="font-mono text-sm font-bold">{weekAvg}%</span>
+          </div>
+          <div className="flex items-end justify-between gap-1.5 h-[calc(100%-32px)]">
+            {weekData.map(({ date, rate }) => (
+              <div key={date.toISOString()} className="flex flex-1 flex-col items-center gap-1 self-end">
+                <div className="flex w-full items-end justify-center" style={{ height: "80%" }}>
+                  <div
+                    className="w-full max-w-5 rounded-t-md transition-[height] duration-500"
+                    style={{
+                      height: `${Math.max(rate, 4)}%`,
+                      background: rate >= 100 ? "var(--color-done)" : "var(--c-accent)",
+                      opacity: rate === 0 ? 0.25 : 1,
+                    }}
+                    title={`${rate}%`}
+                  />
+                </div>
+                <span className="font-mono text-[9px] text-faint">
+                  {date.toLocaleDateString(undefined, { weekday: "narrow" })}
+                </span>
+              </div>
+            ))}
+          </div>
+        </Card>
+      ),
+    },
+  };
+
+  const widgetOrder: string[] = data.settings.widgetOrder ?? [...WIDGET_IDS];
+  const orderedIds: string[] = [...WIDGET_IDS].sort((a: string, b: string) => {
+    const ai = widgetOrder.indexOf(a);
+    const bi = widgetOrder.indexOf(b);
+    return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
+  });
+
+  const handleReorder = useMemo(() => (ids: string[]) => setWidgetOrder(ids), []);
+
+  const reorderableItems: ReorderableItem[] = orderedIds.map((id: string) => {
+    const w = widgetContent[id as WidgetId];
+    if (!w) return { id, content: null };
+    return { id, content: <div className={w.span ?? ""}>{w.content}</div> };
+  });
 
   if (!hydrated) return <PageSkeleton />;
 
@@ -101,26 +278,47 @@ export default function DashboardPage() {
         }
       />
 
+      {/* Today summary + stat tiles — redesigned card with no wasted space */}
       <div className="grid gap-6 lg:grid-cols-3">
-        {/* Today summary */}
-        <Card className="flex items-center gap-5 p-5">
-          <ProgressRing value={progress} size={96}>
-            <span className="font-mono text-xl font-bold">{progress}%</span>
-          </ProgressRing>
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-muted">Today</p>
-            <p className="mt-1 text-2xl font-bold">
-              {doneToday}
-              <span className="text-base font-medium text-muted">/{todaysHabits.length}</span>
-            </p>
-            <p className="text-sm text-muted">habits done</p>
-            <Link href="/today" className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-accent hover:underline">
-              Complete them <ArrowRight className="size-3" />
+        <Card className="flex flex-col p-5 h-[180px]">
+          <div className="flex items-center gap-4 shrink-0">
+            <ProgressRing value={progress} size={64}>
+              <span className="font-mono text-sm font-bold">{progress}%</span>
+            </ProgressRing>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted">Today</p>
+              <p className="text-sm text-muted">
+                {today.toLocaleDateString(undefined, { weekday: "long" })}
+              </p>
+              {/* Time left in the day */}
+              <p className="mt-0.5 text-[11px] font-medium text-accent">
+                {today.getHours() < 12 ? "☀️ Morning" : today.getHours() < 17 ? "🌤️ Afternoon" : "🌙 Evening"}
+                {' · '}{24 - today.getHours() - 1}h left today
+              </p>
+            </div>
+          </div>
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            <div className="rounded-xl bg-done/10 p-2.5">
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-done">Done</p>
+              <p className="mt-0.5 font-mono text-lg font-bold text-done">{doneToday}</p>
+            </div>
+            <div className="rounded-xl bg-amber-500/10 p-2.5">
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-amber-500">Remaining</p>
+              <p className="mt-0.5 font-mono text-lg font-bold text-amber-500">{todaysHabits.length - doneToday}</p>
+            </div>
+          </div>
+          <div className="mt-auto flex items-center justify-between pt-1">
+            <span className="text-[11px] text-muted">
+              {todaysHabits.length - doneToday > 0
+                ? `${todaysHabits.length - doneToday} habit${todaysHabits.length - doneToday !== 1 ? "s" : ""} remaining`
+                : "🎉 All done!"}
+            </span>
+            <Link href="/today" className="inline-flex items-center gap-1 text-xs font-medium text-accent hover:underline">
+              Open Today <ArrowRight className="size-3" />
             </Link>
           </div>
         </Card>
 
-        {/* Stat tiles */}
         <div className="grid grid-cols-2 gap-3 lg:col-span-2">
           <StatCard icon={Activity} value={`${consistency}%`} label="14-day consistency" accent />
           <StatCard icon={Flame} value={streaks.current} label="Current streak" />
@@ -129,57 +327,26 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      <div className="mt-6 grid gap-6 lg:grid-cols-2">
-        {/* 7-day trend */}
-        <div>
-          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted">Last 7 days</h2>
-          <Card className="p-5">
-            <div className="flex items-end justify-between gap-2 sm:gap-3">
-              {week.map(({ date, rate }) => (
-                <div key={date.toISOString()} className="flex flex-1 flex-col items-center gap-2">
-                  <div className="flex h-28 w-full items-end justify-center">
-                    <div
-                      className="w-full max-w-9 rounded-t-lg transition-[height] duration-500"
-                      style={{
-                        height: `${Math.max(rate, 4)}%`,
-                        background: rate >= 100 ? "var(--color-done)" : "var(--c-accent)",
-                        opacity: rate === 0 ? 0.25 : 1,
-                      }}
-                      title={`${rate}%`}
-                    />
-                  </div>
-                  <span className="font-mono text-[11px] font-medium text-muted">
-                    {date.toLocaleDateString(undefined, { weekday: "narrow" })}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </Card>
+      {/* Your Progress section — moved from Today page, fixed-size cards */}
+      <section className="mt-6">
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-muted">Your Progress</h2>
+          <div className="flex items-center gap-3">
+            <Link href="/shop" aria-label="Open shop" className="transition-transform hover:scale-105">
+              <CoinChip amount={summary.coinBalance} />
+            </Link>
+            <Link href="/profile" className="flex items-center gap-1 text-xs font-semibold text-accent hover:underline">
+              Character page <ChevronRight className="size-3.5" />
+            </Link>
+          </div>
         </div>
 
-        {/* Top categories */}
-        <div>
-          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted">Top categories</h2>
-          <Card className="flex flex-col gap-3.5 p-5">
-            {cats.length === 0 ? (
-              <p className="text-sm text-muted">Complete some habits to see category breakdowns.</p>
-            ) : (
-              cats.map(({ category, rate }) => (
-                <div key={category}>
-                  <div className="mb-1.5 flex items-center justify-between text-xs">
-                    <span className="flex items-center gap-1.5 font-medium">
-                      <span className="size-2 rounded-full" style={{ backgroundColor: CATEGORY_COLORS[category] }} />
-                      {category}
-                    </span>
-                    <span className="font-mono text-muted">{rate}%</span>
-                  </div>
-                  <ProgressBar value={rate} color={CATEGORY_COLORS[category]} />
-                </div>
-              ))
-            )}
-          </Card>
-        </div>
-      </div>
+        <ReorderableGrid
+          items={reorderableItems}
+          onReorder={handleReorder}
+          className="grid gap-4 lg:grid-cols-3"
+        />
+      </section>
 
       {/* Insights */}
       {insights.length > 0 && (

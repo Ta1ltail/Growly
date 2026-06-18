@@ -1,11 +1,29 @@
 "use client";
 
 // Desktop sidebar (hidden on mobile). Brand, grouped nav links, footer note.
+// Icons are colourized with idle animations for a premium feel.
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Activity } from "lucide-react";
 import { NAV_GROUPS, isActive } from "./navItems";
+
+// Icon color map for navigation items — gives each section a distinct accent
+const ICON_COLORS: Record<string, string> = {
+  "/": "text-sky-500",
+  "/today": "text-emerald-500",
+  "/habits": "text-violet-500",
+  "/tracker": "text-cyan-500",
+  "/calendar": "text-rose-500",
+  "/goals": "text-amber-500",
+  "/templates": "text-orange-500",
+  "/notes": "text-pink-500",
+  "/stats": "text-blue-500",
+  "/achievements": "text-yellow-500",
+  "/shop": "text-emerald-500",
+  "/settings": "text-slate-400",
+  "/profile": "text-violet-400",
+};
 
 export function Sidebar() {
   const pathname = usePathname();
@@ -30,6 +48,7 @@ export function Sidebar() {
             )}
             {group.items.map(({ href, label, icon: Icon }) => {
               const active = isActive(pathname, href);
+              const colorClass = ICON_COLORS[href] ?? "text-muted";
               return (
                 <Link
                   key={href}
@@ -44,8 +63,9 @@ export function Sidebar() {
                   <span className="relative">
                     <Icon
                       className={`size-4.5 transition-all duration-300 group-hover:animate-icon-wiggle ${
-                        active ? "text-accent animate-icon-bounce" : ""
+                        active ? `text-accent animate-icon-bounce` : `${colorClass} group-hover:text-ink`
                       }`}
+                      strokeWidth={active ? 2.5 : 2}
                     />
                     {active && (
                       <span className="absolute -inset-2 animate-glow-pulse rounded-full bg-accent/10" />

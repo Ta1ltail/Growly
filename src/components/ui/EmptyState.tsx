@@ -1,9 +1,10 @@
+import { memo } from "react";
 import type { LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
 
 // Friendly empty state: icon in a soft circle, message, optional action.
 
-export function EmptyState({
+export const EmptyState = memo(function EmptyState({
   icon: Icon,
   title,
   hint,
@@ -24,4 +25,4 @@ export function EmptyState({
       {action && <div className="mt-5">{action}</div>}
     </div>
   );
-}
+});

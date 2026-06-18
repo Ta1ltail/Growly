@@ -59,7 +59,7 @@ export default function GoalsPage() {
           }
         />
       ) : (
-        <div className="grid gap-3 stagger-children sm:grid-cols-2">
+        <div className="grid gap-3 stagger-children sm:grid-cols-2 max-h-[calc(100vh-220px)] overflow-y-auto pr-1">
           {data.goals.map((goal) => {
             const pct = Math.round((goal.current / goal.target) * 100);
             const complete = goal.current >= goal.target;

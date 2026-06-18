@@ -12,9 +12,9 @@
 
 "use client";
 
-import { memo } from "react";
+import { memo, useMemo } from "react";
 import { Flame } from "lucide-react";
-import { useAppData } from "@/lib/store";
+import { useAppDataSelector } from "@/lib/store";
 import { equippedOrDefault, FLAME_SKINS } from "@/lib/economy";
 
 export type FlameTier = "none" | "small" | "medium" | "large";
@@ -43,10 +43,13 @@ export const StreakFlame = memo(function StreakFlame({
   // Optional override; when omitted the equipped flame skin is used.
   colors?: FlameColors;
 }) {
-  const data = useAppData();
+  const equippedFlame = useAppDataSelector((d) => equippedOrDefault(d.economy, "flame"));
   const tier = flameTier(streak);
 
-  const ramp = colors ?? FLAME_SKINS[equippedOrDefault(data.economy, "flame")] ?? DEFAULT_FLAME_COLORS;
+  const ramp = useMemo(
+    () => colors ?? FLAME_SKINS[equippedFlame] ?? DEFAULT_FLAME_COLORS,
+    [colors, equippedFlame],
+  );
   if (tier === "none") return null;
 
   const color = ramp[tier];

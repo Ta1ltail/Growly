@@ -1,8 +1,9 @@
+import { memo } from "react";
 import type { LucideIcon } from "lucide-react";
 
 // A compact stat tile: icon, big value, label.
 
-export function StatCard({
+export const StatCard = memo(function StatCard({
   icon: Icon,
   value,
   label,
@@ -26,4 +27,4 @@ export function StatCard({
       <div className="mt-0.5 text-xs text-muted">{label}</div>
     </div>
   );
-}
+});

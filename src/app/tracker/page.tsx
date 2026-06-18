@@ -1,10 +1,10 @@
 "use client";
 
 // Tracker — habits as rows, recent days as columns. Tap a cell to cycle.
-// Honest Tracking: past days lock (only today + a short grace window are
-// editable), so cells outside that window are read-only.
+// Habit lists scroll internally within a fixed container to prevent layout breaking.
+// Past days lock (only today + a short grace window are editable).
 
-import { useMemo, useState } from "react";
+import { memo, useCallback, useMemo, useState } from "react";
 import { Flame, LayoutGrid, Lock, Snowflake } from "lucide-react";
 import { StreakFlame } from "@/components/habits/StreakFlame";
 import { CATEGORIES, CATEGORY_COLORS, type Category } from "@/lib/categories";
@@ -19,6 +19,7 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { Card } from "@/components/ui/Card";
 import { Segmented } from "@/components/ui/Segmented";
 import { EmptyState } from "@/components/ui/EmptyState";
+import type { MarkStatus, Marks, Habit } from "@/lib/types";
 
 const RANGES = [
   { value: "14" as const, label: "14 days" },
@@ -30,6 +31,61 @@ const CELL: Record<string, string> = {
   missed: "bg-missed text-white",
   skipped: "bg-skipped text-white",
 };
+
+// Memoized tracker cell to prevent full grid re-render on single-cell actions.
+const TrackerCell = memo(function TrackerCell({
+  dateKey,
+  habitId,
+  status,
+  scheduled,
+  editable,
+  future,
+  cellFrozen,
+  onMark,
+}: {
+  dateKey: string;
+  habitId: string;
+  status: MarkStatus | undefined;
+  scheduled: boolean;
+  editable: boolean;
+  future: boolean;
+  cellFrozen: boolean;
+  onMark: (dateKey: string, habitId: string) => void;
+}) {
+  const locked = !editable && !future;
+  return (
+    <td className="p-1">
+      <button
+        onClick={() => editable && onMark(dateKey, habitId)}
+        disabled={!editable || (!scheduled && !status)}
+        title={cellFrozen ? "Protected by a streak freeze" : locked ? "Locked — past days can't be changed" : undefined}
+        className={`relative flex size-7 items-center justify-center rounded-md text-[11px] font-bold transition-all ${
+          editable ? "hover:scale-110 active:scale-90" : "cursor-not-allowed"
+        } ${
+          status
+            ? `${CELL[status]} ${locked ? "opacity-70" : ""}`
+            : scheduled
+              ? future
+                ? "border border-dashed border-line bg-transparent text-faint"
+                : locked
+                  ? "bg-transparent text-faint"
+                  : "bg-empty hover:bg-line"
+              : "cursor-default bg-transparent"
+        }`}
+      >
+        {status ? MARK_LABEL[status] : locked && scheduled ? <Lock className="size-2.5" /> : ""}
+        {cellFrozen && (
+          <span
+            aria-hidden
+            className="absolute -right-1 -top-1 grid size-3.5 place-items-center rounded-full bg-sky-500 text-white ring-2 ring-surface"
+          >
+            <Snowflake className="size-2" strokeWidth={3} />
+          </span>
+        )}
+      </button>
+    </td>
+  );
+});
 
 export default function TrackerPage() {
   const data = useAppData();
@@ -53,6 +109,9 @@ export default function TrackerPage() {
   );
 
   const frozen = useMemo(() => frozenSet(data.economy), [data.economy]);
+  const handleCellMark = useCallback((key: string, habitId: string) => {
+    cycleMark(key, habitId);
+  }, []);
   const usedCategories = useMemo(
     () => CATEGORIES.filter((c) => data.habits.some((h) => !h.archived && h.category === c)),
     [data.habits],
@@ -79,90 +138,75 @@ export default function TrackerPage() {
             <Segmented options={RANGES} value={range} onChange={setRange} />
           </div>
 
-          <Card className="overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse text-center font-mono text-xs">
-                <thead>
-                  <tr>
-                    <th className="sticky left-0 z-10 min-w-36 bg-surface px-3 py-3 text-left font-semibold">Habit</th>
-                    {columns.map((d) => {
-                      const isToday = dateKey(d) === dateKey(today);
+          {/* Fixed-height container with internal scroll for long habit lists */}
+          <div className="h-[calc(100vh-230px)] min-h-[300px]">
+          <Card className="overflow-hidden h-full">
+            <div className="h-full overflow-y-auto">
+              <div className={daysShown === 30 ? "overflow-x-auto overflow-y-hidden" : "overflow-x-auto"}>
+                <table className="w-full border-collapse text-center font-mono text-xs">
+                  <thead>
+                    <tr>
+                      <th className="sticky top-0 z-20 min-w-36 bg-surface px-3 py-3 text-left font-semibold shadow-sm">Habit</th>
+                      {columns.map((d) => {
+                        const isToday = dateKey(d) === dateKey(today);
+                        return (
+                          <th key={dateKey(d)} className={`sticky top-0 z-20 bg-surface px-1 py-2 font-medium shadow-sm ${isToday ? "text-accent" : "text-faint"}`}>
+                            <div className="text-[10px] uppercase">{d.toLocaleDateString(undefined, { weekday: "narrow" })}</div>
+                            <div className="text-[11px]">{d.getDate()}</div>
+                          </th>
+                        );
+                      })}
+                      <th className="sticky top-0 z-20 bg-surface px-2 py-2 shadow-sm"><Flame className="mx-auto size-4 text-amber-500" /></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {habits.map((habit) => {
+                      const { current } = habitStreaks(habit, data.marks, today, frozen);
                       return (
-                        <th key={dateKey(d)} className={`px-1 py-2 font-medium ${isToday ? "text-accent" : "text-faint"}`}>
-                          <div className="text-[10px] uppercase">{d.toLocaleDateString(undefined, { weekday: "narrow" })}</div>
-                          <div className="text-[11px]">{d.getDate()}</div>
-                        </th>
+                        <tr key={habit.id} className="border-t border-line">
+                          <td className="sticky left-0 z-10 min-w-36 border-r border-line bg-surface px-3 py-2 text-left">
+                            <span className="flex items-center gap-2">
+                              <span className="size-2 shrink-0 rounded-full" style={{ backgroundColor: CATEGORY_COLORS[habit.category] }} />
+                              <span className="truncate font-sans text-[13px]">{habit.name}</span>
+                            </span>
+                          </td>
+                          {columns.map((d) => {
+                            const key = dateKey(d);
+                            const status = data.marks[key]?.[habit.id];
+                            const scheduled = isScheduled(habit, d);
+                            const editable = canEditMark(key, today, grace);
+                            const future = isFutureDay(key, today);
+                            const cellFrozen = status === "missed" && isFrozen(frozen, habit.id, key);
+                            return (
+                              <TrackerCell
+                                key={key}
+                                dateKey={key}
+                                habitId={habit.id}
+                                status={status}
+                                scheduled={scheduled}
+                                editable={editable}
+                                future={future}
+                                cellFrozen={cellFrozen}
+                                onMark={handleCellMark}
+                              />
+                            );
+                          })}
+                          <td className="px-2 font-semibold">
+                            {current > 0 ? (
+                              <StreakFlame streak={current} size={15} className="justify-center" />
+                            ) : (
+                              <span className="text-faint">0</span>
+                            )}
+                          </td>
+                        </tr>
                       );
                     })}
-                    <th className="px-2 py-2"><Flame className="mx-auto size-4 text-amber-500" /></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {habits.map((habit) => {
-                    const { current } = habitStreaks(habit, data.marks, today, frozen);
-                    return (
-                      <tr key={habit.id} className="border-t border-line">
-                        <td className="sticky left-0 z-10 min-w-36 border-r border-line bg-surface px-3 py-2 text-left">
-                          <span className="flex items-center gap-2">
-                            <span className="size-2 shrink-0 rounded-full" style={{ backgroundColor: CATEGORY_COLORS[habit.category] }} />
-                            <span className="truncate font-sans text-[13px]">{habit.name}</span>
-                          </span>
-                        </td>
-                        {columns.map((d) => {
-                          const key = dateKey(d);
-                          const status = data.marks[key]?.[habit.id];
-                          const scheduled = isScheduled(habit, d);
-                          const editable = canEditMark(key, today, grace);
-                          const future = isFutureDay(key, today);
-                          const locked = !editable && !future;
-                          const cellFrozen = status === "missed" && isFrozen(frozen, habit.id, key);
-                          return (
-                            <td key={key} className="p-1">
-                              <button
-                                onClick={() => editable && cycleMark(key, habit.id)}
-                                disabled={!editable || (!scheduled && !status)}
-                                title={cellFrozen ? "Protected by a streak freeze" : locked ? "Locked — past days can't be changed" : undefined}
-                                className={`relative flex size-7 items-center justify-center rounded-md text-[11px] font-bold transition-all ${
-                                  editable ? "hover:scale-110 active:scale-90" : "cursor-not-allowed"
-                                } ${
-                                  status
-                                    ? `${CELL[status]} ${locked ? "opacity-70" : ""}`
-                                    : scheduled
-                                      ? future
-                                        ? "border border-dashed border-line bg-transparent text-faint"
-                                        : locked
-                                          ? "bg-transparent text-faint"
-                                          : "bg-empty hover:bg-line"
-                                      : "cursor-default bg-transparent"
-                                }`}
-                              >
-                                {status ? MARK_LABEL[status] : locked && scheduled ? <Lock className="size-2.5" /> : ""}
-                                {cellFrozen && (
-                                  <span
-                                    aria-hidden
-                                    className="absolute -right-1 -top-1 grid size-3.5 place-items-center rounded-full bg-sky-500 text-white ring-2 ring-surface"
-                                  >
-                                    <Snowflake className="size-2" strokeWidth={3} />
-                                  </span>
-                                )}
-                              </button>
-                            </td>
-                          );
-                        })}
-                        <td className="px-2 font-semibold">
-                          {current > 0 ? (
-                            <StreakFlame streak={current} size={15} className="justify-center" />
-                          ) : (
-                            <span className="text-faint">0</span>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+                  </tbody>
+                </table>
+              </div>
             </div>
           </Card>
+          </div>
 
           <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-xs text-muted">
             <Legend className="bg-done" label="done" />

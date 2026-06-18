@@ -28,7 +28,6 @@ import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ProgressRing } from "@/components/ui/ProgressRing";
 import { PageSkeleton } from "@/components/ui/PageSkeleton";
-import { DashboardWidgets } from "@/components/dashboard/DashboardWidgets";
 import { CheckInPopup } from "@/components/today/CheckInPopup";
 import { DailyQuestCard } from "@/components/today/DailyQuestCard";
 import { DailySpinModal } from "@/components/today/DailySpinModal";
@@ -140,9 +139,6 @@ export default function TodayPage() {
         </div>
       </Card>
 
-      {/* Gamified progress dashboard (spec §10) */}
-      <DashboardWidgets />
-
       <div className="grid gap-6 lg:grid-cols-5">
         <div className="lg:col-span-3">
           {/* Up next */}
@@ -188,7 +184,7 @@ export default function TodayPage() {
               }
             />
           ) : (
-            <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-4 max-h-[calc(100vh-500px)] overflow-y-auto pr-1">
               {grouped.map((group) => (
                 <div key={group.category}>
                   <div className="mb-2 flex items-center gap-2 px-1">
@@ -221,16 +217,9 @@ export default function TodayPage() {
                   </Card>
                 </div>
               ))}
-            </div>
-          )}
-        </div>
+            </div>          )}
 
-        {/* Engagement sidebar */}
-        <div className="lg:col-span-2 flex flex-col gap-4">
-          {/* Daily Quest */}
-          <DailyQuestCard />
-
-          {/* Daily Spin */}
+          {/* Daily Spin — always visible, below habits, aligned with them */}
           <Card className="p-4">
             <div className="flex items-center gap-4">
               <span className="grid size-12 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-amber-400/20 to-rose-400/20 text-2xl">
@@ -240,20 +229,25 @@ export default function TodayPage() {
                 <p className="text-sm font-semibold">Daily Spin</p>
                 <p className="text-xs text-muted">
                   {data.economy.lastSpinDate === todayKey
-                    ? "Come back tomorrow for another spin!"
+                    ? "Next spin available tomorrow at midnight"
                     : "Spin the wheel for a chance to earn coins!"}
                 </p>
               </div>
               <Button
                 onClick={() => setShowSpin(true)}
-                disabled={data.economy.lastSpinDate === todayKey}
                 size="sm"
               >
                 <Sparkles className="size-3.5" aria-hidden />
-                {data.economy.lastSpinDate === todayKey ? "Done" : "Spin"}
+                {data.economy.lastSpinDate === todayKey ? "View" : "Spin"}
               </Button>
             </div>
           </Card>
+        </div>
+
+        {/* Engagement sidebar */}
+        <div className="lg:col-span-2 flex flex-col gap-4">
+          {/* Daily Quest */}
+          <DailyQuestCard />
 
           {/* Note */}
           <div>

@@ -2,7 +2,7 @@
 #                                                          #
 #   PROJECT 101 - TODO / PROGRESS CHECKLIST                #
 #   [x] = done   [ ] = not yet                            #
-#   Updated: 2026-06-18                                    #
+#   Updated: 2026-06-18 (v2)                                    #
 #                                                          #
 ############################################################
 
@@ -127,7 +127,6 @@
 ==========================================================
   [ ] Community challenges
   [ ] Friend leaderboards
-  [ ] Memoization optimization
   [ ] Accounts + sign in (Supabase Auth)
   [ ] Drizzle ORM + database tables
   [ ] Move localStorage -> Supabase

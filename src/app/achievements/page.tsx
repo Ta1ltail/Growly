@@ -2,11 +2,11 @@
 
 // Achievement Gallery (spec §14): every achievement with unlock state and
 // progress, plus badge-collection summary, category/rarity/status filters, and
-// search. Everything is derived from history via summarizeProgress — locked
-// items show how close you are, so you always know what to pursue next.
+// search. Pagination keeps the grid manageable. Fixed card sizes prevent layout
+// shifting. Better unlock animations for badges.
 
 import { useMemo, useState } from "react";
-import { Search, TrendingUp } from "lucide-react";
+import { Search, TrendingUp, ChevronLeft, ChevronRight } from "lucide-react";
 import { useAppData } from "@/lib/store";
 import { useToday } from "@/hooks/useToday";
 import { summarizeProgress } from "@/lib/progress";
@@ -36,6 +36,8 @@ const STATUS_OPTS: { value: "all" | "unlocked" | "locked"; label: string }[] = [
   { value: "locked", label: "Locked" },
 ];
 
+const PAGE_SIZE = 12;
+
 export default function AchievementsPage() {
   const data = useAppData();
   const today = useToday();
@@ -46,6 +48,7 @@ export default function AchievementsPage() {
   const [category, setCategory] = useState<AchievementCategory | "all">("all");
   const [status, setStatus] = useState<"all" | "unlocked" | "locked">("all");
   const [query, setQuery] = useState("");
+  const [page, setPage] = useState(0);
 
   const rarityCounts = useMemo(() => {
     const counts: Record<Rarity, { unlocked: number; total: number }> = {
@@ -83,6 +86,13 @@ export default function AchievementsPage() {
       .slice(0, 3);
   }, [summary.achievements]);
 
+  // Pagination
+  const pageCount = Math.max(1, Math.ceil(visible.length / PAGE_SIZE));
+  const safePage = Math.min(page, pageCount - 1);
+  const paged = visible.slice(safePage * PAGE_SIZE, (safePage + 1) * PAGE_SIZE);
+  const start = safePage * PAGE_SIZE + 1;
+  const end = Math.min(visible.length, (safePage + 1) * PAGE_SIZE);
+
   if (!hydrated) return <PageSkeleton />;
 
   return (
@@ -105,6 +115,7 @@ export default function AchievementsPage() {
                 <Card
                   key={a.def.id}
                   className="group flex items-center gap-3 p-4 transition-all hover:-translate-y-0.5 hover:shadow-md"
+                  glow
                 >
                   <div className="relative shrink-0">
                     <AchievementBadge def={a.def} size={48} locked />
@@ -141,7 +152,7 @@ export default function AchievementsPage() {
           const r = RARITY_STYLE[rarity];
           const pct = c.total ? Math.round((c.unlocked / c.total) * 100) : 0;
           return (
-            <Card key={rarity} className="p-4">
+            <Card key={rarity} className="p-4 h-[120px] flex flex-col">
               <div className="flex items-center justify-between">
                 <span className="text-lg" aria-hidden>{r.medal}</span>
                 <span className="font-mono text-sm font-bold">
@@ -151,7 +162,9 @@ export default function AchievementsPage() {
               <p className="mt-1 text-xs font-semibold" style={{ color: r.accent }}>
                 {RARITY_LABEL[rarity]}
               </p>
-              <ProgressBar className="mt-2" value={pct} color={r.accent} />
+              <div className="mt-auto">
+                <ProgressBar className="mt-2" value={pct} color={r.accent} />
+              </div>
             </Card>
           );
         })}
@@ -179,41 +192,80 @@ export default function AchievementsPage() {
       {visible.length === 0 ? (
         <Card className="p-10 text-center text-sm text-muted">No achievements match your filters.</Card>
       ) : (
-        <div className="grid gap-3 sm:grid-cols-2 stagger-children">
-          {visible.map((a) => {
-            const r = RARITY_STYLE[a.def.rarity];
-            return (
-              <Card
-                key={a.def.id}
-                className={`flex gap-4 p-4 transition-transform hover:-translate-y-0.5 ${a.unlocked ? "" : "opacity-90"}`}
-              >
-                <AchievementBadge def={a.def} size={64} locked={!a.unlocked} shine={a.unlocked && a.def.rarity === "legendary"} />
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
-                    <h3 className="truncate text-sm font-semibold">{a.def.name}</h3>
-                    <span
-                      className="shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-bold uppercase"
-                      style={{ background: `${r.accent}1f`, color: r.accent }}
-                    >
-                      {RARITY_LABEL[a.def.rarity]}
-                    </span>
-                  </div>
-                  <p className="mt-0.5 line-clamp-2 text-xs text-muted">{a.def.description}</p>
-                  {a.unlocked ? (
-                    <p className="mt-2 text-xs font-semibold text-done">Unlocked</p>
-                  ) : (
-                    <div className="mt-2">
-                      <ProgressBar value={a.progressPct} color={r.accent} />
-                      <p className="mt-1 font-mono text-[11px] text-faint">
-                        {a.current}/{a.target}
-                      </p>
+        <>
+          <div className="grid gap-3 sm:grid-cols-2 stagger-children">
+            {paged.map((a) => {
+              const r = RARITY_STYLE[a.def.rarity];
+              return (
+                <Card
+                  key={a.def.id}
+                  className={`flex gap-4 p-4 transition-all hover:-translate-y-0.5 hover:shadow-md ${a.unlocked ? "" : "opacity-90"}`}
+                >
+                  <AchievementBadge
+                    def={a.def}
+                    size={64}
+                    locked={!a.unlocked}
+                    shine={a.unlocked && a.def.rarity === "legendary"}
+                  />
+                  <div className="min-w-0 flex-1 flex flex-col">
+                    <div className="flex items-center gap-2">
+                      <h3 className="truncate text-sm font-semibold">{a.def.name}</h3>
+                      <span
+                        className="shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-bold uppercase"
+                        style={{ background: `${r.accent}1f`, color: r.accent }}
+                      >
+                        {RARITY_LABEL[a.def.rarity]}
+                      </span>
                     </div>
-                  )}
-                </div>
-              </Card>
-            );
-          })}
-        </div>
+                    <p className="mt-0.5 line-clamp-2 text-xs text-muted">{a.def.description}</p>
+                    {a.unlocked ? (
+                      <p className="mt-auto pt-2 text-xs font-semibold text-done animate-fade-in">
+                        ✓ Unlocked
+                      </p>
+                    ) : (
+                      <div className="mt-auto pt-2">
+                        <ProgressBar value={a.progressPct} color={r.accent} />
+                        <p className="mt-1 font-mono text-[11px] text-faint">
+                          {a.current}/{a.target}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </Card>
+              );
+            })}
+          </div>
+
+          {/* Pagination */}
+          {pageCount > 1 && (
+            <div className="mt-6 flex items-center justify-between gap-3">
+              <span className="font-mono text-xs text-muted">
+                {start}–{end} of {visible.length}
+              </span>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => setPage((p) => Math.max(0, p - 1))}
+                  disabled={safePage === 0}
+                  aria-label="Previous page"
+                  className="flex size-8 items-center justify-center rounded-lg border border-line text-muted transition-colors hover:bg-surface2 hover:text-ink disabled:pointer-events-none disabled:opacity-40"
+                >
+                  <ChevronLeft className="size-4" />
+                </button>
+                <span className="px-3 font-mono text-xs text-muted">
+                  {safePage + 1} / {pageCount}
+                </span>
+                <button
+                  onClick={() => setPage((p) => Math.min(pageCount - 1, p + 1))}
+                  disabled={safePage >= pageCount - 1}
+                  aria-label="Next page"
+                  className="flex size-8 items-center justify-center rounded-lg border border-line text-muted transition-colors hover:bg-surface2 hover:text-ink disabled:pointer-events-none disabled:opacity-40"
+                >
+                  <ChevronRight className="size-4" />
+                </button>
+              </div>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

@@ -3,12 +3,14 @@
 // Bottom-right stage of the unified celebration flow: after the center popup is
 // dismissed the event lingers here as a small auto-dismissing toast. Positioned
 // by the manager's stack container (this renders just the card).
+// Auto-disappears with a slide-out animation after VISIBLE_MS.
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import type { CelebrationEvent } from "@/lib/celebrations";
 import { AchievementBadge } from "@/components/achievements/AchievementBadge";
 
 const VISIBLE_MS = 4200;
+const EXIT_ANIM_MS = 400;
 
 export function CelebrationToast({
   event,
@@ -17,15 +19,27 @@ export function CelebrationToast({
   event: CelebrationEvent;
   onDismiss: () => void;
 }) {
+  const [closing, setClosing] = useState(false);
+
   useEffect(() => {
-    const t = setTimeout(onDismiss, VISIBLE_MS);
+    const t = setTimeout(() => {
+      setClosing(true);
+      setTimeout(onDismiss, EXIT_ANIM_MS);
+    }, VISIBLE_MS);
     return () => clearTimeout(t);
   }, [onDismiss]);
 
   return (
     <button
-      onClick={onDismiss}
-      className="animate-[toast-in_var(--dur-base)_var(--ease-spring)_both] flex w-[min(20rem,calc(100vw-2rem))] items-center gap-3 rounded-2xl border border-line bg-surface p-3 text-left shadow-lg hover:bg-surface2"
+      onClick={() => {
+        setClosing(true);
+        setTimeout(onDismiss, EXIT_ANIM_MS);
+      }}
+      className={`flex w-[min(20rem,calc(100vw-2rem))] items-center gap-3 rounded-2xl border border-line bg-surface p-3 text-left shadow-lg hover:bg-surface2 ${
+        closing
+          ? "animate-[toast-out_0.4s_var(--ease-out)_both]"
+          : "animate-[toast-in_var(--dur-base)_var(--ease-spring)_both]"
+      }`}
       style={{ boxShadow: `0 12px 32px -10px ${event.glow}` }}
       aria-label={`${event.eyebrow}: ${event.name}. Dismiss.`}
     >

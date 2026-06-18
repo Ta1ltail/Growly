@@ -16,7 +16,7 @@ import { ACHIEVEMENTS, RARITY_LABEL, RARITY_ORDER } from "./achievements";
 import { RARITY_STYLE } from "./rarity";
 import { RARITY_XP } from "./xp";
 import { RANK_STYLE } from "./ranks";
-import { SHOP_ITEMS, frozenSet } from "./economy";
+import { RARITY_COINS, SHOP_ITEMS, frozenSet } from "./economy";
 import { habitStreaks } from "./stats";
 import { summarizeProgress } from "./progress";
 
@@ -85,7 +85,7 @@ export function achievementEvents(data: AppData): CelebrationEvent[] {
         description: def.description,
         accent: r.accent,
         glow: r.glow,
-        reward: `+${RARITY_XP[def.rarity]} XP`,
+        reward: `+${RARITY_XP[def.rarity]} XP · +${RARITY_COINS[def.rarity]} 🪙`,
         badgeDef: def,
         confetti: def.rarity === "legendary",
         achievementId: id,

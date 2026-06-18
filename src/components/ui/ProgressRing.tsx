@@ -1,6 +1,8 @@
+import { memo } from "react";
+
 // Circular progress ring (SVG). Shows a percentage in the center.
 
-export function ProgressRing({
+function ProgressRingInner({
   value,
   size = 96,
   stroke = 9,
@@ -45,3 +47,5 @@ export function ProgressRing({
     </div>
   );
 }
+
+export const ProgressRing = memo(ProgressRingInner);

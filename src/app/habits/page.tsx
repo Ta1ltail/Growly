@@ -41,7 +41,7 @@ import { Pagination } from "@/components/ui/Pagination";
 import { HabitForm } from "@/components/habits/HabitForm";
 
 // Spec §12: list scrolls after 12 rows; paginate 20 active habits per page.
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 7;
 const SCROLL_AFTER = 12;
 const ROW_PX = 64; // approx active-habit row height incl. gap
 

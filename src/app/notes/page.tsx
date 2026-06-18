@@ -1,7 +1,7 @@
 "use client";
 
 // Notes — searchable, taggable notes linked to dates, habits, and goals.
-// Add/edit in a modal.
+// Simple box-style cards with consistent sizing. Long content scrolls internally.
 
 import { useMemo, useState } from "react";
 import { Plus, Search, NotebookPen, Tag, CalendarDays, ListTodo, Target } from "lucide-react";
@@ -91,38 +91,58 @@ export default function NotesPage() {
             )}
           </div>
 
-          <div className="grid gap-3 stagger-children sm:grid-cols-2">
-            {filtered.map((n) => (
-              <Card key={n.id} className="cursor-pointer p-4" interactive>
-                <button onClick={() => setEditing(n)} className="block w-full text-left">
-                  <p className="whitespace-pre-wrap text-sm">{n.body}</p>
-                  <div className="mt-3 flex flex-wrap items-center gap-2 text-[11px] text-muted">
+          {/* Simple vertical scroll list of note cards */}
+          {filtered.length === 0 ? (
+            <Card className="p-10 text-center text-sm text-muted">No notes match your filters.</Card>
+          ) : (
+            <div className="flex flex-col gap-3 max-h-[calc(100vh-280px)] overflow-y-auto pr-1">
+              {filtered.map((n) => (
+                <button
+                  key={n.id}
+                  onClick={() => setEditing(n)}
+                  className="w-full text-left rounded-2xl border border-line bg-surface p-3 transition-all hover:shadow-md hover:-translate-y-0.5 cursor-pointer shrink-0"
+                >
+                  <div className="flex items-start justify-between gap-2 shrink-0 mb-1.5">
                     {n.links.date && (
-                      <Meta icon={CalendarDays}>{parseDateKey(n.links.date).toLocaleDateString(undefined, { month: "short", day: "numeric" })}</Meta>
+                      <span className="flex items-center gap-1 text-[10px] text-faint">
+                        <CalendarDays className="size-3" />
+                        {parseDateKey(n.links.date).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+                      </span>
                     )}
+                  </div>
+                  <div className="line-clamp-3">
+                    <p className="whitespace-pre-wrap text-sm leading-relaxed">{n.body}</p>
+                  </div>
+                  <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[10px] text-faint border-t border-line/40 pt-2 shrink-0">
                     {n.links.habitId && habitName.has(n.links.habitId) && (
-                      <Meta icon={ListTodo}>{habitName.get(n.links.habitId)}</Meta>
+                      <span className="flex items-center gap-1 rounded-full bg-surface2/60 px-1.5 py-0.5">
+                        <ListTodo className="size-2.5" />
+                        {habitName.get(n.links.habitId)}
+                      </span>
                     )}
                     {n.links.goalId && goalTitle.has(n.links.goalId) && (
-                      <Meta icon={Target}>{goalTitle.get(n.links.goalId)}</Meta>
+                      <span className="flex items-center gap-1 rounded-full bg-surface2/60 px-1.5 py-0.5">
+                        <Target className="size-2.5" />
+                        {goalTitle.get(n.links.goalId)}
+                      </span>
                     )}
                     {n.tags.map((t) => (
-                      <Meta key={t} icon={Tag}>{t}</Meta>
+                      <span key={t} className="flex items-center gap-1 rounded-full bg-surface2/60 px-1.5 py-0.5">
+                        <Tag className="size-2.5" />
+                        {t}
+                      </span>
                     ))}
                   </div>
                 </button>
-              </Card>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </>
       )}
 
       <Modal
         open={adding || editing !== null}
-        onClose={() => {
-          setAdding(false);
-          setEditing(null);
-        }}
+        onClose={() => { setAdding(false); setEditing(null); }}
         title={editing ? "Edit note" : "New note"}
         size="md"
       >
@@ -131,18 +151,8 @@ export default function NotesPage() {
           habits={data.habits.filter((h) => !h.archived)}
           goals={data.goals}
           onSave={save}
-          onCancel={() => {
-            setAdding(false);
-            setEditing(null);
-          }}
-          onDelete={
-            editing
-              ? () => {
-                  deleteNote(editing.id);
-                  setEditing(null);
-                }
-              : undefined
-          }
+          onCancel={() => { setAdding(false); setEditing(null); }}
+          onDelete={editing ? () => { deleteNote(editing.id); setEditing(null); } : undefined}
         />
       </Modal>
     </div>
@@ -159,14 +169,5 @@ function TagChip({ label, active, onClick }: { label: string; active: boolean; o
     >
       {label}
     </button>
-  );
-}
-
-function Meta({ icon: Icon, children }: { icon: typeof Tag; children: React.ReactNode }) {
-  return (
-    <span className="flex items-center gap-1 rounded-full bg-surface2 px-2 py-0.5">
-      <Icon className="size-3" />
-      {children}
-    </span>
   );
 }

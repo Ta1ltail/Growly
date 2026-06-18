@@ -1,6 +1,8 @@
+import { memo } from "react";
+
 // Thin animated progress bar. `color` overrides the accent fill.
 
-export function ProgressBar({
+export const ProgressBar = memo(function ProgressBar({
   value,
   color,
   className = "",
@@ -20,4 +22,4 @@ export function ProgressBar({
       />
     </div>
   );
-}
+});

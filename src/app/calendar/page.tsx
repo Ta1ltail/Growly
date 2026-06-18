@@ -3,6 +3,8 @@
 // Calendar — plan and review by date. Month/Week views shaded by completion,
 // a clear "today" indicator, and a day detail panel with the day's scheduled
 // habits (time-ordered, with a live "now" marker), notes, and goal deadlines.
+// Each date shows a circular fill progress indicator with dynamic color progression
+// instead of numeric-only indicators.
 
 import { useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, Check, X, Minus, Flag, NotebookPen, Snowflake } from "lucide-react";
@@ -25,12 +27,69 @@ const VIEWS = [
   { value: "week" as const, label: "Week" },
 ];
 
+// Dynamic color progression for circular progress
+// 0-25%: low progress color, 26-50%: medium-low, 51-75%: medium-high, 76-100%: completed/high
+function progressColor(rate: number): string {
+  if (rate === 0) return "var(--c-empty)";
+  if (rate <= 25) return "#f43f5e"; // low - rose/missed
+  if (rate <= 50) return "#f59e0b"; // medium-low - amber
+  if (rate <= 75) return "#22c55e"; // medium-high - green/done
+  return "#22c55e"; // completed/high - done green
+}
+
+function CircularProgress({ rate, size = 32 }: { rate: number; size?: number }) {
+  const stroke = 3;
+  const r = (size - stroke) / 2;
+  const c = 2 * Math.PI * r;
+  const pct = Math.max(0, Math.min(100, rate));
+  const offset = c - (pct / 100) * c;
+  const color = progressColor(rate);
+
+  if (rate === 0) {
+    return (
+      <div className="grid place-items-center" style={{ width: size, height: size }}>
+        <span className="text-[9px] font-semibold opacity-60">—</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative grid place-items-center" style={{ width: size, height: size }}>
+      <svg width={size} height={size} className="-rotate-90 absolute inset-0">
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={r}
+          fill="none"
+          stroke="var(--c-empty)"
+          strokeWidth={stroke}
+        />
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={r}
+          fill="none"
+          stroke={color}
+          strokeWidth={stroke}
+          strokeLinecap="round"
+          strokeDasharray={c}
+          strokeDashoffset={offset}
+          style={{ transition: "stroke-dashoffset 0.8s cubic-bezier(0.22,1,0.36,1), stroke 0.4s ease" }}
+        />
+      </svg>
+      <span className="text-[9px] font-bold leading-none" style={{ color }}>
+        {rate}%
+      </span>
+    </div>
+  );
+}
+
 function shade(rate: number): string {
   if (rate === 0) return "";
-  if (rate < 34) return "bg-accent/20";
-  if (rate < 67) return "bg-accent/45";
-  if (rate < 100) return "bg-accent/70 text-white";
-  return "bg-accent text-white";
+  if (rate <= 25) return "bg-rose-500/15 border-rose-500/30";
+  if (rate <= 50) return "bg-amber-500/15 border-amber-500/30";
+  if (rate <= 75) return "bg-emerald-500/15 border-emerald-500/30";
+  return "bg-accent/20 border-accent/40";
 }
 
 export default function CalendarPage() {
@@ -105,20 +164,20 @@ export default function CalendarPage() {
       />
 
       <div className="grid gap-6 lg:grid-cols-5">
-        <div className="lg:col-span-3">
+        <div className="lg:col-span-3 lg:min-h-0">
           <h2 className="mb-3 flex items-center justify-between text-sm font-semibold uppercase tracking-wide text-muted">
             <span>{view === "month" ? "Month" : "Week"}</span>
             <span className="text-[10px] font-normal normal-case tracking-normal text-faint">Tap a day to view</span>
           </h2>
-          <Card className="p-4">
+          <Card className="p-4 h-full min-h-[400px]">
             <div className="mb-2 grid grid-cols-7 gap-1.5 text-center font-mono text-[11px] text-faint">
               {WEEKDAY_LABELS.map((w) => (
                 <div key={w} className="py-1">{w}</div>
               ))}
             </div>
-            <div className="grid grid-cols-7 gap-1.5">
+            <div className="grid grid-cols-7 gap-1.5 auto-rows-fr">
               {(view === "month" ? monthCells : weekCells).map((d, i) => {
-                if (!d) return <div key={`b-${i}`} />;
+                if (!d) return <div key={`b-${i}`} className="min-h-[60px]" />;
                 const rate = dayCompletion(active, data.marks, d);
                 const isToday = dateKey(d) === dateKey(today);
                 const isSelected = dateKey(d) === selectedKey;
@@ -128,13 +187,13 @@ export default function CalendarPage() {
                   <button
                     key={dateKey(d)}
                     onClick={() => setSelected(d)}
-                    className={`relative flex aspect-square flex-col items-center justify-center rounded-xl border font-mono text-xs transition-all hover:scale-105 ${shade(rate)} ${
-                      isSelected ? "border-accent ring-accent-soft" : isToday ? "border-accent/50" : "border-transparent"
-                    } ${rate === 0 ? "bg-surface2/40 text-muted" : ""}`}
+                    className={`relative flex flex-col items-center justify-center gap-1 rounded-xl border py-3 transition-all hover:scale-105 ${shade(rate)} ${
+                      isSelected ? "border-accent ring-2 ring-accent/40" : isToday ? "border-accent/50" : "border-transparent"
+                    } ${rate === 0 && !isToday ? "bg-surface2/40 text-muted" : ""} min-h-[60px]`}
                   >
-                    <span className={`font-semibold ${isToday ? "text-accent" : ""}`}>{d.getDate()}</span>
-                    {rate > 0 && <span className="text-[9px] opacity-80">{rate}%</span>}
-                    <span className="absolute bottom-1 flex gap-0.5">
+                    <span className={`text-sm font-semibold ${isToday ? "text-accent" : ""}`}>{d.getDate()}</span>
+                    <CircularProgress rate={rate} size={28} />
+                    <span className="absolute bottom-1 left-1/2 -translate-x-1/2 flex gap-0.5">
                       {hasNote && <span className="size-1 rounded-full bg-current opacity-60" />}
                       {hasDeadline && <span className="size-1 rounded-full bg-amber-500" />}
                     </span>
@@ -167,7 +226,7 @@ export default function CalendarPage() {
           {selectedHabits.length === 0 ? (
             <Card className="p-6 text-center text-sm text-muted">No habits scheduled this day.</Card>
           ) : (
-            <Card className="divide-y divide-line overflow-hidden">
+            <Card className="divide-y divide-line overflow-hidden max-h-[420px] overflow-y-auto">
               {selectedHabits.map((h) => {
                 const status = data.marks[selectedKey]?.[h.id];
                 const dayFrozen = status === "missed" && isFrozen(frozen, h.id, selectedKey);
@@ -213,7 +272,7 @@ export default function CalendarPage() {
                 <NotebookPen className="size-3.5" /> Notes
               </p>
               {dayNotes.map((n) => (
-                <p key={n.id} className="text-sm italic text-muted">“{n.body}”</p>
+                <p key={n.id} className="text-sm italic text-muted">"{n.body}"</p>
               ))}
             </Card>
           )}
