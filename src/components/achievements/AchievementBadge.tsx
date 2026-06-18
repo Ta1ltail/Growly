@@ -1,10 +1,11 @@
 // Collectible achievement badge (spec §6). Rarity drives the gradient ring,
 // glow, and medal. Used in celebrations and the Achievement Gallery.
 
+import { memo } from "react";
 import type { AchievementDef } from "@/lib/types";
 import { RARITY_STYLE } from "@/lib/rarity";
 
-export function AchievementBadge({
+export const AchievementBadge = memo(function AchievementBadge({
   def,
   size = 72,
   locked = false,
@@ -46,4 +47,4 @@ export function AchievementBadge({
       </span>
     </div>
   );
-}
+});

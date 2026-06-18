@@ -6,7 +6,7 @@
 // items show how close you are, so you always know what to pursue next.
 
 import { useMemo, useState } from "react";
-import { Search } from "lucide-react";
+import { Search, TrendingUp } from "lucide-react";
 import { useAppData } from "@/lib/store";
 import { useToday } from "@/hooks/useToday";
 import { summarizeProgress } from "@/lib/progress";
@@ -19,7 +19,7 @@ import { Card } from "@/components/ui/Card";
 import { Segmented } from "@/components/ui/Segmented";
 import { PageSkeleton } from "@/components/ui/PageSkeleton";
 import { ProgressBar } from "@/components/ui/ProgressBar";
-import { AchievementBadge } from "@/components/AchievementBadge";
+import { AchievementBadge } from "@/components/achievements/AchievementBadge";
 
 const CATEGORY_OPTS: { value: AchievementCategory | "all"; label: string }[] = [
   { value: "all", label: "All" },
@@ -75,6 +75,14 @@ export default function AchievementsPage() {
       });
   }, [summary.achievements, category, status, query]);
 
+  // Closest locked achievements — top 3 by progress percentage
+  const nextAchievable = useMemo(() => {
+    return summary.achievements
+      .filter((a) => !a.unlocked && a.progressPct > 0)
+      .sort((a, b) => b.progressPct - a.progressPct)
+      .slice(0, 3);
+  }, [summary.achievements]);
+
   if (!hydrated) return <PageSkeleton />;
 
   return (
@@ -83,6 +91,48 @@ export default function AchievementsPage() {
         title="Achievements"
         subtitle={`${summary.unlockedCount} of ${summary.totalCount} unlocked`}
       />
+
+      {/* Next achievable — closest locked achievements */}
+      {nextAchievable.length > 0 && (
+        <div className="mb-6">
+          <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-muted">
+            <TrendingUp className="size-4" /> Next achievable
+          </h2>
+          <div className="grid gap-3 sm:grid-cols-3">
+            {nextAchievable.map((a) => {
+              const r = RARITY_STYLE[a.def.rarity];
+              return (
+                <Card
+                  key={a.def.id}
+                  className="group flex items-center gap-3 p-4 transition-all hover:-translate-y-0.5 hover:shadow-md"
+                >
+                  <div className="relative shrink-0">
+                    <AchievementBadge def={a.def} size={48} locked />
+                    <span
+                      className="absolute -bottom-1 -right-1 text-sm opacity-0 transition-opacity group-hover:opacity-100"
+                      aria-hidden
+                    >
+                      🔓
+                    </span>
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-semibold">{a.def.name}</p>
+                    <p className="mt-0.5 truncate text-[11px] text-muted">{a.def.description}</p>
+                    <div className="mt-1.5 flex items-center gap-2">
+                      <div className="flex-1">
+                        <ProgressBar value={a.progressPct} color={r.accent} />
+                      </div>
+                      <span className="shrink-0 font-mono text-[11px] font-bold" style={{ color: r.accent }}>
+                        {a.progressPct}%
+                      </span>
+                    </div>
+                  </div>
+                </Card>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Badge collection summary by rarity */}
       <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">

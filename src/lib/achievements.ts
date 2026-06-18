@@ -9,7 +9,7 @@
 import type { AchievementDef, AchievementCategory, Marks, Rarity } from "./types";
 import { CATEGORIES, type Category } from "./categories";
 import type { Habit } from "./types";
-import { addDays, startOfDay } from "./storage";
+import { addDays, dateKey, startOfDay } from "./storage";
 import { dayCompletion, habitStreaks, habitStartDay, isScheduled } from "./stats";
 
 const EARLY_BEFORE = "08:00";
@@ -29,6 +29,10 @@ export interface GameStats {
   weekendPerfectDays: number;
   habitsCreated: number;
   anyMissed: boolean;
+  // Track whether a miss was ever FOLLOWED by a 7+ streak (the "comeback"
+  // achievement). We walk backward from today: if we find a miss and later
+  // find a 7+ streak after it, this flag is set.
+  comebackAchieved: boolean;
 }
 
 function zeroByCategory(): Record<Category, number> {
@@ -93,11 +97,10 @@ export function buildGameStats(
     for (let d = new Date(start); d.getTime() <= startOfDay(today).getTime(); d = addDays(d, 1)) {
       const scheduled = active.filter((h) => isScheduled(h, d));
       if (scheduled.length === 0) continue; // neutral day, doesn't break a run
-      const perfect = dayCompletion(active, marks, d) === 100;
-      if (perfect) {
+      if (dayCompletion(active, marks, d) === 100) {
         perfectDays += 1;
         run += 1;
-        longestPerfectRun = Math.max(longestPerfectRun, run);
+        if (run > longestPerfectRun) longestPerfectRun = run;
         const wd = d.getDay();
         if (wd === 0 || wd === 6) weekendPerfectDays += 1;
       } else {
@@ -119,6 +122,40 @@ export function buildGameStats(
     weekendPerfectDays,
     habitsCreated: habits.length,
     anyMissed: missedCount > 0,
+    // Walk per-habit history backward: if we find a miss and later find a
+    // 7+ streak after it, the user *recovered* from a miss.
+    comebackAchieved: (() => {
+      for (const h of habits) {
+        const { current } = habitStreaks(h, marks, today, frozen);
+        // We need the current streak AND a past miss *before* today's streak started.
+        // Simplified heuristic: if current streak >= 7 and there's any mark
+        // before the current streak began, check if that mark was a miss.
+        if (current < 7) continue;
+        const end = startOfDay(today);
+        const startMs = habitStartDay(h).getTime();
+        let streakStart: Date | null = null;
+        // Walk backward until we find the first non-done (that's where streak began)
+        for (let d = new Date(end); d.getTime() >= startMs; d = addDays(d, -1)) {
+          if (!isScheduled(h, d)) continue;
+          const key = dateKey(d);
+          const status = marks[key]?.[h.id];
+          if (status === "done" && streakStart === null) continue; // in streak
+          if (status !== "done" && streakStart === null) {
+            streakStart = d; // day the current streak started from
+            break;
+          }
+        }
+        if (!streakStart) continue;
+        // Now check if there was a missed mark within 14 days before streakStart
+        for (let d = addDays(streakStart, -1), check = 0; check < 14; d = addDays(d, -1), check++) {
+          if (d.getTime() < startMs) break;
+          if (!isScheduled(h, d)) continue;
+          const key = dateKey(d);
+          if (marks[key]?.[h.id] === "missed") return true;
+        }
+      }
+      return false;
+    })(),
   };
 }
 
@@ -175,7 +212,7 @@ const DEFS: Def[] = [
   def("early-bird", "Early Bird", "Complete 10 habits scheduled before 8 AM.", "special", "rare", "🌅", 10, (s) => s.earlyDone),
   def("night-owl", "Night Owl", "Complete 10 habits scheduled after 9 PM.", "special", "rare", "🌙", 10, (s) => s.nightDone),
   def("weekend-warrior", "Weekend Warrior", "Have 4 perfect weekend days.", "special", "epic", "🏖️", 4, (s) => s.weekendPerfectDays),
-  def("comeback-king", "Comeback King", "Recover from a miss to a 7-day streak.", "special", "epic", "👑", 1, (s) => (s.anyMissed && s.maxBestStreak >= 7 ? 1 : 0)),
+  def("comeback-king", "Comeback King", "Recover from a miss to a 7-day streak.", "special", "epic", "👑", 1, (s) => (s.comebackAchieved ? 1 : 0)),
   def("habit-collector", "Habit Collector", "Create 10 habits.", "special", "common", "🗂️", 10, (s) => s.habitsCreated),
   def("habit-master", "Habit Master", "Reach a 100-day streak with a deep history.", "special", "legendary", "🏆", 1, (s) => (s.maxBestStreak >= 100 && s.doneCount >= 500 ? 1 : 0)),
 ];

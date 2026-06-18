@@ -12,6 +12,7 @@
 
 "use client";
 
+import { memo } from "react";
 import { Flame } from "lucide-react";
 import { useAppData } from "@/lib/store";
 import { equippedOrDefault, FLAME_SKINS } from "@/lib/economy";
@@ -28,7 +29,7 @@ export function flameTier(streak: number): FlameTier {
 
 const DEFAULT_FLAME_COLORS: FlameColors = FLAME_SKINS["flame-default"];
 
-export function StreakFlame({
+export const StreakFlame = memo(function StreakFlame({
   streak,
   size = 16,
   showCount = true,
@@ -85,7 +86,7 @@ export function StreakFlame({
       )}
     </span>
   );
-}
+});
 
 function Ember({ color, delay, offset }: { color: string; delay: string; offset: string }) {
   return (

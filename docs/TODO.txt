@@ -1,155 +1,146 @@
 ############################################################
 #                                                          #
 #   PROJECT 101 - TODO / PROGRESS CHECKLIST                #
-#   Tick [x] = done   [~] = in progress   [ ] = not yet    #
+#   [x] = done   [ ] = not yet                            #
 #   Updated: 2026-06-18                                    #
 #                                                          #
 ############################################################
 
+  Current gates: tsc 0 errors, lint 0 errors/1 warning,
+  vitest 81/81 passing, build clean.
 
-==========================================================
- GAMIFICATION + UI REDESIGN   (*** COMPLETE - verified ***)
-==========================================================
-  Spec: docs/script.txt (16 sections). Built in 7 parts.
-  Live detail + file inventory: docs/PROGRESS.md
-  Rule: ALL gamification is DERIVED from mark history (never stored).
-
-  [x] Part 1 - Engine: XP, 28 achievements, titles/ranks,
-        summarizeProgress facade                       (verified)
-  [x] Part 2 - Visual base: ambient background, motion tokens (verified)
-  [x] Part 3 - Streaks + micro-interactions: tiered flames,
-        animated counters, completion burst            (verified)
-  [x] Part 4 - Achievements UX: toast/popup/full-screen
-        celebrations + confetti, Achievement Gallery    (verified)
-  [x] Part 5 - Progression UI: XP bar, level, title/rank,
-        profile-as-character-page, showcase, milestones (verified)
-  [x] Part 6 - Layout/data viz                          (verified)
-        [x] 6a  Today dashboard widgets
-        [x] 6b  Stats redesign: interactive line chart
-        [x] 6c  Habits pagination: 20/page, scroll >12
-        [x] 6d  Calendar/tracker alignment
-  [x] Part 7 - Final pass: a11y, 60fps / reduced-motion audit
+  Dev server: npm run dev (uses --webpack due to Turbopack
+  Windows crash in Next.js 16.2.9)
 
 
 ==========================================================
- COINS + SHOP ECONOMY   (*** COMPLETE - verified ***)
+ PHASE 1-3: CORE APP   (COMPLETE)
 ==========================================================
-  [x] Engine - lib/economy.ts: coinsEarned/coinBalance/coinBreakdown,
-        shop catalog, cosmetic skin maps, streak-freeze rules
-  [x] Schema v4 - economy state + validators + store actions
-  [x] Shop page (/shop) + nav + coin chips (dashboard, profile)
-  [x] Cosmetics applied - flame skin, confetti palette, accent themes
-  [x] Streak-freeze - logged, max 1/7 days, snowflake badge
-  [x] Coin breakdown card on /shop
-  [x] Tests (economy.ts + freeze-aware habitStreaks)
-
-
-==========================================================
- ENGAGEMENT FEATURES   (*** COMPLETE - verified 2026-06-18 ***)
-==========================================================
-  5 new features built in one session. All integrate with the existing
-  coin economy. Detail: docs/PROGRESS.md (Engagement Features section).
-
-  [x] Phase 2 - Level-up unlockables: bonus coins per level
-  [x] Phase 3 - Streak milestone rewards: coins at 7/14/30/60/100 days
-  [x] Phase 4 - Daily check-in: streak-based coin popup on first visit
-  [x] Phase 5 - Daily quests: randomized challenges with coin rewards
-  [x] Phase 6 - Daily spin: wheel-of-fortune with weighted rewards
-  [x] Economy integration: bonusCoins, cleanEconomyV6, extended types
-  [x] Tests still pass: 81/81 (5 files)
-
-
-==========================================================
- UI/UX OVERHAUL   (*** COMPLETE - 2026-06-17 ***)
-==========================================================
-  [x] Light theme redesigned: warm cream tones (less harsh)
-  [x] Dark theme redesigned: deep rich purple-black (less dull)
-  [x] Animated nav icons: bounce on active, wiggle on hover
-  [x] Particle background: 12 floating stars + 5 aurora blobs
-  [x] Card hover effects: lift, longer transitions
-  [x] All CSS animations GPU-composited (transform/opacity)
-
-
-==========================================================
- BUG FIXES   (2026-06-17)
-==========================================================
-  [x] Render-phase setState: habits/page.tsx → safePage direct to Pagination
-  [x] CosmeticSlot duplication: removed from economy.ts, imported from types.ts
-  [x] Invalid Date guard: freezesUsedInWindow checks Number.isFinite(ts)
-  [x] Next.js Image + data URIs: RankAvatar uses <img> for uploaded avatars
-  [x] Flame flicker tiers: small/medium/large now differentiated (2.2s/1.6s/0.9s)
-  [x] uid() refactor: 5 duplicates consolidated into src/lib/util.ts
-
-
-==========================================================
- PRODUCT PHASES 1-3   (DONE - the app underneath)
-==========================================================
-  PHASE 1 - CORE
-  [x] Data shape (lib/types.ts + categories.ts)
-  [x] Today page - add habits, mark done/missed/skipped
-  [x] localStorage persistence (lib/store.ts, schema v3)
-  [x] Tracker grid (rows = habits, columns = dates)
+  [x] Data shape + categories
+  [x] Today page (add habits, mark done/missed/skipped)
+  [x] localStorage persistence (schema v6)
+  [x] Tracker grid (habits × dates)
   [x] Edit / delete / archive / duplicate habits
-
-  PHASE 2 - STATS & STRUCTURE
   [x] Categories with colors
-  [x] Statistics page (completion %, streaks, charts, insights)
-  [x] Calendar view (month/week, shaded by completion)
-
-  PHASE 3 - ENGAGEMENT
+  [x] Statistics (completion %, streaks, charts, insights)
+  [x] Calendar view (month/week, shaded)
   [x] Goals with progress bars + milestones
-  [x] Notes / journal (daily note + calendar surfacing)
+  [x] Notes / journal
   [x] Templates (starter routines)
-  [x] Gamification layer (the 7-part redesign)
-  [x] Coins + Shop economy
-  [x] Engagement features (check-in, quests, spin, level/streak rewards)
-  [ ] Reminders (deferred - real notifications need mobile, Phase 4+)
 
 
 ==========================================================
- PHASE 4 - ACCOUNTS, CLOUD & SECURITY   (not started)
+ GAMIFICATION + UI REDESIGN   (COMPLETE — verified)
 ==========================================================
+  [x] Part 1 - Engine: XP, 28 achievements, titles/ranks, progress facade
+  [x] Part 2 - Visual base: ambient background, motion tokens
+  [x] Part 3 - Streaks + micro-interactions: tiered flames, counters
+  [x] Part 4 - Achievements UX: celebrations, confetti, gallery
+  [x] Part 5 - Progression UI: XP bar, level, profile, showcase
+  [x] Part 6 - Layout/data viz: dashboard, stats redesign, pagination
+  [x] Part 7 - Final pass: a11y, 60fps, reduced-motion audit
+
+
+==========================================================
+ COINS + SHOP ECONOMY   (COMPLETE — verified)
+==========================================================
+  [x] Engine - coinsEarned/coinBalance/coinBreakdown, shop catalog
+  [x] Schema v4 - economy state + validators + store actions
+  [x] Shop page + nav + coin chips
+  [x] Cosmetics applied (flame skin, confetti palette, accent themes)
+  [x] Streak-freeze (logged, max 1/7 days, snowflake badge)
+  [x] Coin breakdown card
+  [x] Tests (81 passing)
+
+
+==========================================================
+ ENGAGEMENT FEATURES   (COMPLETE)
+==========================================================
+  [x] Phase 2 - Level-up unlockables
+  [x] Phase 3 - Streak milestone rewards
+  [x] Phase 4 - Daily check-in popup
+  [x] Phase 5 - Daily quests
+  [x] Phase 6 - Daily spin wheel
+
+
+==========================================================
+ UI/UX OVERHAUL   (COMPLETE)
+==========================================================
+  [x] Light theme: warm cream tones
+  [x] Dark theme: deep purple-black
+  [x] Animated nav icons (bounce, wiggle)
+  [x] Particle background (stars + aurora blobs)
+  [x] Card hover effects, GPU-composited animations
+
+
+==========================================================
+ FEATURE CATEGORIES   (COMPLETE — 2026-06-18)
+==========================================================
+  🧠 UX & Navigation
+  [x] Keyboard shortcuts (g-prefix + ? + n)
+  [x] Undo/redo (Ctrl+Z/Shift+Z)
+  [x] Onboarding wizard (5 steps)
+  [x] Dashboard reordering (drag-and-drop)
+
+  📊 Data & Insights
+  [x] Prediction engine (completion, streak, level ETA)
+  [x] CSV/JSON export/import (Settings page)
+  [x] Habit correlations (co-occurrence on /stats)
+
+  🎨 Customization & Social
+  [x] Custom categories (Settings UI)
+  [x] Achievements next-achievable section
+
+  ⚡ Performance & Polish
+  [x] PWA manifest + service worker + offline page
+  [x] a11y: aria-current on nav, focus-visible
+  [ ] Memoization optimization
+
+
+==========================================================
+ BUG FIXES   (2026-06-17/18)
+==========================================================
+  [x] Render-phase setState (habits pagination)
+  [x] CosmeticSlot duplication
+  [x] Invalid Date guard (freezesUsedInWindow)
+  [x] Next.js Image + data URIs (RankAvatar)
+  [x] Flame flicker tiers (2.2s/1.6s/0.9s)
+  [x] uid() refactor (5 → 1)
+  [x] useKeyboardShortcuts server error
+  [x] Script tag React warning
+  [x] "Rendered fewer hooks" error
+  [x] Turbopack Windows crash (--webpack)
+  [x] 17 lint issues fixed
+
+
+==========================================================
+ ARCHITECTURE CLEANUP   (2026-06-18)
+==========================================================
+  [x] Moved 6 loose components into proper subdirectories
+  [x] Updated all imports (14 files)
+  [x] Updated all docs (ARCHITECTURE, PROGRESS, TODO, BUILD_PLAN)
+  [x] Removed outdated docs
+
+
+==========================================================
+ PHASE 4-5   (not started)
+==========================================================
+  [ ] Community challenges
+  [ ] Friend leaderboards
+  [ ] Memoization optimization
   [ ] Accounts + sign in (Supabase Auth)
-  [ ] Drizzle ORM + database tables (migrations)
-  [ ] Move data localStorage -> Supabase (cloud sync)
+  [ ] Drizzle ORM + database tables
+  [ ] Move localStorage -> Supabase
   [ ] Row Level Security (RLS)
-  [ ] Validate input with Zod
-  [ ] Email (verify + reset) via Resend
-  [ ] Insights / weekly auto-summary
-
-
-==========================================================
- PHASE 5 - BUSINESS & LAUNCH   (not started)
-==========================================================
-  [ ] Free vs Pro gating
+  [ ] Zod input validation
+  [ ] Email (verify/reset) via Resend
+  [ ] Free vs Pro subscription
   [ ] Payments (PayMongo + PayPal)
-  [ ] Payment webhooks (unlock Pro safely)
-  [ ] Privacy Policy + Terms pages
-  [ ] Error monitoring (Sentry) + Analytics
+  [ ] Privacy Policy + Terms
+  [ ] Error monitoring (Sentry)
   [ ] Rate limiting (Upstash)
-  [ ] Tests on login + payment flows
-  [ ] GitHub Actions (auto-test on push)
-  [ ] CSV / PDF export
-
-
-==========================================================
- WHERE WE ARE RIGHT NOW  (2026-06-18)
-==========================================================
-  A polished, fully local habit tracker with a complete gamification
-  layer, coin economy, shop, AND 5 new engagement features (daily
-  check-in, quests, spin, level-up rewards, streak rewards). UI has
-  been overhauled with better themes, animated icons, and particle
-  backgrounds. Multiple bugs fixed. All 81 tests pass.
-
-  NEXT ACTION -> The other 4 feature categories are queued:
-    1. 🧠 UX & Navigation (dashboard reordering, keyboard shortcuts,
-       onboarding wizard, undo/redo)
-    2. 📊 Data & Insights (advanced charts, prediction, export/import,
-       habit correlations)
-    3. 🎨 Customization & Social (community challenges, custom categories,
-       friend leaderboards, achievements showcase)
-    4. ⚡ Performance & Polish (faster load, PWA, offline-first, a11y audit)
-  Or begin Phase 4 (accounts/cloud).
+  [ ] GitHub Actions
+  [ ] Analytics
 
 
 ############################################################

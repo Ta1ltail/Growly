@@ -4,7 +4,7 @@
 // reschedule habits (kept out of Today so daily tracking stays focused).
 // Search + category filter; add/edit happen in a modal.
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import {
   Plus,
   Pencil,
@@ -28,7 +28,7 @@ import {
 import { makeHabit, applyHabitForm } from "@/lib/habits";
 import { habitStreaks } from "@/lib/stats";
 import { frozenSet } from "@/lib/economy";
-import { StreakFlame } from "@/components/StreakFlame";
+import { StreakFlame } from "@/components/habits/StreakFlame";
 import { habitScheduleText, PRIORITY_COLOR, PRIORITY_LABEL } from "@/lib/format";
 import { useToday } from "@/hooks/useToday";
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -54,6 +54,13 @@ export default function HabitsPage() {
   const [editing, setEditing] = useState<Habit | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<Habit | null>(null);
   const [page, setPage] = useState(0);
+
+  // Listen for keyboard shortcut to add habit
+  useEffect(() => {
+    const handler = () => setAdding((prev) => !prev);
+    window.addEventListener("kb:add-habit", handler);
+    return () => window.removeEventListener("kb:add-habit", handler);
+  }, []);
 
   const usedCategories = useMemo(
     () => CATEGORIES.filter((c) => data.habits.some((h) => h.category === c)),

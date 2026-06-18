@@ -127,6 +127,9 @@ export interface Settings {
   theme: ThemeSettings;
   graceHours?: number; // anti-cheat grace window; absent => DEFAULT_GRACE_HOURS
   usedTemplateIds?: string[]; // templates already applied (hidden unless re-enabled)
+  widgetOrder?: string[]; // ordered widget IDs for dashboard reordering
+  onboardingComplete?: boolean; // has the user completed onboarding?
+  customCategories?: string[]; // user-defined habit categories
 }
 
 /* ---- Gamification (derived from immutable history) ----

@@ -4,11 +4,11 @@
 // completion, motivational insight, and a quick daily note. Editing/deleting
 // habits lives in Manage Habits (Honest Tracking: keep Today about doing).
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Flame, NotebookPen, ListChecks, Clock, Sparkles } from "lucide-react";
-import { StreakFlame } from "@/components/StreakFlame";
-import { AnimatedCounter } from "@/components/AnimatedCounter";
+import { StreakFlame } from "@/components/habits/StreakFlame";
+import { AnimatedCounter } from "@/components/ui/AnimatedCounter";
 import { CATEGORIES, CATEGORY_COLORS, type Category } from "@/lib/categories";
 import type { Habit } from "@/lib/types";
 import { dateKey } from "@/lib/storage";
@@ -40,6 +40,13 @@ export default function TodayPage() {
   const todayKey = dateKey(today);
   const hydrated = useHydrated();
   const [showAdd, setShowAdd] = useState(false);
+
+  // Listen for keyboard shortcut to add habit
+  useEffect(() => {
+    const handler = () => setShowAdd((prev) => !prev);
+    window.addEventListener("kb:add-habit", handler);
+    return () => window.removeEventListener("kb:add-habit", handler);
+  }, []);
 
   const todaysHabits = useMemo(
     () => data.habits.filter((h) => !h.archived && isScheduled(h, today)),

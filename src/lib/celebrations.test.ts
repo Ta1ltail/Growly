@@ -40,8 +40,12 @@ describe("streakTier", () => {
   it("returns the highest milestone reached", () => {
     expect(streakTier(6)).toBe(0);
     expect(streakTier(7)).toBe(7);
-    expect(streakTier(29)).toBe(7);
+    expect(streakTier(13)).toBe(7);
+    expect(streakTier(14)).toBe(14);
+    expect(streakTier(29)).toBe(14);
     expect(streakTier(30)).toBe(30);
+    expect(streakTier(49)).toBe(30);
+    expect(streakTier(50)).toBe(50);
     expect(streakTier(100)).toBe(100);
     expect(streakTier(400)).toBe(365);
   });

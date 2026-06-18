@@ -8,8 +8,8 @@
 import { useEffect } from "react";
 import type { CelebrationEvent } from "@/lib/celebrations";
 import { RARITY_STYLE } from "@/lib/rarity";
-import { AchievementBadge } from "@/components/AchievementBadge";
-import { Confetti } from "@/components/Confetti";
+import { AchievementBadge } from "@/components/achievements/AchievementBadge";
+import { Confetti } from "@/components/celebrations/Confetti";
 
 // Stable seed per event so confetti is deterministic (no Math.random in render).
 function seedFromKey(key: string): number {

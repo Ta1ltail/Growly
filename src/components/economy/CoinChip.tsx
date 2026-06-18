@@ -3,7 +3,7 @@
 // readers via aria-label.
 
 import { Coins } from "lucide-react";
-import { AnimatedCounter } from "@/components/AnimatedCounter";
+import { AnimatedCounter } from "@/components/ui/AnimatedCounter";
 
 export function CoinChip({
   amount,

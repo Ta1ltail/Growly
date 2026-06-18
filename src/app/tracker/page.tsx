@@ -6,7 +6,7 @@
 
 import { useMemo, useState } from "react";
 import { Flame, LayoutGrid, Lock, Snowflake } from "lucide-react";
-import { StreakFlame } from "@/components/StreakFlame";
+import { StreakFlame } from "@/components/habits/StreakFlame";
 import { CATEGORIES, CATEGORY_COLORS, type Category } from "@/lib/categories";
 import { addDays, dateKey, DEFAULT_GRACE_HOURS } from "@/lib/storage";
 import { cycleMark, useAppData } from "@/lib/store";

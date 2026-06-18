@@ -16,8 +16,9 @@
      +-- Coins + Shop economy ................... DONE (verified)
      +-- Engagement features (5 phases) ......... DONE (verified)
      +-- UI/UX overhaul ......................... DONE (verified)
-         All gates green (81 tests, tsc 0, lint 0 errors).
-         Detail: docs/PROGRESS.md + docs/TODO.txt
+     +-- Feature Categories (4 tracks) .......... DONE (verified)
+     +-- Bug fixes + Architecture cleanup ....... DONE (verified)
+         All gates green (81 tests, tsc 0, lint 0 errors/1 warning).
    Phase 4 ACCOUNTS, CLOUD & SECURITY ........... NOT STARTED
    Phase 5 BUSINESS & LAUNCH .................... NOT STARTED
 
@@ -42,14 +43,20 @@ Build target: WEB FIRST (mobile/desktop later).
   3. Calendar     - plan by date: month / week
   4. Habits       - create & manage habits (paginated)
   5. Categories   - Lifestyle, Workout, Studies, Work, Hobbies...
-  6. Statistics   - completion %, streaks, interactive charts
+  6. Statistics   - completion %, streaks, interactive charts,
+                   prediction engine, habit correlations
   7. Goals        - bigger targets with progress bars + milestones
   8. Notes/Journal- daily notes, reasons
-  9. Achievements - gallery: unlocked/locked, progress, filters
+  9. Achievements - gallery: unlocked/locked, progress, filters,
+                   next-achievable section
  10. Profile      - character page: level, XP, title/rank, showcase, coins
  11. Shop         - spend derived coins: cosmetics + streak-freeze
  12. Templates    - pre-made routines
- 13. Settings     - theme, grace window, data tools (account later)
+ 13. Settings     - theme, grace window, custom categories, data tools
+                   (account later), CSV/JSON export/import
+
+Extra: PWA (offline-first via service worker), keyboard shortcuts,
+       undo/redo, onboarding wizard, dashboard reordering.
 
 Bottom nav: Today . Tracker . Calendar . Stats . Profile
 
@@ -65,7 +72,7 @@ Bottom nav: Today . Tracker . Calendar . Stats . Profile
   Charts ........... hand-built SVG (TrendLineChart) - no chart lib
   Persistence ...... localStorage (schema v6) via useSyncExternalStore
   Testing .......... Vitest (81 tests)
-  Hosting/Code ..... Vercel + GitHub
+  Dev server ....... Webpack (--webpack) — Turbopack crashes on Windows
 
   -- PLANNED (Phase 4-5, all free tiers to start) --
   Database ......... Supabase (Postgres)      Login ... Supabase Auth
@@ -76,52 +83,17 @@ Bottom nav: Today . Tracker . Calendar . Stats . Profile
   E2E tests ........ Playwright               Rate limit  Upstash
   Legal ............ Privacy Policy + Terms (REQUIRED for payments)
 
-  KEY NOTES:
-   - Next.js IS the backend. No separate server needed.
-   - $0/month to start; payment processors take ~2-4% only when paid.
-   - Add hardening tools per phase, not all at once.
-
 
 ==========================================================
  4. BUILD ORDER - PHASES
 ==========================================================
 Each phase = a usable app on its own.
 
-PHASE 0 - SETUP ....................................... [x] DONE
-  [x] Node.js, Git, VS Code, GitHub
-  [x] Next.js app (TypeScript + Tailwind + ESLint)
-  [x] Pushed to GitHub (github.com/Ta1ltail/project_101)
+PHASE 0-3 ............... [x] DONE (all core + gamification + economy
+                                  + engagement + UI overhaul + feature
+                                  categories + architecture cleanup)
 
-PHASE 1 - CORE ........................................ [x] DONE
-  [x] Design the DATA SHAPE
-  [x] Today page (add habits, mark them)
-  [x] localStorage persistence
-  [x] Tracker grid (habits x dates)
-  [x] Edit / delete / archive / duplicate
-
-PHASE 2 - STATS & STRUCTURE ........................... [x] DONE
-  [x] Categories (with colors)
-  [x] Statistics page (completion %, streaks, charts)
-  [x] Calendar view (month/week, shaded)
-
-PHASE 3 - ENGAGEMENT .................................. [x] DONE
-  [x] Goals with progress bars + milestones
-  [x] Notes / journal per day
-  [x] Templates
-  [x] GAMIFICATION + UI REDESIGN (7 parts):
-        [x] 1-7 All verified (engine through final polish pass)
-  [x] COINS + SHOP ECONOMY (derived coins, cosmetics, streak-freeze)
-  [x] UI/UX OVERHAUL (themes, animated icons, particle bg, card polish)
-  [x] BUG FIXES (6 bugs, uid() refactor from 5 duplicates)
-  [x] ENGAGEMENT FEATURES (5 phases):
-        [x] Level-up unlockables (bonus coins per level)
-        [x] Streak milestone rewards (coins at 7/14/30/60/100)
-        [x] Daily check-in (streak-based popup + coins)
-        [x] Daily quests (random challenges + coins)
-        [x] Daily spin (wheel-of-fortune + weighted rewards)
-  [ ] Reminders (deferred - real notifications need mobile)
-
-PHASE 4 - ACCOUNTS, CLOUD & SECURITY .................. [ ] NOT STARTED
+PHASE 4 - ACCOUNTS, CLOUD & SECURITY .... [ ] NOT STARTED
   [ ] Accounts + sign in (Supabase Auth)
   [ ] Drizzle ORM + DB tables (migrations)
   [ ] Move data localStorage -> Supabase  (KNOWN, PLANNED REWORK)
@@ -130,7 +102,7 @@ PHASE 4 - ACCOUNTS, CLOUD & SECURITY .................. [ ] NOT STARTED
   [ ] Transactional email (verify/reset) via Resend
   [ ] Insights / weekly auto-summary
 
-PHASE 5 - BUSINESS & PRODUCTION LAUNCH ................ [ ] NOT STARTED
+PHASE 5 - BUSINESS & PRODUCTION LAUNCH .. [ ] NOT STARTED
   [ ] Free vs Pro subscription gating
   [ ] Payments (PayMongo + PayPal) + webhooks
   [ ] Privacy Policy + Terms pages       <- REQUIRED to take money
@@ -141,53 +113,13 @@ PHASE 5 - BUSINESS & PRODUCTION LAUNCH ................ [ ] NOT STARTED
 
 
 ==========================================================
- PRODUCTION-READY CHECKLIST (before real launch)
+ 5. NEXT STEPS
 ==========================================================
-Do NOT take real users/money until these are TRUE:
-  [ ] Login works and is secure (RLS on every table)
-  [ ] Secrets in env vars (never in code)
-  [ ] All user input validated (Zod)
-  [ ] Payments verified by webhook, not the browser
-  [ ] Privacy Policy + Terms published
-  [ ] Error monitoring live
-  [ ] Database backups on (export weekly)
-  [ ] Tested signup -> use -> pay -> get Pro end to end
-  [ ] HTTPS only (Vercel: free, automatic)
-
-
-==========================================================
- 5. LESSONS BAKED IN
-==========================================================
-  1. Start with the simple Today checklist, not the hard grid. [done]
-  2. localStorage -> database is a known rework, scheduled Phase 4.
-  3. Always design the DATA SHAPE before coding.
-  4. Web notifications are weak -> real alerts wait for mobile.
-  5. Scope creep kills projects -> ship each phase before expanding.
-  6. Keep gamification DERIVED from history, never stored ->
-     no cheating, no desync.
-  7. Run the four gates after every part before moving on.
-  8. Gates prove it compiles, not that it works - drive new
-     UI in a real browser too.
-  9. Local feature development can continue in parallel with cloud
-     planning. Engagement features proved the app has room to grow
-     before adding accounts/payments.
-
-
-==========================================================
- 6. NEXT STEPS (right now)
-==========================================================
-  The redesign + economy + engagement features are shipped. Options:
-  A. Feature categories from earlier brainstorming:
-     1. 🧠 UX & Navigation - dashboard reordering, keyboard shortcuts,
-        onboarding wizard, undo/redo
-     2. 📊 Data & Insights - advanced charts, prediction engine,
-        CSV/PDF export, habit correlations
-     3. 🎨 Customization & Social - community challenges, custom
-        categories, friend leaderboards, achievements showcase
-     4. ⚡ Performance & Polish - faster load, PWA install,
-        offline-first, a11y audit
-  B. Begin Phase 4 (accounts/cloud) - localStorage->Supabase rework
-  C. Deploy to production on Vercel
+  All planned feature categories are complete. Options:
+  A. Community challenges + friend leaderboards (social features)
+  B. Memoization optimization
+  C. Begin Phase 4 (accounts/cloud) - localStorage->Supabase rework
+  D. Deploy to production on Vercel
 
   Gates to run after any change:
        npx tsc --noEmit && npm run lint && npx vitest run && npm run build

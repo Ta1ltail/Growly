@@ -6,7 +6,7 @@
 import { useEffect, useState } from "react";
 import { Coins, Flame, X } from "lucide-react";
 import { claimDailyCheckIn } from "@/lib/store";
-import { AnimatedCounter } from "@/components/AnimatedCounter";
+import { AnimatedCounter } from "@/components/ui/AnimatedCounter";
 
 export function CheckInPopup() {
   const [result, setResult] = useState<{ reward: number; streak: number } | null>(null);

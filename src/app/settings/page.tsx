@@ -5,11 +5,12 @@
 // export/reset, and a transparent audit log.
 
 import { useState } from "react";
-import { Sun, Moon, Monitor, Palette, Check, Download, Trash2, ShieldCheck, ScrollText } from "lucide-react";
+import { Sun, Moon, Monitor, Palette, Check, Download, Trash2, ShieldCheck, ScrollText, Upload, Tags, Plus, X } from "lucide-react";
 import { dateKey, DEFAULT_GRACE_HOURS } from "@/lib/storage";
-import { clearAllData, setGraceHours, setTheme, useAppData } from "@/lib/store";
+import { clearAllData, setGraceHours, setTheme, useAppData, replaceData, addCustomCategory, removeCustomCategory } from "@/lib/store";
 import { useToday } from "@/hooks/useToday";
 import { ACCENTS, type ThemeMode } from "@/lib/theme";
+import { exportMarksCSV, exportJSON, importJSON } from "@/lib/export";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Card } from "@/components/ui/Card";
 import { Modal } from "@/components/ui/Modal";
@@ -30,33 +31,45 @@ export default function SettingsPage() {
   const grace = data.settings.graceHours ?? DEFAULT_GRACE_HOURS;
   const [confirmReset, setConfirmReset] = useState(false);
 
-  function exportCsv() {
-    const rows = ["date,habit,category,status"];
-    const byId = new Map(data.habits.map((h) => [h.id, h]));
-    for (const [date, day] of Object.entries(data.marks)) {
-      for (const [habitId, status] of Object.entries(day)) {
-        const habit = byId.get(habitId);
-        if (!habit) continue;
-        rows.push(`${date},"${habit.name.replace(/"/g, '""')}",${habit.category},${status}`);
-      }
-    }
-    const blob = new Blob([rows.join("\n")], { type: "text/csv" });
+  function download(content: string, filename: string, type: string) {
+    const blob = new Blob([content], { type });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `project_101_export_${dateKey(today)}.csv`;
+    a.download = filename;
     a.click();
     URL.revokeObjectURL(url);
   }
 
+  function exportCsv() {
+    download(exportMarksCSV(data), `project_101_export_${dateKey(today)}.csv`, "text/csv");
+  }
+
   function exportJson() {
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `project_101_backup_${dateKey(today)}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
+    download(exportJSON(data), `project_101_backup_${dateKey(today)}.json`, "application/json");
+  }
+
+  function importJson() {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = ".json";
+    input.onchange = async (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file) return;
+      try {
+        const text = await file.text();
+        const { data: imported, error } = importJSON(text);
+        if (error || !imported) {
+          alert(error ?? "Invalid backup file.");
+          return;
+        }
+        replaceData({ ...data, habits: imported.habits, marks: imported.marks, notes: imported.notes, goals: imported.goals });
+        alert("Data imported successfully!");
+      } catch {
+        alert("Failed to import: invalid JSON file.");
+      }
+    };
+    input.click();
   }
 
   return (
@@ -146,11 +159,20 @@ export default function SettingsPage() {
         </Card>
       </Section>
 
+      {/* Custom Categories */}
+      <Section icon={Tags} title="Custom Categories">
+        <Card className="p-5">
+          <p className="mb-3 text-sm text-muted">Create custom categories beyond the built-in ones.</p>
+          <CustomCategoryEditor />
+        </Card>
+      </Section>
+
       {/* Data */}
       <Section icon={Download} title="Data">
         <Card className="divide-y divide-line overflow-hidden">
           <Row onClick={exportCsv} icon={Download} label="Export marks (CSV)" />
           <Row onClick={exportJson} icon={Download} label="Download full backup (JSON)" />
+          <Row onClick={importJson} icon={Upload} label="Import backup (JSON)" />
           <button
             onClick={() => setConfirmReset(true)}
             className="flex w-full items-center gap-3 px-4 py-3.5 text-left text-sm text-missed transition-colors hover:bg-missed/10"
@@ -206,6 +228,62 @@ export default function SettingsPage() {
           Consider downloading a backup first. This cannot be undone.
         </p>
       </Modal>
+    </div>
+  );
+}
+
+function CustomCategoryEditor() {
+  const data = useAppData();
+  const [name, setName] = useState("");
+  const customCats = data.settings.customCategories ?? [];
+
+  const handleAdd = () => {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    addCustomCategory(trimmed);
+    setName("");
+  };
+
+  return (
+    <div>
+      {customCats.length > 0 && (
+        <div className="mb-3 flex flex-wrap gap-2">
+          {customCats.map((cat) => (
+            <span
+              key={cat}
+              className="flex items-center gap-1.5 rounded-full bg-surface2 px-3 py-1.5 text-xs"
+            >
+              {cat}
+              <button
+                onClick={() => removeCustomCategory(cat)}
+                className="ml-0.5 rounded-full p-0.5 text-faint hover:text-missed transition-colors"
+                aria-label={`Remove ${cat}`}
+              >
+                <X className="size-3" />
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
+      <div className="flex gap-2">
+        <input
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") handleAdd();
+          }}
+          placeholder="New category name"
+          maxLength={24}
+          className="flex-1 rounded-xl border border-line bg-surface2 px-3 py-2 text-sm outline-none placeholder:text-faint focus:border-accent"
+        />
+        <Button
+          onClick={handleAdd}
+          disabled={!name.trim()}
+          size="sm"
+        >
+          <Plus className="size-3.5" /> Add
+        </Button>
+      </div>
     </div>
   );
 }

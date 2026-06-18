@@ -5,11 +5,13 @@
 // week's completion, and badge-collection progress. Everything is derived
 // from history via summarizeProgress; widgets reuse the Part 5 progression
 // pieces so the dashboard and profile stay visually consistent.
+//
+// Widgets are drag-and-drop reorderable. The order is persisted in settings.
 
-import { useMemo } from "react";
+import { useMemo, useCallback } from "react";
 import Link from "next/link";
 import { Flame, Trophy, ChevronRight, CalendarRange, Medal } from "lucide-react";
-import { useAppData } from "@/lib/store";
+import { useAppData, setWidgetOrder } from "@/lib/store";
 import { useToday } from "@/hooks/useToday";
 import { summarizeProgress } from "@/lib/progress";
 import { lastNDaysCompletion } from "@/lib/stats";
@@ -18,14 +20,27 @@ import { RARITY_STYLE } from "@/lib/rarity";
 import type { AchievementDef } from "@/lib/types";
 import { Card } from "@/components/ui/Card";
 import { ProgressBar } from "@/components/ui/ProgressBar";
-import { StreakFlame } from "@/components/StreakFlame";
-import { AchievementBadge } from "@/components/AchievementBadge";
+import { StreakFlame } from "@/components/habits/StreakFlame";
+import { AchievementBadge } from "@/components/achievements/AchievementBadge";
 import { XpBar } from "@/components/progression/XpBar";
 import { TitleDisplay } from "@/components/progression/TitleDisplay";
 import { NextMilestoneWidget } from "@/components/progression/NextMilestoneWidget";
 import { CoinChip } from "@/components/economy/CoinChip";
+import { ReorderableGrid, type ReorderableItem } from "@/components/ui/ReorderableGrid";
 
 const BY_ID = new Map(ACHIEVEMENTS.map((a) => [a.id, a]));
+
+// Widget identifiers for reordering
+const WIDGET_IDS = [
+  "xp-level",
+  "current-streak",
+  "next-milestone",
+  "this-week",
+  "badge-collection",
+  "recent-achievements",
+] as const;
+
+type WidgetId = (typeof WIDGET_IDS)[number];
 
 export function DashboardWidgets() {
   const data = useAppData();
@@ -48,28 +63,19 @@ export function DashboardWidgets() {
   const { level, title, unlockedCount, totalCount } = summary;
   const badgePct = totalCount ? Math.round((unlockedCount / totalCount) * 100) : 0;
 
-  return (
-    <section className="mb-6">
-      <div className="mb-3 flex items-center justify-between">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted">Your progress</h2>
-        <div className="flex items-center gap-3">
-          <Link href="/shop" aria-label="Open shop" className="transition-transform hover:scale-105">
-            <CoinChip amount={summary.coinBalance} />
-          </Link>
-          <Link href="/profile" className="flex items-center gap-1 text-xs font-semibold text-accent hover:underline">
-            Character page <ChevronRight className="size-3.5" />
-          </Link>
-        </div>
-      </div>
-
-      <div className="grid gap-4 lg:grid-cols-3">
-        {/* XP / level */}
-        <Card className="p-5 lg:col-span-2">
+  // Widget content by id
+  const widgetContent: Record<WidgetId, { content: React.ReactNode; span?: string }> = {
+    "xp-level": {
+      span: "lg:col-span-2",
+      content: (
+        <Card className="p-5">
           <TitleDisplay title={title} size="sm" className="mb-4" />
           <XpBar level={level} nextUnlock={title.next?.name} />
         </Card>
-
-        {/* Current streak */}
+      ),
+    },
+    "current-streak": {
+      content: (
         <Card className="flex items-center gap-4 p-5">
           {summary.stats.maxCurrentStreak > 0 ? (
             <StreakFlame streak={summary.stats.maxCurrentStreak} size={40} showCount={false} />
@@ -81,13 +87,17 @@ export function DashboardWidgets() {
             <div className="text-xs text-muted">day current streak</div>
           </div>
         </Card>
-
-        {/* Next milestone */}
+      ),
+    },
+    "next-milestone": {
+      content: (
         <Card className="p-5">
           <NextMilestoneWidget milestones={summary.nextMilestones.slice(0, 2)} />
         </Card>
-
-        {/* This week */}
+      ),
+    },
+    "this-week": {
+      content: (
         <Card className="p-5">
           <div className="mb-3 flex items-center justify-between">
             <h3 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-muted">
@@ -116,8 +126,10 @@ export function DashboardWidgets() {
             ))}
           </div>
         </Card>
-
-        {/* Badge collection */}
+      ),
+    },
+    "badge-collection": {
+      content: (
         <Card className="p-5">
           <div className="mb-3 flex items-center justify-between">
             <h3 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-muted">
@@ -145,8 +157,10 @@ export function DashboardWidgets() {
             })}
           </div>
         </Card>
-
-        {/* Recent achievements */}
+      ),
+    },
+    "recent-achievements": {
+      content: (
         <Card className="p-5">
           <div className="mb-3 flex items-center justify-between">
             <h3 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-muted">
@@ -168,7 +182,54 @@ export function DashboardWidgets() {
             </div>
           )}
         </Card>
+      ),
+    },
+  };
+
+  // Compute the ordered list of widget IDs (from settings or default)
+  const widgetOrder: string[] = data.settings.widgetOrder ?? [...WIDGET_IDS];
+  const orderedIds: string[] = [...WIDGET_IDS].sort((a: string, b: string) => {
+    const ai = widgetOrder.indexOf(a);
+    const bi = widgetOrder.indexOf(b);
+    return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
+  });
+
+  const handleReorder = useCallback((ids: string[]) => {
+    setWidgetOrder(ids);
+  }, []);
+
+  const reorderableItems: ReorderableItem[] = orderedIds.map((id: string) => {
+    const w = widgetContent[id as WidgetId];
+    if (!w) return { id, content: null };
+    return {
+      id,
+      content: (
+        <div className={w.span ?? ""}>
+          {w.content}
+        </div>
+      ),
+    };
+  });
+
+  return (
+    <section className="mb-6">
+      <div className="mb-3 flex items-center justify-between">
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted">Your progress</h2>
+        <div className="flex items-center gap-3">
+          <Link href="/shop" aria-label="Open shop" className="transition-transform hover:scale-105">
+            <CoinChip amount={summary.coinBalance} />
+          </Link>
+          <Link href="/profile" className="flex items-center gap-1 text-xs font-semibold text-accent hover:underline">
+            Character page <ChevronRight className="size-3.5" />
+          </Link>
+        </div>
       </div>
+
+      <ReorderableGrid
+        items={reorderableItems}
+        onReorder={handleReorder}
+        className="grid gap-4 lg:grid-cols-3"
+      />
     </section>
   );
 }

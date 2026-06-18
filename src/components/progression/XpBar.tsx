@@ -7,7 +7,7 @@
 import { Sparkles } from "lucide-react";
 import type { LevelInfo } from "@/lib/xp";
 import { ProgressBar } from "@/components/ui/ProgressBar";
-import { AnimatedCounter } from "@/components/AnimatedCounter";
+import { AnimatedCounter } from "@/components/ui/AnimatedCounter";
 
 export function XpBar({
   level,

@@ -1,5 +1,5 @@
 ############################################################
-#   PROJECT 101 - ARCHITECTURE  (v0.8, +engagement features)#
+#   PROJECT 101 - ARCHITECTURE  (v1.0, +feature categories) #
 #   Folder structure, gamification model, economy model,    #
 #   engagement model, theme, data flow                      #
 #   Updated: 2026-06-18                                     #
@@ -21,41 +21,45 @@
     layout.tsx                root: fonts, no-flash theme script, AmbientBackground, AppShell
     globals.css               design system (tokens, dark/light, ALL keyframes)
     loading.tsx               route-level Suspense skeleton
-    page.tsx                  Today (dashboard widgets + habits + note)
+    offline/                  offline fallback page (PWA)
+    page.tsx                  Dashboard (widgets + progress + insights)
     tracker/ calendar/ stats/ goals/ templates/ notes/
     profile/                  character page (level, XP, title, showcase, coins)
-    achievements/             Achievement Gallery (filters + search)
+    achievements/             Achievement Gallery (filters + search + next-achievable)
     shop/                     coin shop: cosmetics + streak-freeze + coin breakdown
-    settings/                 theme, grace window, data tools
+    settings/                 theme, grace window, custom categories, data tools
+    today/                    daily habit marking + check-in + quest + spin
 
   components/
-    AmbientBackground.tsx     fixed drifting blurred accent blobs + particle layer (stars)
-    AnimatedCounter.tsx       rAF count-up, hydration-safe
-    StreakFlame.tsx           tiered animated flame: small/medium/large
-    AchievementBadge.tsx      collectible rarity badge
-    Confetti.tsx              celebration particles
-    ThemeApplier.tsx          syncs saved theme -> <html>
-    celebrations/             AchievementToast/Popup/Celebration + CelebrationManager
-    progression/              XpBar, TitleDisplay, RankAvatar, NextMilestoneWidget
-    profile/                  ProfileEditModal
-    dashboard/                DashboardWidgets - Today's progress strip
-    stats/                    TrendLineChart - interactive SVG line chart
+    layout/                   AppShell, Sidebar, BottomNav, navItems,
+                              AmbientBackground, ThemeApplier
+    ui/                       Button, Card, Modal, PageHeader, PageSkeleton, Skeleton,
+                              ProgressBar, ProgressRing, StatCard, Segmented,
+                              EmptyState, Pagination, ReorderableGrid,
+                              OnboardingWizard, KeyboardShortcutsModal, AnimatedCounter
+    achievements/             AchievementBadge
+    celebrations/             CelebrationCenter, CelebrationManager, CelebrationToast,
+                              Confetti
+    dashboard/                DashboardWidgets
     economy/                  CoinChip, CoinBreakdownCard, AccentThemeApplier
-    today/                    CheckInPopup, DailyQuestCard, DailySpinModal (engagement)
+    habits/                   HabitForm, MarkButton, WeekdayPicker, StreakFlame
+    goals/                    GoalForm
+    notes/                    NoteEditor
+    profile/                  ProfileEditModal
+    progression/              XpBar, TitleDisplay, RankAvatar, TitlesModal,
+                              NextMilestoneWidget
+    stats/                    TrendLineChart
+    today/                    CheckInPopup, DailyQuestCard, DailySpinModal
     devmode/                  DevMode (FAB + Ctrl/Cmd+Shift+D + style injector +
                               FPS meter + state logger), DevModePanel, ui kit, and
                               8 sections/ (General, UI Controls, Performance,
                               Database Tools, User Controls, AI Settings, Debug
                               Tools, System Information)
-    layout/                   AppShell, Sidebar, BottomNav, navItems
-    ui/                       Button, Card, Modal, PageHeader, PageSkeleton, Skeleton,
-                              ProgressBar, ProgressRing, StatCard, Segmented,
-                              EmptyState, Pagination
-    habits/ goals/ notes/     feature forms (HabitForm, MarkButton, GoalForm, ...)
 
   hooks/
     useToday.ts               one stable Date for the session
     useHydrated.ts            true after mount (gate client-only UI)
+    useKeyboardShortcuts.ts   global keyboard shortcuts (g-prefix nav, undo/redo)
 
   lib/                        framework-free logic (tested + reusable)
     types.ts                  data shapes (incl. Economy, Rarity, AchievementDef,
@@ -69,10 +73,14 @@
                                claimDailyQuest, doDailySpin, dev tools)
     devmode.ts                Developer Mode settings store (OWN localStorage key)
     devSeed.ts                demo / stress-test data generators (Dev Mode)
-    stats.ts                  streaks + completion math
+    history.ts                undo/redo history stack (50-deep)
+    stats.ts                  streaks + completion math + habit correlations
     insights.ts  format.ts    plain-language insights + formatters
     habits.ts  templates.ts   habit builders + starter routines
     theme.ts                  theme modes + accent presets
+    prediction.ts             completion/streak prediction engine
+    export.ts                 CSV/JSON export/import utilities
+    customCategories.ts       custom category extension system
     -- gamification engine (all PURE + derived from marks) --
     xp.ts                     XP sources + super-linear level curve (levelInfo)
     achievements.ts           28 achievement defs, buildGameStats, evaluateAchievements
@@ -86,7 +94,13 @@
                               levelUpBonus, streakMilestoneBonus, checkInReward,
                               generateDailyQuest, randomSpinReward
     celebrations.ts           unified celebration queue (achievements + progress)
-    *.test.ts                 81 tests across 5 files
+    *.test.ts                 81 tests across 5 files (co-located with source)
+
+  public/
+    manifest.json             PWA manifest
+    sw.js                     service worker (offline-first caching)
+    icon-192.svg              PWA icon 192x192
+    icon-512.svg              PWA icon 512x512
 
 
 ==========================================================
@@ -165,6 +179,14 @@
            screen. One source of truth.
   Derived gamification is recomputed on render via summarizeProgress.
 
+  Keyboard shortcuts: useKeyboardShortcuts() in AppShell dispatches
+    custom events (kb:toggle-help, kb:add-habit) and calls router.push
+    for g-prefix navigation. Undo/redo via Ctrl+Z / Ctrl+Shift+Z
+    calls store actions (undoAction / redoAction) backed by history.ts.
+
+  Widget order + onboarding state persisted in settings via store actions
+    (setWidgetOrder, completeOnboarding, addCustomCategory, ...).
+
 
 ==========================================================
  DEVELOPER MODE  (hidden power-user layer)
@@ -177,18 +199,33 @@
 
 
 ==========================================================
+ PWA / OFFLINE
+==========================================================
+  - public/manifest.json: standalone display, SVG icons, theme color
+  - public/sw.js: service worker with offline-first caching strategy
+    (network-first for navigation, cache-first for static assets,
+    offline fallback to /offline)
+  - src/app/offline/page.tsx: user-friendly offline fallback page
+  - layout.tsx: registers SW on load via next/script (afterInteractive)
+
+
+==========================================================
  QUALITY GATES
 ==========================================================
   Gates: npx tsc --noEmit && npm run lint && npx vitest run && npm run build
-  Status (2026-06-18): GREEN. All 7 redesign parts + economy + developer
-  mode + UI/UX overhaul + engagement features (5 phases) done & verified
-  (tsc 0, eslint 0 errors/1 warning, vitest 81 passing, build clean).
+  Status (2026-06-18): GREEN. All feature categories + economy + developer
+  mode + UI/UX overhaul + engagement features + PWA + bug fixes verified.
+  tsc 0, eslint 0 errors/1 warning (RankAvatar img intentional),
+  vitest 81 passing, build clean.
 
   Lint gotcha: React Compiler rule `react-hooks/preserve-manual-
   memoization` requires useMemo deps to match the props actually read.
   Sync setState in an effect is forbidden by `react-hooks/set-state-in-effect`.
   Hook-name gotcha: a plain helper must NOT start with `use` if it's
   called from a non-component/non-hook fn (rules-of-hooks).
+
+  Dev server: uses `next dev --webpack` due to Turbopack crash on
+  Windows (Next.js 16.2.9 bug reading 'nul' device path on CSS files).
 
 
 ############################################################

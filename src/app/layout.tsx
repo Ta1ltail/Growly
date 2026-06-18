@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { ThemeApplier } from "@/components/ThemeApplier";
-import { AmbientBackground } from "@/components/AmbientBackground";
+import { ThemeApplier } from "@/components/layout/ThemeApplier";
+import { AmbientBackground } from "@/components/layout/AmbientBackground";
 import { AppShell } from "@/components/layout/AppShell";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
@@ -11,6 +12,7 @@ const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"]
 export const metadata: Metadata = {
   title: "project_101 — habit tracker",
   description: "A modern, spreadsheet-style habit & task tracker.",
+  manifest: "/manifest.json",
 };
 
 // Applies the saved theme before first paint so there is no light/dark flash.
@@ -34,9 +36,23 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <head>
-        <script dangerouslySetInnerHTML={{ __html: noFlash }} />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="mobile-web-app-capable" content="yes" />
       </head>
       <body className="min-h-full">
+        <Script
+          id="theme-no-flash"
+          strategy="beforeInteractive"
+          dangerouslySetInnerHTML={{ __html: noFlash }}
+        />
+        <Script
+          id="register-sw"
+          strategy="afterInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `if("serviceWorker"in navigator){window.addEventListener("load",()=>{navigator.serviceWorker.register("/sw.js")})}`,
+          }}
+        />
         <ThemeApplier />
         <AmbientBackground />
         <AppShell>{children}</AppShell>

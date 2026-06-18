@@ -6,7 +6,7 @@
 
 import { useEffect } from "react";
 import type { CelebrationEvent } from "@/lib/celebrations";
-import { AchievementBadge } from "@/components/AchievementBadge";
+import { AchievementBadge } from "@/components/achievements/AchievementBadge";
 
 const VISIBLE_MS = 4200;
 

@@ -39,6 +39,7 @@ import {
 } from "./economy";
 import { buildGameStats, evaluateAchievements } from "./achievements";
 import { baselineProgressSeen, type CelebrationEvent } from "./celebrations";
+import { pushSnapshot, undo as undoHistory, redo as redoHistory, canUndo, canRedo } from "./history";
 
 let cache: AppData | null = null;
 const listeners = new Set<() => void>();
@@ -61,14 +62,30 @@ function subscribe(listener: () => void): () => void {
   };
 }
 
-function update(updater: (prev: AppData) => AppData): void {
-  cache = updater(getSnapshot());
+function update(updater: (prev: AppData) => AppData, recordHistory = true): void {
+  const prev = getSnapshot();
+  if (recordHistory) {
+    pushSnapshot(prev);
+  }
+  cache = updater(prev);
   saveData(cache);
   for (const listener of listeners) listener();
 }
 
 export function useAppData(): AppData {
   return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+}
+
+// Granular selector hook — subscribe to a specific slice of AppData so
+// components re-render only when their relevant data changes, not on every
+// store mutation. Usage:
+//   const habits = useAppDataSelector((d) => d.habits);
+export function useAppDataSelector<T>(selector: (data: AppData) => T): T {
+  return useSyncExternalStore(
+    subscribe,
+    () => selector(getSnapshot()),
+    () => selector(getServerSnapshot()),
+  );
 }
 
 /* ---------------- audit helpers ---------------- */
@@ -175,6 +192,9 @@ export function duplicateHabit(id: string): void {
 // so this is a no-op outside the editable window. Also progresses the daily
 // quest when a habit is marked "done" today.
 export function cycleMark(dateK: string, habitId: string, habitCategory?: string): void {
+  // Skip history for individual mark toggles — they're high-frequency and
+  // undoing a single mark is rarely the desired action. Users can still undo
+  // habit creation/editing/deletion and bulk actions.
   update((prev) => {
     const grace = prev.settings.graceHours ?? DEFAULT_GRACE_HOURS;
     if (!canEditMark(dateK, new Date(), grace)) return prev;
@@ -197,7 +217,7 @@ export function cycleMark(dateK: string, habitId: string, habitCategory?: string
     return unlocks === updated.unlocks
       ? { ...updated, economy: eco }
       : { ...updated, unlocks, economy: eco };
-  });
+  }, false); // recordHistory = false for performance
 }
 
 /* ---------------- notes ---------------- */
@@ -297,6 +317,41 @@ export function markTemplateUsed(templateId: string): void {
   });
 }
 
+export function setWidgetOrder(ids: string[]): void {
+  update((prev) => ({
+    ...prev,
+    settings: { ...prev.settings, widgetOrder: ids },
+  }));
+}
+
+export function completeOnboarding(): void {
+  update((prev) => ({
+    ...prev,
+    settings: { ...prev.settings, onboardingComplete: true },
+  }));
+}
+
+export function addCustomCategory(name: string): void {
+  update((prev) => {
+    const existing = prev.settings.customCategories ?? [];
+    if (existing.includes(name)) return prev;
+    return {
+      ...prev,
+      settings: { ...prev.settings, customCategories: [...existing, name] },
+    };
+  });
+}
+
+export function removeCustomCategory(name: string): void {
+  update((prev) => ({
+    ...prev,
+    settings: {
+      ...prev.settings,
+      customCategories: (prev.settings.customCategories ?? []).filter((c) => c !== name),
+    },
+  }));
+}
+
 export function resetTemplateUsage(templateId: string): void {
   update((prev) => ({
     ...prev,
@@ -312,7 +367,14 @@ export function clearAllData(): void {
   // settings and profile identity. Economy resets too: coins are derived from
   // history, so wiping history must wipe the ledger or the balance goes
   // negative/stale. Owned cosmetics are part of that history-derived state.
-  update((prev) => ({ ...emptyData, settings: prev.settings, profile: prev.profile }));
+  // Preserve progressSeen.seeded to avoid replaying celebrations for old
+  // progress after the wipe.
+  update((prev) => ({
+    ...emptyData,
+    settings: prev.settings,
+    profile: prev.profile,
+    progressSeen: { ...emptyData.progressSeen, seeded: prev.progressSeen.seeded },
+  }));
 }
 
 /* ---------------- developer mode (raw data access) ---------------- */
@@ -565,10 +627,13 @@ export function claimDailyCheckIn(): { reward: number; streak: number } {
 }
 
 // Refresh/generate the daily quest. Safe to call every time Today loads —
-// only generates if the stored quest is from an older date.
+// only generates if the stored quest is from an older date or has been
+// claimed (currentQuest is null despite lastQuestDate being today).
 export function refreshDailyQuest(): void {
   update((prev) => {
     const todayKey = dateKey(new Date());
+    // If quest was already claimed today (lastQuestDate=today, currentQuest=null), don't regenerate
+    if (prev.economy.lastQuestDate === todayKey && !prev.economy.currentQuest) return prev;
     if (prev.economy.lastQuestDate === todayKey && prev.economy.currentQuest) return prev;
     const quest = generateDailyQuest(prev.habits);
     return {
@@ -578,20 +643,6 @@ export function refreshDailyQuest(): void {
         lastQuestDate: todayKey,
         currentQuest: quest ? { ...quest, current: 0 } : null,
       },
-    };
-  });
-}
-
-// Progress the current quest when a habit is marked done.
-export function progressDailyQuest(habitCategory?: string): void {
-  update((prev) => {
-    const q = prev.economy.currentQuest;
-    if (!q || q.current >= q.target) return prev;
-    if (q.category && q.category !== habitCategory) return prev;
-    const updated = { ...q, current: q.current + 1 };
-    return {
-      ...prev,
-      economy: { ...prev.economy, currentQuest: updated },
     };
   });
 }
@@ -636,6 +687,47 @@ export function doDailySpin(): { label: string; amount: number; isFreeze: boolea
   });
   return result;
 }
+
+/* ---------------- undo / redo ---------------- */
+
+// Undo the last action. Returns true if something was undone, false if the
+// stack was empty.
+export function undoAction(): boolean {
+  let didUndo = false;
+  update((prev) => {
+    const restored = undoHistory(prev);
+    if (!restored) return prev;
+    didUndo = true;
+    // Preserve the current session's settings and profile to avoid losing
+    // preferences when undoing
+    return {
+      ...restored,
+      settings: prev.settings,
+      profile: prev.profile,
+    };
+  }, false); // don't record history for undo itself
+  return didUndo;
+}
+
+// Redo the last undone action. Returns true if something was redone, false if
+// the stack was empty.
+export function redoAction(): boolean {
+  let didRedo = false;
+  update((prev) => {
+    const restored = redoHistory(prev);
+    if (!restored) return prev;
+    didRedo = true;
+    return {
+      ...restored,
+      settings: prev.settings,
+      profile: prev.profile,
+    };
+  }, false); // don't record history for redo itself
+  return didRedo;
+}
+
+// Check if undo/redo is available.
+export { canUndo, canRedo };
 
 // Re-export for convenience in pages that build keys.
 export { dateKey };

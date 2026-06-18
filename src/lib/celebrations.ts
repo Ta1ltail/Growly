@@ -22,9 +22,9 @@ import { summarizeProgress } from "./progress";
 
 export type CelebrationKind = "achievement" | "levelup" | "title" | "shop" | "streak";
 
-// Per-habit streak milestones that earn a celebration (round numbers chosen to
-// avoid doubling up with every streak *achievement* threshold).
-export const STREAK_MILESTONES = [7, 30, 100, 365] as const;
+// Per-habit streak milestones that earn a celebration. Includes the same
+// thresholds as streak achievements so progression always feels recognized.
+export const STREAK_MILESTONES = [7, 14, 30, 50, 100, 365] as const;
 
 // Highest milestone <= streak (0 if none reached yet).
 export function streakTier(streak: number): number {

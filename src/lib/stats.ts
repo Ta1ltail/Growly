@@ -239,3 +239,74 @@ export function mostMissedHabit(
   }
   return worst;
 }
+
+// Habit correlations: find pairs of habits that are often completed together
+// on the same day. Returns pairs sorted by co-occurrence strength (highest
+// first). Only considers days where both habits were scheduled.
+export function habitCorrelations(
+  habits: Habit[],
+  marks: Marks,
+  minSamples = 5,
+): { habitA: Habit; habitB: Habit; bothDone: number; totalShared: number; strength: number }[] {
+  const active = habits.filter((h) => !h.archived);
+  if (active.length < 2) return [];
+
+  // Build a map of habitId → set of dates where it was done
+  const doneDates = new Map<string, Set<string>>();
+  for (const h of active) doneDates.set(h.id, new Set());
+
+  for (const [dateKey, day] of Object.entries(marks)) {
+    for (const [habitId, status] of Object.entries(day)) {
+      if (status === "done" && doneDates.has(habitId)) {
+        doneDates.get(habitId)!.add(dateKey);
+      }
+    }
+  }
+
+  // Cache parsed date keys ("YYYY-MM-DD" -> Date) to avoid re-parsing
+  const parsedDateCache = new Map<string, Date>();
+  function parseKey(k: string): Date {
+    let d = parsedDateCache.get(k);
+    if (!d) {
+      d = parseDateKey(k);
+      parsedDateCache.set(k, d);
+    }
+    return d;
+  }
+
+  const pairs: { habitA: Habit; habitB: Habit; bothDone: number; totalShared: number; strength: number }[] = [];
+
+  for (let i = 0; i < active.length; i++) {
+    for (let j = i + 1; j < active.length; j++) {
+      const a = active[i];
+      const b = active[j];
+      const datesA = doneDates.get(a.id)!;
+      const datesB = doneDates.get(b.id)!;
+
+      let bothDone = 0;
+      let totalShared = 0;
+
+      // Only check dates where both have been done at least once
+      const allDates = new Set([...datesA, ...datesB]);
+      for (const d of allDates) {
+        const dateObj = parseKey(d);
+        const aScheduled = isScheduled(a, dateObj);
+        const bScheduled = isScheduled(b, dateObj);
+        // Only count days where BOTH habits were scheduled
+        if (!aScheduled || !bScheduled) continue;
+        const aDone = datesA.has(d);
+        const bDone = datesB.has(d);
+        if (aDone && bDone) bothDone++;
+        if (aDone || bDone) totalShared++;
+      }
+
+      if (totalShared < minSamples) continue;
+
+      // Strength: what fraction of days where either was done, BOTH were done
+      const strength = Math.round((bothDone / totalShared) * 100);
+      pairs.push({ habitA: a, habitB: b, bothDone, totalShared, strength });
+    }
+  }
+
+  return pairs.sort((a, b) => b.strength - a.strength).slice(0, 10);
+}

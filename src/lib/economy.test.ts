@@ -35,6 +35,7 @@ function stats(over: Partial<GameStats> = {}): GameStats {
     weekendPerfectDays: 0,
     habitsCreated: 0,
     anyMissed: false,
+    comebackAchieved: false,
     ...over,
   };
 }

@@ -318,7 +318,7 @@ function cleanProgressSeen(v: unknown): ProgressSeen {
   };
 }
 
-function cleanEconomyV6(v: unknown): Economy {
+function cleanEconomyV5(v: unknown): Economy {
   if (!isObject(v)) return { spent: [], owned: [], equipped: {}, freezes: [], bonusCoins: 0, lastCheckIn: null, checkInStreak: 0, lastQuestDate: null, currentQuest: null, lastSpinDate: null };
   const spent = Array.isArray(v.spent)
     ? v.spent.map(cleanSpend).filter((s): s is SpendEntry => s !== null)
@@ -407,6 +407,16 @@ export function loadData(): AppData {
     const usedTemplateIds = Array.isArray(settingsRaw.usedTemplateIds)
       ? settingsRaw.usedTemplateIds.filter((x): x is string => typeof x === "string")
       : [];
+    const widgetOrder = Array.isArray(settingsRaw.widgetOrder)
+      ? settingsRaw.widgetOrder.filter((x): x is string => typeof x === "string")
+      : undefined;
+    const onboardingComplete =
+      typeof settingsRaw.onboardingComplete === "boolean"
+        ? settingsRaw.onboardingComplete
+        : undefined;
+    const customCategories = Array.isArray(settingsRaw.customCategories)
+      ? settingsRaw.customCategories.filter((x): x is string => typeof x === "string")
+      : undefined;
 
     return {
       version: SCHEMA_VERSION,
@@ -415,10 +425,10 @@ export function loadData(): AppData {
       notes: cleanNotes(parsed.notes),
       goals,
       auditLog,
-      settings: { theme: { mode, accent }, graceHours, usedTemplateIds },
+      settings: { theme: { mode, accent }, graceHours, usedTemplateIds, widgetOrder, onboardingComplete, customCategories },
       profile: cleanProfile(parsed.profile),
       unlocks: cleanUnlocks(parsed.unlocks),
-      economy: cleanEconomyV6(parsed.economy),
+      economy: cleanEconomyV5(parsed.economy),
       progressSeen: cleanProgressSeen(parsed.progressSeen),
     };
   } catch {

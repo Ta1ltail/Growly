@@ -34,7 +34,7 @@ import type { AchievementDef } from "@/lib/types";
 import { Card } from "@/components/ui/Card";
 import { StatCard } from "@/components/ui/StatCard";
 import { PageSkeleton } from "@/components/ui/PageSkeleton";
-import { AchievementBadge } from "@/components/AchievementBadge";
+import { AchievementBadge } from "@/components/achievements/AchievementBadge";
 import { RankAvatar } from "@/components/progression/RankAvatar";
 import { TitleDisplay } from "@/components/progression/TitleDisplay";
 import { TitlesModal } from "@/components/progression/TitlesModal";
