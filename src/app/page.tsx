@@ -6,7 +6,16 @@
 
 import { useMemo } from "react";
 import Link from "next/link";
-import { Flame, TrendingUp, Activity, ArrowRight, ListChecks, Sparkles, ChevronRight, CalendarRange } from "lucide-react";
+import {
+  Flame,
+  TrendingUp,
+  Activity,
+  ArrowRight,
+  ListChecks,
+  Sparkles,
+  ChevronRight,
+  CalendarRange,
+} from "lucide-react";
 import { useAppData, setWidgetOrder } from "@/lib/store";
 import { useToday } from "@/hooks/useToday";
 import { useHydrated } from "@/hooks/useHydrated";
@@ -38,7 +47,10 @@ import { XpBar } from "@/components/progression/XpBar";
 import { TitleDisplay } from "@/components/progression/TitleDisplay";
 import { NextMilestoneWidget } from "@/components/progression/NextMilestoneWidget";
 import { CoinChip } from "@/components/economy/CoinChip";
-import { ReorderableGrid, type ReorderableItem } from "@/components/ui/ReorderableGrid";
+import {
+  ReorderableGrid,
+  type ReorderableItem,
+} from "@/components/ui/ReorderableGrid";
 
 const TONE: Record<string, string> = {
   good: "border-done/30 bg-done/5 text-done",
@@ -64,16 +76,28 @@ export default function DashboardPage() {
   const today = useToday();
   const hydrated = useHydrated();
   const todayKey = dateKey(today);
-  const active = useMemo(() => data.habits.filter((h) => !h.archived), [data.habits]);
+  const active = useMemo(
+    () => data.habits.filter((h) => !h.archived),
+    [data.habits],
+  );
 
-  const todaysHabits = useMemo(() => active.filter((h) => isScheduled(h, today)), [active, today]);
-  const doneToday = todaysHabits.filter((h) => data.marks[todayKey]?.[h.id] === "done").length;
+  const todaysHabits = useMemo(
+    () => active.filter((h) => isScheduled(h, today)),
+    [active, today],
+  );
+  const doneToday = todaysHabits.filter(
+    (h) => data.marks[todayKey]?.[h.id] === "done",
+  ).length;
   const progress = dayCompletion(active, data.marks, today);
 
-  const consistency = useMemo(() => consistencyScore(active, data.marks, today, 14), [active, data.marks, today]);
+  const consistency = useMemo(
+    () => consistencyScore(active, data.marks, today, 14),
+    [active, data.marks, today],
+  );
   const frozen = useMemo(() => frozenSet(data.economy), [data.economy]);
   const streaks = useMemo(() => {
-    let best = 0, current = 0;
+    let best = 0,
+      current = 0;
     for (const h of active) {
       const s = habitStreaks(h, data.marks, today, frozen);
       best = Math.max(best, s.best);
@@ -81,7 +105,10 @@ export default function DashboardPage() {
     }
     return { best, current };
   }, [active, data.marks, today, frozen]);
-  const insights = useMemo(() => buildInsights(active, data.marks, today), [active, data.marks, today]);
+  const insights = useMemo(
+    () => buildInsights(active, data.marks, today),
+    [active, data.marks, today],
+  );
 
   // Progress widgets data
   const summary = useMemo(() => summarizeProgress(data, today), [data, today]);
@@ -94,13 +121,23 @@ export default function DashboardPage() {
   }, [data.unlocks]);
 
   // Weekly trend data
-  const weekData = useMemo(() => lastNDaysCompletion(active, data.marks, today, 7), [active, data.marks, today]);
-  const weekAvg = weekData.length ? Math.round(weekData.reduce((s, d) => s + d.rate, 0) / weekData.length) : 0;
+  const weekData = useMemo(
+    () => lastNDaysCompletion(active, data.marks, today, 7),
+    [active, data.marks, today],
+  );
+  const weekAvg = weekData.length
+    ? Math.round(weekData.reduce((s, d) => s + d.rate, 0) / weekData.length)
+    : 0;
 
   const { level, title, unlockedCount, totalCount } = summary;
-  const badgePct = totalCount ? Math.round((unlockedCount / totalCount) * 100) : 0;
+  const badgePct = totalCount
+    ? Math.round((unlockedCount / totalCount) * 100)
+    : 0;
 
-  const widgetContent: Record<WidgetId, { content: React.ReactNode; span?: string }> = {
+  const widgetContent: Record<
+    WidgetId,
+    { content: React.ReactNode; span?: string }
+  > = {
     "xp-level": {
       span: "lg:col-span-3",
       content: (
@@ -121,24 +158,31 @@ export default function DashboardPage() {
           <div className="min-w-0 flex-1">
             <div className="flex items-baseline justify-between gap-2">
               <span className="text-xs font-semibold">Badges</span>
-              <span className="font-mono text-xs font-bold text-muted">{unlockedCount}/{totalCount}</span>
+              <span className="font-mono text-xs font-bold text-muted">
+                {unlockedCount}/{totalCount}
+              </span>
             </div>
             <ProgressBar value={badgePct} className="mt-1.5" />
             <div className="mt-1 flex flex-wrap gap-1">
-              {(["legendary", "epic", "rare", "common"] as const).map((rarity) => {
-                const n = summary.achievements.filter((a) => a.unlocked && a.def.rarity === rarity).length;
-                if (n === 0) return null;
-                const r = RARITY_STYLE[rarity];
-                return (
-                  <span
-                    key={rarity}
-                    className="rounded-full px-1 py-0 text-[8px] font-bold"
-                    style={{ background: `${r.accent}1f`, color: r.accent }}
-                  >
-                    {r.medal}{n}
-                  </span>
-                );
-              })}
+              {(["legendary", "epic", "rare", "common"] as const).map(
+                (rarity) => {
+                  const n = summary.achievements.filter(
+                    (a) => a.unlocked && a.def.rarity === rarity,
+                  ).length;
+                  if (n === 0) return null;
+                  const r = RARITY_STYLE[rarity];
+                  return (
+                    <span
+                      key={rarity}
+                      className="rounded-full px-1 py-0 text-[8px] font-bold"
+                      style={{ background: `${r.accent}1f`, color: r.accent }}
+                    >
+                      {r.medal}
+                      {n}
+                    </span>
+                  );
+                },
+              )}
             </div>
           </div>
         </Card>
@@ -148,12 +192,18 @@ export default function DashboardPage() {
       content: (
         <Card className="flex items-center gap-3 p-3 h-[90px]">
           {summary.stats.maxCurrentStreak > 0 ? (
-            <StreakFlame streak={summary.stats.maxCurrentStreak} size={32} showCount={false} />
+            <StreakFlame
+              streak={summary.stats.maxCurrentStreak}
+              size={32}
+              showCount={false}
+            />
           ) : (
             <Flame className="size-7 text-faint" />
           )}
           <div>
-            <div className="font-mono text-xl font-bold tracking-tight">{summary.stats.maxCurrentStreak}</div>
+            <div className="font-mono text-xl font-bold tracking-tight">
+              {summary.stats.maxCurrentStreak}
+            </div>
             <div className="text-[11px] text-muted">day current streak</div>
           </div>
         </Card>
@@ -168,17 +218,26 @@ export default function DashboardPage() {
           <div className="min-w-0 flex-1">
             <div className="flex items-center justify-between gap-2">
               <span className="text-xs font-semibold">Recent</span>
-              <Link href="/achievements" className="text-[10px] font-semibold text-accent hover:underline shrink-0">
+              <Link
+                href="/achievements"
+                className="text-[10px] font-semibold text-accent hover:underline shrink-0"
+              >
                 All
               </Link>
             </div>
             <div className="mt-1 flex gap-1 overflow-hidden">
               {recent.length === 0 ? (
-                <p className="text-[10px] text-faint truncate">Complete habits to unlock achievements.</p>
+                <p className="text-[10px] text-faint truncate">
+                  Complete habits to unlock achievements.
+                </p>
               ) : (
                 recent.slice(0, 3).map((def) => (
                   <div key={def.id} title={`${def.name} · ${def.rarity}`}>
-                    <AchievementBadge def={def} size={28} shine={def.rarity === "legendary"} />
+                    <AchievementBadge
+                      def={def}
+                      size={28}
+                      shine={def.rarity === "legendary"}
+                    />
                   </div>
                 ))
               )}
@@ -190,7 +249,9 @@ export default function DashboardPage() {
     "next-milestone": {
       content: (
         <Card className="p-5 h-[180px] overflow-y-auto">
-          <NextMilestoneWidget milestones={summary.nextMilestones.slice(0, 2)} />
+          <NextMilestoneWidget
+            milestones={summary.nextMilestones.slice(0, 2)}
+          />
         </Card>
       ),
     },
@@ -205,13 +266,20 @@ export default function DashboardPage() {
           </div>
           <div className="flex items-end justify-between gap-1.5 h-[calc(100%-32px)]">
             {weekData.map(({ date, rate }) => (
-              <div key={date.toISOString()} className="flex flex-1 flex-col items-center gap-1 self-end">
-                <div className="flex w-full items-end justify-center" style={{ height: "80%" }}>
+              <div
+                key={date.toISOString()}
+                className="flex flex-1 flex-col items-center gap-1 self-end"
+              >
+                <div
+                  className="flex w-full items-end justify-center"
+                  style={{ height: "80%" }}
+                >
                   <div
                     className="w-full max-w-5 rounded-t-md transition-[height] duration-500"
                     style={{
                       height: `${Math.max(rate, 4)}%`,
-                      background: rate >= 100 ? "var(--color-done)" : "var(--c-accent)",
+                      background:
+                        rate >= 100 ? "var(--color-done)" : "var(--c-accent)",
                       opacity: rate === 0 ? 0.25 : 1,
                     }}
                     title={`${rate}%`}
@@ -235,7 +303,10 @@ export default function DashboardPage() {
     return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
   });
 
-  const handleReorder = useMemo(() => (ids: string[]) => setWidgetOrder(ids), []);
+  const handleReorder = useMemo(
+    () => (ids: string[]) => setWidgetOrder(ids),
+    [],
+  );
 
   const reorderableItems: ReorderableItem[] = orderedIds.map((id: string) => {
     const w = widgetContent[id as WidgetId];
@@ -279,32 +350,47 @@ export default function DashboardPage() {
       />
 
       {/* Today summary + stat tiles — redesigned card with no wasted space */}
-      <div className="grid gap-6 lg:grid-cols-3">
-        <Card className="flex flex-col p-5 h-[180px]">
+      <div className="grid items-stretch gap-6 lg:grid-cols-3">
+        <Card className="flex flex-col p-5">
           <div className="flex items-center gap-4 shrink-0">
             <ProgressRing value={progress} size={64}>
               <span className="font-mono text-sm font-bold">{progress}%</span>
             </ProgressRing>
             <div className="min-w-0 flex-1">
-              <p className="text-xs font-semibold uppercase tracking-wide text-muted">Today</p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted">
+                Today
+              </p>
               <p className="text-sm text-muted">
                 {today.toLocaleDateString(undefined, { weekday: "long" })}
               </p>
               {/* Time left in the day */}
               <p className="mt-0.5 text-[11px] font-medium text-accent">
-                {today.getHours() < 12 ? "☀️ Morning" : today.getHours() < 17 ? "🌤️ Afternoon" : "🌙 Evening"}
-                {' · '}{24 - today.getHours() - 1}h left today
+                {today.getHours() < 12
+                  ? "☀️ Morning"
+                  : today.getHours() < 17
+                    ? "🌤️ Afternoon"
+                    : "🌙 Evening"}
+                {" · "}
+                {24 - today.getHours() - 1}h left today
               </p>
             </div>
           </div>
           <div className="mt-3 grid grid-cols-2 gap-2">
             <div className="rounded-xl bg-done/10 p-2.5">
-              <p className="text-[10px] font-semibold uppercase tracking-wide text-done">Done</p>
-              <p className="mt-0.5 font-mono text-lg font-bold text-done">{doneToday}</p>
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-done">
+                Done
+              </p>
+              <p className="mt-0.5 font-mono text-lg font-bold text-done">
+                {doneToday}
+              </p>
             </div>
             <div className="rounded-xl bg-amber-500/10 p-2.5">
-              <p className="text-[10px] font-semibold uppercase tracking-wide text-amber-500">Remaining</p>
-              <p className="mt-0.5 font-mono text-lg font-bold text-amber-500">{todaysHabits.length - doneToday}</p>
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-amber-500">
+                Remaining
+              </p>
+              <p className="mt-0.5 font-mono text-lg font-bold text-amber-500">
+                {todaysHabits.length - doneToday}
+              </p>
             </div>
           </div>
           <div className="mt-auto flex items-center justify-between pt-1">
@@ -313,29 +399,58 @@ export default function DashboardPage() {
                 ? `${todaysHabits.length - doneToday} habit${todaysHabits.length - doneToday !== 1 ? "s" : ""} remaining`
                 : "🎉 All done!"}
             </span>
-            <Link href="/today" className="inline-flex items-center gap-1 text-xs font-medium text-accent hover:underline">
+            <Link
+              href="/today"
+              className="inline-flex items-center gap-1 text-xs font-medium text-accent hover:underline"
+            >
               Open Today <ArrowRight className="size-3" />
             </Link>
           </div>
         </Card>
 
         <div className="grid grid-cols-2 gap-3 lg:col-span-2">
-          <StatCard icon={Activity} value={`${consistency}%`} label="14-day consistency" accent />
-          <StatCard icon={Flame} value={streaks.current} label="Current streak" />
-          <StatCard icon={TrendingUp} value={streaks.best} label="Best streak" />
-          <StatCard icon={ListChecks} value={active.length} label="Active habits" />
+          <StatCard
+            icon={Activity}
+            value={`${consistency}%`}
+            label="14-day consistency"
+            accent
+          />
+          <StatCard
+            icon={Flame}
+            value={streaks.current}
+            label="Current streak"
+          />
+          <StatCard
+            icon={TrendingUp}
+            value={streaks.best}
+            label="Best streak"
+          />
+          <StatCard
+            icon={ListChecks}
+            value={active.length}
+            label="Active habits"
+          />
         </div>
       </div>
 
       {/* Your Progress section — moved from Today page, fixed-size cards */}
       <section className="mt-6">
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-muted">Your Progress</h2>
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-muted">
+            Your Progress
+          </h2>
           <div className="flex items-center gap-3">
-            <Link href="/shop" aria-label="Open shop" className="transition-transform hover:scale-105">
+            <Link
+              href="/shop"
+              aria-label="Open shop"
+              className="transition-transform hover:scale-105"
+            >
               <CoinChip amount={summary.coinBalance} />
             </Link>
-            <Link href="/profile" className="flex items-center gap-1 text-xs font-semibold text-accent hover:underline">
+            <Link
+              href="/profile"
+              className="flex items-center gap-1 text-xs font-semibold text-accent hover:underline"
+            >
               Character page <ChevronRight className="size-3.5" />
             </Link>
           </div>
@@ -356,7 +471,10 @@ export default function DashboardPage() {
           </h2>
           <div className="grid gap-3 stagger-children sm:grid-cols-2">
             {insights.map((ins, i) => (
-              <div key={i} className={`rounded-2xl border px-4 py-3 text-sm ${TONE[ins.tone]}`}>
+              <div
+                key={i}
+                className={`rounded-2xl border px-4 py-3 text-sm ${TONE[ins.tone]}`}
+              >
                 {ins.text}
               </div>
             ))}

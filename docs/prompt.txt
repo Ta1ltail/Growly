@@ -1,0 +1,31 @@
+Dashboard section:
+"Recent" card: the achievement icons are getting cut off/clipped at the card's edge. Resize the card or icons so they display fully without clipping.
+"Badges" card: the badge icons and progress bar are too small relative to the card size, leaving excess empty space. Make the badge icons bigger and better fill the card.
+"Weekly" card: this isn't working at all — it shows "53%" and day labels (F S S M T W T) but no actual visual data (no bars, dots, or fill showing per-day completion). Fix it so it actually renders the weekly completion data visually.
+
+Today page:
+"Today's Habits" list (left column) is too short and only shows ~5 habits in a small scrollable box, leaving a large empty gray area below it. Make this list expand to fill the available vertical space, close to the bottom of the screen.
+"Today's Note" (right column) box is also too short with empty space below it — it should also expand to fill more of the available height, with "Daily Spin" placed below it once resized.
+Once the Daily Spin/reward has been claimed for the day, it should NOT disappear or get hidden — it should still show (e.g. in a "claimed" or completed state) rather than vanishing from the layout. or better tell the next time reward.
+
+Tracker page:
+The "Habit" column (leftmost, with habit names) must stay fixed/pinned in place when scrolling horizontally — it should not scroll away with the date columns.
+When "30 days" is selected, the horizontal scrollbar must always be visible by default — right now you have to scroll down first just to discover the scrollbar exists. It should be visible without needing to scroll the page first.
+
+Calendar page:
+Still too much wasted empty space below the calendar grid. Make the calendar expand to fill the available space so it sits close to the bottom of the screen, instead of leaving a visible gap.
+The habits list panel on the right side should match the height of the calendar grid on the left — both should be the same height as each other.
+
+Templates page:
+Remove the page scroll entirely. Instead, use a fixed 3x2 grid (3 columns, 2 rows = 6 template cards per "page") with pagination controls below the grid to navigate between pages.
+
+Notes page:
+
+Needs a proper "notepad" feel. Long note content should not overflow/clip horizontally — instead, paginate within the note card itself if the content is long (rather than horizontal scroll or clipping).
+Note cards should always render at the same fixed size/height, even when there's little or no content inside — don't shrink-to-fit based on content length.
+
+Clarification on responsive behavior: Disregard the earlier comparison to the Habits page's specific behavior — that's not what's needed here. The actual goal, generally: each page's content should expand/contract to fill the available screen height based on screen size, without ever triggering a page-level scrollbar. Pages with naturally long or variable-length content (like Templates or Notes) should use pagination instead of scroll to manage overflow. This rule applies to all pages except: Dashboard, Statistics, Achievements, Shop, Settings, and Profile — those are allowed to scroll normally.
+
+I HAVE SO MUCH tailwindcss(suggestCanonicalClasses to change or can be written as) please replace it to correct type.
+
+After doing all the. FIND ALL THE READ THE WHOLE PROJECT FOLDER AND FIND ALL THE BUGS

@@ -7,9 +7,23 @@
 // instead of numeric-only indicators.
 
 import { useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight, Check, X, Minus, Flag, NotebookPen, Snowflake } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Check,
+  X,
+  Minus,
+  Flag,
+  NotebookPen,
+  Snowflake,
+} from "lucide-react";
 import { CATEGORY_COLORS } from "@/lib/categories";
-import { addDays, dateKey, prettyDate, DEFAULT_GRACE_HOURS } from "@/lib/storage";
+import {
+  addDays,
+  dateKey,
+  prettyDate,
+  DEFAULT_GRACE_HOURS,
+} from "@/lib/storage";
 import { cycleMark, useAppData } from "@/lib/store";
 import { dayCompletion, isScheduled } from "@/lib/stats";
 import { frozenSet, isFrozen } from "@/lib/economy";
@@ -37,7 +51,13 @@ function progressColor(rate: number): string {
   return "#22c55e"; // completed/high - done green
 }
 
-function CircularProgress({ rate, size = 32 }: { rate: number; size?: number }) {
+function CircularProgress({
+  rate,
+  size = 32,
+}: {
+  rate: number;
+  size?: number;
+}) {
   const stroke = 3;
   const r = (size - stroke) / 2;
   const c = 2 * Math.PI * r;
@@ -47,14 +67,20 @@ function CircularProgress({ rate, size = 32 }: { rate: number; size?: number }) 
 
   if (rate === 0) {
     return (
-      <div className="grid place-items-center" style={{ width: size, height: size }}>
+      <div
+        className="grid place-items-center"
+        style={{ width: size, height: size }}
+      >
         <span className="text-[9px] font-semibold opacity-60">—</span>
       </div>
     );
   }
 
   return (
-    <div className="relative grid place-items-center" style={{ width: size, height: size }}>
+    <div
+      className="relative grid place-items-center"
+      style={{ width: size, height: size }}
+    >
       <svg width={size} height={size} className="-rotate-90 absolute inset-0">
         <circle
           cx={size / 2}
@@ -74,7 +100,10 @@ function CircularProgress({ rate, size = 32 }: { rate: number; size?: number }) 
           strokeLinecap="round"
           strokeDasharray={c}
           strokeDashoffset={offset}
-          style={{ transition: "stroke-dashoffset 0.8s cubic-bezier(0.22,1,0.36,1), stroke 0.4s ease" }}
+          style={{
+            transition:
+              "stroke-dashoffset 0.8s cubic-bezier(0.22,1,0.36,1), stroke 0.4s ease",
+          }}
         />
       </svg>
       <span className="text-[9px] font-bold leading-none" style={{ color }}>
@@ -96,11 +125,18 @@ export default function CalendarPage() {
   const data = useAppData();
   const today = useToday();
   const grace = data.settings.graceHours ?? DEFAULT_GRACE_HOURS;
-  const active = useMemo(() => data.habits.filter((h) => !h.archived), [data.habits]);
+  const active = useMemo(
+    () => data.habits.filter((h) => !h.archived),
+    [data.habits],
+  );
   const frozen = useMemo(() => frozenSet(data.economy), [data.economy]);
   const [view, setView] = useState<"month" | "week">("month");
-  const [anchor, setAnchor] = useState(() => new Date(today.getFullYear(), today.getMonth(), 1));
-  const [weekStart, setWeekStart] = useState(() => addDays(today, -today.getDay()));
+  const [anchor, setAnchor] = useState(
+    () => new Date(today.getFullYear(), today.getMonth(), 1),
+  );
+  const [weekStart, setWeekStart] = useState(() =>
+    addDays(today, -today.getDay()),
+  );
   const [selected, setSelected] = useState<Date>(today);
 
   const monthCells = useMemo(() => {
@@ -110,7 +146,8 @@ export default function CalendarPage() {
     const daysInMonth = new Date(year, m + 1, 0).getDate();
     const out: (Date | null)[] = [];
     for (let i = 0; i < firstWeekday; i++) out.push(null);
-    for (let day = 1; day <= daysInMonth; day++) out.push(new Date(year, m, day));
+    for (let day = 1; day <= daysInMonth; day++)
+      out.push(new Date(year, m, day));
     return out;
   }, [anchor]);
 
@@ -124,7 +161,9 @@ export default function CalendarPage() {
     () =>
       active
         .filter((h) => isScheduled(h, selected))
-        .sort((a, b) => (a.timeOfDay ?? "99") < (b.timeOfDay ?? "99") ? -1 : 1),
+        .sort((a, b) =>
+          (a.timeOfDay ?? "99") < (b.timeOfDay ?? "99") ? -1 : 1,
+        ),
     [active, selected],
   );
   const dayNotes = data.notes.filter((n) => n.links.date === selectedKey);
@@ -134,7 +173,8 @@ export default function CalendarPage() {
   const selectedIsToday = selectedKey === dateKey(today);
 
   function shift(delta: number) {
-    if (view === "month") setAnchor((p) => new Date(p.getFullYear(), p.getMonth() + delta, 1));
+    if (view === "month")
+      setAnchor((p) => new Date(p.getFullYear(), p.getMonth() + delta, 1));
     else setWeekStart((p) => addDays(p, delta * 7));
   }
 
@@ -151,11 +191,23 @@ export default function CalendarPage() {
           <div className="flex items-center gap-2">
             <Segmented options={VIEWS} value={view} onChange={setView} />
             <div className="flex items-center gap-1">
-              <button onClick={() => shift(-1)} aria-label={view === "month" ? "Previous month" : "Previous week"} className="flex size-9 items-center justify-center rounded-xl border border-line text-muted transition-colors hover:bg-surface2 hover:text-ink">
+              <button
+                onClick={() => shift(-1)}
+                aria-label={
+                  view === "month" ? "Previous month" : "Previous week"
+                }
+                className="flex size-9 items-center justify-center rounded-xl border border-line text-muted transition-colors hover:bg-surface2 hover:text-ink"
+              >
                 <ChevronLeft className="size-4" />
               </button>
-              <span className="w-36 text-center text-sm font-semibold">{headerLabel}</span>
-              <button onClick={() => shift(1)} aria-label={view === "month" ? "Next month" : "Next week"} className="flex size-9 items-center justify-center rounded-xl border border-line text-muted transition-colors hover:bg-surface2 hover:text-ink">
+              <span className="w-36 text-center text-sm font-semibold">
+                {headerLabel}
+              </span>
+              <button
+                onClick={() => shift(1)}
+                aria-label={view === "month" ? "Next month" : "Next week"}
+                className="flex size-9 items-center justify-center rounded-xl border border-line text-muted transition-colors hover:bg-surface2 hover:text-ink"
+              >
                 <ChevronRight className="size-4" />
               </button>
             </div>
@@ -167,12 +219,16 @@ export default function CalendarPage() {
         <div className="lg:col-span-3 lg:min-h-0">
           <h2 className="mb-3 flex items-center justify-between text-sm font-semibold uppercase tracking-wide text-muted">
             <span>{view === "month" ? "Month" : "Week"}</span>
-            <span className="text-[10px] font-normal normal-case tracking-normal text-faint">Tap a day to view</span>
+            <span className="text-[10px] font-normal normal-case tracking-normal text-faint">
+              Tap a day to view
+            </span>
           </h2>
           <Card className="p-4 h-full min-h-[400px]">
             <div className="mb-2 grid grid-cols-7 gap-1.5 text-center font-mono text-[11px] text-faint">
               {WEEKDAY_LABELS.map((w) => (
-                <div key={w} className="py-1">{w}</div>
+                <div key={w} className="py-1">
+                  {w}
+                </div>
               ))}
             </div>
             <div className="grid grid-cols-7 gap-1.5 auto-rows-fr">
@@ -181,21 +237,37 @@ export default function CalendarPage() {
                 const rate = dayCompletion(active, data.marks, d);
                 const isToday = dateKey(d) === dateKey(today);
                 const isSelected = dateKey(d) === selectedKey;
-                const hasNote = data.notes.some((n) => n.links.date === dateKey(d));
-                const hasDeadline = data.goals.some((g) => g.deadline === dateKey(d));
+                const hasNote = data.notes.some(
+                  (n) => n.links.date === dateKey(d),
+                );
+                const hasDeadline = data.goals.some(
+                  (g) => g.deadline === dateKey(d),
+                );
                 return (
                   <button
                     key={dateKey(d)}
                     onClick={() => setSelected(d)}
                     className={`relative flex flex-col items-center justify-center gap-1 rounded-xl border py-3 transition-all hover:scale-105 ${shade(rate)} ${
-                      isSelected ? "border-accent ring-2 ring-accent/40" : isToday ? "border-accent/50" : "border-transparent"
+                      isSelected
+                        ? "border-accent ring-2 ring-accent/40"
+                        : isToday
+                          ? "border-accent/50"
+                          : "border-transparent"
                     } ${rate === 0 && !isToday ? "bg-surface2/40 text-muted" : ""} min-h-[60px]`}
                   >
-                    <span className={`text-sm font-semibold ${isToday ? "text-accent" : ""}`}>{d.getDate()}</span>
+                    <span
+                      className={`text-sm font-semibold ${isToday ? "text-accent" : ""}`}
+                    >
+                      {d.getDate()}
+                    </span>
                     <CircularProgress rate={rate} size={28} />
                     <span className="absolute bottom-1 left-1/2 -translate-x-1/2 flex gap-0.5">
-                      {hasNote && <span className="size-1 rounded-full bg-current opacity-60" />}
-                      {hasDeadline && <span className="size-1 rounded-full bg-amber-500" />}
+                      {hasNote && (
+                        <span className="size-1 rounded-full bg-current opacity-60" />
+                      )}
+                      {hasDeadline && (
+                        <span className="size-1 rounded-full bg-amber-500" />
+                      )}
                     </span>
                   </button>
                 );
@@ -208,7 +280,11 @@ export default function CalendarPage() {
         <div className="lg:col-span-2">
           <h2 className="mb-3 flex items-center justify-between text-sm font-semibold uppercase tracking-wide text-muted">
             <span>{prettyDate(selected)}</span>
-            {selectedIsToday && <span className="rounded-full bg-accent/15 px-2 py-0.5 text-[10px] text-accent">Today</span>}
+            {selectedIsToday && (
+              <span className="rounded-full bg-accent/15 px-2 py-0.5 text-[10px] text-accent">
+                Today
+              </span>
+            )}
           </h2>
 
           {deadlines.length > 0 && (
@@ -217,45 +293,83 @@ export default function CalendarPage() {
                 <div key={g.id} className="flex items-center gap-2 text-sm">
                   <Flag className="size-4 text-amber-500" />
                   <span className="flex-1">Goal due: {g.title}</span>
-                  <span className="font-mono text-xs text-muted">{g.current}/{g.target}</span>
+                  <span className="font-mono text-xs text-muted">
+                    {g.current}/{g.target}
+                  </span>
                 </div>
               ))}
             </Card>
           )}
 
           {selectedHabits.length === 0 ? (
-            <Card className="p-6 text-center text-sm text-muted">No habits scheduled this day.</Card>
+            <Card className="p-6 text-center text-sm text-muted">
+              No habits scheduled this day.
+            </Card>
           ) : (
             <Card className="divide-y divide-line overflow-hidden max-h-[420px] overflow-y-auto">
               {selectedHabits.map((h) => {
                 const status = data.marks[selectedKey]?.[h.id];
-                const dayFrozen = status === "missed" && isFrozen(frozen, h.id, selectedKey);
-                const showNowBefore = selectedIsToday && h.timeOfDay && h.timeOfDay >= nowHHMM;
+                const dayFrozen =
+                  status === "missed" && isFrozen(frozen, h.id, selectedKey);
+                const showNowBefore =
+                  selectedIsToday && h.timeOfDay && h.timeOfDay >= nowHHMM;
                 return (
                   <div key={h.id}>
                     {showNowBefore && <NowLine time={nowHHMM} />}
                     <div className="flex items-center gap-2.5 px-4 py-2.5 text-sm">
                       {editable ? (
-                        <MarkButton status={status} onClick={() => cycleMark(selectedKey, h.id)} size={22} frozen={dayFrozen} />
+                        <MarkButton
+                          status={status}
+                          onClick={() => cycleMark(selectedKey, h.id)}
+                          size={22}
+                          frozen={dayFrozen}
+                        />
                       ) : (
-                        <span className="size-2 shrink-0 rounded-full" style={{ backgroundColor: CATEGORY_COLORS[h.category] }} />
+                        <span
+                          className="size-2 shrink-0 rounded-full"
+                          style={{
+                            backgroundColor: CATEGORY_COLORS[h.category],
+                          }}
+                        />
                       )}
                       <span className="flex-1">{h.name}</span>
-                      {h.timeOfDay && <span className="font-mono text-[11px] text-faint">{formatTime(h.timeOfDay)}</span>}
+                      {h.timeOfDay && (
+                        <span className="font-mono text-[11px] text-faint">
+                          {formatTime(h.timeOfDay)}
+                        </span>
+                      )}
                       {!editable &&
                         (status === "done" ? (
-                          <Check className="size-4 text-done" strokeWidth={2.5} />
+                          <Check
+                            className="size-4 text-done"
+                            strokeWidth={2.5}
+                          />
                         ) : status === "missed" ? (
                           dayFrozen ? (
-                            <span className="flex items-center gap-1" title="Protected by a streak freeze">
-                              <X className="size-4 text-missed opacity-50" strokeWidth={2.5} />
-                              <Snowflake className="size-3.5 text-sky-400" strokeWidth={2.5} />
+                            <span
+                              className="flex items-center gap-1"
+                              title="Protected by a streak freeze"
+                            >
+                              <X
+                                className="size-4 text-missed opacity-50"
+                                strokeWidth={2.5}
+                              />
+                              <Snowflake
+                                className="size-3.5 text-sky-400"
+                                strokeWidth={2.5}
+                              />
                             </span>
                           ) : (
-                            <X className="size-4 text-missed" strokeWidth={2.5} />
+                            <X
+                              className="size-4 text-missed"
+                              strokeWidth={2.5}
+                            />
                           )
                         ) : status === "skipped" ? (
-                          <Minus className="size-4 text-skipped" strokeWidth={2.5} />
+                          <Minus
+                            className="size-4 text-skipped"
+                            strokeWidth={2.5}
+                          />
                         ) : (
                           <span className="text-faint">—</span>
                         ))}
@@ -272,7 +386,9 @@ export default function CalendarPage() {
                 <NotebookPen className="size-3.5" /> Notes
               </p>
               {dayNotes.map((n) => (
-                <p key={n.id} className="text-sm italic text-muted">"{n.body}"</p>
+                <p key={n.id} className="text-sm italic text-muted">
+                  &quot;{n.body}&quot;
+                </p>
               ))}
             </Card>
           )}
@@ -287,7 +403,9 @@ function NowLine({ time }: { time: string }) {
     <div className="flex items-center gap-2 px-4 py-1">
       <span className="size-1.5 rounded-full bg-accent" />
       <span className="h-px flex-1 bg-accent/40" />
-      <span className="font-mono text-[10px] font-semibold text-accent">now {formatTime(time)}</span>
+      <span className="font-mono text-[10px] font-semibold text-accent">
+        now {formatTime(time)}
+      </span>
     </div>
   );
 }
