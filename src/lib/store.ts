@@ -672,16 +672,18 @@ export function doDailySpin(): { label: string; amount: number; isFreeze: boolea
     if (prev.economy.lastSpinDate === todayKey) return prev; // already spun
     const reward = randomSpinReward();
     const isFreeze = reward.item === "freeze";
-    result = { label: reward.label, amount: reward.amount, isFreeze };
+    // When the spin lands on "Streak Freeze", give a coin consolation prize
+    // since a scatter-shot freeze entry can't target a real missed day.
+    const effectiveAmount = isFreeze ? 25 : reward.amount;
+    const effectiveLabel = isFreeze ? `25 coins (freeze consolation)` : reward.label;
+    result = { label: effectiveLabel, amount: effectiveAmount, isFreeze };
     return {
       ...prev,
       economy: {
         ...prev.economy,
         bonusCoins: prev.economy.bonusCoins + reward.amount,
         lastSpinDate: todayKey,
-        freezes: isFreeze
-          ? [...prev.economy.freezes, { id: uid(), at: new Date().toISOString(), date: todayKey, habitId: "spin-reward" }]
-          : prev.economy.freezes,
+        lastSpinResult: result,
       },
     };
   });

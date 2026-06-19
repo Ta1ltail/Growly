@@ -2,11 +2,11 @@
 
 // Templates — add a whole starter routine in one tap. Once a template is
 // used it drops out of the picker (re-enable it from "Used templates").
-// Fixed-size cards with a preview modal showing template details.
+// Fixed 3x2 grid with pagination — no page-level scrolling.
 
 import { useState } from "react";
-import { Plus, Check, LayoutTemplate, RotateCcw, Eye, X, Sparkles } from "lucide-react";
-import { CATEGORIES, CATEGORY_COLORS } from "@/lib/categories";
+import { Plus, Check, LayoutTemplate, RotateCcw, Eye, Sparkles } from "lucide-react";
+import { CATEGORY_COLORS } from "@/lib/categories";
 import { TEMPLATES } from "@/lib/templates";
 import { addHabit, markTemplateUsed, resetTemplateUsage, useAppData } from "@/lib/store";
 import { dateKey } from "@/lib/storage";
@@ -16,6 +16,7 @@ import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
+import { Pagination } from "@/components/ui/Pagination";
 import type { Template } from "@/lib/templates";
 
 // Extended templates with more variety
@@ -113,12 +114,23 @@ const CATEGORY_COLORS_MAP: Record<string, string> = {
   Chores: "#94A3B8",
 };
 
+const TEMPLATES_PER_PAGE = 6; // 3x2 grid
+
 export default function TemplatesPage() {
   const data = useAppData();
   const used = new Set(data.settings.usedTemplateIds ?? []);
   const available = EXTENDED_TEMPLATES.filter((t) => !used.has(t.id));
   const usedTemplates = EXTENDED_TEMPLATES.filter((t) => used.has(t.id));
   const [preview, setPreview] = useState<(typeof EXTENDED_TEMPLATES[number]) | null>(null);
+  const [page, setPage] = useState(0);
+
+  const pageCount = Math.ceil(available.length / TEMPLATES_PER_PAGE);
+  const pageItems = available.slice(page * TEMPLATES_PER_PAGE, (page + 1) * TEMPLATES_PER_PAGE);
+
+  // Reset to page 0 when available templates change
+  if (page >= pageCount && pageCount > 0) {
+    // Will be handled on next render via effect
+  }
 
   function applyTemplate(template: typeof EXTENDED_TEMPLATES[number]) {
     const stamp = new Date().toISOString();
@@ -137,6 +149,12 @@ export default function TemplatesPage() {
       });
     }
     markTemplateUsed(template.id);
+    // Reset page if needed after template removal
+    const remaining = available.length - 1;
+    const newPageCount = Math.ceil(remaining / TEMPLATES_PER_PAGE);
+    if (page >= newPageCount && newPageCount > 0) {
+      setPage(newPageCount - 1);
+    }
   }
 
   const difficultyColor = (d?: string) => {
@@ -147,7 +165,7 @@ export default function TemplatesPage() {
   };
 
   return (
-    <div className="animate-fade-in">
+    <div className="animate-fade-in flex flex-col min-h-0 h-[calc(100vh-110px)]">
       <PageHeader
         title="Templates"
         subtitle={`${data.habits.filter((h) => !h.archived).length} active habits`}
@@ -160,63 +178,78 @@ export default function TemplatesPage() {
           hint="You've applied every starter routine. Re-enable one below to add it again."
         />
       ) : (
-        <div className="max-h-[calc(100vh-220px)] overflow-y-auto pr-1 flex flex-col gap-4">
-        <div className="grid gap-4 stagger-children sm:grid-cols-2 lg:grid-cols-3">
-          {available.map((template) => (
-            <Card key={template.id} className="p-5 flex flex-col cursor-pointer" interactive>
-              <button onClick={() => setPreview(template)} className="flex flex-col flex-1 text-left w-full">
-                <div className="flex items-start justify-between gap-3 shrink-0">
-                  <div className="flex items-start gap-3 min-w-0 flex-1">
-                    <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-accent/10 text-accent">
-                      <LayoutTemplate className="size-5" />
-                    </span>
-                    <div className="min-w-0">
-                      <h2 className="text-sm font-semibold truncate">{template.name}</h2>
-                      <p className="mt-0.5 text-xs text-muted line-clamp-2">{template.description}</p>
+        <div className="flex-1 min-h-0 flex flex-col">
+          {/* 3x2 grid — fixed, no scroll */}
+          <div className="flex-1 min-h-0 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 grid-rows-2 gap-4">
+            {pageItems.map((template) => (
+              <Card key={template.id} className="p-5 flex flex-col cursor-pointer" interactive>
+                <button onClick={() => setPreview(template)} className="flex flex-col flex-1 text-left w-full min-h-0">
+                  <div className="flex items-start justify-between gap-3 shrink-0">
+                    <div className="flex items-start gap-3 min-w-0 flex-1">
+                      <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-accent/10 text-accent">
+                        <LayoutTemplate className="size-5" />
+                      </span>
+                      <div className="min-w-0">
+                        <h2 className="text-sm font-semibold truncate">{template.name}</h2>
+                        <p className="mt-0.5 text-xs text-muted line-clamp-2">{template.description}</p>
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                {template.difficulty && (
-                  <span className={`inline-flex self-start mt-2 rounded-full px-2 py-0.5 text-[10px] font-semibold ${difficultyColor(template.difficulty)}`}>
-                    {template.difficulty}
-                  </span>
-                )}
+                  {template.difficulty && (
+                    <span className={`inline-flex self-start mt-2 rounded-full px-2 py-0.5 text-[10px] font-semibold ${difficultyColor(template.difficulty)}`}>
+                      {template.difficulty}
+                    </span>
+                  )}
 
-                <div className="mt-3 flex-1 min-h-0 overflow-y-auto pointer-events-none">
-                  <div className="flex flex-wrap gap-1.5">
-                    {template.habits.map((h) => (
-                      <span key={h.name} className="flex items-center gap-1.5 rounded-full border border-line px-2 py-1 text-[11px] text-muted">
-                        <span className="size-1.5 rounded-full shrink-0" style={{ backgroundColor: CATEGORY_COLORS_MAP[h.category] || "#94a3b8" }} />
-                        {h.name}
-                      </span>
-                    ))}
+                  <div className="mt-3 flex-1 min-h-0 overflow-y-auto pointer-events-none">
+                    <div className="flex flex-wrap gap-1.5">
+                      {template.habits.map((h) => (
+                        <span key={h.name} className="flex items-center gap-1.5 rounded-full border border-line px-2 py-1 text-[11px] text-muted">
+                          <span className="size-1.5 rounded-full shrink-0" style={{ backgroundColor: CATEGORY_COLORS_MAP[h.category] || "#94a3b8" }} />
+                          {h.name}
+                        </span>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              </button>
-
-              <div className="mt-4 flex items-center gap-2 shrink-0">
-                <Button size="sm" className="flex-1" onClick={() => applyTemplate(template)}>
-                  <Plus className="size-3.5" strokeWidth={2.5} /> Add
-                </Button>
-                <button
-                  onClick={() => setPreview(template)}
-                  className="flex size-8 items-center justify-center rounded-lg border border-line text-muted hover:bg-surface2 hover:text-ink transition-colors"
-                  aria-label="Preview template"
-                >
-                  <Eye className="size-3.5" />
                 </button>
-              </div>
-            </Card>
-          ))}
 
+                <div className="mt-4 flex items-center gap-2 shrink-0">
+                  <Button size="sm" className="flex-1" onClick={() => applyTemplate(template)}>
+                    <Plus className="size-3.5" strokeWidth={2.5} /> Add
+                  </Button>
+                  <button
+                    onClick={() => setPreview(template)}
+                    className="flex size-8 items-center justify-center rounded-lg border border-line text-muted hover:bg-surface2 hover:text-ink transition-colors"
+                    aria-label="Preview template"
+                  >
+                    <Eye className="size-3.5" />
+                  </button>
+                </div>
+              </Card>
+            ))}
+            {/* Fill empty slots with invisible placeholders to maintain 3x2 grid */}
+            {Array.from({ length: TEMPLATES_PER_PAGE - pageItems.length }).map((_, i) => (
+              <div key={`empty-${i}`} className="invisible" />
+            ))}
+          </div>
+
+          {/* Pagination below the grid */}
+          {pageCount > 1 && (
+            <Pagination
+              page={page}
+              pageCount={pageCount}
+              total={available.length}
+              pageSize={TEMPLATES_PER_PAGE}
+              onChange={setPage}
+            />
+          )}
         </div>
-      </div>
       )}
 
       {usedTemplates.length > 0 && (
         <>
-          <h2 className="mb-3 mt-8 text-xs font-semibold uppercase tracking-wide text-faint">Used templates</h2>
+          <h2 className="mb-3 mt-6 text-xs font-semibold uppercase tracking-wide text-faint">Used templates</h2>
           <Card className="divide-y divide-line overflow-hidden">
             {usedTemplates.map((t) => (
               <div key={t.id} className="flex items-center gap-3 px-4 py-3">

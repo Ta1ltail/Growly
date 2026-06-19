@@ -206,6 +206,7 @@ export interface Economy {
   lastQuestDate: string | null; // dateKey of last quest generated
   currentQuest: DailyQuest | null;
   lastSpinDate: string | null; // dateKey of last daily spin
+  lastSpinResult: { label: string; amount: number; isFreeze: boolean } | null; // last spin reward
 }
 
 // A daily challenge generated once per day.
@@ -228,6 +229,7 @@ export const DEFAULT_ECONOMY: Economy = {
   lastQuestDate: null,
   currentQuest: null,
   lastSpinDate: null,
+  lastSpinResult: null,
 };
 
 // Cosmetic categories that can be equipped (one active per slot).

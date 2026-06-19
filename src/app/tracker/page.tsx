@@ -19,7 +19,7 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { Card } from "@/components/ui/Card";
 import { Segmented } from "@/components/ui/Segmented";
 import { EmptyState } from "@/components/ui/EmptyState";
-import type { MarkStatus, Marks, Habit } from "@/lib/types";
+import type { MarkStatus } from "@/lib/types";
 
 const RANGES = [
   { value: "14" as const, label: "14 days" },
@@ -142,7 +142,18 @@ export default function TrackerPage() {
           <div className="h-[calc(100vh-230px)] min-h-[300px]">
           <Card className="overflow-hidden h-full">
             <div className="h-full overflow-y-auto">
-              <div className={daysShown === 30 ? "overflow-x-auto overflow-y-hidden" : "overflow-x-auto"}>
+              <div
+                className={
+                  daysShown === 30
+                    ? "overflow-x-scroll overflow-y-hidden"
+                    : "overflow-x-auto"
+                }
+                style={
+                  daysShown === 30
+                    ? { paddingBottom: "8px" }
+                    : undefined
+                }
+              >
                 <table className="w-full border-collapse text-center font-mono text-xs">
                   <thead>
                     <tr>

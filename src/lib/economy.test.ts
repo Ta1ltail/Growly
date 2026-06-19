@@ -43,9 +43,11 @@ function stats(over: Partial<GameStats> = {}): GameStats {
 function economy(over: Partial<Economy> = {}): Economy {
   return {
     spent: [], owned: [], equipped: {}, freezes: [],
-    bonusCoins: 0, lastCheckIn: null, checkInStreak: 0, lastQuestDate: null, currentQuest: null, lastSpinDate: null,
+    bonusCoins: 0, lastCheckIn: null, checkInStreak: 0,
+    lastQuestDate: null, currentQuest: null, lastSpinDate: null,
+    lastSpinResult: null,
     ...over,
-  };
+  } as Economy;
 }
 
 const D = (s: string) => new Date(`${s}T12:00:00`);

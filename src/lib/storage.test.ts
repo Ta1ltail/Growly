@@ -203,6 +203,7 @@ describe("loadData validation", () => {
         lastQuestDate: null,
         currentQuest: null,
         lastSpinDate: null,
+        lastSpinResult: null,
       },
       progressSeen: { seeded: true, level: 4, title: "Procrastination Survivor", shop: ["flame-gold"], streaks: { h: 7 } },
     };

@@ -184,7 +184,7 @@ export default function CalendarPage() {
       : `${weekCells[0].toLocaleDateString(undefined, { month: "short", day: "numeric" })} – ${weekCells[6].toLocaleDateString(undefined, { month: "short", day: "numeric" })}`;
 
   return (
-    <div className="animate-fade-in">
+    <div className="animate-fade-in flex flex-col min-h-0 h-[calc(100vh-110px)]">
       <PageHeader
         title="Calendar"
         action={
@@ -215,70 +215,74 @@ export default function CalendarPage() {
         }
       />
 
-      <div className="grid gap-6 lg:grid-cols-5">
-        <div className="lg:col-span-3 lg:min-h-0">
-          <h2 className="mb-3 flex items-center justify-between text-sm font-semibold uppercase tracking-wide text-muted">
+      {/* Calendar + detail panel — fill available space */}
+      <div className="flex-1 min-h-0 grid gap-6 lg:grid-cols-5">
+        {/* Calendar grid */}
+        <div className="lg:col-span-3 flex flex-col min-h-0">
+          <h2 className="mb-3 flex items-center justify-between text-sm font-semibold uppercase tracking-wide text-muted shrink-0">
             <span>{view === "month" ? "Month" : "Week"}</span>
             <span className="text-[10px] font-normal normal-case tracking-normal text-faint">
               Tap a day to view
             </span>
           </h2>
-          <Card className="p-4 h-full min-h-[400px]">
-            <div className="mb-2 grid grid-cols-7 gap-1.5 text-center font-mono text-[11px] text-faint">
-              {WEEKDAY_LABELS.map((w) => (
-                <div key={w} className="py-1">
-                  {w}
-                </div>
-              ))}
-            </div>
-            <div className="grid grid-cols-7 gap-1.5 auto-rows-fr">
-              {(view === "month" ? monthCells : weekCells).map((d, i) => {
-                if (!d) return <div key={`b-${i}`} className="min-h-[60px]" />;
-                const rate = dayCompletion(active, data.marks, d);
-                const isToday = dateKey(d) === dateKey(today);
-                const isSelected = dateKey(d) === selectedKey;
-                const hasNote = data.notes.some(
-                  (n) => n.links.date === dateKey(d),
-                );
-                const hasDeadline = data.goals.some(
-                  (g) => g.deadline === dateKey(d),
-                );
-                return (
-                  <button
-                    key={dateKey(d)}
-                    onClick={() => setSelected(d)}
-                    className={`relative flex flex-col items-center justify-center gap-1 rounded-xl border py-3 transition-all hover:scale-105 ${shade(rate)} ${
-                      isSelected
-                        ? "border-accent ring-2 ring-accent/40"
-                        : isToday
-                          ? "border-accent/50"
-                          : "border-transparent"
-                    } ${rate === 0 && !isToday ? "bg-surface2/40 text-muted" : ""} min-h-[60px]`}
-                  >
-                    <span
-                      className={`text-sm font-semibold ${isToday ? "text-accent" : ""}`}
+          <Card className="p-4 h-full flex flex-col">
+            <div className="flex-1 min-h-0 flex flex-col">
+              <div className="mb-2 grid grid-cols-7 gap-1.5 text-center font-mono text-[11px] text-faint shrink-0">
+                {WEEKDAY_LABELS.map((w) => (
+                  <div key={w} className="py-1">
+                    {w}
+                  </div>
+                ))}
+              </div>
+              <div className="grid grid-cols-7 gap-1.5 auto-rows-fr flex-1">
+                {(view === "month" ? monthCells : weekCells).map((d, i) => {
+                  if (!d) return <div key={`b-${i}`} className="min-h-[60px]" />;
+                  const rate = dayCompletion(active, data.marks, d);
+                  const isToday = dateKey(d) === dateKey(today);
+                  const isSelected = dateKey(d) === selectedKey;
+                  const hasNote = data.notes.some(
+                    (n) => n.links.date === dateKey(d),
+                  );
+                  const hasDeadline = data.goals.some(
+                    (g) => g.deadline === dateKey(d),
+                  );
+                  return (
+                    <button
+                      key={dateKey(d)}
+                      onClick={() => setSelected(d)}
+                      className={`relative flex flex-col items-center justify-center gap-1 rounded-xl border py-3 transition-all hover:scale-105 ${shade(rate)} ${
+                        isSelected
+                          ? "border-accent ring-2 ring-accent/40"
+                          : isToday
+                            ? "border-accent/50"
+                            : "border-transparent"
+                      } ${rate === 0 && !isToday ? "bg-surface2/40 text-muted" : ""} min-h-[60px]`}
                     >
-                      {d.getDate()}
-                    </span>
-                    <CircularProgress rate={rate} size={28} />
-                    <span className="absolute bottom-1 left-1/2 -translate-x-1/2 flex gap-0.5">
-                      {hasNote && (
-                        <span className="size-1 rounded-full bg-current opacity-60" />
-                      )}
-                      {hasDeadline && (
-                        <span className="size-1 rounded-full bg-amber-500" />
-                      )}
-                    </span>
-                  </button>
-                );
-              })}
+                      <span
+                        className={`text-sm font-semibold ${isToday ? "text-accent" : ""}`}
+                      >
+                        {d.getDate()}
+                      </span>
+                      <CircularProgress rate={rate} size={28} />
+                      <span className="absolute bottom-1 left-1/2 -translate-x-1/2 flex gap-0.5">
+                        {hasNote && (
+                          <span className="size-1 rounded-full bg-current opacity-60" />
+                        )}
+                        {hasDeadline && (
+                          <span className="size-1 rounded-full bg-amber-500" />
+                        )}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </Card>
         </div>
 
-        {/* Day detail */}
-        <div className="lg:col-span-2">
-          <h2 className="mb-3 flex items-center justify-between text-sm font-semibold uppercase tracking-wide text-muted">
+        {/* Day detail panel — matches grid height */}
+        <div className="lg:col-span-2 flex flex-col min-h-0">
+          <h2 className="mb-3 flex items-center justify-between text-sm font-semibold uppercase tracking-wide text-muted shrink-0">
             <span>{prettyDate(selected)}</span>
             {selectedIsToday && (
               <span className="rounded-full bg-accent/15 px-2 py-0.5 text-[10px] text-accent">
@@ -287,111 +291,113 @@ export default function CalendarPage() {
             )}
           </h2>
 
-          {deadlines.length > 0 && (
-            <Card className="mb-3 p-3">
-              {deadlines.map((g) => (
-                <div key={g.id} className="flex items-center gap-2 text-sm">
-                  <Flag className="size-4 text-amber-500" />
-                  <span className="flex-1">Goal due: {g.title}</span>
-                  <span className="font-mono text-xs text-muted">
-                    {g.current}/{g.target}
-                  </span>
-                </div>
-              ))}
-            </Card>
-          )}
+          <div className="flex-1 min-h-0 overflow-y-auto space-y-3">
+            {deadlines.length > 0 && (
+              <Card className="p-3">
+                {deadlines.map((g) => (
+                  <div key={g.id} className="flex items-center gap-2 text-sm">
+                    <Flag className="size-4 text-amber-500" />
+                    <span className="flex-1">Goal due: {g.title}</span>
+                    <span className="font-mono text-xs text-muted">
+                      {g.current}/{g.target}
+                    </span>
+                  </div>
+                ))}
+              </Card>
+            )}
 
-          {selectedHabits.length === 0 ? (
-            <Card className="p-6 text-center text-sm text-muted">
-              No habits scheduled this day.
-            </Card>
-          ) : (
-            <Card className="divide-y divide-line overflow-hidden max-h-[420px] overflow-y-auto">
-              {selectedHabits.map((h) => {
-                const status = data.marks[selectedKey]?.[h.id];
-                const dayFrozen =
-                  status === "missed" && isFrozen(frozen, h.id, selectedKey);
-                const showNowBefore =
-                  selectedIsToday && h.timeOfDay && h.timeOfDay >= nowHHMM;
-                return (
-                  <div key={h.id}>
-                    {showNowBefore && <NowLine time={nowHHMM} />}
-                    <div className="flex items-center gap-2.5 px-4 py-2.5 text-sm">
-                      {editable ? (
-                        <MarkButton
-                          status={status}
-                          onClick={() => cycleMark(selectedKey, h.id)}
-                          size={22}
-                          frozen={dayFrozen}
-                        />
-                      ) : (
-                        <span
-                          className="size-2 shrink-0 rounded-full"
-                          style={{
-                            backgroundColor: CATEGORY_COLORS[h.category],
-                          }}
-                        />
-                      )}
-                      <span className="flex-1">{h.name}</span>
-                      {h.timeOfDay && (
-                        <span className="font-mono text-[11px] text-faint">
-                          {formatTime(h.timeOfDay)}
-                        </span>
-                      )}
-                      {!editable &&
-                        (status === "done" ? (
-                          <Check
-                            className="size-4 text-done"
-                            strokeWidth={2.5}
-                          />
-                        ) : status === "missed" ? (
-                          dayFrozen ? (
-                            <span
-                              className="flex items-center gap-1"
-                              title="Protected by a streak freeze"
-                            >
-                              <X
-                                className="size-4 text-missed opacity-50"
-                                strokeWidth={2.5}
-                              />
-                              <Snowflake
-                                className="size-3.5 text-sky-400"
-                                strokeWidth={2.5}
-                              />
-                            </span>
-                          ) : (
-                            <X
-                              className="size-4 text-missed"
-                              strokeWidth={2.5}
-                            />
-                          )
-                        ) : status === "skipped" ? (
-                          <Minus
-                            className="size-4 text-skipped"
-                            strokeWidth={2.5}
+            {selectedHabits.length === 0 ? (
+              <Card className="p-6 text-center text-sm text-muted">
+                No habits scheduled this day.
+              </Card>
+            ) : (
+              <Card className="divide-y divide-line overflow-hidden">
+                {selectedHabits.map((h) => {
+                  const status = data.marks[selectedKey]?.[h.id];
+                  const dayFrozen =
+                    status === "missed" && isFrozen(frozen, h.id, selectedKey);
+                  const showNowBefore =
+                    selectedIsToday && h.timeOfDay && h.timeOfDay >= nowHHMM;
+                  return (
+                    <div key={h.id}>
+                      {showNowBefore && <NowLine time={nowHHMM} />}
+                      <div className="flex items-center gap-2.5 px-4 py-2.5 text-sm">
+                        {editable ? (
+                          <MarkButton
+                            status={status}
+                            onClick={() => cycleMark(selectedKey, h.id)}
+                            size={22}
+                            frozen={dayFrozen}
                           />
                         ) : (
-                          <span className="text-faint">—</span>
-                        ))}
+                          <span
+                            className="size-2 shrink-0 rounded-full"
+                            style={{
+                              backgroundColor: CATEGORY_COLORS[h.category],
+                            }}
+                          />
+                        )}
+                        <span className="flex-1">{h.name}</span>
+                        {h.timeOfDay && (
+                          <span className="font-mono text-[11px] text-faint">
+                            {formatTime(h.timeOfDay)}
+                          </span>
+                        )}
+                        {!editable &&
+                          (status === "done" ? (
+                            <Check
+                              className="size-4 text-done"
+                              strokeWidth={2.5}
+                            />
+                          ) : status === "missed" ? (
+                            dayFrozen ? (
+                              <span
+                                className="flex items-center gap-1"
+                                title="Protected by a streak freeze"
+                              >
+                                <X
+                                  className="size-4 text-missed opacity-50"
+                                  strokeWidth={2.5}
+                                />
+                                <Snowflake
+                                  className="size-3.5 text-sky-400"
+                                  strokeWidth={2.5}
+                                />
+                              </span>
+                            ) : (
+                              <X
+                                className="size-4 text-missed"
+                                strokeWidth={2.5}
+                              />
+                            )
+                          ) : status === "skipped" ? (
+                            <Minus
+                              className="size-4 text-skipped"
+                              strokeWidth={2.5}
+                            />
+                          ) : (
+                            <span className="text-faint">—</span>
+                          ))}
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
-            </Card>
-          )}
+                  );
+                })}
+              </Card>
+            )}
 
-          {dayNotes.length > 0 && (
-            <Card className="mt-3 p-4">
-              <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted">
-                <NotebookPen className="size-3.5" /> Notes
-              </p>
-              {dayNotes.map((n) => (
-                <p key={n.id} className="text-sm italic text-muted">
-                  &quot;{n.body}&quot;
+            {dayNotes.length > 0 && (
+              <Card className="p-4">
+                <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted">
+                  <NotebookPen className="size-3.5" /> Notes
                 </p>
-              ))}
-            </Card>
-          )}
+                {dayNotes.map((n) => (
+                  <p key={n.id} className="text-sm italic text-muted">
+                    &quot;{n.body}&quot;
+                  </p>
+                ))}
+              </Card>
+            )}
+          </div>
         </div>
       </div>
     </div>

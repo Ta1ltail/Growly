@@ -107,11 +107,12 @@ function cleanRecurrence(v: unknown): Recurrence | undefined {
   return undefined;
 }
 
-function cleanHabit(v: unknown): Habit | null {
+function cleanHabit(v: unknown, extraCategories?: Set<string>): Habit | null {
   if (!isObject(v)) return null;
   const { id, name, category, repeatDays, createdAt } = v;
   if (typeof id !== "string" || typeof name !== "string") return null;
-  if (typeof category !== "string" || !CATEGORY_SET.has(category)) return null;
+  const validCats = new Set([...CATEGORY_SET, ...(extraCategories ?? [])]);
+  if (typeof category !== "string" || !validCats.has(category)) return null;
   if (typeof createdAt !== "string") return null;
   const days = intDays(repeatDays, 0, 6);
 
@@ -319,7 +320,7 @@ function cleanProgressSeen(v: unknown): ProgressSeen {
 }
 
 function cleanEconomyV5(v: unknown): Economy {
-  if (!isObject(v)) return { spent: [], owned: [], equipped: {}, freezes: [], bonusCoins: 0, lastCheckIn: null, checkInStreak: 0, lastQuestDate: null, currentQuest: null, lastSpinDate: null };
+  if (!isObject(v)) return { spent: [], owned: [], equipped: {}, freezes: [], bonusCoins: 0, lastCheckIn: null, checkInStreak: 0, lastQuestDate: null, currentQuest: null, lastSpinDate: null, lastSpinResult: null };
   const spent = Array.isArray(v.spent)
     ? v.spent.map(cleanSpend).filter((s): s is SpendEntry => s !== null)
     : [];
@@ -368,7 +369,7 @@ function cleanEconomyV5(v: unknown): Economy {
     }
   }
   
-  return { spent, owned, equipped, freezes, bonusCoins, lastCheckIn, checkInStreak, lastQuestDate, currentQuest, lastSpinDate };
+  return { spent, owned, equipped, freezes, bonusCoins, lastCheckIn, checkInStreak, lastQuestDate, currentQuest, lastSpinDate, lastSpinResult: null };
 }
 
 export function loadData(): AppData {
@@ -379,8 +380,17 @@ export function loadData(): AppData {
     const parsed = JSON.parse(raw) as Record<string, unknown>;
     if (!isObject(parsed)) return emptyData;
 
+    // Extract custom categories from settings first so cleanHabit can accept them
+    const settingsRaw = isObject(parsed.settings) ? parsed.settings : {};
+    const customCategories = Array.isArray(settingsRaw.customCategories)
+      ? settingsRaw.customCategories.filter((x): x is string => typeof x === "string")
+      : undefined;
+    const extraCats = customCategories && customCategories.length > 0
+      ? new Set(customCategories)
+      : undefined;
+
     const habits = Array.isArray(parsed.habits)
-      ? parsed.habits.map(cleanHabit).filter((h): h is Habit => h !== null)
+      ? parsed.habits.map((h) => cleanHabit(h, extraCats)).filter((h): h is Habit => h !== null)
       : [];
     const goals = Array.isArray(parsed.goals)
       ? parsed.goals.map(cleanGoal).filter((g): g is Goal => g !== null)
@@ -399,7 +409,6 @@ export function loadData(): AppData {
       ? themeRaw.accent
       : DEFAULT_THEME.accent;
 
-    const settingsRaw = isObject(parsed.settings) ? parsed.settings : {};
     const graceHours =
       typeof settingsRaw.graceHours === "number" && settingsRaw.graceHours >= 0
         ? settingsRaw.graceHours
@@ -414,9 +423,6 @@ export function loadData(): AppData {
       typeof settingsRaw.onboardingComplete === "boolean"
         ? settingsRaw.onboardingComplete
         : undefined;
-    const customCategories = Array.isArray(settingsRaw.customCategories)
-      ? settingsRaw.customCategories.filter((x): x is string => typeof x === "string")
-      : undefined;
 
     return {
       version: SCHEMA_VERSION,

@@ -151,97 +151,92 @@ export default function DashboardPage() {
     },
     "badge-collection": {
       content: (
-        <Card className="p-3 h-[90px] flex items-center gap-3">
-          <span className="flex shrink-0 size-10 items-center justify-center rounded-xl bg-surface2">
-            <Sparkles className="size-5 icon-accent" />
-          </span>
-          <div className="min-w-0 flex-1">
-            <div className="flex items-baseline justify-between gap-2">
-              <span className="text-xs font-semibold">Badges</span>
-              <span className="font-mono text-xs font-bold text-muted">
-                {unlockedCount}/{totalCount}
-              </span>
-            </div>
-            <ProgressBar value={badgePct} className="mt-1.5" />
-            <div className="mt-1 flex flex-wrap gap-1">
-              {(["legendary", "epic", "rare", "common"] as const).map(
-                (rarity) => {
-                  const n = summary.achievements.filter(
-                    (a) => a.unlocked && a.def.rarity === rarity,
-                  ).length;
-                  if (n === 0) return null;
-                  const r = RARITY_STYLE[rarity];
-                  return (
-                    <span
-                      key={rarity}
-                      className="rounded-full px-1 py-0 text-[8px] font-bold"
-                      style={{ background: `${r.accent}1f`, color: r.accent }}
-                    >
-                      {r.medal}
-                      {n}
-                    </span>
-                  );
-                },
-              )}
-            </div>
+        <Card className="p-4 h-[140px] flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <h3 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-muted">
+              <Sparkles className="size-4 icon-accent" /> Badges
+            </h3>
+            <span className="font-mono text-sm font-bold">
+              {unlockedCount}/{totalCount}
+            </span>
+          </div>
+          <ProgressBar value={badgePct} className="my-2" />
+          <div className="flex flex-wrap gap-1.5">
+            {(["legendary", "epic", "rare", "common"] as const).map(
+              (rarity) => {
+                const n = summary.achievements.filter(
+                  (a) => a.unlocked && a.def.rarity === rarity,
+                ).length;
+                if (n === 0) return null;
+                const r = RARITY_STYLE[rarity];
+                return (
+                  <span
+                    key={rarity}
+                    className="rounded-full px-2 py-0.5 text-[11px] font-bold"
+                    style={{ background: `${r.accent}1f`, color: r.accent }}
+                  >
+                    {r.medal} {n}
+                  </span>
+                );
+              },
+            )}
           </div>
         </Card>
       ),
     },
     "current-streak": {
       content: (
-        <Card className="flex items-center gap-3 p-3 h-[90px]">
+        <Card className="flex items-center gap-4 p-4 h-[140px]">
           {summary.stats.maxCurrentStreak > 0 ? (
             <StreakFlame
               streak={summary.stats.maxCurrentStreak}
-              size={32}
+              size={48}
               showCount={false}
             />
           ) : (
-            <Flame className="size-7 text-faint" />
+            <Flame className="size-10 text-faint" />
           )}
           <div>
-            <div className="font-mono text-xl font-bold tracking-tight">
+            <div className="font-mono text-2xl font-bold tracking-tight">
               {summary.stats.maxCurrentStreak}
             </div>
-            <div className="text-[11px] text-muted">day current streak</div>
+            <div className="text-xs text-muted mt-0.5">day current streak</div>
           </div>
         </Card>
       ),
     },
     "recent-achievements": {
       content: (
-        <Card className="p-3 h-[90px] flex items-center gap-2 overflow-hidden">
-          <span className="flex shrink-0 size-10 items-center justify-center rounded-xl bg-surface2">
-            <Activity className="size-5 icon-accent" />
-          </span>
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center justify-between gap-2">
-              <span className="text-xs font-semibold">Recent</span>
-              <Link
-                href="/achievements"
-                className="text-[10px] font-semibold text-accent hover:underline shrink-0"
-              >
-                All
-              </Link>
-            </div>
-            <div className="mt-1 flex gap-1 overflow-hidden">
-              {recent.length === 0 ? (
-                <p className="text-[10px] text-faint truncate">
-                  Complete habits to unlock achievements.
-                </p>
-              ) : (
-                recent.slice(0, 3).map((def) => (
+        <Card className="p-4 h-[140px] flex flex-col">
+          <div className="flex items-center justify-between shrink-0 mb-2">
+            <h3 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-muted">
+              <Activity className="size-4 icon-accent" /> Recent
+            </h3>
+            <Link
+              href="/achievements"
+              className="text-[10px] font-semibold text-accent hover:underline shrink-0"
+            >
+              All
+            </Link>
+          </div>
+          <div className="flex-1 min-h-0">
+            {recent.length === 0 ? (
+              <p className="text-[10px] text-faint truncate">
+                Complete habits to unlock achievements.
+              </p>
+            ) : (
+              <div className="flex flex-wrap gap-2">
+                {recent.map((def) => (
                   <div key={def.id} title={`${def.name} · ${def.rarity}`}>
                     <AchievementBadge
                       def={def}
-                      size={28}
+                      size={36}
                       shine={def.rarity === "legendary"}
                     />
                   </div>
-                ))
-              )}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         </Card>
       ),
@@ -257,35 +252,32 @@ export default function DashboardPage() {
     },
     "weekly-trend": {
       content: (
-        <Card className="p-5 h-[180px]">
+        <Card className="p-5 h-[180px] flex flex-col">
           <div className="mb-2 flex items-center justify-between shrink-0">
             <h3 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-muted">
               <CalendarRange className="size-4 icon-accent" /> Weekly
             </h3>
             <span className="font-mono text-sm font-bold">{weekAvg}%</span>
           </div>
-          <div className="flex items-end justify-between gap-1.5 h-[calc(100%-32px)]">
+          <div className="flex-1 min-h-0 flex items-end justify-between gap-1.5">
             {weekData.map(({ date, rate }) => (
               <div
                 key={date.toISOString()}
-                className="flex flex-1 flex-col items-center gap-1 self-end"
+                className="flex flex-1 flex-col items-center gap-1 justify-end h-full"
               >
-                <div
-                  className="flex w-full items-end justify-center"
-                  style={{ height: "80%" }}
-                >
+                <div className="flex-1 w-full flex items-end justify-center" style={{ maxHeight: "85%" }}>
                   <div
-                    className="w-full max-w-5 rounded-t-md transition-[height] duration-500"
+                    className="w-full max-w-6 rounded-t-md transition-[height] duration-500"
                     style={{
-                      height: `${Math.max(rate, 4)}%`,
+                      height: `${Math.max(rate, 6)}%`,
                       background:
                         rate >= 100 ? "var(--color-done)" : "var(--c-accent)",
-                      opacity: rate === 0 ? 0.25 : 1,
+                      opacity: rate === 0 ? 0.3 : 1,
                     }}
                     title={`${rate}%`}
                   />
                 </div>
-                <span className="font-mono text-[9px] text-faint">
+                <span className="font-mono text-[10px] text-faint shrink-0">
                   {date.toLocaleDateString(undefined, { weekday: "narrow" })}
                 </span>
               </div>

@@ -1,10 +1,10 @@
 "use client";
 
 // Notes — searchable, taggable notes linked to dates, habits, and goals.
-// Simple box-style cards with consistent sizing. Long content scrolls internally.
+// Vertical scroll list with fixed-height cards — like a real notepad.
 
 import { useMemo, useState } from "react";
-import { Plus, Search, NotebookPen, Tag, CalendarDays, ListTodo, Target } from "lucide-react";
+import { Plus, Search, NotebookPen, Tag, CalendarDays, ListTodo, Target, ChevronLeft, ChevronRight } from "lucide-react";
 import type { Note } from "@/lib/types";
 import { addNote, updateNote, deleteNote, useAppData } from "@/lib/store";
 import { parseDateKey } from "@/lib/storage";
@@ -14,6 +14,69 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
 import { NoteEditor, type NoteDraft } from "@/components/notes/NoteEditor";
+
+function NoteCardContent({ note, habitName, goalTitle }: { note: Note; habitName: Map<string, string>; goalTitle: Map<string, string> }) {
+  const lines = note.body.split("\n").filter(Boolean);
+  const maxVisibleLines = 2;
+  const [expanded, setExpanded] = useState(false);
+  const showExpandToggle = lines.length > maxVisibleLines;
+
+  const visibleText = expanded ? note.body : lines.slice(0, maxVisibleLines).join("\n");
+
+  return (
+    <>
+      <div className="flex items-start justify-between gap-2 shrink-0 mb-1.5">
+        {note.links.date && (
+          <span className="flex items-center gap-1 text-[10px] text-faint">
+            <CalendarDays className="size-3" />
+            {parseDateKey(note.links.date).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+          </span>
+        )}
+      </div>
+      <div className="flex-1 min-h-0 overflow-y-auto">
+        <p className="whitespace-pre-wrap text-sm leading-relaxed">
+          {visibleText}
+          {!expanded && showExpandToggle && (
+            <button
+              onClick={(e) => { e.stopPropagation(); setExpanded(true); }}
+              className="ml-1 text-accent text-xs font-medium hover:underline"
+            >
+              ...more
+            </button>
+          )}
+        </p>
+      </div>
+      {expanded && showExpandToggle && (
+        <button
+          onClick={(e) => { e.stopPropagation(); setExpanded(false); }}
+          className="shrink-0 text-[10px] text-faint hover:text-muted mt-1"
+        >
+          Show less
+        </button>
+      )}
+      <div className="mt-auto flex flex-wrap items-center gap-1.5 text-[10px] text-faint border-t border-line/40 pt-2 shrink-0">
+        {note.links.habitId && habitName.has(note.links.habitId) && (
+          <span className="flex items-center gap-1 rounded-full bg-surface2/60 px-1.5 py-0.5">
+            <ListTodo className="size-2.5" />
+            {habitName.get(note.links.habitId)}
+          </span>
+        )}
+        {note.links.goalId && goalTitle.has(note.links.goalId) && (
+          <span className="flex items-center gap-1 rounded-full bg-surface2/60 px-1.5 py-0.5">
+            <Target className="size-2.5" />
+            {goalTitle.get(note.links.goalId)}
+          </span>
+        )}
+        {note.tags.map((t) => (
+          <span key={t} className="flex items-center gap-1 rounded-full bg-surface2/60 px-1.5 py-0.5">
+            <Tag className="size-2.5" />
+            {t}
+          </span>
+        ))}
+      </div>
+    </>
+  );
+}
 
 export default function NotesPage() {
   const data = useAppData();
@@ -39,6 +102,15 @@ export default function NotesPage() {
       .sort((a, b) => (a.updatedAt < b.updatedAt ? 1 : -1));
   }, [data.notes, query, tagFilter]);
 
+  // Pagination for the notes list
+  const NOTES_PER_PAGE = 8;
+  const [listPage, setListPage] = useState(0);
+  const pageCount = Math.ceil(filtered.length / NOTES_PER_PAGE);
+  // Clamp page when items are deleted from the last page
+  const safePage = Math.min(listPage, Math.max(0, pageCount - 1));
+  if (safePage !== listPage) setListPage(safePage);
+  const pageItems = filtered.slice(safePage * NOTES_PER_PAGE, (safePage + 1) * NOTES_PER_PAGE);
+
   function save(draft: NoteDraft) {
     if (editing) updateNote(editing.id, draft);
     else addNote(draft);
@@ -47,7 +119,7 @@ export default function NotesPage() {
   }
 
   return (
-    <div className="animate-fade-in">
+    <div className="animate-fade-in flex flex-col min-h-0 h-[calc(100vh-110px)]">
       <PageHeader
         title="Notes"
         subtitle={`${data.notes.length} note${data.notes.length === 1 ? "" : "s"}`}
@@ -70,8 +142,8 @@ export default function NotesPage() {
           }
         />
       ) : (
-        <>
-          <div className="mb-4 flex flex-col gap-3">
+        <div className="flex flex-col min-h-0 flex-1">
+          <div className="mb-4 flex flex-col gap-3 shrink-0">
             <div className="relative">
               <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-faint" />
               <input
@@ -83,61 +155,63 @@ export default function NotesPage() {
             </div>
             {allTags.length > 0 && (
               <div className="flex flex-wrap gap-1.5">
-                <TagChip label="All" active={tagFilter === null} onClick={() => setTagFilter(null)} />
+                <TagChip label="All" active={tagFilter === null} onClick={() => { setTagFilter(null); setListPage(0); }} />
                 {allTags.map((t) => (
-                  <TagChip key={t} label={t} active={tagFilter === t} onClick={() => setTagFilter(t)} />
+                  <TagChip key={t} label={t} active={tagFilter === t} onClick={() => { setTagFilter(t); setListPage(0); }} />
                 ))}
               </div>
             )}
           </div>
 
-          {/* Simple vertical scroll list of note cards */}
           {filtered.length === 0 ? (
             <Card className="p-10 text-center text-sm text-muted">No notes match your filters.</Card>
           ) : (
-            <div className="flex flex-col gap-3 max-h-[calc(100vh-280px)] overflow-y-auto pr-1">
-              {filtered.map((n) => (
-                <button
-                  key={n.id}
-                  onClick={() => setEditing(n)}
-                  className="w-full text-left rounded-2xl border border-line bg-surface p-3 transition-all hover:shadow-md hover:-translate-y-0.5 cursor-pointer shrink-0"
-                >
-                  <div className="flex items-start justify-between gap-2 shrink-0 mb-1.5">
-                    {n.links.date && (
-                      <span className="flex items-center gap-1 text-[10px] text-faint">
-                        <CalendarDays className="size-3" />
-                        {parseDateKey(n.links.date).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
-                      </span>
-                    )}
+            <div className="flex-1 min-h-0 flex flex-col">
+              {/* Vertical scroll list — like a real notepad */}
+              <div className="flex-1 min-h-0 overflow-y-auto pr-1 space-y-3">
+                {pageItems.map((n) => (
+                  <button
+                    key={n.id}
+                    onClick={() => setEditing(n)}
+                    className="w-full text-left rounded-2xl border border-line bg-surface p-3.5 transition-all hover:shadow-md hover:-translate-y-0.5 cursor-pointer flex flex-col h-[110px]"
+                  >
+                    <NoteCardContent note={n} habitName={habitName} goalTitle={goalTitle} />
+                  </button>
+                ))}
+              </div>
+
+              {/* Pagination */}
+              {pageCount > 1 && (
+                <div className="mt-4 flex items-center justify-between shrink-0">
+                  <span className="font-mono text-xs text-muted">
+                    {listPage * NOTES_PER_PAGE + 1}–{Math.min(filtered.length, (listPage + 1) * NOTES_PER_PAGE)} of {filtered.length}
+                  </span>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => setListPage((p) => Math.max(0, p - 1))}
+                      disabled={listPage === 0}
+                      className="flex size-8 items-center justify-center rounded-lg border border-line text-muted transition-colors hover:bg-surface2 hover:text-ink disabled:pointer-events-none disabled:opacity-40"
+                      aria-label="Previous page"
+                    >
+                      <ChevronLeft className="size-4" />
+                    </button>
+                    <span className="px-2 font-mono text-xs text-muted">
+                      {listPage + 1} / {pageCount}
+                    </span>
+                    <button
+                      onClick={() => setListPage((p) => Math.min(pageCount - 1, p + 1))}
+                      disabled={listPage >= pageCount - 1}
+                      className="flex size-8 items-center justify-center rounded-lg border border-line text-muted transition-colors hover:bg-surface2 hover:text-ink disabled:pointer-events-none disabled:opacity-40"
+                      aria-label="Next page"
+                    >
+                      <ChevronRight className="size-4" />
+                    </button>
                   </div>
-                  <div className="line-clamp-3">
-                    <p className="whitespace-pre-wrap text-sm leading-relaxed">{n.body}</p>
-                  </div>
-                  <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[10px] text-faint border-t border-line/40 pt-2 shrink-0">
-                    {n.links.habitId && habitName.has(n.links.habitId) && (
-                      <span className="flex items-center gap-1 rounded-full bg-surface2/60 px-1.5 py-0.5">
-                        <ListTodo className="size-2.5" />
-                        {habitName.get(n.links.habitId)}
-                      </span>
-                    )}
-                    {n.links.goalId && goalTitle.has(n.links.goalId) && (
-                      <span className="flex items-center gap-1 rounded-full bg-surface2/60 px-1.5 py-0.5">
-                        <Target className="size-2.5" />
-                        {goalTitle.get(n.links.goalId)}
-                      </span>
-                    )}
-                    {n.tags.map((t) => (
-                      <span key={t} className="flex items-center gap-1 rounded-full bg-surface2/60 px-1.5 py-0.5">
-                        <Tag className="size-2.5" />
-                        {t}
-                      </span>
-                    ))}
-                  </div>
-                </button>
-              ))}
+                </div>
+              )}
             </div>
           )}
-        </>
+        </div>
       )}
 
       <Modal

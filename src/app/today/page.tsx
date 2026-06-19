@@ -6,7 +6,7 @@
 
 import { useMemo, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Flame, NotebookPen, ListChecks, Clock, Sparkles } from "lucide-react";
+import { Plus, Flame, NotebookPen, ListChecks, Clock, Sparkles, Coins, RotateCcw, Snowflake } from "lucide-react";
 import { StreakFlame } from "@/components/habits/StreakFlame";
 import { AnimatedCounter } from "@/components/ui/AnimatedCounter";
 import { CATEGORIES, CATEGORY_COLORS, type Category } from "@/lib/categories";
@@ -98,14 +98,15 @@ export default function TodayPage() {
 
   const mark = (habitId: string, category: Category) => cycleMark(todayKey, habitId, category);
 
-  if (!hydrated) return <PageSkeleton />;
+  if (!hydrated) return <PageSkeleton />;          const alreadySpun = data.economy.lastSpinDate === todayKey;
+          const spinResult = data.economy.lastSpinResult;
 
   return (
-    <div className="animate-fade-in">
+    <div className="animate-fade-in flex flex-col min-h-0 h-[calc(100dvh-128px)] md:h-[calc(100dvh-72px)]">
       <CheckInPopup />
 
       {/* Hero */}
-      <Card className="mb-6 overflow-hidden">
+      <Card className="mb-4 shrink-0 overflow-hidden">
         <div className="relative flex items-center gap-5 p-5 sm:p-6">
           <div
             className="pointer-events-none absolute -right-10 -top-16 size-48 rounded-full opacity-20 blur-3xl"
@@ -139,11 +140,13 @@ export default function TodayPage() {
         </div>
       </Card>
 
-      <div className="grid gap-6 lg:grid-cols-5">
-        <div className="lg:col-span-3">
+      {/* Main content — fills remaining vertical space */}
+      <div className="flex-1 min-h-0 grid gap-4 lg:grid-cols-5">
+        {/* Left column — habits, fills all available space */}
+        <div className="lg:col-span-3 flex flex-col min-h-0 gap-3">
           {/* Up next */}
           {upcoming.length > 0 && (
-            <div className="mb-5">
+            <div className="shrink-0">
               <h2 className="mb-2 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-muted">
                 <Clock className="size-4" /> Up next
               </h2>
@@ -163,7 +166,8 @@ export default function TodayPage() {
             </div>
           )}
 
-          <div className="mb-3 flex items-center justify-between">
+          {/* Habits header */}
+          <div className="shrink-0 flex items-center justify-between">
             <h2 className="text-sm font-semibold uppercase tracking-wide text-muted">Today&apos;s habits</h2>
             {todaysHabits.length > 0 && (
               <Button variant="soft" size="sm" onClick={() => setShowAdd(true)}>
@@ -184,7 +188,7 @@ export default function TodayPage() {
               }
             />
           ) : (
-            <div className="flex flex-col gap-4 max-h-[calc(100vh-500px)] overflow-y-auto pr-1">
+            <div className="flex-1 min-h-0 overflow-y-auto pr-1 space-y-4">
               {grouped.map((group) => (
                 <div key={group.category}>
                   <div className="mb-2 flex items-center gap-2 px-1">
@@ -217,50 +221,77 @@ export default function TodayPage() {
                   </Card>
                 </div>
               ))}
-            </div>          )}
+            </div>
+          )}
+        </div>
 
-          {/* Daily Spin — always visible, below habits, aligned with them */}
-          <Card className="p-4">
+        {/* Engagement sidebar — quest, spin, note */}
+        <div className="lg:col-span-2 flex flex-col gap-4 min-h-0">
+          {/* Daily Quest */}
+          <DailyQuestCard />
+
+          {/* Daily Spin — always visible, shows claimed state after use */}
+          <Card className="p-4 shrink-0">
             <div className="flex items-center gap-4">
               <span className="grid size-12 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-amber-400/20 to-rose-400/20 text-2xl">
-                🎰
+                {alreadySpun && spinResult?.isFreeze ? "❄️" : alreadySpun ? "🪙" : "🎰"}
               </span>
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-semibold">Daily Spin</p>
                 <p className="text-xs text-muted">
-                  {data.economy.lastSpinDate === todayKey
-                    ? "Next spin available tomorrow at midnight"
+                  {alreadySpun
+                    ? "Come back tomorrow for your next spin!"
                     : "Spin the wheel for a chance to earn coins!"}
                 </p>
+                {alreadySpun && spinResult && (
+                  <div className="mt-1.5 flex flex-wrap items-center gap-2">
+                    <span className="inline-flex items-center gap-1 rounded-full bg-accent/10 px-2 py-0.5 text-[10px] font-semibold text-accent">
+                      {spinResult.isFreeze ? (
+                        <Snowflake className="size-3 text-sky-400" />
+                      ) : (
+                        <Coins className="size-3 text-amber-500" />
+                      )}
+                      {spinResult.label}
+                    </span>
+                    <span className="text-[10px] text-muted">
+                      <RotateCcw className="size-3 inline mr-0.5" />
+                      Resets at midnight
+                    </span>
+                  </div>
+                )}
+                {alreadySpun && !spinResult && (
+                  <div className="mt-1 flex items-center gap-2">
+                    <span className="inline-flex items-center gap-1 rounded-full bg-accent/10 px-2 py-0.5 text-[10px] font-semibold text-accent">
+                      <Coins className="size-3" /> Claimed
+                    </span>
+                    <span className="text-[10px] text-muted">
+                      <RotateCcw className="size-3 inline mr-0.5" />
+                      Resets at midnight
+                    </span>
+                  </div>
+                )}
               </div>
               <Button
                 onClick={() => setShowSpin(true)}
                 size="sm"
               >
                 <Sparkles className="size-3.5" aria-hidden />
-                {data.economy.lastSpinDate === todayKey ? "View" : "Spin"}
+                {alreadySpun ? "View" : "Spin"}
               </Button>
             </div>
           </Card>
-        </div>
 
-        {/* Engagement sidebar */}
-        <div className="lg:col-span-2 flex flex-col gap-4">
-          {/* Daily Quest */}
-          <DailyQuestCard />
-
-          {/* Note */}
-          <div>
-            <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-muted">
+          {/* Note — expands to fill remaining space */}
+          <div className="flex-1 min-h-0 flex flex-col">
+            <h2 className="mb-2 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-muted shrink-0">
               <NotebookPen className="size-4" /> Today&apos;s note
             </h2>
-            <Card className="p-1">
+            <Card className="flex-1 min-h-0 p-1">
               <textarea
                 value={dailyNote}
                 onChange={(e) => setDailyNote(todayKey, e.target.value)}
                 placeholder="How did today go? What got in the way?"
-                rows={6}
-                className="w-full resize-none rounded-xl bg-transparent px-3.5 py-3 text-sm outline-none placeholder:text-faint"
+                className="h-full min-h-[80px] w-full resize-none rounded-xl bg-transparent px-3.5 py-3 text-sm outline-none placeholder:text-faint"
               />
             </Card>
           </div>
