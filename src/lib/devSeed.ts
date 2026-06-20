@@ -66,13 +66,21 @@ export function makeDemoData(base: AppData, today: Date): AppData {
     createdAt: new Date(addDays(today, -45)).toISOString(),
     startDate: start,
     priority: "med",
-    recurrence: h.repeatDays.length === 0 ? { kind: "daily" } : { kind: "weekly", weekdays: h.repeatDays },
+    recurrence:
+      h.repeatDays.length === 0
+        ? { kind: "daily" }
+        : { kind: "weekly", weekdays: h.repeatDays },
   }));
   return { ...base, habits, marks: buildHistory(habits, today, 45) };
 }
 
 // Generate a large dataset to profile render/storage performance.
-export function makeStressData(base: AppData, today: Date, habitCount: number, days: number): AppData {
+export function makeStressData(
+  base: AppData,
+  today: Date,
+  habitCount: number,
+  days: number,
+): AppData {
   const habits: Habit[] = Array.from({ length: habitCount }, (_, i) => {
     const category = pick(CATEGORIES);
     return {
@@ -86,5 +94,9 @@ export function makeStressData(base: AppData, today: Date, habitCount: number, d
       recurrence: { kind: "daily" as const },
     };
   });
-  return { ...base, habits: [...base.habits, ...habits], marks: { ...base.marks, ...buildHistory(habits, today, days) } };
+  return {
+    ...base,
+    habits: [...base.habits, ...habits],
+    marks: { ...base.marks, ...buildHistory(habits, today, days) },
+  };
 }

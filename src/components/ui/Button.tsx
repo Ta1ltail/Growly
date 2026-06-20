@@ -1,13 +1,12 @@
 import type { ButtonHTMLAttributes, ReactNode } from "react";
-
-// One source of truth for button styling across the app. Use <Button> for
-// real buttons, or buttonClasses() to give a Next <Link> the same look.
+import { motion } from "motion/react";
+import { cn } from "@/lib/util";
 
 export type ButtonVariant = "primary" | "soft" | "outline" | "ghost" | "danger";
 export type ButtonSize = "sm" | "md" | "icon";
 
 const BASE =
-  "inline-flex items-center justify-center gap-1.5 rounded-xl font-semibold whitespace-nowrap transition-all active:scale-95 disabled:pointer-events-none disabled:opacity-50";
+  "inline-flex items-center justify-center gap-1.5 rounded-xl font-semibold whitespace-nowrap transition-all disabled:pointer-events-none disabled:opacity-50";
 
 const VARIANTS: Record<ButtonVariant, string> = {
   primary: "bg-accent text-white shadow-sm hover:brightness-110",
@@ -28,7 +27,7 @@ export function buttonClasses(
   size: ButtonSize = "md",
   className = "",
 ): string {
-  return `${BASE} ${VARIANTS[variant]} ${SIZES[size]} ${className}`;
+  return cn(BASE, VARIANTS[variant], SIZES[size], className);
 }
 
 export function Button({
@@ -44,8 +43,14 @@ export function Button({
   children: ReactNode;
 } & ButtonHTMLAttributes<HTMLButtonElement>) {
   return (
-    <button className={buttonClasses(variant, size, className)} {...props}>
-      {children}
-    </button>
+    <motion.div
+      whileTap={{ scale: 0.93 }}
+      transition={{ type: "spring", stiffness: 400, damping: 15 }}
+      className="contents"
+    >
+      <button className={buttonClasses(variant, size, className)} {...props}>
+        {children}
+      </button>
+    </motion.div>
   );
 }

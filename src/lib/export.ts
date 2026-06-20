@@ -1,11 +1,46 @@
 // Data export/import utilities: convert habit data to/from CSV and JSON.
 // Used by Settings for data portability.
 
+import { z } from "zod";
 import type { AppData } from "./types";
 import { dateKey } from "./storage";
 
 // CSV header for habit marks export.
 const CSV_HEADERS = ["Date", "Habit", "Category", "Status", "Scheduled"];
+
+// Zod schema for validating imported JSON data.
+// Mirrors the cleanup logic in storage.ts — rejects malformed records so a
+// bad import can never crash the app.
+const ImportSchema = z.strictObject({
+  version: z.number().optional(),
+  habits: z.array(
+    z.object({
+      id: z.string(),
+      name: z.string(),
+      category: z.string(),
+      repeatDays: z.array(z.number()),
+      createdAt: z.string(),
+      recurrence: z.unknown().optional(),
+      startDate: z.string().optional(),
+      timeOfDay: z.string().optional(),
+      priority: z.string().optional(),
+      archived: z.boolean().optional(),
+      reminder: z.unknown().optional(),
+    }),
+  ),
+  marks: z.record(
+    z.string(),
+    z.record(z.string(), z.enum(["done", "missed", "skipped"])),
+  ),
+  notes: z.array(z.unknown()).optional(),
+  goals: z.array(z.unknown()).optional(),
+  auditLog: z.array(z.unknown()).optional(),
+  settings: z.unknown().optional(),
+  profile: z.unknown().optional(),
+  unlocks: z.unknown().optional(),
+  economy: z.unknown().optional(),
+  progressSeen: z.unknown().optional(),
+});
 
 // Export habit marks as CSV text.
 // Rows: one per habit per day for the last `days` days.
@@ -24,13 +59,7 @@ export function exportMarksCSV(data: AppData, days = 90): string {
     for (const habit of active) {
       const status = dayMarks[habit.id];
       if (!status) continue;
-      rows.push([
-        key,
-        escapeCSV(habit.name),
-        habit.category,
-        status,
-        "yes",
-      ]);
+      rows.push([key, escapeCSV(habit.name), habit.category, status, "yes"]);
     }
   }
 
@@ -42,34 +71,26 @@ export function exportJSON(data: AppData): string {
   return JSON.stringify(data, null, 2);
 }
 
-// Import JSON data (validates structure).
-export function importJSON(text: string): { data: AppData | null; error: string | null } {
+// Import JSON data (validates structure with Zod).
+export function importJSON(text: string): {
+  data: AppData | null;
+  error: string | null;
+} {
   try {
     const parsed = JSON.parse(text);
-    if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
-      return { data: null, error: "Invalid format: root must be an object" };
+    const result = ImportSchema.safeParse(parsed);
+    if (!result.success) {
+      const issue = result.error.issues[0];
+      const path = issue.path.length > 0 ? ` at "${issue.path.join(".")}"` : "";
+      return { data: null, error: `${issue.message}${path}` };
     }
-    if (!Array.isArray(parsed.habits)) {
-      return { data: null, error: "Invalid format: missing habits array" };
-    }
-    if (typeof parsed.marks !== "object") {
-      return { data: null, error: "Invalid format: missing marks object" };
-    }
-    return { data: parsed as unknown as AppData, error: null };
+    return { data: result.data as unknown as AppData, error: null };
   } catch (e) {
-    return { data: null, error: e instanceof Error ? e.message : "Failed to parse JSON" };
+    return {
+      data: null,
+      error: e instanceof Error ? e.message : "Failed to parse JSON",
+    };
   }
-}
-
-// Export notes as plain text.
-export function exportNotesText(data: AppData): string {
-  const sorted = [...data.notes].sort((a, b) => a.createdAt.localeCompare(b.createdAt));
-  return sorted
-    .map((n) => {
-      const date = n.links.date ? `[${n.links.date}]` : `[${new Date(n.createdAt).toLocaleDateString()}]`;
-      return `${date} ${n.body}\n${n.tags.length > 0 ? `Tags: ${n.tags.join(", ")}` : ""}\n---`;
-    })
-    .join("\n\n");
 }
 
 function escapeCSV(val: string): string {

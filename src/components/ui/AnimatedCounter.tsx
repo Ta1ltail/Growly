@@ -52,7 +52,5 @@ export function AnimatedCounter({
     };
   }, [value, duration]);
 
-  return (
-    <span className={`tabular-nums ${className}`}>{display}</span>
-  );
+  return <span className={`tabular-nums ${className}`}>{display}</span>;
 }

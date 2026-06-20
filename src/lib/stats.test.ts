@@ -23,7 +23,10 @@ function habit(over: Partial<Habit> = {}): Habit {
 }
 
 // Build a marks map for a single habit from a {dateKey: status} object.
-function marksFor(id: string, days: Record<string, "done" | "missed" | "skipped">): Marks {
+function marksFor(
+  id: string,
+  days: Record<string, "done" | "missed" | "skipped">,
+): Marks {
   const m: Marks = {};
   for (const [k, status] of Object.entries(days)) m[k] = { [id]: status };
   return m;
@@ -52,7 +55,11 @@ describe("isScheduled", () => {
 
 describe("habitStreaks", () => {
   const id = "h1";
-  const h = habit({ id, repeatDays: [], createdAt: "2026-06-01T08:00:00.000Z" });
+  const h = habit({
+    id,
+    repeatDays: [],
+    createdAt: "2026-06-01T08:00:00.000Z",
+  });
   const today = D("2026-06-10");
 
   it("counts a simple unbroken current streak", () => {
@@ -103,7 +110,11 @@ describe("habitStreaks", () => {
 
   it("only counts scheduled weekdays", () => {
     // Mondays only. June 2026 Mondays: 1, 8.
-    const monOnly = habit({ id, repeatDays: [1], createdAt: "2026-06-01T08:00:00.000Z" });
+    const monOnly = habit({
+      id,
+      repeatDays: [1],
+      createdAt: "2026-06-01T08:00:00.000Z",
+    });
     const marks = marksFor(id, {
       "2026-06-01": "done",
       "2026-06-08": "done",
@@ -164,7 +175,11 @@ describe("habitStreaks", () => {
 
 describe("rangeCompletion", () => {
   const id = "h1";
-  const h = habit({ id, repeatDays: [], createdAt: "2026-06-08T08:00:00.000Z" });
+  const h = habit({
+    id,
+    repeatDays: [],
+    createdAt: "2026-06-08T08:00:00.000Z",
+  });
 
   it("computes scheduled/done/rate and ignores days before creation", () => {
     const marks = marksFor(id, {
@@ -180,7 +195,9 @@ describe("rangeCompletion", () => {
   });
 
   it("returns rate 0 with no scheduled habits", () => {
-    expect(rangeCompletion([], {}, D("2026-06-01"), D("2026-06-10")).rate).toBe(0);
+    expect(rangeCompletion([], {}, D("2026-06-01"), D("2026-06-10")).rate).toBe(
+      0,
+    );
   });
 });
 

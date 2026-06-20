@@ -26,13 +26,22 @@ export function TitlesModal({
   ) as Rank[];
 
   return (
-    <Modal open={open} onClose={onClose} title="Titles" subtitle="Earn them by leveling up" size="md">
+    <Modal
+      open={open}
+      onClose={onClose}
+      title="Titles"
+      subtitle="Earn them by leveling up"
+      size="md"
+    >
       <div className="flex flex-col gap-5">
         {ranks.map((rank) => {
           const style = RANK_STYLE[rank];
           return (
             <div key={rank}>
-              <h3 className="mb-2 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide" style={{ color: style.accent }}>
+              <h3
+                className="mb-2 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide"
+                style={{ color: style.accent }}
+              >
                 <span aria-hidden>{style.icon}</span> {rank}
               </h3>
               <ul className="flex flex-col gap-1.5">
@@ -51,13 +60,25 @@ export function TitlesModal({
                           earned ? "text-done" : "text-faint"
                         }`}
                       >
-                        {earned ? <Check className="size-4" strokeWidth={3} /> : <Lock className="size-3.5" />}
+                        {earned ? (
+                          <Check className="size-4" strokeWidth={3} />
+                        ) : (
+                          <Lock className="size-3.5" />
+                        )}
                       </span>
-                      <span className={`flex-1 ${earned ? "font-semibold" : "text-muted"}`}>
+                      <span
+                        className={`flex-1 ${earned ? "font-semibold" : "text-muted"}`}
+                      >
                         {t.name}
-                        {isCurrent && <span className="ml-2 text-[10px] font-bold uppercase text-accent">Current</span>}
+                        {isCurrent && (
+                          <span className="ml-2 text-[10px] font-bold uppercase text-accent">
+                            Current
+                          </span>
+                        )}
                       </span>
-                      <span className="shrink-0 font-mono text-xs text-faint">Lv {t.minLevel}</span>
+                      <span className="shrink-0 font-mono text-xs text-faint">
+                        Lv {t.minLevel}
+                      </span>
                     </li>
                   );
                 })}

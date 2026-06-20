@@ -26,7 +26,9 @@ export function UiControlsSection({ query }: { query: string }) {
                 type="button"
                 onClick={() => setTheme({ mode: m })}
                 className={`rounded-md px-2 py-1 text-xs font-medium capitalize transition-all ${
-                  mode === m ? "bg-accent text-white" : "text-muted hover:text-ink"
+                  mode === m
+                    ? "bg-accent text-white"
+                    : "text-muted hover:text-ink"
                 }`}
               >
                 {m}
@@ -46,7 +48,10 @@ export function UiControlsSection({ query }: { query: string }) {
                 className="size-6 rounded-full transition-transform hover:scale-110"
                 style={{
                   backgroundColor: a.color,
-                  boxShadow: accent === a.id ? `0 0 0 2px var(--c-surface), 0 0 0 4px ${a.color}` : undefined,
+                  boxShadow:
+                    accent === a.id
+                      ? `0 0 0 2px var(--c-surface), 0 0 0 4px ${a.color}`
+                      : undefined,
                 }}
               />
             ))}
@@ -55,17 +60,53 @@ export function UiControlsSection({ query }: { query: string }) {
       </DevGroup>
 
       <DevGroup title="Debug overlays">
-        <DevRow label="Layout grid overlay" hint="Pixel grid over the viewport." query={query} terms="ruler guides">
-          <DevToggle label="Layout grid overlay" checked={dev.showGridOverlay} onChange={(v) => setDev({ showGridOverlay: v })} />
+        <DevRow
+          label="Layout grid overlay"
+          hint="Pixel grid over the viewport."
+          query={query}
+          terms="ruler guides"
+        >
+          <DevToggle
+            label="Layout grid overlay"
+            checked={dev.showGridOverlay}
+            onChange={(v) => setDev({ showGridOverlay: v })}
+          />
         </DevRow>
-        <DevRow label="Outline components" hint="Outline every element to inspect boxes." query={query} terms="borders boxes">
-          <DevToggle label="Outline components" checked={dev.outlineComponents} onChange={(v) => setDev({ outlineComponents: v })} />
+        <DevRow
+          label="Outline components"
+          hint="Outline every element to inspect boxes."
+          query={query}
+          terms="borders boxes"
+        >
+          <DevToggle
+            label="Outline components"
+            checked={dev.outlineComponents}
+            onChange={(v) => setDev({ outlineComponents: v })}
+          />
         </DevRow>
-        <DevRow label="Force reduced motion" hint="Neutralize all animations/transitions." query={query} terms="animation disable">
-          <DevToggle label="Force reduced motion" checked={dev.forceReduceMotion} onChange={(v) => setDev({ forceReduceMotion: v })} />
+        <DevRow
+          label="Force reduced motion"
+          hint="Neutralize all animations/transitions."
+          query={query}
+          terms="animation disable"
+        >
+          <DevToggle
+            label="Force reduced motion"
+            checked={dev.forceReduceMotion}
+            onChange={(v) => setDev({ forceReduceMotion: v })}
+          />
         </DevRow>
-        <DevRow label="Hide ambient background" hint="Remove the drifting aurora blobs." query={query} terms="blobs aurora">
-          <DevToggle label="Hide ambient background" checked={dev.hideAmbient} onChange={(v) => setDev({ hideAmbient: v })} />
+        <DevRow
+          label="Hide ambient background"
+          hint="Remove the drifting aurora blobs."
+          query={query}
+          terms="blobs aurora"
+        >
+          <DevToggle
+            label="Hide ambient background"
+            checked={dev.hideAmbient}
+            onChange={(v) => setDev({ hideAmbient: v })}
+          />
         </DevRow>
       </DevGroup>
     </>

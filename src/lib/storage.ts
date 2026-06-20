@@ -22,7 +22,11 @@ import type {
   SpendEntry,
   Unlocks,
 } from "./types";
-import { DEFAULT_ECONOMY, DEFAULT_PROFILE, DEFAULT_PROGRESS_SEEN } from "./types";
+import {
+  DEFAULT_ECONOMY,
+  DEFAULT_PROFILE,
+  DEFAULT_PROGRESS_SEEN,
+} from "./types";
 import { CATEGORIES, type Category } from "./categories";
 import { ACCENTS, DEFAULT_THEME, type ThemeMode } from "./theme";
 
@@ -95,15 +99,18 @@ function asString(v: unknown): string | undefined {
 function intDays(v: unknown, min: number, max: number): number[] {
   if (!Array.isArray(v)) return [];
   return v.filter(
-    (d): d is number => typeof d === "number" && Number.isInteger(d) && d >= min && d <= max,
+    (d): d is number =>
+      typeof d === "number" && Number.isInteger(d) && d >= min && d <= max,
   );
 }
 
 function cleanRecurrence(v: unknown): Recurrence | undefined {
   if (!isObject(v)) return undefined;
   if (v.kind === "daily") return { kind: "daily" };
-  if (v.kind === "weekly") return { kind: "weekly", weekdays: intDays(v.weekdays, 0, 6) };
-  if (v.kind === "monthly") return { kind: "monthly", monthDays: intDays(v.monthDays, 1, 31) };
+  if (v.kind === "weekly")
+    return { kind: "weekly", weekdays: intDays(v.weekdays, 0, 6) };
+  if (v.kind === "monthly")
+    return { kind: "monthly", monthDays: intDays(v.monthDays, 1, 31) };
   return undefined;
 }
 
@@ -131,7 +138,10 @@ function cleanHabit(v: unknown, extraCategories?: Set<string>): Habit | null {
   if (startDate) habit.startDate = startDate;
   const timeOfDay = asString(v.timeOfDay);
   if (timeOfDay) habit.timeOfDay = timeOfDay;
-  if (typeof v.priority === "string" && PRIORITY_SET.has(v.priority as Priority)) {
+  if (
+    typeof v.priority === "string" &&
+    PRIORITY_SET.has(v.priority as Priority)
+  ) {
     habit.priority = v.priority as Priority;
   }
   if (typeof v.archived === "boolean") habit.archived = v.archived;
@@ -164,14 +174,17 @@ function cleanNote(v: unknown): Note | null {
   if (!isObject(v)) return null;
   const { id, createdAt, updatedAt, body } = v;
   if (typeof id !== "string" || typeof body !== "string") return null;
-  const created = typeof createdAt === "string" ? createdAt : new Date(0).toISOString();
+  const created =
+    typeof createdAt === "string" ? createdAt : new Date(0).toISOString();
   const links = isObject(v.links) ? v.links : {};
   return {
     id,
     createdAt: created,
     updatedAt: typeof updatedAt === "string" ? updatedAt : created,
     body,
-    tags: Array.isArray(v.tags) ? v.tags.filter((t): t is string => typeof t === "string") : [],
+    tags: Array.isArray(v.tags)
+      ? v.tags.filter((t): t is string => typeof t === "string")
+      : [],
     links: {
       ...(asString(links.date) ? { date: links.date as string } : {}),
       ...(asString(links.habitId) ? { habitId: links.habitId as string } : {}),
@@ -233,7 +246,9 @@ function cleanGoal(v: unknown): Goal | null {
   const deadline = asString(v.deadline);
   if (deadline) goal.deadline = deadline;
   if (Array.isArray(v.linkedHabitIds)) {
-    goal.linkedHabitIds = v.linkedHabitIds.filter((x): x is string => typeof x === "string");
+    goal.linkedHabitIds = v.linkedHabitIds.filter(
+      (x): x is string => typeof x === "string",
+    );
   }
   const milestones = cleanMilestones(v.milestones);
   if (milestones) goal.milestones = milestones;
@@ -244,7 +259,8 @@ function cleanAudit(v: unknown): AuditEntry | null {
   if (!isObject(v)) return null;
   const { id, at, action, summary } = v;
   if (typeof id !== "string" || typeof at !== "string") return null;
-  if (typeof action !== "string" || !AUDIT_ACTIONS.has(action as AuditAction)) return null;
+  if (typeof action !== "string" || !AUDIT_ACTIONS.has(action as AuditAction))
+    return null;
   if (typeof summary !== "string") return null;
   const entry: AuditEntry = { id, at, action: action as AuditAction, summary };
   const habitId = asString(v.habitId);
@@ -289,7 +305,8 @@ function cleanSpend(v: unknown): SpendEntry | null {
   if (!isObject(v)) return null;
   const { id, at, amount, item } = v;
   if (typeof id !== "string" || typeof at !== "string") return null;
-  if (typeof amount !== "number" || !Number.isFinite(amount) || amount < 0) return null;
+  if (typeof amount !== "number" || !Number.isFinite(amount) || amount < 0)
+    return null;
   if (typeof item !== "string") return null;
   return { id, at, amount, item };
 }
@@ -307,20 +324,39 @@ function cleanProgressSeen(v: unknown): ProgressSeen {
   const streaks: Record<string, number> = {};
   if (isObject(v.streaks)) {
     for (const [habitId, tier] of Object.entries(v.streaks)) {
-      if (typeof tier === "number" && Number.isFinite(tier)) streaks[habitId] = tier;
+      if (typeof tier === "number" && Number.isFinite(tier))
+        streaks[habitId] = tier;
     }
   }
   return {
     seeded: v.seeded === true,
-    level: typeof v.level === "number" && Number.isFinite(v.level) ? v.level : DEFAULT_PROGRESS_SEEN.level,
+    level:
+      typeof v.level === "number" && Number.isFinite(v.level)
+        ? v.level
+        : DEFAULT_PROGRESS_SEEN.level,
     title: asString(v.title) ?? DEFAULT_PROGRESS_SEEN.title,
-    shop: Array.isArray(v.shop) ? v.shop.filter((x): x is string => typeof x === "string") : [],
+    shop: Array.isArray(v.shop)
+      ? v.shop.filter((x): x is string => typeof x === "string")
+      : [],
     streaks,
   };
 }
 
 function cleanEconomyV5(v: unknown): Economy {
-  if (!isObject(v)) return { spent: [], owned: [], equipped: {}, freezes: [], bonusCoins: 0, lastCheckIn: null, checkInStreak: 0, lastQuestDate: null, currentQuest: null, lastSpinDate: null, lastSpinResult: null };
+  if (!isObject(v))
+    return {
+      spent: [],
+      owned: [],
+      equipped: {},
+      freezes: [],
+      bonusCoins: 0,
+      lastCheckIn: null,
+      checkInStreak: 0,
+      lastQuestDate: null,
+      currentQuest: null,
+      lastSpinDate: null,
+      lastSpinResult: null,
+    };
   const spent = Array.isArray(v.spent)
     ? v.spent.map(cleanSpend).filter((s): s is SpendEntry => s !== null)
     : [];
@@ -339,25 +375,37 @@ function cleanEconomyV5(v: unknown): Economy {
     }
   }
   // Engagement features (schema v6)
-  const bonusCoins = typeof v.bonusCoins === "number" && Number.isFinite(v.bonusCoins) && v.bonusCoins >= 0
-    ? v.bonusCoins
-    : 0;
+  const bonusCoins =
+    typeof v.bonusCoins === "number" &&
+    Number.isFinite(v.bonusCoins) &&
+    v.bonusCoins >= 0
+      ? v.bonusCoins
+      : 0;
   const lastCheckIn = asString(v.lastCheckIn) ?? null;
-  const checkInStreak = typeof v.checkInStreak === "number" && Number.isFinite(v.checkInStreak) && v.checkInStreak >= 0
-    ? Math.floor(v.checkInStreak)
-    : 0;
+  const checkInStreak =
+    typeof v.checkInStreak === "number" &&
+    Number.isFinite(v.checkInStreak) &&
+    v.checkInStreak >= 0
+      ? Math.floor(v.checkInStreak)
+      : 0;
   const lastQuestDate = asString(v.lastQuestDate) ?? null;
   const lastSpinDate = asString(v.lastSpinDate) ?? null;
-  
+
   // Clean currentQuest
   let currentQuest = null;
   if (isObject(v.currentQuest)) {
     const cq = v.currentQuest as Record<string, unknown>;
     if (
       typeof cq.description === "string" &&
-      typeof cq.target === "number" && Number.isFinite(cq.target) && cq.target > 0 &&
-      typeof cq.current === "number" && Number.isFinite(cq.current) && cq.current >= 0 &&
-      typeof cq.reward === "number" && Number.isFinite(cq.reward) && cq.reward >= 0
+      typeof cq.target === "number" &&
+      Number.isFinite(cq.target) &&
+      cq.target > 0 &&
+      typeof cq.current === "number" &&
+      Number.isFinite(cq.current) &&
+      cq.current >= 0 &&
+      typeof cq.reward === "number" &&
+      Number.isFinite(cq.reward) &&
+      cq.reward >= 0
     ) {
       currentQuest = {
         description: cq.description,
@@ -365,11 +413,24 @@ function cleanEconomyV5(v: unknown): Economy {
         current: Math.min(Math.floor(cq.current), Math.floor(cq.target)),
         reward: Math.floor(cq.reward),
       };
-      if (typeof cq.category === "string") (currentQuest as { category?: string }).category = cq.category;
+      if (typeof cq.category === "string")
+        (currentQuest as { category?: string }).category = cq.category;
     }
   }
-  
-  return { spent, owned, equipped, freezes, bonusCoins, lastCheckIn, checkInStreak, lastQuestDate, currentQuest, lastSpinDate, lastSpinResult: null };
+
+  return {
+    spent,
+    owned,
+    equipped,
+    freezes,
+    bonusCoins,
+    lastCheckIn,
+    checkInStreak,
+    lastQuestDate,
+    currentQuest,
+    lastSpinDate,
+    lastSpinResult: null,
+  };
 }
 
 export function loadData(): AppData {
@@ -383,41 +444,56 @@ export function loadData(): AppData {
     // Extract custom categories from settings first so cleanHabit can accept them
     const settingsRaw = isObject(parsed.settings) ? parsed.settings : {};
     const customCategories = Array.isArray(settingsRaw.customCategories)
-      ? settingsRaw.customCategories.filter((x): x is string => typeof x === "string")
+      ? settingsRaw.customCategories.filter(
+          (x): x is string => typeof x === "string",
+        )
       : undefined;
-    const extraCats = customCategories && customCategories.length > 0
-      ? new Set(customCategories)
-      : undefined;
+    const extraCats =
+      customCategories && customCategories.length > 0
+        ? new Set(customCategories)
+        : undefined;
 
     const habits = Array.isArray(parsed.habits)
-      ? parsed.habits.map((h) => cleanHabit(h, extraCats)).filter((h): h is Habit => h !== null)
+      ? parsed.habits
+          .map((h) => cleanHabit(h, extraCats))
+          .filter((h): h is Habit => h !== null)
       : [];
     const goals = Array.isArray(parsed.goals)
       ? parsed.goals.map(cleanGoal).filter((g): g is Goal => g !== null)
       : [];
     const auditLog = Array.isArray(parsed.auditLog)
-      ? parsed.auditLog.map(cleanAudit).filter((a): a is AuditEntry => a !== null)
+      ? parsed.auditLog
+          .map(cleanAudit)
+          .filter((a): a is AuditEntry => a !== null)
       : [];
 
-    const themeRaw = isObject(parsed.settings) && isObject(parsed.settings.theme)
-      ? parsed.settings.theme
-      : {};
-    const mode = typeof themeRaw.mode === "string" && MODE_SET.has(themeRaw.mode as ThemeMode)
-      ? (themeRaw.mode as ThemeMode)
-      : DEFAULT_THEME.mode;
-    const accent = typeof themeRaw.accent === "string" && ACCENT_SET.has(themeRaw.accent)
-      ? themeRaw.accent
-      : DEFAULT_THEME.accent;
+    const themeRaw =
+      isObject(parsed.settings) && isObject(parsed.settings.theme)
+        ? parsed.settings.theme
+        : {};
+    const mode =
+      typeof themeRaw.mode === "string" &&
+      MODE_SET.has(themeRaw.mode as ThemeMode)
+        ? (themeRaw.mode as ThemeMode)
+        : DEFAULT_THEME.mode;
+    const accent =
+      typeof themeRaw.accent === "string" && ACCENT_SET.has(themeRaw.accent)
+        ? themeRaw.accent
+        : DEFAULT_THEME.accent;
 
     const graceHours =
       typeof settingsRaw.graceHours === "number" && settingsRaw.graceHours >= 0
         ? settingsRaw.graceHours
         : DEFAULT_GRACE_HOURS;
     const usedTemplateIds = Array.isArray(settingsRaw.usedTemplateIds)
-      ? settingsRaw.usedTemplateIds.filter((x): x is string => typeof x === "string")
+      ? settingsRaw.usedTemplateIds.filter(
+          (x): x is string => typeof x === "string",
+        )
       : [];
     const widgetOrder = Array.isArray(settingsRaw.widgetOrder)
-      ? settingsRaw.widgetOrder.filter((x): x is string => typeof x === "string")
+      ? settingsRaw.widgetOrder.filter(
+          (x): x is string => typeof x === "string",
+        )
       : undefined;
     const onboardingComplete =
       typeof settingsRaw.onboardingComplete === "boolean"
@@ -431,7 +507,14 @@ export function loadData(): AppData {
       notes: cleanNotes(parsed.notes),
       goals,
       auditLog,
-      settings: { theme: { mode, accent }, graceHours, usedTemplateIds, widgetOrder, onboardingComplete, customCategories },
+      settings: {
+        theme: { mode, accent },
+        graceHours,
+        usedTemplateIds,
+        widgetOrder,
+        onboardingComplete,
+        customCategories,
+      },
       profile: cleanProfile(parsed.profile),
       unlocks: cleanUnlocks(parsed.unlocks),
       economy: cleanEconomyV5(parsed.economy),

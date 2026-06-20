@@ -8,9 +8,18 @@ import { CATEGORIES, CATEGORY_COLORS, type Category } from "./categories";
 // Generate a color for a custom category based on its index.
 export function customCategoryColor(index: number): string {
   const palette = [
-    "#f472b6", "#a78bfa", "#60a5fa", "#34d399",
-    "#fbbf24", "#fb923c", "#f87171", "#e879f9",
-    "#22d3ee", "#a3e635", "#fde047", "#c084fc",
+    "#f472b6",
+    "#a78bfa",
+    "#60a5fa",
+    "#34d399",
+    "#fbbf24",
+    "#fb923c",
+    "#f87171",
+    "#e879f9",
+    "#22d3ee",
+    "#a3e635",
+    "#fde047",
+    "#c084fc",
   ];
   return palette[index % palette.length];
 }

@@ -34,5 +34,7 @@ export function accentById(id: string): Accent {
 export function resolveMode(mode: ThemeMode): "light" | "dark" {
   if (mode !== "system") return mode;
   if (typeof window === "undefined") return "dark";
-  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  return window.matchMedia("(prefers-color-scheme: dark)").matches
+    ? "dark"
+    : "light";
 }

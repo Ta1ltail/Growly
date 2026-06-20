@@ -17,7 +17,12 @@ export const CoinChip = memo(function CoinChip({
   animate?: boolean;
   className?: string;
 }) {
-  const pad = size === "lg" ? "px-3.5 py-2 text-base" : size === "sm" ? "px-2 py-0.5 text-xs" : "px-2.5 py-1 text-sm";
+  const pad =
+    size === "lg"
+      ? "px-3.5 py-2 text-base"
+      : size === "sm"
+        ? "px-2 py-0.5 text-xs"
+        : "px-2.5 py-1 text-sm";
   const icon = size === "lg" ? "size-5" : size === "sm" ? "size-3.5" : "size-4";
 
   return (

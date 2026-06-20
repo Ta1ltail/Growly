@@ -33,7 +33,8 @@ export function isScheduled(habit: Habit, date: Date): boolean {
     case "weekly":
       return rec.weekdays.length === 0 || rec.weekdays.includes(date.getDay());
     case "monthly":
-      if (rec.monthDays.length === 0) return date.getDate() === habitStartDay(habit).getDate();
+      if (rec.monthDays.length === 0)
+        return date.getDate() === habitStartDay(habit).getDate();
       return rec.monthDays.includes(date.getDate());
   }
 }
@@ -140,11 +141,17 @@ export function rangeCompletion(
 }
 
 // Completion rate for a single day (0–100) across scheduled habits.
-export function dayCompletion(habits: Habit[], marks: Marks, date: Date): number {
+export function dayCompletion(
+  habits: Habit[],
+  marks: Marks,
+  date: Date,
+): number {
   const scheduled = habits.filter((h) => isScheduled(h, date));
   if (scheduled.length === 0) return 0;
   const key = dateKey(date);
-  const done = scheduled.filter((h) => markFor(marks, key, h.id) === "done").length;
+  const done = scheduled.filter(
+    (h) => markFor(marks, key, h.id) === "done",
+  ).length;
   return Math.round((done / scheduled.length) * 100);
 }
 
@@ -188,7 +195,12 @@ export function lastNDaysCompletion(
 
 // A 0–100 "consistency" score over a range: completion rate weighted so that
 // recent days count a little more (keeps the score responsive).
-export function consistencyScore(habits: Habit[], marks: Marks, today: Date, days: number): number {
+export function consistencyScore(
+  habits: Habit[],
+  marks: Marks,
+  today: Date,
+  days: number,
+): number {
   let weighted = 0;
   let weight = 0;
   for (let i = 0; i < days; i++) {
@@ -235,7 +247,8 @@ export function mostMissedHabit(
   let worst: { habit: Habit; missed: number } | null = null;
   for (const h of habits) {
     const { missed } = rangeCompletion([h], marks, from, to);
-    if (missed > 0 && (!worst || missed > worst.missed)) worst = { habit: h, missed };
+    if (missed > 0 && (!worst || missed > worst.missed))
+      worst = { habit: h, missed };
   }
   return worst;
 }
@@ -247,7 +260,13 @@ export function habitCorrelations(
   habits: Habit[],
   marks: Marks,
   minSamples = 5,
-): { habitA: Habit; habitB: Habit; bothDone: number; totalShared: number; strength: number }[] {
+): {
+  habitA: Habit;
+  habitB: Habit;
+  bothDone: number;
+  totalShared: number;
+  strength: number;
+}[] {
   const active = habits.filter((h) => !h.archived);
   if (active.length < 2) return [];
 
@@ -274,7 +293,13 @@ export function habitCorrelations(
     return d;
   }
 
-  const pairs: { habitA: Habit; habitB: Habit; bothDone: number; totalShared: number; strength: number }[] = [];
+  const pairs: {
+    habitA: Habit;
+    habitB: Habit;
+    bothDone: number;
+    totalShared: number;
+    strength: number;
+  }[] = [];
 
   for (let i = 0; i < active.length; i++) {
     for (let j = i + 1; j < active.length; j++) {

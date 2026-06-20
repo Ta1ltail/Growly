@@ -12,7 +12,9 @@ export const ProgressBar = memo(function ProgressBar({
   className?: string;
 }) {
   return (
-    <div className={`h-2 w-full overflow-hidden rounded-full bg-empty ${className}`}>
+    <div
+      className={`h-2 w-full overflow-hidden rounded-full bg-empty ${className}`}
+    >
       <div
         className="h-full rounded-full transition-[width] duration-500 ease-out"
         style={{

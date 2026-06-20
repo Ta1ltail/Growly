@@ -1,0 +1,37 @@
+project_101 — Habit Tracker (Optimized)
+
+Stack: Next.js 16.2.9 + TypeScript + Tailwind v4 + motion (v12) + sonner + zod (v4)
+Tests: 81/81 vitest | Gates: tsc 0 errors
+Storage: localStorage (schema v6) via useSyncExternalStore
+
+Core features:
+- Today page: daily habit marking (done/missed/skipped), check-in, quests, spin
+- Tracker grid: spreadsheet-style habits×dates view (7/14/30 day windows)
+- Calendar: month/week views with completion shading and day detail panel
+- Manage Habits: CRUD + archive/duplicate + search/filter + pagination
+- Stats: trends chart, streaks, categories, insights, prediction engine
+- Goals: targets with milestones, deadlines, progress bars
+- Notes: journal with tags, date/habit/goal linking
+- Templates: 8 starter routines with one-tap apply
+
+Gamification (all derived from mark history):
+- XP + levels (super-linear curve), 28 achievements (5 cats × 4 rarities)
+- 20 titles across 5 ranks, tiered streak flames
+- Coins (2/completion, 10/perfect-day), shop with cosmetics + streak-freeze
+- Engagement: daily check-in, quests, spin wheel
+
+UI/UX:
+- Page transitions (AnimatePresence fade+slide)
+- Micro-interactions (Card whileHover, Button whileTap springs)
+- Stagger list animations (StaggerContainer motion variants)
+- cn() utility (clsx + tailwind-merge), sonner toasts, Zod-validated import
+- PWA offline-first via service worker
+- 44px touch targets, keyboard shortcuts, undo/redo
+- Developer Mode (Ctrl+Shift+D): data tools, debug overlays
+
+Key files: src/lib/store.ts (all actions), src/lib/util.ts (cn/uid/TONE),
+src/lib/export.ts (Zod-validated import), src/components/ui/StaggerContainer.tsx
+
+Unfinished: community features, cloud sync (Supabase), payments, launch
+
+Dev: npm run dev | Build: npm run build | Bundle: ANALYZE=true npm run build

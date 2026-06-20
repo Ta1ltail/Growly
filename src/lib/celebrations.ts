@@ -20,7 +20,12 @@ import { RARITY_COINS, SHOP_ITEMS, frozenSet } from "./economy";
 import { habitStreaks } from "./stats";
 import { summarizeProgress } from "./progress";
 
-export type CelebrationKind = "achievement" | "levelup" | "title" | "shop" | "streak";
+export type CelebrationKind =
+  | "achievement"
+  | "levelup"
+  | "title"
+  | "shop"
+  | "streak";
 
 // Per-habit streak milestones that earn a celebration. Includes the same
 // thresholds as streak achievements so progression always feels recognized.
@@ -184,7 +189,10 @@ export function progressEvents(data: AppData, today: Date): CelebrationEvent[] {
 
 // The full ordered queue: achievements (by rarity) first, then level, title,
 // shop, streaks (the order progressEvents emits them).
-export function buildCelebrationQueue(data: AppData, today: Date): CelebrationEvent[] {
+export function buildCelebrationQueue(
+  data: AppData,
+  today: Date,
+): CelebrationEvent[] {
   return [...achievementEvents(data), ...progressEvents(data, today)];
 }
 

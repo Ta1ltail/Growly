@@ -6,7 +6,7 @@
 // Each date shows a circular fill progress indicator with dynamic color progression
 // instead of numeric-only indicators.
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, memo } from "react";
 import {
   ChevronLeft,
   ChevronRight,
@@ -51,7 +51,7 @@ function progressColor(rate: number): string {
   return "#22c55e"; // completed/high - done green
 }
 
-function CircularProgress({
+const CircularProgress = memo(function CircularProgress({
   rate,
   size = 32,
 }: {
@@ -111,7 +111,7 @@ function CircularProgress({
       </span>
     </div>
   );
-}
+});
 
 function shade(rate: number): string {
   if (rate === 0) return "";
@@ -236,7 +236,8 @@ export default function CalendarPage() {
               </div>
               <div className="grid grid-cols-7 gap-1.5 auto-rows-fr flex-1">
                 {(view === "month" ? monthCells : weekCells).map((d, i) => {
-                  if (!d) return <div key={`b-${i}`} className="min-h-[60px]" />;
+                  if (!d)
+                    return <div key={`b-${i}`} className="min-h-[60px]" />;
                   const rate = dayCompletion(active, data.marks, d);
                   const isToday = dateKey(d) === dateKey(today);
                   const isSelected = dateKey(d) === selectedKey;

@@ -9,7 +9,15 @@
 // Honest Tracking model: you can spend what the record proves you earned, and
 // nothing more.
 
-import type { CosmeticSlot, DailyQuest, Economy, FreezeEntry, Marks, MarkStatus, Rarity } from "./types";
+import type {
+  CosmeticSlot,
+  DailyQuest,
+  Economy,
+  FreezeEntry,
+  Marks,
+  MarkStatus,
+  Rarity,
+} from "./types";
 import type { GameStats } from "./achievements";
 import { dateKey, addDays, startOfDay } from "./storage";
 import type { Category } from "./categories";
@@ -24,7 +32,7 @@ export const COINS_PER_PERFECT_DAY = 10;
 // Level-up bonus: coins granted each time the user levels up.
 export const LEVEL_UP_COINS = [
   0, // level 1 (starting, no bonus)
-  5,  // level 2
+  5, // level 2
   10, // level 3
   15, // level 4
   25, // level 5
@@ -37,7 +45,7 @@ export const LEVEL_UP_COINS = [
 // For levels beyond 10: 100 + (level - 10) * 25
 export function levelUpBonus(level: number): number {
   if (level <= 1) return 0;
-  if (level < LEVEL_UP_COINS.length) return LEVEL_UP_COINS[level];
+  if (level <= LEVEL_UP_COINS.length) return LEVEL_UP_COINS[level - 1];
   return 100 + (level - 10) * 25;
 }
 
@@ -107,14 +115,19 @@ export function randomSpinReward(): SpinReward {
 
 // Generate a random daily quest based on the user's habits. Expects unarchived
 // habits — the caller (store.refreshDailyQuest) passes the full list from AppData.
-export function generateDailyQuest(habits: { id: string; category: Category; archived?: boolean }[]): DailyQuest | null {
+export function generateDailyQuest(
+  habits: { id: string; category: Category; archived?: boolean }[],
+): DailyQuest | null {
   const active = habits.filter((h) => !h.archived);
   if (active.length === 0) return null;
 
   const questTypes = [
     () => {
       // Complete X habits today
-      const count = Math.max(3, Math.min(active.length, Math.floor(active.length * 0.6) + 1));
+      const count = Math.max(
+        3,
+        Math.min(active.length, Math.floor(active.length * 0.6) + 1),
+      );
       return {
         description: `Complete ${count} habits today`,
         target: count,
@@ -135,7 +148,10 @@ export function generateDailyQuest(habits: { id: string; category: Category; arc
       if (categories.length === 0) return null;
       const cat = categories[Math.floor(Math.random() * categories.length)];
       const catHabits = active.filter((h) => h.category === cat);
-      const count = Math.max(1, Math.min(catHabits.length, Math.ceil(catHabits.length / 2)));
+      const count = Math.max(
+        1,
+        Math.min(catHabits.length, Math.ceil(catHabits.length / 2)),
+      );
       return {
         description: `Complete ${count} ${cat} habits`,
         target: count,
@@ -163,10 +179,17 @@ export const RARITY_COINS: Record<Rarity, number> = {
 
 // Total lifetime coins EARNED from history-derived stats + unlocked
 // achievements + engagement bonuses. Pure history-derived base + stored bonuses.
-export function coinsEarned(stats: GameStats, unlockedRarities: Rarity[], economy?: Economy): number {
+export function coinsEarned(
+  stats: GameStats,
+  unlockedRarities: Rarity[],
+  economy?: Economy,
+): number {
   const base = stats.doneCount * COINS_PER_COMPLETION;
   const perfect = stats.perfectDays * COINS_PER_PERFECT_DAY;
-  const fromAchievements = unlockedRarities.reduce((sum, r) => sum + RARITY_COINS[r], 0);
+  const fromAchievements = unlockedRarities.reduce(
+    (sum, r) => sum + RARITY_COINS[r],
+    0,
+  );
   const fromBonuses = economy?.bonusCoins ?? 0;
   return base + perfect + fromAchievements + fromBonuses;
 }
@@ -201,9 +224,13 @@ export function coinBreakdown(
 ): CoinBreakdown {
   const fromCompletions = stats.doneCount * COINS_PER_COMPLETION;
   const fromPerfectDays = stats.perfectDays * COINS_PER_PERFECT_DAY;
-  const fromAchievements = unlockedRarities.reduce((sum, r) => sum + RARITY_COINS[r], 0);
+  const fromAchievements = unlockedRarities.reduce(
+    (sum, r) => sum + RARITY_COINS[r],
+    0,
+  );
   const fromBonuses = economy.bonusCoins ?? 0;
-  const earned = fromCompletions + fromPerfectDays + fromAchievements + fromBonuses;
+  const earned =
+    fromCompletions + fromPerfectDays + fromAchievements + fromBonuses;
   const spent = coinsSpent(economy);
   return {
     completions: stats.doneCount,
@@ -231,7 +258,10 @@ export interface ShopItem {
 }
 
 // Cosmetic flame color ramps keyed by item id (consumed by StreakFlame).
-export const FLAME_SKINS: Record<string, { small: string; medium: string; large: string }> = {
+export const FLAME_SKINS: Record<
+  string,
+  { small: string; medium: string; large: string }
+> = {
   // Default ships free and is always "owned" implicitly.
   "flame-default": { small: "#fb923c", medium: "#f97316", large: "#ef4444" },
   "flame-azure": { small: "#38bdf8", medium: "#3b82f6", large: "#6366f1" },
@@ -270,34 +300,191 @@ export const ACCENT_SKINS: Record<string, { accent: string; glow: string }> = {
 
 export const SHOP_ITEMS: ShopItem[] = [
   // ---- Flame skins ----
-  { id: "flame-azure", name: "Azure Flame", description: "A cool blue streak flame.", slot: "flame", price: 120, preview: "#3b82f6" },
-  { id: "flame-emerald", name: "Emerald Flame", description: "A verdant green streak flame.", slot: "flame", price: 120, preview: "#10b981" },
-  { id: "flame-violet", name: "Violet Flame", description: "A mystic purple streak flame.", slot: "flame", price: 200, preview: "#a855f7" },
-  { id: "flame-gold", name: "Golden Flame", description: "A radiant gold flame for the dedicated.", slot: "flame", price: 400, minLevel: 10, preview: "#facc15" },
-  { id: "flame-ice", name: "Ice Flame", description: "A frosty blue-cyan streak flame.", slot: "flame", price: 180, preview: "#5eead4" },
-  { id: "flame-lava", name: "Lava Flame", description: "A blazing red-hot streak flame.", slot: "flame", price: 250, minLevel: 6, preview: "#f87171" },
-  { id: "flame-rainbow", name: "Rainbow Flame", description: "A prismatic, color-shifting flame.", slot: "flame", price: 500, minLevel: 15, preview: "#a78bfa" },
-  { id: "flame-solar", name: "Solar Flame", description: "A brilliant golden-white streak flame.", slot: "flame", price: 350, minLevel: 12, preview: "#fbbf24" },
+  {
+    id: "flame-azure",
+    name: "Azure Flame",
+    description: "A cool blue streak flame.",
+    slot: "flame",
+    price: 120,
+    preview: "#3b82f6",
+  },
+  {
+    id: "flame-emerald",
+    name: "Emerald Flame",
+    description: "A verdant green streak flame.",
+    slot: "flame",
+    price: 120,
+    preview: "#10b981",
+  },
+  {
+    id: "flame-violet",
+    name: "Violet Flame",
+    description: "A mystic purple streak flame.",
+    slot: "flame",
+    price: 200,
+    preview: "#a855f7",
+  },
+  {
+    id: "flame-gold",
+    name: "Golden Flame",
+    description: "A radiant gold flame for the dedicated.",
+    slot: "flame",
+    price: 400,
+    minLevel: 10,
+    preview: "#facc15",
+  },
+  {
+    id: "flame-ice",
+    name: "Ice Flame",
+    description: "A frosty blue-cyan streak flame.",
+    slot: "flame",
+    price: 180,
+    preview: "#5eead4",
+  },
+  {
+    id: "flame-lava",
+    name: "Lava Flame",
+    description: "A blazing red-hot streak flame.",
+    slot: "flame",
+    price: 250,
+    minLevel: 6,
+    preview: "#f87171",
+  },
+  {
+    id: "flame-rainbow",
+    name: "Rainbow Flame",
+    description: "A prismatic, color-shifting flame.",
+    slot: "flame",
+    price: 500,
+    minLevel: 15,
+    preview: "#a78bfa",
+  },
+  {
+    id: "flame-solar",
+    name: "Solar Flame",
+    description: "A brilliant golden-white streak flame.",
+    slot: "flame",
+    price: 350,
+    minLevel: 12,
+    preview: "#fbbf24",
+  },
   // ---- Confetti palettes ----
-  { id: "confetti-mono", name: "Monochrome Confetti", description: "Clean, minimal celebration.", slot: "confetti", price: 100, preview: "#cbd5e1" },
-  { id: "confetti-neon", name: "Neon Confetti", description: "Loud, electric celebration.", slot: "confetti", price: 150, preview: "#22d3ee" },
-  { id: "confetti-fire", name: "Firework Confetti", description: "Warm sparks on every unlock.", slot: "confetti", price: 250, minLevel: 5, preview: "#fb923c" },
-  { id: "confetti-pastel", name: "Pastel Confetti", description: "Soft, dreamy celebration colors.", slot: "confetti", price: 120, preview: "#fbcfe8" },
-  { id: "confetti-gold", name: "Gold Confetti", description: "Luxurious golden shower.", slot: "confetti", price: 300, minLevel: 8, preview: "#fde047" },
-  { id: "confetti-ocean", name: "Ocean Confetti", description: "Deep blue-teal celebration.", slot: "confetti", price: 200, preview: "#22d3ee" },
+  {
+    id: "confetti-mono",
+    name: "Monochrome Confetti",
+    description: "Clean, minimal celebration.",
+    slot: "confetti",
+    price: 100,
+    preview: "#cbd5e1",
+  },
+  {
+    id: "confetti-neon",
+    name: "Neon Confetti",
+    description: "Loud, electric celebration.",
+    slot: "confetti",
+    price: 150,
+    preview: "#22d3ee",
+  },
+  {
+    id: "confetti-fire",
+    name: "Firework Confetti",
+    description: "Warm sparks on every unlock.",
+    slot: "confetti",
+    price: 250,
+    minLevel: 5,
+    preview: "#fb923c",
+  },
+  {
+    id: "confetti-pastel",
+    name: "Pastel Confetti",
+    description: "Soft, dreamy celebration colors.",
+    slot: "confetti",
+    price: 120,
+    preview: "#fbcfe8",
+  },
+  {
+    id: "confetti-gold",
+    name: "Gold Confetti",
+    description: "Luxurious golden shower.",
+    slot: "confetti",
+    price: 300,
+    minLevel: 8,
+    preview: "#fde047",
+  },
+  {
+    id: "confetti-ocean",
+    name: "Ocean Confetti",
+    description: "Deep blue-teal celebration.",
+    slot: "confetti",
+    price: 200,
+    preview: "#22d3ee",
+  },
   // ---- Accent themes (recolor the whole app's accent) ----
-  { id: "accent-crimson", name: "Crimson Accent", description: "Recolor the app in bold crimson.", slot: "accent", price: 150, preview: "#f43f5e" },
-  { id: "accent-emerald", name: "Emerald Accent", description: "Recolor the app in fresh emerald.", slot: "accent", price: 150, preview: "#10b981" },
-  { id: "accent-violet", name: "Violet Accent", description: "Recolor the app in deep violet.", slot: "accent", price: 200, preview: "#8b5cf6" },
-  { id: "accent-amber", name: "Amber Accent", description: "Recolor the app in warm amber.", slot: "accent", price: 300, minLevel: 8, preview: "#f59e0b" },
-  { id: "accent-pink", name: "Pink Accent", description: "Recolor the app in vibrant pink.", slot: "accent", price: 180, preview: "#ec4899" },
-  { id: "accent-ocean", name: "Ocean Accent", description: "Recolor the app in deep teal.", slot: "accent", price: 220, preview: "#06b6d4" },
-  { id: "accent-lime", name: "Lime Accent", description: "Recolor the app in fresh lime.", slot: "accent", price: 280, minLevel: 6, preview: "#84cc16" },
+  {
+    id: "accent-crimson",
+    name: "Crimson Accent",
+    description: "Recolor the app in bold crimson.",
+    slot: "accent",
+    price: 150,
+    preview: "#f43f5e",
+  },
+  {
+    id: "accent-emerald",
+    name: "Emerald Accent",
+    description: "Recolor the app in fresh emerald.",
+    slot: "accent",
+    price: 150,
+    preview: "#10b981",
+  },
+  {
+    id: "accent-violet",
+    name: "Violet Accent",
+    description: "Recolor the app in deep violet.",
+    slot: "accent",
+    price: 200,
+    preview: "#8b5cf6",
+  },
+  {
+    id: "accent-amber",
+    name: "Amber Accent",
+    description: "Recolor the app in warm amber.",
+    slot: "accent",
+    price: 300,
+    minLevel: 8,
+    preview: "#f59e0b",
+  },
+  {
+    id: "accent-pink",
+    name: "Pink Accent",
+    description: "Recolor the app in vibrant pink.",
+    slot: "accent",
+    price: 180,
+    preview: "#ec4899",
+  },
+  {
+    id: "accent-ocean",
+    name: "Ocean Accent",
+    description: "Recolor the app in deep teal.",
+    slot: "accent",
+    price: 220,
+    preview: "#06b6d4",
+  },
+  {
+    id: "accent-lime",
+    name: "Lime Accent",
+    description: "Recolor the app in fresh lime.",
+    slot: "accent",
+    price: 280,
+    minLevel: 6,
+    preview: "#84cc16",
+  },
 ];
 
 // Resolve the equipped accent override, or null when the default (themed) accent
 // should apply.
-export function equippedAccent(economy: Economy): { accent: string; glow: string } | null {
+export function equippedAccent(
+  economy: Economy,
+): { accent: string; glow: string } | null {
   return ACCENT_SKINS[equippedOrDefault(economy, "accent")] ?? null;
 }
 
@@ -306,7 +493,10 @@ export function shopItem(id: string): ShopItem | undefined {
 }
 
 // The currently-equipped item id for a slot, falling back to the free default.
-export function equippedOrDefault(economy: Economy, slot: CosmeticSlot): string {
+export function equippedOrDefault(
+  economy: Economy,
+  slot: CosmeticSlot,
+): string {
   return economy.equipped[slot] ?? `${slot}-default`;
 }
 
@@ -322,7 +512,11 @@ export function frozenSet(economy: Economy): Set<string> {
   return new Set(economy.freezes.map((f) => `${f.habitId}@${f.date}`));
 }
 
-export function isFrozen(frozen: Set<string>, habitId: string, key: string): boolean {
+export function isFrozen(
+  frozen: Set<string>,
+  habitId: string,
+  key: string,
+): boolean {
   return frozen.has(`${habitId}@${key}`);
 }
 
@@ -353,7 +547,12 @@ export function canFreezeDay(
   return !isFrozen(frozenSet(economy), habitId, key);
 }
 
-export function makeFreezeEntry(habitId: string, key: string, id: string, nowIso: string): FreezeEntry {
+export function makeFreezeEntry(
+  habitId: string,
+  key: string,
+  id: string,
+  nowIso: string,
+): FreezeEntry {
   return { id, at: nowIso, date: key, habitId };
 }
 
@@ -371,7 +570,8 @@ export function freezableDays(
   const out: string[] = [];
   for (let i = 1; i <= lookback; i++) {
     const key = dateKey(addDays(today, -i));
-    if (marks[key]?.[habitId] === "missed" && !isFrozen(frozen, habitId, key)) out.push(key);
+    if (marks[key]?.[habitId] === "missed" && !isFrozen(frozen, habitId, key))
+      out.push(key);
   }
   return out;
 }

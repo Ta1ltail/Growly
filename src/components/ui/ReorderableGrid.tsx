@@ -38,15 +38,12 @@ export function ReorderableGrid({
     [disabled],
   );
 
-  const handleDragEnd = useCallback(
-    (e: DragEvent) => {
-      const target = e.currentTarget as HTMLElement;
-      target.style.opacity = "1";
-      dragItem.current = null;
-      dragOverItem.current = null;
-    },
-    [],
-  );
+  const handleDragEnd = useCallback((e: DragEvent) => {
+    const target = e.currentTarget as HTMLElement;
+    target.style.opacity = "1";
+    dragItem.current = null;
+    dragOverItem.current = null;
+  }, []);
 
   const handleDragOver = useCallback(
     (index: number) => (e: DragEvent) => {

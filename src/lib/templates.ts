@@ -32,10 +32,18 @@ export const TEMPLATES: Template[] = [
     name: "Student Routine",
     description: "Build steady study and focus habits.",
     habits: [
-      { name: "Study 1 hour", category: "Studies", repeatDays: [1, 2, 3, 4, 5] },
+      {
+        name: "Study 1 hour",
+        category: "Studies",
+        repeatDays: [1, 2, 3, 4, 5],
+      },
       { name: "Review notes", category: "Studies", repeatDays: [] },
       { name: "Read 30 min", category: "Hobbies", repeatDays: [] },
-      { name: "No phone before noon", category: "Lifestyle", repeatDays: [1, 2, 3, 4, 5] },
+      {
+        name: "No phone before noon",
+        category: "Lifestyle",
+        repeatDays: [1, 2, 3, 4, 5],
+      },
     ],
   },
   {

@@ -12,7 +12,11 @@ import { dayDiff, parseDateKey, startOfDay } from "./storage";
 //   future days  -> locked (you cannot complete something that hasn't happened)
 //   yesterday    -> editable only until `graceHours` past midnight
 //   older        -> permanently locked
-export function canEditMark(targetKey: string, now: Date, graceHours: number): boolean {
+export function canEditMark(
+  targetKey: string,
+  now: Date,
+  graceHours: number,
+): boolean {
   const diff = dayDiff(startOfDay(now), parseDateKey(targetKey));
   if (diff === 0) return true;
   if (diff < 0) return false;
@@ -21,11 +25,6 @@ export function canEditMark(targetKey: string, now: Date, graceHours: number): b
     return hoursIntoToday < graceHours;
   }
   return false;
-}
-
-// Convenience inverse for UI (lock icons, disabled cells).
-export function isDayLocked(targetKey: string, now: Date, graceHours: number): boolean {
-  return !canEditMark(targetKey, now, graceHours);
 }
 
 // A future day relative to `now` — used to show "planned" cells distinctly.

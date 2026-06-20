@@ -58,7 +58,10 @@ export function Confetti({
   if (reduced) return null;
 
   return (
-    <div aria-hidden className="pointer-events-none fixed inset-0 z-[60] overflow-hidden">
+    <div
+      aria-hidden
+      className="pointer-events-none fixed inset-0 z-[60] overflow-hidden"
+    >
       {pieces.map((p) => (
         <span
           key={p.i}

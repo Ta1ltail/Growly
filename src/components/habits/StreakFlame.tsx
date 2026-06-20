@@ -43,7 +43,9 @@ export const StreakFlame = memo(function StreakFlame({
   // Optional override; when omitted the equipped flame skin is used.
   colors?: FlameColors;
 }) {
-  const equippedFlame = useAppDataSelector((d) => equippedOrDefault(d.economy, "flame"));
+  const equippedFlame = useAppDataSelector((d) =>
+    equippedOrDefault(d.economy, "flame"),
+  );
   const tier = flameTier(streak);
 
   const ramp = useMemo(
@@ -54,11 +56,21 @@ export const StreakFlame = memo(function StreakFlame({
 
   const color = ramp[tier];
   const flickerClass =
-    tier === "large" ? "animate-flicker-fast" : tier === "medium" ? "animate-flicker-medium" : "animate-flicker";
+    tier === "large"
+      ? "animate-flicker-fast"
+      : tier === "medium"
+        ? "animate-flicker-medium"
+        : "animate-flicker";
 
   return (
-    <span className={`inline-flex items-center gap-1 ${className}`} aria-label={`${streak} day streak`}>
-      <span className="relative inline-flex" style={{ width: size, height: size }}>
+    <span
+      className={`inline-flex items-center gap-1 ${className}`}
+      aria-label={`${streak} day streak`}
+    >
+      <span
+        className="relative inline-flex"
+        style={{ width: size, height: size }}
+      >
         {/* breathing glow halo (medium + large) */}
         {tier !== "small" && (
           <span
@@ -77,13 +89,21 @@ export const StreakFlame = memo(function StreakFlame({
         )}
         <Flame
           className={`relative ${flickerClass}`}
-          style={{ width: size, height: size, color, transformOrigin: "center bottom" }}
+          style={{
+            width: size,
+            height: size,
+            color,
+            transformOrigin: "center bottom",
+          }}
           fill={tier === "large" ? color : "none"}
           strokeWidth={tier === "large" ? 1.5 : 2}
         />
       </span>
       {showCount && (
-        <span className="font-mono text-xs font-semibold tabular-nums" style={{ color }}>
+        <span
+          className="font-mono text-xs font-semibold tabular-nums"
+          style={{ color }}
+        >
           {streak}
         </span>
       )}
@@ -91,7 +111,15 @@ export const StreakFlame = memo(function StreakFlame({
   );
 });
 
-function Ember({ color, delay, offset }: { color: string; delay: string; offset: string }) {
+function Ember({
+  color,
+  delay,
+  offset,
+}: {
+  color: string;
+  delay: string;
+  offset: string;
+}) {
   return (
     <span
       aria-hidden

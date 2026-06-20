@@ -6,11 +6,21 @@
 // achievement reads a single metric off that context and unlocks when it
 // reaches its target. XP and titles build on these results.
 
-import type { AchievementDef, AchievementCategory, Marks, Rarity } from "./types";
+import type {
+  AchievementDef,
+  AchievementCategory,
+  Marks,
+  Rarity,
+} from "./types";
 import { CATEGORIES, type Category } from "./categories";
 import type { Habit } from "./types";
 import { addDays, dateKey, startOfDay } from "./storage";
-import { dayCompletion, habitStreaks, habitStartDay, isScheduled } from "./stats";
+import {
+  dayCompletion,
+  habitStreaks,
+  habitStartDay,
+  isScheduled,
+} from "./stats";
 
 const EARLY_BEFORE = "08:00";
 const NIGHT_AFTER = "21:00";
@@ -36,7 +46,10 @@ export interface GameStats {
 }
 
 function zeroByCategory(): Record<Category, number> {
-  return Object.fromEntries(CATEGORIES.map((c) => [c, 0])) as Record<Category, number>;
+  return Object.fromEntries(CATEGORIES.map((c) => [c, 0])) as Record<
+    Category,
+    number
+  >;
 }
 
 export function buildGameStats(
@@ -94,7 +107,11 @@ export function buildGameStats(
       startOfDay(today).getTime(),
     );
     let run = 0;
-    for (let d = new Date(start); d.getTime() <= startOfDay(today).getTime(); d = addDays(d, 1)) {
+    for (
+      let d = new Date(start);
+      d.getTime() <= startOfDay(today).getTime();
+      d = addDays(d, 1)
+    ) {
       const scheduled = active.filter((h) => isScheduled(h, d));
       if (scheduled.length === 0) continue; // neutral day, doesn't break a run
       if (dayCompletion(active, marks, d) === 100) {
@@ -135,7 +152,11 @@ export function buildGameStats(
         const startMs = habitStartDay(h).getTime();
         let streakStart: Date | null = null;
         // Walk backward until we find the first non-done (that's where streak began)
-        for (let d = new Date(end); d.getTime() >= startMs; d = addDays(d, -1)) {
+        for (
+          let d = new Date(end);
+          d.getTime() >= startMs;
+          d = addDays(d, -1)
+        ) {
           if (!isScheduled(h, d)) continue;
           const key = dateKey(d);
           const status = marks[key]?.[h.id];
@@ -147,7 +168,11 @@ export function buildGameStats(
         }
         if (!streakStart) continue;
         // Now check if there was a missed mark within 14 days before streakStart
-        for (let d = addDays(streakStart, -1), check = 0; check < 14; d = addDays(d, -1), check++) {
+        for (
+          let d = addDays(streakStart, -1), check = 0;
+          check < 14;
+          d = addDays(d, -1), check++
+        ) {
           if (d.getTime() < startMs) break;
           if (!isScheduled(h, d)) continue;
           const key = dateKey(d);
@@ -179,42 +204,294 @@ function def(
 
 const DEFS: Def[] = [
   // ---- Streak ----
-  def("streak-1", "First Day", "Complete a habit on a streak.", "streak", "common", "🔥", 1, (s) => s.maxBestStreak),
-  def("streak-3", "Getting Warm", "Reach a 3-day streak.", "streak", "common", "🔥", 3, (s) => s.maxBestStreak),
-  def("streak-7", "Weekly Warrior", "Reach a 7-day streak.", "streak", "rare", "🔥", 7, (s) => s.maxBestStreak),
-  def("streak-14", "Fortnight Focus", "Reach a 14-day streak.", "streak", "rare", "🔥", 14, (s) => s.maxBestStreak),
-  def("streak-30", "Monthly Master", "Reach a 30-day streak.", "streak", "epic", "🔥", 30, (s) => s.maxBestStreak),
-  def("streak-50", "Unbreakable", "Reach a 50-day streak.", "streak", "epic", "🔥", 50, (s) => s.maxBestStreak),
-  def("streak-100", "Century Flame", "Reach a 100-day streak.", "streak", "legendary", "🔥", 100, (s) => s.maxBestStreak),
-  def("streak-365", "Year of Fire", "Reach a 365-day streak.", "streak", "legendary", "🔥", 365, (s) => s.maxBestStreak),
+  def(
+    "streak-1",
+    "First Day",
+    "Complete a habit on a streak.",
+    "streak",
+    "common",
+    "🔥",
+    1,
+    (s) => s.maxBestStreak,
+  ),
+  def(
+    "streak-3",
+    "Getting Warm",
+    "Reach a 3-day streak.",
+    "streak",
+    "common",
+    "🔥",
+    3,
+    (s) => s.maxBestStreak,
+  ),
+  def(
+    "streak-7",
+    "Weekly Warrior",
+    "Reach a 7-day streak.",
+    "streak",
+    "rare",
+    "🔥",
+    7,
+    (s) => s.maxBestStreak,
+  ),
+  def(
+    "streak-14",
+    "Fortnight Focus",
+    "Reach a 14-day streak.",
+    "streak",
+    "rare",
+    "🔥",
+    14,
+    (s) => s.maxBestStreak,
+  ),
+  def(
+    "streak-30",
+    "Monthly Master",
+    "Reach a 30-day streak.",
+    "streak",
+    "epic",
+    "🔥",
+    30,
+    (s) => s.maxBestStreak,
+  ),
+  def(
+    "streak-50",
+    "Unbreakable",
+    "Reach a 50-day streak.",
+    "streak",
+    "epic",
+    "🔥",
+    50,
+    (s) => s.maxBestStreak,
+  ),
+  def(
+    "streak-100",
+    "Century Flame",
+    "Reach a 100-day streak.",
+    "streak",
+    "legendary",
+    "🔥",
+    100,
+    (s) => s.maxBestStreak,
+  ),
+  def(
+    "streak-365",
+    "Year of Fire",
+    "Reach a 365-day streak.",
+    "streak",
+    "legendary",
+    "🔥",
+    365,
+    (s) => s.maxBestStreak,
+  ),
 
   // ---- Completion (lifetime done marks) ----
-  def("done-1", "First Habit", "Complete your first habit.", "completion", "common", "✅", 1, (s) => s.doneCount),
-  def("done-10", "Getting Going", "Complete 10 habits.", "completion", "common", "✅", 10, (s) => s.doneCount),
-  def("done-50", "Half Hundred", "Complete 50 habits.", "completion", "rare", "✅", 50, (s) => s.doneCount),
-  def("done-100", "Centurion", "Complete 100 habits.", "completion", "epic", "✅", 100, (s) => s.doneCount),
-  def("done-500", "Relentless", "Complete 500 habits.", "completion", "epic", "✅", 500, (s) => s.doneCount),
-  def("done-1000", "Habit Machine", "Complete 1000 habits.", "completion", "legendary", "✅", 1000, (s) => s.doneCount),
+  def(
+    "done-1",
+    "First Habit",
+    "Complete your first habit.",
+    "completion",
+    "common",
+    "✅",
+    1,
+    (s) => s.doneCount,
+  ),
+  def(
+    "done-10",
+    "Getting Going",
+    "Complete 10 habits.",
+    "completion",
+    "common",
+    "✅",
+    10,
+    (s) => s.doneCount,
+  ),
+  def(
+    "done-50",
+    "Half Hundred",
+    "Complete 50 habits.",
+    "completion",
+    "rare",
+    "✅",
+    50,
+    (s) => s.doneCount,
+  ),
+  def(
+    "done-100",
+    "Centurion",
+    "Complete 100 habits.",
+    "completion",
+    "epic",
+    "✅",
+    100,
+    (s) => s.doneCount,
+  ),
+  def(
+    "done-500",
+    "Relentless",
+    "Complete 500 habits.",
+    "completion",
+    "epic",
+    "✅",
+    500,
+    (s) => s.doneCount,
+  ),
+  def(
+    "done-1000",
+    "Habit Machine",
+    "Complete 1000 habits.",
+    "completion",
+    "legendary",
+    "✅",
+    1000,
+    (s) => s.doneCount,
+  ),
 
   // ---- Consistency (perfect runs) ----
-  def("perfect-week", "Perfect Week", "Complete every habit for 7 days straight.", "consistency", "rare", "🌟", 7, (s) => s.longestPerfectRun),
-  def("perfect-month", "Perfect Month", "Complete every habit for 30 days straight.", "consistency", "legendary", "🌟", 30, (s) => s.longestPerfectRun),
-  def("perfect-days-10", "Spotless", "Rack up 10 perfect days.", "consistency", "rare", "🌟", 10, (s) => s.perfectDays),
-  def("perfect-days-50", "Flawless", "Rack up 50 perfect days.", "consistency", "epic", "🌟", 50, (s) => s.perfectDays),
+  def(
+    "perfect-week",
+    "Perfect Week",
+    "Complete every habit for 7 days straight.",
+    "consistency",
+    "rare",
+    "🌟",
+    7,
+    (s) => s.longestPerfectRun,
+  ),
+  def(
+    "perfect-month",
+    "Perfect Month",
+    "Complete every habit for 30 days straight.",
+    "consistency",
+    "legendary",
+    "🌟",
+    30,
+    (s) => s.longestPerfectRun,
+  ),
+  def(
+    "perfect-days-10",
+    "Spotless",
+    "Rack up 10 perfect days.",
+    "consistency",
+    "rare",
+    "🌟",
+    10,
+    (s) => s.perfectDays,
+  ),
+  def(
+    "perfect-days-50",
+    "Flawless",
+    "Rack up 50 perfect days.",
+    "consistency",
+    "epic",
+    "🌟",
+    50,
+    (s) => s.perfectDays,
+  ),
 
   // ---- Category mastery ----
-  def("cat-workout", "Fitness Master", "50 completions in Workout.", "category", "rare", "💪", 50, (s) => s.perCategoryDone.Workout),
-  def("cat-studies", "Learning Champion", "50 completions in Studies.", "category", "rare", "📚", 50, (s) => s.perCategoryDone.Studies),
-  def("cat-work", "Productivity Expert", "50 completions in Work.", "category", "rare", "⚡", 50, (s) => s.perCategoryDone.Work),
-  def("cat-health", "Mindfulness Practitioner", "50 completions in Health.", "category", "rare", "🧘", 50, (s) => s.perCategoryDone.Health),
+  def(
+    "cat-workout",
+    "Fitness Master",
+    "50 completions in Workout.",
+    "category",
+    "rare",
+    "💪",
+    50,
+    (s) => s.perCategoryDone.Workout,
+  ),
+  def(
+    "cat-studies",
+    "Learning Champion",
+    "50 completions in Studies.",
+    "category",
+    "rare",
+    "📚",
+    50,
+    (s) => s.perCategoryDone.Studies,
+  ),
+  def(
+    "cat-work",
+    "Productivity Expert",
+    "50 completions in Work.",
+    "category",
+    "rare",
+    "⚡",
+    50,
+    (s) => s.perCategoryDone.Work,
+  ),
+  def(
+    "cat-health",
+    "Mindfulness Practitioner",
+    "50 completions in Health.",
+    "category",
+    "rare",
+    "🧘",
+    50,
+    (s) => s.perCategoryDone.Health,
+  ),
 
   // ---- Special ----
-  def("early-bird", "Early Bird", "Complete 10 habits scheduled before 8 AM.", "special", "rare", "🌅", 10, (s) => s.earlyDone),
-  def("night-owl", "Night Owl", "Complete 10 habits scheduled after 9 PM.", "special", "rare", "🌙", 10, (s) => s.nightDone),
-  def("weekend-warrior", "Weekend Warrior", "Have 4 perfect weekend days.", "special", "epic", "🏖️", 4, (s) => s.weekendPerfectDays),
-  def("comeback-king", "Comeback King", "Recover from a miss to a 7-day streak.", "special", "epic", "👑", 1, (s) => (s.comebackAchieved ? 1 : 0)),
-  def("habit-collector", "Habit Collector", "Create 10 habits.", "special", "common", "🗂️", 10, (s) => s.habitsCreated),
-  def("habit-master", "Habit Master", "Reach a 100-day streak with a deep history.", "special", "legendary", "🏆", 1, (s) => (s.maxBestStreak >= 100 && s.doneCount >= 500 ? 1 : 0)),
+  def(
+    "early-bird",
+    "Early Bird",
+    "Complete 10 habits scheduled before 8 AM.",
+    "special",
+    "rare",
+    "🌅",
+    10,
+    (s) => s.earlyDone,
+  ),
+  def(
+    "night-owl",
+    "Night Owl",
+    "Complete 10 habits scheduled after 9 PM.",
+    "special",
+    "rare",
+    "🌙",
+    10,
+    (s) => s.nightDone,
+  ),
+  def(
+    "weekend-warrior",
+    "Weekend Warrior",
+    "Have 4 perfect weekend days.",
+    "special",
+    "epic",
+    "🏖️",
+    4,
+    (s) => s.weekendPerfectDays,
+  ),
+  def(
+    "comeback-king",
+    "Comeback King",
+    "Recover from a miss to a 7-day streak.",
+    "special",
+    "epic",
+    "👑",
+    1,
+    (s) => (s.comebackAchieved ? 1 : 0),
+  ),
+  def(
+    "habit-collector",
+    "Habit Collector",
+    "Create 10 habits.",
+    "special",
+    "common",
+    "🗂️",
+    10,
+    (s) => s.habitsCreated,
+  ),
+  def(
+    "habit-master",
+    "Habit Master",
+    "Reach a 100-day streak with a deep history.",
+    "special",
+    "legendary",
+    "🏆",
+    1,
+    (s) => (s.maxBestStreak >= 100 && s.doneCount >= 500 ? 1 : 0),
+  ),
 ];
 
 // Public, serializable definitions (drops the internal metric selector).

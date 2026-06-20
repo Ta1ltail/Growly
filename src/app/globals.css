@@ -1,10 +1,6 @@
 @import "tailwindcss";
 
-/* ============================================================
-   project_101 — modern design system
-   Dark-first, glassy, electric-accent. Theming is driven by
-   CSS variables so light/dark + accent swap instantly.
-   ============================================================ */
+/* project_101 — modern design system */
 
 @theme {
   /* Semantic tokens map to runtime CSS variables (set below). */
@@ -29,9 +25,14 @@
   --font-mono: var(--font-geist-mono);
 
   /* elevation — soft, theme-aware shadows (set via --c-shadow per theme) */
-  --shadow-sm: 0 1px 2px hsl(var(--c-shadow) / 0.06), 0 1px 3px hsl(var(--c-shadow) / 0.08);
-  --shadow-md: 0 4px 12px -2px hsl(var(--c-shadow) / 0.12), 0 2px 6px -2px hsl(var(--c-shadow) / 0.1);
-  --shadow-lg: 0 12px 32px -8px hsl(var(--c-shadow) / 0.22), 0 6px 14px -6px hsl(var(--c-shadow) / 0.16);
+  --shadow-sm:
+    0 1px 2px hsl(var(--c-shadow) / 0.06), 0 1px 3px hsl(var(--c-shadow) / 0.08);
+  --shadow-md:
+    0 4px 12px -2px hsl(var(--c-shadow) / 0.12),
+    0 2px 6px -2px hsl(var(--c-shadow) / 0.1);
+  --shadow-lg:
+    0 12px 32px -8px hsl(var(--c-shadow) / 0.22),
+    0 6px 14px -6px hsl(var(--c-shadow) / 0.16);
 
   /* custom animations */
   --animate-fade-in: fade-in 0.35s ease both;
@@ -53,8 +54,7 @@
   --animate-particle-float-alt: particle-float-alt 8s ease-in-out infinite;
 }
 
-/* Unified motion language — consistent durations + easing curves used across
-   buttons, cards, modals, and page transitions. */
+/* Motion language */
 :root {
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -64,38 +64,38 @@
 }
 
 /* ---- Light theme (default values) ----
-   Warm, creamy off-white surfaces with a subtle golden undertone so they feel
-   inviting rather than clinical. Gentle contrast, soft borders, and warm shadows
-   that avoid the harsh blue-gray of typical light themes. */
+   Clean, modern white foundation. Cards use warm off-white to separate from
+   the pure white page background. High contrast grays for maximum readability.
+   Shadows are warm and avoid the harsh blue-gray of typical light themes. */
 :root {
-  --c-bg: #f5f0eb;
-  --c-bg2: #efe9e2;
-  --c-surface: #fcf9f6;
-  --c-surface2: #f3eee7;
-  --c-line: #e6ddd3;
-  --c-ink: #2c1810;
-  --c-muted: #7a6b5e;
-  --c-faint: #b0a396;
-  --c-empty: #ece5dc;
+  --c-bg: #ffffff;
+  --c-bg2: #f5f5f4;
+  --c-surface: #fafaf9;
+  --c-surface2: #f0efed;
+  --c-line: #e4e4e7;
+  --c-ink: #0c0a09;
+  --c-muted: #57534e;
+  --c-faint: #a8a29e;
+  --c-empty: #e7e5e4;
   --c-accent: #3b82f6;
   --c-accent-glow: #60a5fa;
   --c-shadow: 30 20% 20%;
 }
 
 /* ---- Dark theme ----
-   Deep, rich dark with subtle warm-purple undertones instead of flat gray.
-   Cards float with a soft glow, text has excellent contrast, and the overall
-   feel is luxurious rather than utilitarian. */
+   Rich charcoal base with subtle warm-purple undertones. Not pure black — deep
+   enough for comfortable dark reading without the harshness of #000. Cards float
+   with a soft glow, text has excellent contrast. */
 [data-theme="dark"] {
-  --c-bg: #0f0e17;
-  --c-bg2: #171522;
-  --c-surface: #1f1d2e;
-  --c-surface2: #2a2740;
-  --c-line: #3a3652;
-  --c-ink: #e8e4f0;
-  --c-muted: #a8a2c8;
-  --c-faint: #716b92;
-  --c-empty: #2a2740;
+  --c-bg: #121116;
+  --c-bg2: #1c1a23;
+  --c-surface: #24222e;
+  --c-surface2: #2e2b3b;
+  --c-line: #3b384d;
+  --c-ink: #edecf2;
+  --c-muted: #a5a0c0;
+  --c-faint: #706a8e;
+  --c-empty: #2e2b3b;
   --c-accent: #4b8bf7;
   --c-accent-glow: #6ba2f9;
   --c-shadow: 260 40% 4%;
@@ -149,30 +149,6 @@
     transform: translate3d(2%, -3%, 0) scale(1.06);
   }
 }
-/* Ambient aurora drift — two distinct paths so layered blobs never move in
-   lockstep, giving the background organic, parallax-like depth. */
-@keyframes drift-1 {
-  0%,
-  100% {
-    transform: translate3d(0, 0, 0) scale(1);
-  }
-  33% {
-    transform: translate3d(5%, -3%, 0) scale(1.08);
-  }
-  66% {
-    transform: translate3d(-3%, 4%, 0) scale(0.95);
-  }
-}
-@keyframes drift-2 {
-  0%,
-  100% {
-    transform: translate3d(0, 0, 0) scale(1);
-  }
-  50% {
-    transform: translate3d(-6%, 3%, 0) scale(1.1);
-  }
-}
-
 /* Streak flame: organic flicker via tiny scale/skew + opacity wobble. */
 @keyframes flicker {
   0%,
@@ -296,8 +272,6 @@
   }
 }
 
-/* ======= NEW ANIMATIONS: icons, particles, glow ======= */
-
 /* Gentle float-bounce for nav icons — like a heartbeat */
 @keyframes icon-bounce {
   0%,
@@ -375,73 +349,31 @@
   }
 }
 
-/* Card lift animation — subtle hover elevation */
-@keyframes card-lift {
-  0% {
-    transform: translateY(0);
-    box-shadow: var(--shadow-sm);
-  }
-  100% {
-    transform: translateY(-4px);
-    box-shadow: var(--shadow-lg);
-  }
-}
-
-/* Staggered fade-in for grid items */
-@keyframes stagger-fade {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* Subtle shimmer for decorative elements */
-@keyframes shimmer-slow {
-  0% { background-position: -200% center; }
-  100% { background-position: 200% center; }
-}
-
-/* Section transition — smooth page section entrance */
-@keyframes section-in {
-  from {
-    opacity: 0;
-    transform: translateY(6px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
 * {
   -webkit-tap-highlight-color: transparent;
 }
 
-/* Consistent, accessible keyboard focus across every interactive element.
-   Mouse clicks stay clean (:focus-visible only fires for keyboard/AT). */
+/* Keyboard focus */
 :focus-visible {
   outline: 2px solid var(--c-accent);
   outline-offset: 2px;
   border-radius: 4px;
 }
 
-/* Themed text selection. */
+/* Text selection */
 ::selection {
   background: color-mix(in srgb, var(--c-accent) 28%, transparent);
   color: var(--c-ink);
 }
 
-/* Base canvas lives on <html> so the fixed ambient background (a negative
-   z-index child of <body>) paints above it but behind page content. */
+/* Base canvas */
 html {
   color-scheme: dark;
   scroll-behavior: smooth;
   background: var(--c-bg);
-  transition: background-color 0.4s ease, color 0.4s ease;
+  transition:
+    background-color 0.4s ease,
+    color 0.4s ease;
 }
 
 body {
@@ -457,10 +389,16 @@ body {
   -webkit-backdrop-filter: blur(12px);
 }
 
-/* Soft, slim scrollbars */
+/* Soft, slim scrollbars — thinner on mobile for more content area */
 ::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
+  width: 6px;
+  height: 6px;
+}
+@media (min-width: 768px) {
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
 }
 ::-webkit-scrollbar-thumb {
   background: var(--c-line);
@@ -472,10 +410,14 @@ body {
   background: var(--c-faint);
   background-clip: content-box;
 }
+::-webkit-scrollbar-track {
+  background: var(--c-bg);
+}
 
 /* Accent ring helper */
 .ring-accent-soft {
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--c-accent) 40%, transparent),
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--c-accent) 40%, transparent),
     0 8px 30px -12px color-mix(in srgb, var(--c-accent) 50%, transparent);
 }
 
@@ -495,15 +437,33 @@ body {
 .stagger-children > * {
   animation: rise 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
-.stagger-children > *:nth-child(1) { animation-delay: 0.02s; }
-.stagger-children > *:nth-child(2) { animation-delay: 0.06s; }
-.stagger-children > *:nth-child(3) { animation-delay: 0.1s; }
-.stagger-children > *:nth-child(4) { animation-delay: 0.14s; }
-.stagger-children > *:nth-child(5) { animation-delay: 0.18s; }
-.stagger-children > *:nth-child(6) { animation-delay: 0.22s; }
-.stagger-children > *:nth-child(7) { animation-delay: 0.26s; }
-.stagger-children > *:nth-child(8) { animation-delay: 0.3s; }
-.stagger-children > *:nth-child(n + 9) { animation-delay: 0.34s; }
+.stagger-children > *:nth-child(1) {
+  animation-delay: 0.02s;
+}
+.stagger-children > *:nth-child(2) {
+  animation-delay: 0.06s;
+}
+.stagger-children > *:nth-child(3) {
+  animation-delay: 0.1s;
+}
+.stagger-children > *:nth-child(4) {
+  animation-delay: 0.14s;
+}
+.stagger-children > *:nth-child(5) {
+  animation-delay: 0.18s;
+}
+.stagger-children > *:nth-child(6) {
+  animation-delay: 0.22s;
+}
+.stagger-children > *:nth-child(7) {
+  animation-delay: 0.26s;
+}
+.stagger-children > *:nth-child(8) {
+  animation-delay: 0.3s;
+}
+.stagger-children > *:nth-child(n + 9) {
+  animation-delay: 0.34s;
+}
 
 /* Fixed-size component system — prevents layout shifting */
 .fixed-card {
@@ -537,102 +497,45 @@ body {
   background:
     linear-gradient(var(--c-surface) 30%, transparent) center top,
     linear-gradient(transparent, var(--c-surface) 70%) center bottom;
-  background-size: 100% 40px, 100% 40px;
+  background-size:
+    100% 40px,
+    100% 40px;
   background-attachment: local, local;
 }
 
 /* Icon color styling system */
-.icon-accent { color: var(--c-accent); }
-.icon-done { color: var(--color-done); }
-.icon-missed { color: var(--color-missed); }
-.icon-amber { color: #f59e0b; }
-.icon-emerald { color: #10b981; }
-.icon-violet { color: #8b5cf6; }
-.icon-rose { color: #f43f5e; }
-.icon-sky { color: #0ea5e9; }
-.icon-orange { color: #f97316; }
-.icon-pink { color: #ec4899; }
-.icon-cyan { color: #06b6d4; }
-
-/* Icon hover animation */
-.icon-hover {
-  transition: transform 0.2s ease, color 0.2s ease;
+.icon-accent {
+  color: var(--c-accent);
 }
-.icon-hover:hover {
-  transform: scale(1.15);
+.icon-done {
+  color: var(--color-done);
 }
-
-/* Idle icon animation — subtle float */
-.icon-idle {
-  animation: icon-bounce 3s ease-in-out infinite;
+.icon-missed {
+  color: var(--color-missed);
 }
-.icon-idle-slow {
-  animation: icon-pulse 4s ease-in-out infinite;
+.icon-amber {
+  color: #f59e0b;
 }
-
-/* Glass morphism variants */
-.glass-heavy {
-  background: color-mix(in srgb, var(--c-surface) 70%, transparent);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+.icon-emerald {
+  color: #10b981;
 }
-.glass-light {
-  background: color-mix(in srgb, var(--c-surface2) 40%, transparent);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+.icon-violet {
+  color: #8b5cf6;
 }
-
-/* Card elevation system */
-.card-lift {
-  transition: transform var(--dur-base) var(--ease-out),
-              box-shadow var(--dur-base) var(--ease-out),
-              border-color var(--dur-base) var(--ease-out);
+.icon-rose {
+  color: #f43f5e;
 }
-.card-lift:hover {
-  transform: translateY(-3px);
-  border-color: color-mix(in srgb, var(--c-accent) 40%, transparent);
+.icon-sky {
+  color: #0ea5e9;
 }
-
-/* Section entrance animation */
-.section-enter {
-  animation: section-in 0.4s var(--ease-out) both;
+.icon-orange {
+  color: #f97316;
 }
-.section-enter:nth-child(2) { animation-delay: 0.05s; }
-.section-enter:nth-child(3) { animation-delay: 0.1s; }
-.section-enter:nth-child(4) { animation-delay: 0.15s; }
-.section-enter:nth-child(5) { animation-delay: 0.2s; }
-
-/* Gradient text utility */
-.gradient-text {
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+.icon-pink {
+  color: #ec4899;
 }
-
-/* Note card styling */
-.note-card {
-  break-inside: avoid;
-  page-break-inside: avoid;
-}
-
-/* Animated border shine for premium elements */
-.border-shine {
-  position: relative;
-  overflow: hidden;
-}
-.border-shine::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  padding: 1px;
-  background: linear-gradient(135deg, transparent 40%, var(--c-accent-glow) 50%, transparent 60%);
-  background-size: 200% 200%;
-  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  animation: shimmer-slow 3s ease-in-out infinite;
-  pointer-events: none;
+.icon-cyan {
+  color: #06b6d4;
 }
 
 /* Respect users who prefer less motion (accessibility). */

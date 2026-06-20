@@ -35,9 +35,11 @@ export function Modal({
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     // Move focus into the panel.
-    panelRef.current?.querySelector<HTMLElement>(
-      "input, textarea, select, button, [tabindex]",
-    )?.focus();
+    panelRef.current
+      ?.querySelector<HTMLElement>(
+        "input, textarea, select, button, [tabindex]",
+      )
+      ?.focus();
     return () => {
       document.removeEventListener("keydown", onKey);
       document.body.style.overflow = prevOverflow;
@@ -46,7 +48,8 @@ export function Modal({
 
   if (!open) return null;
 
-  const maxW = size === "sm" ? "max-w-sm" : size === "lg" ? "max-w-2xl" : "max-w-lg";
+  const maxW =
+    size === "sm" ? "max-w-sm" : size === "lg" ? "max-w-2xl" : "max-w-lg";
 
   return (
     <div
@@ -65,7 +68,9 @@ export function Modal({
         <div className="flex items-start justify-between gap-4 border-b border-line px-5 py-4">
           <div className="min-w-0">
             <h2 className="text-base font-semibold tracking-tight">{title}</h2>
-            {subtitle && <p className="mt-0.5 text-xs text-muted">{subtitle}</p>}
+            {subtitle && (
+              <p className="mt-0.5 text-xs text-muted">{subtitle}</p>
+            )}
           </div>
           <button
             onClick={onClose}
@@ -76,10 +81,14 @@ export function Modal({
           </button>
         </div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">{children}</div>
+        <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
+          {children}
+        </div>
 
         {footer && (
-          <div className="flex justify-end gap-2 border-t border-line px-5 py-3.5">{footer}</div>
+          <div className="flex justify-end gap-2 border-t border-line px-5 py-3.5">
+            {footer}
+          </div>
         )}
       </div>
     </div>

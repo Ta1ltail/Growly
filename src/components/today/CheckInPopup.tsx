@@ -9,7 +9,10 @@ import { claimDailyCheckIn } from "@/lib/store";
 import { AnimatedCounter } from "@/components/ui/AnimatedCounter";
 
 export function CheckInPopup() {
-  const [result, setResult] = useState<{ reward: number; streak: number } | null>(null);
+  const [result, setResult] = useState<{
+    reward: number;
+    streak: number;
+  } | null>(null);
   const [dismissed, setDismissed] = useState(false);
 
   useEffect(() => {
@@ -40,10 +43,19 @@ export function CheckInPopup() {
             <Flame
               className="size-14"
               strokeWidth={0}
-              fill={result.streak >= 7 ? "#f97316" : result.streak >= 3 ? "#fb923c" : "#fbbf24"}
+              fill={
+                result.streak >= 7
+                  ? "#f97316"
+                  : result.streak >= 3
+                    ? "#fb923c"
+                    : "#fbbf24"
+              }
             />
             {result.streak >= 7 && (
-              <span className="absolute -right-1 -top-1 text-lg drop-shadow-lg" aria-hidden>
+              <span
+                className="absolute -right-1 -top-1 text-lg drop-shadow-lg"
+                aria-hidden
+              >
                 🔥
               </span>
             )}
@@ -98,7 +110,7 @@ export function CheckInPopup() {
           onClick={() => setDismissed(true)}
           className="mx-auto mt-5 block rounded-xl bg-amber-500 px-6 py-2 text-sm font-semibold text-white transition-all hover:bg-amber-400 active:scale-95"
         >
-          Let&apos; go!
+          Let&apos;s go!
         </button>
       </div>
     </div>

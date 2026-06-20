@@ -1,5 +1,11 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { loadData, saveData, STORAGE_KEY, SCHEMA_VERSION, emptyData } from "./storage";
+import {
+  loadData,
+  saveData,
+  STORAGE_KEY,
+  SCHEMA_VERSION,
+  emptyData,
+} from "./storage";
 import type { AppData } from "./types";
 
 // jsdom-free localStorage stub on globalThis.window.
@@ -52,8 +58,20 @@ describe("loadData validation", () => {
   it("drops habits with a bad shape but keeps valid ones", () => {
     write({
       habits: [
-        { id: "ok", name: "Run", category: "Health", repeatDays: [1, 2], createdAt: "2026-06-01" },
-        { id: "bad-cat", name: "X", category: "Nonsense", repeatDays: [], createdAt: "2026-06-01" },
+        {
+          id: "ok",
+          name: "Run",
+          category: "Health",
+          repeatDays: [1, 2],
+          createdAt: "2026-06-01",
+        },
+        {
+          id: "bad-cat",
+          name: "X",
+          category: "Nonsense",
+          repeatDays: [],
+          createdAt: "2026-06-01",
+        },
         { id: "missing-fields" },
         "not even an object",
       ],
@@ -66,7 +84,13 @@ describe("loadData validation", () => {
   it("filters out-of-range weekday numbers from repeatDays", () => {
     write({
       habits: [
-        { id: "h", name: "R", category: "Health", repeatDays: [0, 7, 3, -1, 2.5], createdAt: "2026-06-01" },
+        {
+          id: "h",
+          name: "R",
+          category: "Health",
+          repeatDays: [0, 7, 3, -1, 2.5],
+          createdAt: "2026-06-01",
+        },
       ],
     });
     expect(loadData().habits[0].repeatDays).toEqual([0, 3]);
@@ -110,7 +134,9 @@ describe("loadData validation", () => {
   });
 
   it("migrates legacy notes (object) into Note[]", () => {
-    write({ notes: { "2026-06-10": "hi", "2026-06-11": 42, "2026-06-12": "  " } });
+    write({
+      notes: { "2026-06-10": "hi", "2026-06-11": 42, "2026-06-12": "  " },
+    });
     const notes = loadData().notes;
     expect(notes).toHaveLength(1);
     expect(notes[0].body).toBe("hi");
@@ -122,7 +148,14 @@ describe("loadData validation", () => {
     write({
       version: SCHEMA_VERSION,
       notes: [
-        { id: "n1", createdAt: "2026-06-10T00:00:00Z", updatedAt: "2026-06-10T00:00:00Z", body: "x", tags: ["a"], links: { habitId: "h" } },
+        {
+          id: "n1",
+          createdAt: "2026-06-10T00:00:00Z",
+          updatedAt: "2026-06-10T00:00:00Z",
+          body: "x",
+          tags: ["a"],
+          links: { habitId: "h" },
+        },
         { id: "bad" }, // dropped
       ],
     });
@@ -144,7 +177,13 @@ describe("loadData validation", () => {
           deadline: "2026-12-31",
           milestones: [{ id: "m", title: "Halfway", at: 5, done: false }],
         },
-        { id: "bad", title: "No numbers", target: "ten", current: 0, createdAt: "2026-06-01" },
+        {
+          id: "bad",
+          title: "No numbers",
+          target: "ten",
+          current: 0,
+          createdAt: "2026-06-01",
+        },
       ],
     });
     const { goals } = loadData();
@@ -156,8 +195,19 @@ describe("loadData validation", () => {
   it("keeps valid audit-log entries", () => {
     write({
       auditLog: [
-        { id: "a1", at: "2026-06-10T10:00:00Z", action: "habit.create", summary: "Created X", habitId: "h" },
-        { id: "a2", at: "2026-06-10T10:00:00Z", action: "not-real", summary: "nope" },
+        {
+          id: "a1",
+          at: "2026-06-10T10:00:00Z",
+          action: "habit.create",
+          summary: "Created X",
+          habitId: "h",
+        },
+        {
+          id: "a2",
+          at: "2026-06-10T10:00:00Z",
+          action: "not-real",
+          summary: "nope",
+        },
       ],
     });
     const { auditLog } = loadData();
@@ -171,7 +221,9 @@ describe("loadData validation", () => {
   });
 
   it("preserves a valid theme and grace setting", () => {
-    write({ settings: { theme: { mode: "light", accent: "rose" }, graceHours: 3 } });
+    write({
+      settings: { theme: { mode: "light", accent: "rose" }, graceHours: 3 },
+    });
     const s = loadData().settings;
     expect(s.theme).toEqual({ mode: "light", accent: "rose" });
     expect(s.graceHours).toBe(3);
@@ -181,22 +233,69 @@ describe("loadData validation", () => {
     const data: AppData = {
       version: SCHEMA_VERSION,
       habits: [
-        { id: "h", name: "R", category: "Health", repeatDays: [1], createdAt: "2026-06-01" },
+        {
+          id: "h",
+          name: "R",
+          category: "Health",
+          repeatDays: [1],
+          createdAt: "2026-06-01",
+        },
       ],
       marks: { "2026-06-10": { h: "done" } },
       notes: [
-        { id: "n", createdAt: "2026-06-10T00:00:00.000Z", updatedAt: "2026-06-10T00:00:00.000Z", body: "good", tags: [], links: { date: "2026-06-10" } },
+        {
+          id: "n",
+          createdAt: "2026-06-10T00:00:00.000Z",
+          updatedAt: "2026-06-10T00:00:00.000Z",
+          body: "good",
+          tags: [],
+          links: { date: "2026-06-10" },
+        },
       ],
-      goals: [{ id: "g", title: "Read", target: 5, current: 1, createdAt: "2026-06-01" }],
-      auditLog: [{ id: "a", at: "2026-06-01T00:00:00.000Z", action: "habit.create", summary: "Created R", habitId: "h" }],
-      settings: { theme: { mode: "dark", accent: "blue" }, graceHours: 5, usedTemplateIds: [] },
+      goals: [
+        {
+          id: "g",
+          title: "Read",
+          target: 5,
+          current: 1,
+          createdAt: "2026-06-01",
+        },
+      ],
+      auditLog: [
+        {
+          id: "a",
+          at: "2026-06-01T00:00:00.000Z",
+          action: "habit.create",
+          summary: "Created R",
+          habitId: "h",
+        },
+      ],
+      settings: {
+        theme: { mode: "dark", accent: "blue" },
+        graceHours: 5,
+        usedTemplateIds: [],
+      },
       profile: { displayName: "Justin", username: "justin" },
       unlocks: { "streak-7": { at: "2026-06-10T00:00:00.000Z", seen: true } },
       economy: {
-        spent: [{ id: "s1", at: "2026-06-11T00:00:00.000Z", amount: 120, item: "flame-azure" }],
+        spent: [
+          {
+            id: "s1",
+            at: "2026-06-11T00:00:00.000Z",
+            amount: 120,
+            item: "flame-azure",
+          },
+        ],
         owned: ["flame-azure"],
         equipped: { flame: "flame-azure" },
-        freezes: [{ id: "f1", at: "2026-06-12T00:00:00.000Z", date: "2026-06-09", habitId: "h" }],
+        freezes: [
+          {
+            id: "f1",
+            at: "2026-06-12T00:00:00.000Z",
+            date: "2026-06-09",
+            habitId: "h",
+          },
+        ],
         bonusCoins: 0,
         lastCheckIn: null,
         checkInStreak: 0,
@@ -205,7 +304,13 @@ describe("loadData validation", () => {
         lastSpinDate: null,
         lastSpinResult: null,
       },
-      progressSeen: { seeded: true, level: 4, title: "Procrastination Survivor", shop: ["flame-gold"], streaks: { h: 7 } },
+      progressSeen: {
+        seeded: true,
+        level: 4,
+        title: "Procrastination Survivor",
+        shop: ["flame-gold"],
+        streaks: { h: 7 },
+      },
     };
     saveData(data);
     expect(loadData()).toEqual(data);
@@ -213,7 +318,13 @@ describe("loadData validation", () => {
 
   it("defaults progressSeen for pre-v5 saves", () => {
     write({ habits: [] });
-    expect(loadData().progressSeen).toEqual({ seeded: false, level: 1, title: "Habit Newbie", shop: [], streaks: {} });
+    expect(loadData().progressSeen).toEqual({
+      seeded: false,
+      level: 1,
+      title: "Habit Newbie",
+      shop: [],
+      streaks: {},
+    });
   });
 
   it("defaults profile and unlocks for pre-v3 saves", () => {
@@ -233,6 +344,9 @@ describe("loadData validation", () => {
     });
     const { unlocks } = loadData();
     expect(Object.keys(unlocks)).toEqual(["streak-7"]);
-    expect(unlocks["streak-7"]).toEqual({ at: "2026-06-10T00:00:00Z", seen: true });
+    expect(unlocks["streak-7"]).toEqual({
+      at: "2026-06-10T00:00:00Z",
+      seen: true,
+    });
   });
 });

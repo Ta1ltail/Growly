@@ -6,7 +6,8 @@ import { SCHEMA_VERSION } from "@/lib/storage";
 import { disableDevMode, resetDevSettings } from "@/lib/devmode";
 import { DevGroup, DevRow, DevStat, DevButton } from "../ui";
 
-export const GENERAL_TERMS = "general app version schema route reload reset disable developer mode status";
+export const GENERAL_TERMS =
+  "general app version schema route reload reset disable developer mode status";
 
 export function GeneralSection({ query }: { query: string }) {
   const data = useAppData();
@@ -30,14 +31,30 @@ export function GeneralSection({ query }: { query: string }) {
       </DevGroup>
 
       <DevGroup title="Quick actions">
-        <DevRow label="Reload app" hint="Hard re-read of localStorage and remount." query={query} terms="refresh restart">
+        <DevRow
+          label="Reload app"
+          hint="Hard re-read of localStorage and remount."
+          query={query}
+          terms="refresh restart"
+        >
           <DevButton onClick={() => window.location.reload()}>Reload</DevButton>
         </DevRow>
         <DevRow label="Scroll to top" query={query} terms="top up">
-          <DevButton onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>Top</DevButton>
+          <DevButton
+            onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+          >
+            Top
+          </DevButton>
         </DevRow>
-        <DevRow label="Reset dev settings" hint="Clears all dev toggles. Keeps dev mode unlocked." query={query} terms="default clear">
-          <DevButton tone="danger" onClick={resetDevSettings}>Reset</DevButton>
+        <DevRow
+          label="Reset dev settings"
+          hint="Clears all dev toggles. Keeps dev mode unlocked."
+          query={query}
+          terms="default clear"
+        >
+          <DevButton tone="danger" onClick={resetDevSettings}>
+            Reset
+          </DevButton>
         </DevRow>
       </DevGroup>
 
@@ -48,7 +65,9 @@ export function GeneralSection({ query }: { query: string }) {
           query={query}
           terms="turn off exit hide fab"
         >
-          <DevButton tone="danger" onClick={disableDevMode}>Disable</DevButton>
+          <DevButton tone="danger" onClick={disableDevMode}>
+            Disable
+          </DevButton>
         </DevRow>
       </DevGroup>
     </>

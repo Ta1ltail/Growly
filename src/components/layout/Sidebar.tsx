@@ -63,7 +63,9 @@ export function Sidebar() {
                   <span className="relative">
                     <Icon
                       className={`size-4.5 transition-all duration-300 group-hover:animate-icon-wiggle ${
-                        active ? `text-accent animate-icon-bounce` : `${colorClass} group-hover:text-ink`
+                        active
+                          ? `text-accent animate-icon-bounce`
+                          : `${colorClass} group-hover:text-ink`
                       }`}
                       strokeWidth={active ? 2.5 : 2}
                     />

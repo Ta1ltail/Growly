@@ -66,7 +66,9 @@ describe("progressEvents — level & title", () => {
 
   it("emits a level-up for the current level when unseen", () => {
     const data = appData({ habits: [h], marks }); // seen.level defaults to 1
-    expect(progressEvents(data, today).find((e) => e.kind === "levelup")?.level).toBe(2);
+    expect(
+      progressEvents(data, today).find((e) => e.kind === "levelup")?.level,
+    ).toBe(2);
   });
 
   it("suppresses the level-up once seen covers it", () => {
@@ -75,18 +77,24 @@ describe("progressEvents — level & title", () => {
       marks,
       progressSeen: { ...emptyData.progressSeen, level: 2 },
     });
-    expect(progressEvents(data, today).some((e) => e.kind === "levelup")).toBe(false);
+    expect(progressEvents(data, today).some((e) => e.kind === "levelup")).toBe(
+      false,
+    );
   });
 
   it("emits a new-title event, suppressed once seen", () => {
     const data = appData({ habits: [h], marks });
-    expect(progressEvents(data, today).find((e) => e.kind === "title")?.titleName).toBe("Getting Started");
+    expect(
+      progressEvents(data, today).find((e) => e.kind === "title")?.titleName,
+    ).toBe("Getting Started");
     const seen = appData({
       habits: [h],
       marks,
       progressSeen: { ...emptyData.progressSeen, title: "Getting Started" },
     });
-    expect(progressEvents(seen, today).some((e) => e.kind === "title")).toBe(false);
+    expect(progressEvents(seen, today).some((e) => e.kind === "title")).toBe(
+      false,
+    );
   });
 });
 
@@ -98,7 +106,9 @@ describe("progressEvents — streaks", () => {
   const marks = doneRun("h1", today, 7); // current streak = 7
 
   it("fires a streak event at a milestone tier", () => {
-    const ev = progressEvents(appData({ habits: [h], marks }), today).find((e) => e.kind === "streak");
+    const ev = progressEvents(appData({ habits: [h], marks }), today).find(
+      (e) => e.kind === "streak",
+    );
     expect(ev?.tier).toBe(7);
     expect(ev?.habitId).toBe("h1");
   });
@@ -109,7 +119,9 @@ describe("progressEvents — streaks", () => {
       marks,
       progressSeen: { ...emptyData.progressSeen, streaks: { h1: 7 } },
     });
-    expect(progressEvents(data, today).some((e) => e.kind === "streak")).toBe(false);
+    expect(progressEvents(data, today).some((e) => e.kind === "streak")).toBe(
+      false,
+    );
   });
 });
 
@@ -119,23 +131,35 @@ describe("progressEvents — shop unlocks & baseline", () => {
   const today = D("2026-06-30");
   const DAYS = 250;
   const start = dateKey(addDays(today, -(DAYS - 1)));
-  const h = habit({ id: "h1", startDate: start, createdAt: new Date(addDays(today, -(DAYS - 1))).toISOString() });
+  const h = habit({
+    id: "h1",
+    startDate: start,
+    createdAt: new Date(addDays(today, -(DAYS - 1))).toISOString(),
+  });
   const marks = doneRun("h1", today, DAYS); // deep perfect history → high level
   const data = appData({ habits: [h], marks });
 
   it("reaches at least level 10 (unlocks every gated item)", () => {
-    expect(summarizeProgress(data, today).level.level).toBeGreaterThanOrEqual(10);
+    expect(summarizeProgress(data, today).level.level).toBeGreaterThanOrEqual(
+      10,
+    );
   });
 
   it("emits a shop event per newly-unlocked level-gated item", () => {
-    const ids = progressEvents(data, today).filter((e) => e.kind === "shop").map((e) => e.shopId);
+    const ids = progressEvents(data, today)
+      .filter((e) => e.kind === "shop")
+      .map((e) => e.shopId);
     expect(ids).toContain("confetti-fire"); // minLevel 5
     expect(ids).toContain("accent-amber"); // minLevel 8
     expect(ids).toContain("flame-gold"); // minLevel 10
   });
 
   it("baselineProgressSeen yields a queue with no progress events", () => {
-    const based = appData({ habits: [h], marks, progressSeen: baselineProgressSeen(data, today) });
+    const based = appData({
+      habits: [h],
+      marks,
+      progressSeen: baselineProgressSeen(data, today),
+    });
     expect(progressEvents(based, today)).toEqual([]);
   });
 });

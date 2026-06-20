@@ -29,7 +29,11 @@ import { makeHabit, applyHabitForm } from "@/lib/habits";
 import { habitStreaks } from "@/lib/stats";
 import { frozenSet } from "@/lib/economy";
 import { StreakFlame } from "@/components/habits/StreakFlame";
-import { habitScheduleText, PRIORITY_COLOR, PRIORITY_LABEL } from "@/lib/format";
+import {
+  habitScheduleText,
+  PRIORITY_COLOR,
+  PRIORITY_LABEL,
+} from "@/lib/format";
 import { useToday } from "@/hooks/useToday";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Card } from "@/components/ui/Card";
@@ -38,9 +42,13 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
 import { Pagination } from "@/components/ui/Pagination";
+import {
+  StaggerContainer,
+  StaggerItem,
+} from "@/components/ui/StaggerContainer";
 import { HabitForm } from "@/components/habits/HabitForm";
+import { IconBtn } from "@/components/ui/IconBtn";
 
-// Spec §12: list scrolls after 12 rows; paginate 20 active habits per page.
 const PAGE_SIZE = 7;
 const SCROLL_AFTER = 12;
 const ROW_PX = 64; // approx active-habit row height incl. gap
@@ -67,7 +75,10 @@ export default function HabitsPage() {
     [data.habits],
   );
   const filterOptions = useMemo(
-    () => [{ value: "All" as const, label: "All" }, ...usedCategories.map((c) => ({ value: c, label: c }))],
+    () => [
+      { value: "All" as const, label: "All" },
+      ...usedCategories.map((c) => ({ value: c, label: c })),
+    ],
     [usedCategories],
   );
 
@@ -76,7 +87,8 @@ export default function HabitsPage() {
     const q = query.trim().toLowerCase();
     return data.habits.filter(
       (h) =>
-        (filter === "All" || h.category === filter) && (q === "" || h.name.toLowerCase().includes(q)),
+        (filter === "All" || h.category === filter) &&
+        (q === "" || h.name.toLowerCase().includes(q)),
     );
   }, [data.habits, filter, query]);
 
@@ -88,7 +100,10 @@ export default function HabitsPage() {
   // next user navigation.
   const pageCount = Math.max(1, Math.ceil(activeHabits.length / PAGE_SIZE));
   const safePage = Math.min(page, pageCount - 1);
-  const pageHabits = activeHabits.slice(safePage * PAGE_SIZE, (safePage + 1) * PAGE_SIZE);
+  const pageHabits = activeHabits.slice(
+    safePage * PAGE_SIZE,
+    (safePage + 1) * PAGE_SIZE,
+  );
   // Cap the visible list to ~12 rows; the rest scrolls within the page.
   const listScrolls = pageHabits.length > SCROLL_AFTER;
 
@@ -134,27 +149,34 @@ export default function HabitsPage() {
                 className="w-full rounded-xl border border-line bg-surface2 py-2 pl-9 pr-3 text-sm outline-none placeholder:text-faint focus:border-accent"
               />
             </div>
-            <Segmented options={filterOptions} value={filter} onChange={setFilter} />
+            <Segmented
+              options={filterOptions}
+              value={filter}
+              onChange={setFilter}
+            />
           </div>
 
-          <div
-            className={`flex flex-col gap-2 stagger-children ${listScrolls ? "overflow-y-auto pr-1" : ""}`}
-            style={listScrolls ? { maxHeight: SCROLL_AFTER * ROW_PX } : undefined}
+          <StaggerContainer
+            className={`flex flex-col gap-2 ${listScrolls ? "overflow-y-auto pr-1" : ""}`}
+            style={
+              listScrolls ? { maxHeight: SCROLL_AFTER * ROW_PX } : undefined
+            }
           >
             {pageHabits.map((h) => (
-              <HabitRow
-                key={h.id}
-                habit={h}
-                streak={habitStreaks(h, data.marks, today, frozen).current}
-                onEdit={() => setEditing(h)}
-                onDuplicate={() => duplicateHabit(h.id)}
-                onArchive={() => setHabitArchived(h.id, true)}
-                onDelete={() => setConfirmDelete(h)}
-              />
+              <StaggerItem key={h.id}>
+                <HabitRow
+                  habit={h}
+                  streak={habitStreaks(h, data.marks, today, frozen).current}
+                  onEdit={() => setEditing(h)}
+                  onDuplicate={() => duplicateHabit(h.id)}
+                  onArchive={() => setHabitArchived(h.id, true)}
+                  onDelete={() => setConfirmDelete(h)}
+                />
+              </StaggerItem>
             ))}
-          </div>
+          </StaggerContainer>
 
-          <            Pagination
+          <Pagination
             page={safePage}
             pageCount={pageCount}
             total={activeHabits.length}
@@ -164,7 +186,9 @@ export default function HabitsPage() {
 
           {archivedHabits.length > 0 && (
             <>
-              <h2 className="mb-2 mt-6 text-xs font-semibold uppercase tracking-wide text-faint">Archived</h2>
+              <h2 className="mb-2 mt-6 text-xs font-semibold uppercase tracking-wide text-faint">
+                Archived
+              </h2>
               <div className="flex flex-col gap-2">
                 {archivedHabits.map((h) => (
                   <HabitRow
@@ -228,8 +252,9 @@ export default function HabitsPage() {
         }
       >
         <p className="text-sm text-muted">
-          Delete “{confirmDelete?.name}”? Its past marks stay in your history (Honest Tracking), but it
-          will no longer be scheduled. This cannot be undone.
+          Delete “{confirmDelete?.name}”? Its past marks stay in your history
+          (Honest Tracking), but it will no longer be scheduled. This cannot be
+          undone.
         </p>
       </Modal>
     </div>
@@ -255,20 +280,30 @@ function HabitRow({
 }) {
   const priority = habit.priority ?? "med";
   return (
-    <Card className={`flex items-center gap-3 px-4 py-3 ${archived ? "opacity-60" : ""}`}>
-      <span className="size-2.5 shrink-0 rounded-full" style={{ backgroundColor: CATEGORY_COLORS[habit.category] }} />
+    <Card
+      className={`flex items-center gap-3 px-4 py-3 ${archived ? "opacity-60" : ""}`}
+    >
+      <span
+        className="size-2.5 shrink-0 rounded-full"
+        style={{ backgroundColor: CATEGORY_COLORS[habit.category] }}
+      />
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
           <span className="truncate text-sm font-medium">{habit.name}</span>
           <span
             className="rounded-full px-1.5 py-0.5 text-[10px] font-semibold"
-            style={{ color: PRIORITY_COLOR[priority], backgroundColor: `${PRIORITY_COLOR[priority]}1a` }}
+            style={{
+              color: PRIORITY_COLOR[priority],
+              backgroundColor: `${PRIORITY_COLOR[priority]}1a`,
+            }}
           >
             {PRIORITY_LABEL[priority]}
           </span>
         </div>
         <p className="mt-0.5 flex items-center gap-1 truncate text-xs text-muted">
-          <span className="truncate">{habit.category} · {habitScheduleText(habit)}</span>
+          <span className="truncate">
+            {habit.category} · {habitScheduleText(habit)}
+          </span>
           {streak > 0 && (
             <>
               <span aria-hidden>·</span>
@@ -278,40 +313,23 @@ function HabitRow({
         </p>
       </div>
       <div className="flex items-center gap-0.5">
-        <IconBtn label="Edit" onClick={onEdit}><Pencil className="size-4" /></IconBtn>
-        <IconBtn label="Duplicate" onClick={onDuplicate}><Copy className="size-4" /></IconBtn>
-        <IconBtn label={archived ? "Restore" : "Archive"} onClick={onArchive}>
-          {archived ? <ArchiveRestore className="size-4" /> : <Archive className="size-4" />}
+        <IconBtn label="Edit" onClick={onEdit}>
+          <Pencil className="size-4" />
         </IconBtn>
-        <IconBtn label="Delete" danger onClick={onDelete}><Trash2 className="size-4" /></IconBtn>
+        <IconBtn label="Duplicate" onClick={onDuplicate}>
+          <Copy className="size-4" />
+        </IconBtn>
+        <IconBtn label={archived ? "Restore" : "Archive"} onClick={onArchive}>
+          {archived ? (
+            <ArchiveRestore className="size-4" />
+          ) : (
+            <Archive className="size-4" />
+          )}
+        </IconBtn>
+        <IconBtn label="Delete" danger onClick={onDelete}>
+          <Trash2 className="size-4" />
+        </IconBtn>
       </div>
     </Card>
-  );
-}
-
-function IconBtn({
-  children,
-  label,
-  onClick,
-  danger = false,
-}: {
-  children: React.ReactNode;
-  label: string;
-  onClick: () => void;
-  danger?: boolean;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      aria-label={label}
-      title={label}
-      className={`group rounded-lg p-1.5 text-muted transition-all duration-200 hover:scale-110 ${
-        danger ? "hover:bg-missed/10 hover:text-missed" : "hover:bg-surface2 hover:text-ink"
-      }`}
-    >
-      <span className="inline-flex items-center justify-center group-hover:animate-icon-wiggle">
-        {children}
-      </span>
-    </button>
   );
 }

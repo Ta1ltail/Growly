@@ -1,25 +1,25 @@
 ############################################################
-#   PROJECT 101 - ARCHITECTURE  (v1.0, +feature categories) #
+#   PROJECT 101 - ARCHITECTURE  (v3.0 — optimized)         #
 #   Folder structure, gamification model, economy model,    #
 #   engagement model, theme, data flow                      #
-#   Updated: 2026-06-18 (v2)                                     #
+#   Updated: 2026-06-20 (v3)                                #
 ############################################################
 
-  App: "LifeGrid" - a spreadsheet-style habit & task tracker.
+  App: "Project 101" — a spreadsheet-style habit & task tracker.
   Stack: Next.js 16.2.9 (App Router) + TypeScript + Tailwind v4,
-  localStorage persistence (schema v6), Vitest. Cloud/accounts/payments
-  are still future phases (see FINAL_BUILD_PLAN.txt).
+  localStorage persistence (schema v6), Vitest, motion (v12),
+  sonner, zod (v4), clsx + tailwind-merge.
+  Cloud/accounts/payments are still future phases.
 
-  NOTE: this is a MODIFIED Next.js - read node_modules/next/dist/docs/
-  before using Next-specific APIs (see AGENTS.md).
+  Dev server: npm run dev (uses --webpack due to Turbopack Windows crash)
 
 
 ==========================================================
  FOLDER STRUCTURE  (src/)
 ==========================================================
   app/                      <- routes (Next.js App Router)
-    layout.tsx                root: fonts, no-flash theme script, AmbientBackground, AppShell
-    globals.css               design system (tokens, dark/light, ALL keyframes)
+    layout.tsx                root: fonts, no-flash theme script, AppShell
+    globals.css               design system (tokens, dark/light, keyframes)
     loading.tsx               route-level Suspense skeleton
     offline/                  offline fallback page (PWA)
     page.tsx                  Dashboard (widgets + progress + insights)
@@ -31,30 +31,23 @@
     today/                    daily habit marking + check-in + quest + spin
 
   components/
-    layout/                   AppShell, Sidebar, BottomNav, navItems,
-                              AmbientBackground, ThemeApplier
-    ui/                       Button, Card, Modal, PageHeader, PageSkeleton, Skeleton,
+    layout/                   AppShell, Sidebar, BottomNav, navItems, ThemeApplier
+    ui/                       Button, Card, Modal, PageHeader, PageSkeleton,
                               ProgressBar, ProgressRing, StatCard, Segmented,
                               EmptyState, Pagination, ReorderableGrid,
-                              OnboardingWizard, KeyboardShortcutsModal, AnimatedCounter
+                              OnboardingWizard, KeyboardShortcutsModal,
+                              AnimatedCounter, StaggerContainer, IconBtn
     achievements/             AchievementBadge
-    celebrations/             CelebrationCenter, CelebrationManager, CelebrationToast,
-                              Confetti
-    dashboard/                DashboardWidgets
+    celebrations/             CelebrationCenter, CelebrationManager, Confetti
     economy/                  CoinChip, CoinBreakdownCard, AccentThemeApplier
     habits/                   HabitForm, MarkButton, WeekdayPicker, StreakFlame
     goals/                    GoalForm
     notes/                    NoteEditor
     profile/                  ProfileEditModal
-    progression/              XpBar, TitleDisplay, RankAvatar, TitlesModal,
-                              NextMilestoneWidget
+    progression/              XpBar, TitleDisplay, RankAvatar, TitlesModal, NextMilestoneWidget
     stats/                    TrendLineChart
     today/                    CheckInPopup, DailyQuestCard, DailySpinModal
-    devmode/                  DevMode (FAB + Ctrl/Cmd+Shift+D + style injector +
-                              FPS meter + state logger), DevModePanel, ui kit, and
-                              8 sections/ (General, UI Controls, Performance,
-                              Database Tools, User Controls, AI Settings, Debug
-                              Tools, System Information)
+    devmode/                  DevMode, DevModePanel, ui kit, 7 sections
 
   hooks/
     useToday.ts               one stable Date for the session
@@ -62,45 +55,37 @@
     useKeyboardShortcuts.ts   global keyboard shortcuts (g-prefix nav, undo/redo)
 
   lib/                        framework-free logic (tested + reusable)
-    types.ts                  data shapes (incl. Economy, Rarity, AchievementDef,
-                              Profile, Unlocks, DailyQuest, ProgressSeen)
+    types.ts                  data shapes
     categories.ts             categories + colors
-    util.ts                   shared uid() (refactored from 5 duplicates)
+    util.ts                   cn() utility (clsx + tailwind-merge), uid(), TONE constant
     marks.ts  policy.ts       mark cycle/labels + Honest-Tracking edit rules
-    storage.ts                localStorage load/save (SCHEMA_VERSION = 6) + date helpers
+    storage.ts                localStorage load/save (schema v6) + date helpers
     store.ts                  shared store (useSyncExternalStore) + all actions
-                              (incl. claimDailyCheckIn, refreshDailyQuest,
-                               claimDailyQuest, doDailySpin, dev tools)
-    devmode.ts                Developer Mode settings store (OWN localStorage key)
-    devSeed.ts                demo / stress-test data generators (Dev Mode)
+    devmode.ts                Developer Mode settings store
+    devSeed.ts                demo / stress-test data generators
     history.ts                undo/redo history stack (50-deep)
     stats.ts                  streaks + completion math + habit correlations
     insights.ts  format.ts    plain-language insights + formatters
     habits.ts  templates.ts   habit builders + starter routines
     theme.ts                  theme modes + accent presets
     prediction.ts             completion/streak prediction engine
-    export.ts                 CSV/JSON export/import utilities
-    customCategories.ts       custom category extension system
+    export.ts                 CSV/JSON export/import (Zod-validated)
     -- gamification engine (all PURE + derived from marks) --
-    xp.ts                     XP sources + super-linear level curve (levelInfo)
+    xp.ts                     XP sources + super-linear level curve
     achievements.ts           28 achievement defs, buildGameStats, evaluateAchievements
     titles.ts                 20 titles -> 5 ranks, titleForLevel
     progress.ts               summarizeProgress facade + reconcileUnlocks
-    rarity.ts                 RARITY_STYLE (visuals + celebration tier) - UI only
-    ranks.ts                  RANK_STYLE (rank visuals) - UI only
+    rarity.ts                 RARITY_STYLE (visuals + celebration tier)
+    ranks.ts                  RANK_STYLE (rank visuals)
     cosmetics.ts              avatar + banner presets, resolvers
     economy.ts                coins (DERIVED), shop catalog, cosmetic skins,
-                              streak-freeze rules + engagement rewards:
-                              levelUpBonus, streakMilestoneBonus, checkInReward,
-                              generateDailyQuest, randomSpinReward
+                              streak-freeze rules + engagement rewards
     celebrations.ts           unified celebration queue (achievements + progress)
-    *.test.ts                 81 tests across 5 files (co-located with source)
+    *.test.ts                 81 tests across 5 files
 
   public/
     manifest.json             PWA manifest
     sw.js                     service worker (offline-first caching)
-    icon-192.svg              PWA icon 192x192
-    icon-512.svg              PWA icon 512x512
 
 
 ==========================================================
@@ -112,10 +97,10 @@
   counter. This keeps it consistent with Honest Tracking (anti-cheat).
 
   The ONLY persisted gamification state (schema v6):
-    - unlocks: { [achievementId]: { at, seen } }   (for one-time popups)
+    - unlocks: { [achievementId]: { at, seen } }
     - profile: editable identity
     - economy: spend ledger + owned/equipped cosmetics + freeze log +
-               engagement fields (see ECONOMY MODEL below)
+               engagement fields
 
   One call does it all:
     summarizeProgress(data, today)
@@ -125,38 +110,20 @@
 
 
 ==========================================================
- ECONOMY MODEL  (coins, shop, streak-freeze)
+ ECONOMY MODEL
 ==========================================================
-  Coins mirror XP: DERIVED, never granted. lib/economy.ts.
+  Coins mirror XP: DERIVED, never granted.
     balance = coinsEarned(history, unlockedRarities, economy)
            - SUM(spend ledger), clamped >= 0
-    coinsEarned includes:
-      - 2/completion + 10/perfect-day (from marks)
-      - RARITY_COINS (from achievements)
-      - bonusCoins (from engagement features - stored in economy)
 
-  Persisted economy state (the ONLY mutable economy facts):
-    - spent:       append-only { id, at, amount, item } ledger
+  Persisted economy state:
+    - spent:       append-only spend ledger
     - owned:       cosmetic catalog ids bought
     - equipped:    { flame | confetti | accent -> itemId }
     - freezes:     dated streak-freeze log
-    - bonusCoins:  cumulative engagement reward coins (v6)
-    - lastCheckIn: dateKey of last daily check-in (v6)
-    - checkInStreak: consecutive daily check-in count (v6)
-    - lastQuestDate: dateKey of last quest generation (v6)
-    - currentQuest: active DailyQuest (v6)
-    - lastSpinDate: dateKey of last daily spin (v6)
-
-  Engagement rewards are added to bonusCoins via store actions:
-    claimDailyCheckIn() -> { reward, streak }
-    refreshDailyQuest() / claimDailyQuest()
-    doDailySpin() -> { label, amount, isFreeze }
-
-  Streak-freeze: protects ONE genuine recorded miss. The miss stays
-  in history; habitStreaks(..., frozen?) treats it as neutral.
-    - Capped 1 per rolling 7 days
-    - frozenSet() is threaded into all streak readouts + shown with
-      snowflake badge (calendar day-detail + tracker grid)
+    - bonusCoins:  cumulative engagement reward coins
+    - lastCheckIn / checkInStreak / lastQuestDate / currentQuest
+    - lastSpinDate
 
 
 ==========================================================
@@ -165,85 +132,86 @@
   - All colors are CSS variables (--c-*). Light on :root, dark on
     [data-theme="dark"]. Accent cosmetic overrides --c-accent.
   - layout.tsx inline script reads saved theme BEFORE paint -> NO flash.
-  - globals.css holds the full motion language: tokens (--animate-*,
-    --ease-*, --dur-*) + all keyframes. prefers-reduced-motion blanket.
+  - globals.css holds the full motion language + all keyframes.
+  - prefers-reduced-motion blanket disables all animations.
 
 
 ==========================================================
  DATA FLOW
 ==========================================================
-  UI  ->  store actions (addHabit, cycleMark, updateProfile,
-          claimDailyCheckIn, ...)
+  UI  ->  store actions (addHabit, cycleMark, ...)
        ->  update() writes localStorage + notifies subscribers
-       ->  useAppData() (useSyncExternalStore) re-renders every
-           screen. One source of truth.
+       ->  useAppData() (useSyncExternalStore) re-renders every screen.
   Derived gamification is recomputed on render via summarizeProgress.
 
-  Performance: The store provides both useAppData() (full subscription)
-  and useAppDataSelector<T>() (granular slice subscription). 7 leaf UI
-  components are wrapped in React.memo; StreakFlame uses the selector hook
-  to avoid re-rendering on unrelated store changes. The tracker grid
-  extracts a memoized TrackerCell with a stable useCallback handler so a
-  single cell action doesn't re-render the entire grid.
-
-  Layout system: Pages use calc(100vh - Npx) scroll containers for
-  responsive layouts — prevents page-level scrolling on Today (habits),
-  Goals, Notes, and Templates. Exception: Dashboard, Stats, Achievements,
-  Shop, Settings, and Profile scroll normally. Dashboard widgets use fixed
-  heights (h-[180px] or h-[90px]) to prevent layout shifting.
-
-  Keyboard shortcuts: useKeyboardShortcuts() in AppShell dispatches
-    custom events (kb:toggle-help, kb:add-habit) and calls router.push
-    for g-prefix navigation. Undo/redo via Ctrl+Z / Ctrl+Shift+Z
-    calls store actions (undoAction / redoAction) backed by history.ts.
-
-  Dashboard Today card: shows Done/Remaining breakdown, time-of-day
-  indicator (Morning/Afternoon/Evening with hours remaining), and habits
-  remaining count. All in a compact h-[180px] card with no wasted space.
-
-  Widget order + onboarding state persisted in settings via store actions
-    (setWidgetOrder, completeOnboarding, addCustomCategory, ...).
+  Performance:
+  - Debounced saves (100ms) for high-frequency mark toggles
+  - React.memo on 8 leaf components (StatCard, ProgressBar, ProgressRing,
+    CoinChip, EmptyState, Pagination, Segmented, CircularProgress)
+  - useAppDataSelector for granular subscriptions
+  - useMemo on expensive computations (widgetContent, streaks, insights)
+  - Lazy-loaded Confetti via React.lazy() + Suspense
+  - stabilized callbacks (useCallback on TrackerCell handlers)
 
 
 ==========================================================
- DEVELOPER MODE  (hidden power-user layer)
+ UI/UX TOOLING
 ==========================================================
-  Unlocked with Ctrl/Cmd+Shift+D -> FAB -> slide-over. Own localStorage
-  store (lib/devmode.ts, key project101.devmode.v1). 8 sections,
-  cross-section search, data tools (JSON edit, export/import, seed,
-  wipe). Derived-gamification invariant still holds: dev tools only
-  edit persisted facts; coins/XP/streaks recompute from history.
+  Animation:
+    - motion (framer-motion v12): page transitions (AnimatePresence),
+      micro-interactions (whileHover on Card, whileTap on Button),
+      stagger list animations (StaggerContainer + StaggerItem)
+    - CSS keyframes: fade-in, rise, pop, flicker, glow-pulse, burst,
+      icon animations, toast in/out, celebrate-in, confetti-fall
+
+  Components:
+    - cn() utility (clsx + tailwind-merge) for className composition
+    - IconBtn: shared action button with 44px touch target
+    - StaggerContainer/StaggerItem: motion-based staggered entrance
+    - Pagination: shared page switcher (used in habits, notes, achievements)
+    - Card: motion.div with layout animation + whileHover spring
+
+  Notifications:
+    - sonner Toaster in AppShell for system toasts
+    - CelebrationManager uses sonner for achievement toasts
+
+  Validation:
+    - Zod v4 (z.strictObject) for importJSON validation
+    - All localStorage records sanitized on load
 
 
 ==========================================================
  PWA / OFFLINE
 ==========================================================
-  - public/manifest.json: standalone display, SVG icons, theme color
-  - public/sw.js: service worker with offline-first caching strategy
-    (network-first for navigation, cache-first for static assets,
-    offline fallback to /offline)
-  - src/app/offline/page.tsx: user-friendly offline fallback page
-  - layout.tsx: registers SW on load via next/script (afterInteractive)
+  - public/manifest.json: standalone display, SVG icons
+  - public/sw.js: service worker with offline-first caching
+  - src/app/offline/page.tsx: offline fallback page
+  - layout.tsx: registers SW on load via next/script
 
 
 ==========================================================
  QUALITY GATES
 ==========================================================
   Gates: npx tsc --noEmit && npm run lint && npx vitest run && npm run build
-  Status (2026-06-18 v2): GREEN. All feature categories + economy +
-  developer mode + UI/UX overhaul + engagement features + PWA + bug fixes
-  + memoization optimization + layout fixes verified. tsc 0, eslint 0
-  errors/1 warning (RankAvatar img intentional), vitest 81 passing,
-  build clean.
+  Status (2026-06-20 v3): GREEN. All optimization work verified:
+    tsc 0, vitest 81/81, build clean, prettier 95 files formatted,
+    unused deps removed (@dnd-kit/*, culori, date-fns),
+    unused AI config removed (AiSettingsSection, 60 lines),
+    dead code deleted (CelebrationToast, duplication utils.ts)
 
-  Lint gotcha: React Compiler rule `react-hooks/preserve-manual-
-  memoization` requires useMemo deps to match the props actually read.
-  Sync setState in an effect is forbidden by `react-hooks/set-state-in-effect`.
-  Hook-name gotcha: a plain helper must NOT start with `use` if it's
-  called from a non-component/non-hook fn (rules-of-hooks).
+  Tools installed:
+    - runtime: motion, sonner, clsx, tailwind-merge, zod
+    - dev: knip, prettier, @next/bundle-analyzer
 
-  Dev server: uses `next dev --webpack` due to Turbopack crash on
-  Windows (Next.js 16.2.9 bug reading 'nul' device path on CSS files).
+
+==========================================================
+ KNOWN LIMITATIONS
+==========================================================
+  - Turbopack crashes on Windows (uses --webpack dev flag)
+  - postcss vulnerability in next@16.2.9 transitive dep
+    (requires Next.js upgrade to fix)
+  - No cloud sync — data is localStorage-only
+  - No accounts/auth — all data is device-local
 
 
 ############################################################

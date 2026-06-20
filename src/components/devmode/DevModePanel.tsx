@@ -14,7 +14,6 @@ import {
   Gauge,
   Database,
   UserCog,
-  Bot,
   Bug,
   Cpu,
 } from "lucide-react";
@@ -23,9 +22,14 @@ import { matchQuery } from "./ui";
 import { GeneralSection, GENERAL_TERMS } from "./sections/GeneralSection";
 import { UiControlsSection, UI_TERMS } from "./sections/UiControlsSection";
 import { PerformanceSection, PERF_TERMS } from "./sections/PerformanceSection";
-import { DatabaseToolsSection, DB_TERMS } from "./sections/DatabaseToolsSection";
-import { UserControlsSection, USER_TERMS } from "./sections/UserControlsSection";
-import { AiSettingsSection, AI_TERMS } from "./sections/AiSettingsSection";
+import {
+  DatabaseToolsSection,
+  DB_TERMS,
+} from "./sections/DatabaseToolsSection";
+import {
+  UserControlsSection,
+  USER_TERMS,
+} from "./sections/UserControlsSection";
 import { DebugToolsSection, DEBUG_TERMS } from "./sections/DebugToolsSection";
 import { SystemInfoSection, SYS_TERMS } from "./sections/SystemInfoSection";
 
@@ -38,14 +42,55 @@ interface SectionDef {
 }
 
 const SECTIONS: SectionDef[] = [
-  { id: "general", label: "General", icon: Settings2, terms: GENERAL_TERMS, Component: GeneralSection },
-  { id: "ui", label: "UI Controls", icon: Palette, terms: UI_TERMS, Component: UiControlsSection },
-  { id: "performance", label: "Performance", icon: Gauge, terms: PERF_TERMS, Component: PerformanceSection },
-  { id: "database", label: "Database Tools", icon: Database, terms: DB_TERMS, Component: DatabaseToolsSection },
-  { id: "user", label: "User Controls", icon: UserCog, terms: USER_TERMS, Component: UserControlsSection },
-  { id: "ai", label: "AI Settings", icon: Bot, terms: AI_TERMS, Component: AiSettingsSection },
-  { id: "debug", label: "Debug Tools", icon: Bug, terms: DEBUG_TERMS, Component: DebugToolsSection },
-  { id: "system", label: "System Information", icon: Cpu, terms: SYS_TERMS, Component: SystemInfoSection },
+  {
+    id: "general",
+    label: "General",
+    icon: Settings2,
+    terms: GENERAL_TERMS,
+    Component: GeneralSection,
+  },
+  {
+    id: "ui",
+    label: "UI Controls",
+    icon: Palette,
+    terms: UI_TERMS,
+    Component: UiControlsSection,
+  },
+  {
+    id: "performance",
+    label: "Performance",
+    icon: Gauge,
+    terms: PERF_TERMS,
+    Component: PerformanceSection,
+  },
+  {
+    id: "database",
+    label: "Database Tools",
+    icon: Database,
+    terms: DB_TERMS,
+    Component: DatabaseToolsSection,
+  },
+  {
+    id: "user",
+    label: "User Controls",
+    icon: UserCog,
+    terms: USER_TERMS,
+    Component: UserControlsSection,
+  },
+  {
+    id: "debug",
+    label: "Debug Tools",
+    icon: Bug,
+    terms: DEBUG_TERMS,
+    Component: DebugToolsSection,
+  },
+  {
+    id: "system",
+    label: "System Information",
+    icon: Cpu,
+    terms: SYS_TERMS,
+    Component: SystemInfoSection,
+  },
 ];
 
 export function DevModePanel({ onClose }: { onClose: () => void }) {
@@ -62,11 +107,22 @@ export function DevModePanel({ onClose }: { onClose: () => void }) {
 
   const searching = query.trim() !== "";
   const active = SECTIONS.find((s) => s.id === dev.section) ?? SECTIONS[0];
-  const shown = searching ? SECTIONS.filter((s) => matchQuery(query, `${s.label} ${s.terms}`)) : [active];
+  const shown = searching
+    ? SECTIONS.filter((s) => matchQuery(query, `${s.label} ${s.terms}`))
+    : [active];
 
   return (
-    <div className="fixed inset-0 z-[70] flex justify-end" role="dialog" aria-modal="true" aria-label="Developer Mode">
-      <button aria-label="Close developer mode" className="absolute inset-0 bg-black/40 backdrop-blur-[2px]" onClick={onClose} />
+    <div
+      className="fixed inset-0 z-[70] flex justify-end"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Developer Mode"
+    >
+      <button
+        aria-label="Close developer mode"
+        className="absolute inset-0 bg-black/40 backdrop-blur-[2px]"
+        onClick={onClose}
+      />
 
       <aside className="relative flex h-full w-full max-w-[26rem] flex-col border-l border-line bg-surface shadow-2xl animate-rise">
         <header className="flex items-center justify-between gap-3 border-b border-line px-4 py-3">
@@ -75,11 +131,19 @@ export function DevModePanel({ onClose }: { onClose: () => void }) {
               <Bug className="size-4" />
             </span>
             <div>
-              <h2 className="text-sm font-bold leading-tight">Developer Mode</h2>
-              <p className="font-mono text-[10px] text-faint">project_101 · advanced</p>
+              <h2 className="text-sm font-bold leading-tight">
+                Developer Mode
+              </h2>
+              <p className="font-mono text-[10px] text-faint">
+                project_101 · advanced
+              </p>
             </div>
           </div>
-          <button onClick={onClose} aria-label="Close" className="rounded-lg p-1.5 text-muted transition-colors hover:bg-surface2 hover:text-ink">
+          <button
+            onClick={onClose}
+            aria-label="Close"
+            className="rounded-lg p-1.5 text-muted transition-colors hover:bg-surface2 hover:text-ink"
+          >
             <X className="size-4" />
           </button>
         </header>
@@ -106,7 +170,9 @@ export function DevModePanel({ onClose }: { onClose: () => void }) {
                   key={s.id}
                   onClick={() => setDev({ section: s.id })}
                   className={`flex shrink-0 items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-all ${
-                    on ? "bg-accent/15 text-accent" : "text-muted hover:bg-surface2 hover:text-ink"
+                    on
+                      ? "bg-accent/15 text-accent"
+                      : "text-muted hover:bg-surface2 hover:text-ink"
                   }`}
                 >
                   <s.icon className="size-3.5" />
@@ -119,7 +185,9 @@ export function DevModePanel({ onClose }: { onClose: () => void }) {
 
         <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
           {shown.length === 0 ? (
-            <p className="py-8 text-center text-sm text-muted">No settings match “{query}”.</p>
+            <p className="py-8 text-center text-sm text-muted">
+              No settings match “{query}”.
+            </p>
           ) : (
             shown.map((s) => (
               <section key={s.id} className="mb-2">

@@ -20,7 +20,10 @@ export const RARITY_XP: Record<Rarity, number> = {
 export function totalXp(stats: GameStats, unlocked: AchievementDef[]): number {
   const base = stats.doneCount * XP_PER_COMPLETION;
   const perfect = stats.perfectDays * XP_PER_PERFECT_DAY;
-  const fromAchievements = unlocked.reduce((sum, a) => sum + RARITY_XP[a.rarity], 0);
+  const fromAchievements = unlocked.reduce(
+    (sum, a) => sum + RARITY_XP[a.rarity],
+    0,
+  );
   return base + perfect + fromAchievements;
 }
 
@@ -55,6 +58,16 @@ export function levelInfo(total: number): LevelInfo {
   const xpForNext = isMax ? 0 : xpToAdvance(level);
   const xpIntoLevel = isMax ? 0 : remaining;
   const xpToNext = isMax ? 0 : xpForNext - xpIntoLevel;
-  const progressPct = isMax ? 100 : Math.min(100, Math.round((xpIntoLevel / xpForNext) * 100));
-  return { level, totalXp, xpIntoLevel, xpForNext, xpToNext, progressPct, isMax };
+  const progressPct = isMax
+    ? 100
+    : Math.min(100, Math.round((xpIntoLevel / xpForNext) * 100));
+  return {
+    level,
+    totalXp,
+    xpIntoLevel,
+    xpForNext,
+    xpToNext,
+    progressPct,
+    isMax,
+  };
 }

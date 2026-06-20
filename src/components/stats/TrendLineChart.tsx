@@ -15,19 +15,34 @@ export interface TrendPoint {
 
 const PAD = 6; // vertical padding (% of viewBox) so 0%/100% aren't clipped
 
-export function TrendLineChart({ points, height = 160 }: { points: TrendPoint[]; height?: number }) {
+export function TrendLineChart({
+  points,
+  height = 160,
+}: {
+  points: TrendPoint[];
+  height?: number;
+}) {
   const gradId = useId();
   const [active, setActive] = useState<number | null>(null);
 
   if (points.length === 0) {
-    return <div className="grid place-items-center text-sm text-faint" style={{ height }}>No data</div>;
+    return (
+      <div
+        className="grid place-items-center text-sm text-faint"
+        style={{ height }}
+      >
+        No data
+      </div>
+    );
   }
 
   const n = points.length;
   const x = (i: number) => (n === 1 ? 50 : (i / (n - 1)) * 100);
   const y = (rate: number) => PAD + (1 - rate / 100) * (100 - 2 * PAD);
 
-  const line = points.map((p, i) => `${i === 0 ? "M" : "L"} ${x(i)} ${y(p.rate)}`).join(" ");
+  const line = points
+    .map((p, i) => `${i === 0 ? "M" : "L"} ${x(i)} ${y(p.rate)}`)
+    .join(" ");
   const area = `${line} L ${x(n - 1)} 100 L ${x(0)} 100 Z`;
 
   return (
@@ -90,11 +105,20 @@ export function TrendLineChart({ points, height = 160 }: { points: TrendPoint[];
       {active !== null && (
         <div
           className="pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-full rounded-lg border border-line bg-surface px-2 py-1 text-center shadow-lg"
-          style={{ left: `${x(active)}%`, top: `${y(points[active].rate) - 4}%` }}
+          style={{
+            left: `${x(active)}%`,
+            top: `${y(points[active].rate) - 4}%`,
+          }}
         >
-          <div className="font-mono text-xs font-bold">{points[active].rate}%</div>
+          <div className="font-mono text-xs font-bold">
+            {points[active].rate}%
+          </div>
           <div className="whitespace-nowrap text-[10px] text-muted">
-            {points[active].date.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" })}
+            {points[active].date.toLocaleDateString(undefined, {
+              weekday: "short",
+              month: "short",
+              day: "numeric",
+            })}
           </div>
         </div>
       )}

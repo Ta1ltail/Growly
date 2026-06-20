@@ -32,21 +32,33 @@ export function HabitForm({
   onCancel: () => void;
   onViewTemplates?: () => void;
 }) {
-  const initRec = initial ? effectiveRecurrence(initial) : { kind: "daily" as const };
+  const initRec = initial
+    ? effectiveRecurrence(initial)
+    : { kind: "daily" as const };
   const [name, setName] = useState(initial?.name ?? "");
-  const [category, setCategory] = useState<Category>(initial?.category ?? "Workout");
+  const [category, setCategory] = useState<Category>(
+    initial?.category ?? "Workout",
+  );
   const [kind, setKind] = useState<Kind>(initRec.kind);
   const [weekdays, setWeekdays] = useState<number[]>(
-    initRec.kind === "weekly" ? initRec.weekdays : initial?.repeatDays ?? [],
+    initRec.kind === "weekly" ? initRec.weekdays : (initial?.repeatDays ?? []),
   );
   const [monthDays, setMonthDays] = useState<number[]>(
     initRec.kind === "monthly" ? initRec.monthDays : [],
   );
-  const [startDate, setStartDate] = useState(initial?.startDate ?? dateKey(new Date()));
+  const [startDate, setStartDate] = useState(
+    initial?.startDate ?? dateKey(new Date()),
+  );
   const [timeOfDay, setTimeOfDay] = useState(initial?.timeOfDay ?? "");
-  const [priority, setPriority] = useState<Priority>(initial?.priority ?? "med");
-  const [reminderOn, setReminderOn] = useState(initial?.reminder?.enabled ?? false);
-  const [reminderTime, setReminderTime] = useState(initial?.reminder?.time ?? "08:00");
+  const [priority, setPriority] = useState<Priority>(
+    initial?.priority ?? "med",
+  );
+  const [reminderOn, setReminderOn] = useState(
+    initial?.reminder?.enabled ?? false,
+  );
+  const [reminderTime, setReminderTime] = useState(
+    initial?.reminder?.time ?? "08:00",
+  );
 
   function buildRecurrence(): Recurrence {
     if (kind === "daily") return { kind: "daily" };
@@ -72,7 +84,9 @@ export function HabitForm({
   }
 
   function toggleMonthDay(d: number) {
-    setMonthDays((prev) => (prev.includes(d) ? prev.filter((x) => x !== d) : [...prev, d]));
+    setMonthDays((prev) =>
+      prev.includes(d) ? prev.filter((x) => x !== d) : [...prev, d],
+    );
   }
 
   return (
@@ -102,13 +116,19 @@ export function HabitForm({
                 type="button"
                 onClick={() => setCategory(c)}
                 className={`flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium transition-all ${
-                  active ? "border-transparent text-white" : "border-line text-muted hover:text-ink"
+                  active
+                    ? "border-transparent text-white"
+                    : "border-line text-muted hover:text-ink"
                 }`}
-                style={active ? { backgroundColor: CATEGORY_COLORS[c] } : undefined}
+                style={
+                  active ? { backgroundColor: CATEGORY_COLORS[c] } : undefined
+                }
               >
                 <span
                   className="size-2 rounded-full"
-                  style={{ backgroundColor: active ? "#fff" : CATEGORY_COLORS[c] }}
+                  style={{
+                    backgroundColor: active ? "#fff" : CATEGORY_COLORS[c],
+                  }}
                 />
                 {c}
               </button>
@@ -127,7 +147,9 @@ export function HabitForm({
               type="button"
               onClick={() => setKind(k.value)}
               className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-all ${
-                kind === k.value ? "bg-accent text-white shadow-sm" : "text-muted hover:text-ink"
+                kind === k.value
+                  ? "bg-accent text-white shadow-sm"
+                  : "text-muted hover:text-ink"
               }`}
             >
               {k.label}
@@ -150,7 +172,9 @@ export function HabitForm({
                   type="button"
                   onClick={() => toggleMonthDay(d)}
                   className={`flex h-8 items-center justify-center rounded-lg text-xs font-medium transition-all ${
-                    active ? "bg-accent text-white" : "bg-surface2 text-muted hover:text-ink"
+                    active
+                      ? "bg-accent text-white"
+                      : "bg-surface2 text-muted hover:text-ink"
                   }`}
                 >
                   {d}
@@ -193,7 +217,9 @@ export function HabitForm({
               type="button"
               onClick={() => setPriority(p)}
               className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-all ${
-                priority === p ? "bg-accent text-white shadow-sm" : "text-muted hover:text-ink"
+                priority === p
+                  ? "bg-accent text-white shadow-sm"
+                  : "text-muted hover:text-ink"
               }`}
             >
               {PRIORITY_LABEL[p]}

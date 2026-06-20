@@ -5,9 +5,31 @@
 // export/reset, and a transparent audit log.
 
 import { useState } from "react";
-import { Sun, Moon, Monitor, Palette, Check, Download, Trash2, ShieldCheck, ScrollText, Upload, Tags, Plus, X } from "lucide-react";
+import {
+  Sun,
+  Moon,
+  Monitor,
+  Palette,
+  Check,
+  Download,
+  Trash2,
+  ShieldCheck,
+  ScrollText,
+  Upload,
+  Tags,
+  Plus,
+  X,
+} from "lucide-react";
 import { dateKey, DEFAULT_GRACE_HOURS } from "@/lib/storage";
-import { clearAllData, setGraceHours, setTheme, useAppData, replaceData, addCustomCategory, removeCustomCategory } from "@/lib/store";
+import {
+  clearAllData,
+  setGraceHours,
+  setTheme,
+  useAppData,
+  replaceData,
+  addCustomCategory,
+  removeCustomCategory,
+} from "@/lib/store";
 import { useToday } from "@/hooks/useToday";
 import { ACCENTS, type ThemeMode } from "@/lib/theme";
 import { exportMarksCSV, exportJSON, importJSON } from "@/lib/export";
@@ -42,11 +64,19 @@ export default function SettingsPage() {
   }
 
   function exportCsv() {
-    download(exportMarksCSV(data), `project_101_export_${dateKey(today)}.csv`, "text/csv");
+    download(
+      exportMarksCSV(data),
+      `project_101_export_${dateKey(today)}.csv`,
+      "text/csv",
+    );
   }
 
   function exportJson() {
-    download(exportJSON(data), `project_101_backup_${dateKey(today)}.json`, "application/json");
+    download(
+      exportJSON(data),
+      `project_101_backup_${dateKey(today)}.json`,
+      "application/json",
+    );
   }
 
   function importJson() {
@@ -63,7 +93,13 @@ export default function SettingsPage() {
           alert(error ?? "Invalid backup file.");
           return;
         }
-        replaceData({ ...data, habits: imported.habits, marks: imported.marks, notes: imported.notes, goals: imported.goals });
+        replaceData({
+          ...data,
+          habits: imported.habits,
+          marks: imported.marks,
+          notes: imported.notes,
+          goals: imported.goals,
+        });
         alert("Data imported successfully!");
       } catch {
         alert("Failed to import: invalid JSON file.");
@@ -74,7 +110,10 @@ export default function SettingsPage() {
 
   return (
     <div className="animate-fade-in">
-      <PageHeader title="Settings" subtitle="Appearance, tracking rules, and your data" />
+      <PageHeader
+        title="Settings"
+        subtitle="Appearance, tracking rules, and your data"
+      />
 
       {/* Appearance */}
       <Section icon={Palette} title="Appearance">
@@ -88,7 +127,9 @@ export default function SettingsPage() {
                   key={id}
                   onClick={() => setTheme({ mode: id })}
                   className={`flex flex-col items-center gap-1.5 rounded-xl border py-3 text-xs font-medium transition-all ${
-                    activeMode ? "border-accent bg-accent/10 text-accent" : "border-line text-muted hover:bg-surface2 hover:text-ink"
+                    activeMode
+                      ? "border-accent bg-accent/10 text-accent"
+                      : "border-line text-muted hover:bg-surface2 hover:text-ink"
                   }`}
                 >
                   <Icon className="size-5" />
@@ -98,7 +139,9 @@ export default function SettingsPage() {
             })}
           </div>
 
-          <p className="mb-2 mt-5 text-xs font-medium text-muted">Accent color</p>
+          <p className="mb-2 mt-5 text-xs font-medium text-muted">
+            Accent color
+          </p>
           <div className="flex flex-wrap gap-2.5">
             {ACCENTS.map((a) => {
               const activeAccent = accent === a.id;
@@ -111,10 +154,14 @@ export default function SettingsPage() {
                   className="flex size-10 items-center justify-center rounded-full transition-transform hover:scale-110 active:scale-95"
                   style={{
                     backgroundColor: a.color,
-                    boxShadow: activeAccent ? `0 0 0 3px var(--c-surface), 0 0 0 5px ${a.color}` : undefined,
+                    boxShadow: activeAccent
+                      ? `0 0 0 3px var(--c-surface), 0 0 0 5px ${a.color}`
+                      : undefined,
                   }}
                 >
-                  {activeAccent && <Check className="size-4 text-white" strokeWidth={3} />}
+                  {activeAccent && (
+                    <Check className="size-4 text-white" strokeWidth={3} />
+                  )}
                 </button>
               );
             })}
@@ -130,7 +177,9 @@ export default function SettingsPage() {
               <div className="h-2 w-2/3 rounded-full bg-accent" />
               <div className="mt-1.5 h-2 w-1/3 rounded-full bg-line" />
             </div>
-            <span className="rounded-lg bg-surface2 px-2.5 py-1 text-xs text-muted">Sample</span>
+            <span className="rounded-lg bg-surface2 px-2.5 py-1 text-xs text-muted">
+              Sample
+            </span>
           </div>
         </Card>
       </Section>
@@ -139,17 +188,22 @@ export default function SettingsPage() {
       <Section icon={ShieldCheck} title="Honest Tracking">
         <Card className="p-5">
           <p className="text-sm text-muted">
-            Past days lock automatically so streaks and stats stay honest. The grace window lets you
-            still finish <em>yesterday</em> early the next morning.
+            Past days lock automatically so streaks and stats stay honest. The
+            grace window lets you still finish <em>yesterday</em> early the next
+            morning.
           </p>
-          <p className="mb-2 mt-4 text-xs font-medium text-muted">Grace window (hours after midnight)</p>
+          <p className="mb-2 mt-4 text-xs font-medium text-muted">
+            Grace window (hours after midnight)
+          </p>
           <div className="inline-flex gap-1 rounded-xl border border-line bg-surface2 p-1">
             {GRACE_OPTIONS.map((h) => (
               <button
                 key={h}
                 onClick={() => setGraceHours(h)}
                 className={`rounded-lg px-3.5 py-1.5 text-xs font-medium transition-all ${
-                  grace === h ? "bg-accent text-white shadow-sm" : "text-muted hover:text-ink"
+                  grace === h
+                    ? "bg-accent text-white shadow-sm"
+                    : "text-muted hover:text-ink"
                 }`}
               >
                 {h === 0 ? "Off" : `${h}h`}
@@ -162,7 +216,9 @@ export default function SettingsPage() {
       {/* Custom Categories */}
       <Section icon={Tags} title="Custom Categories">
         <Card className="p-5">
-          <p className="mb-3 text-sm text-muted">Create custom categories beyond the built-in ones.</p>
+          <p className="mb-3 text-sm text-muted">
+            Create custom categories beyond the built-in ones.
+          </p>
           <CustomCategoryEditor />
         </Card>
       </Section>
@@ -171,8 +227,16 @@ export default function SettingsPage() {
       <Section icon={Download} title="Data">
         <Card className="divide-y divide-line overflow-hidden">
           <Row onClick={exportCsv} icon={Download} label="Export marks (CSV)" />
-          <Row onClick={exportJson} icon={Download} label="Download full backup (JSON)" />
-          <Row onClick={importJson} icon={Upload} label="Import backup (JSON)" />
+          <Row
+            onClick={exportJson}
+            icon={Download}
+            label="Download full backup (JSON)"
+          />
+          <Row
+            onClick={importJson}
+            icon={Upload}
+            label="Import backup (JSON)"
+          />
           <button
             onClick={() => setConfirmReset(true)}
             className="flex w-full items-center gap-3 px-4 py-3.5 text-left text-sm text-missed transition-colors hover:bg-missed/10"
@@ -186,14 +250,24 @@ export default function SettingsPage() {
       {/* Audit log */}
       <Section icon={ScrollText} title="Audit log">
         {data.auditLog.length === 0 ? (
-          <Card className="p-5 text-sm text-muted">No changes recorded yet.</Card>
+          <Card className="p-5 text-sm text-muted">
+            No changes recorded yet.
+          </Card>
         ) : (
           <Card className="max-h-72 divide-y divide-line overflow-y-auto">
             {data.auditLog.slice(0, 50).map((e) => (
-              <div key={e.id} className="flex items-center gap-3 px-4 py-2.5 text-sm">
+              <div
+                key={e.id}
+                className="flex items-center gap-3 px-4 py-2.5 text-sm"
+              >
                 <span className="flex-1">{e.summary}</span>
                 <span className="font-mono text-[11px] text-faint">
-                  {new Date(e.at).toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+                  {new Date(e.at).toLocaleString(undefined, {
+                    month: "short",
+                    day: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
                 </span>
               </div>
             ))}
@@ -224,8 +298,9 @@ export default function SettingsPage() {
         }
       >
         <p className="text-sm text-muted">
-          This deletes all habits, marks, notes, goals, and history on this device. Your theme stays.
-          Consider downloading a backup first. This cannot be undone.
+          This deletes all habits, marks, notes, goals, and history on this
+          device. Your theme stays. Consider downloading a backup first. This
+          cannot be undone.
         </p>
       </Modal>
     </div>
@@ -276,11 +351,7 @@ function CustomCategoryEditor() {
           maxLength={24}
           className="flex-1 rounded-xl border border-line bg-surface2 px-3 py-2 text-sm outline-none placeholder:text-faint focus:border-accent"
         />
-        <Button
-          onClick={handleAdd}
-          disabled={!name.trim()}
-          size="sm"
-        >
+        <Button onClick={handleAdd} disabled={!name.trim()} size="sm">
           <Plus className="size-3.5" /> Add
         </Button>
       </div>
@@ -288,7 +359,15 @@ function CustomCategoryEditor() {
   );
 }
 
-function Section({ icon: Icon, title, children }: { icon: typeof Sun; title: string; children: React.ReactNode }) {
+function Section({
+  icon: Icon,
+  title,
+  children,
+}: {
+  icon: typeof Sun;
+  title: string;
+  children: React.ReactNode;
+}) {
   return (
     <section className="mt-6 first:mt-0">
       <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-muted">
@@ -299,9 +378,20 @@ function Section({ icon: Icon, title, children }: { icon: typeof Sun; title: str
   );
 }
 
-function Row({ onClick, icon: Icon, label }: { onClick: () => void; icon: typeof Sun; label: string }) {
+function Row({
+  onClick,
+  icon: Icon,
+  label,
+}: {
+  onClick: () => void;
+  icon: typeof Sun;
+  label: string;
+}) {
   return (
-    <button onClick={onClick} className="flex w-full items-center gap-3 px-4 py-3.5 text-left text-sm transition-colors hover:bg-surface2/50">
+    <button
+      onClick={onClick}
+      className="flex w-full items-center gap-3 px-4 py-3.5 text-left text-sm transition-colors hover:bg-surface2/50"
+    >
       <Icon className="size-[18px] text-muted" />
       <span className="flex-1">{label}</span>
     </button>

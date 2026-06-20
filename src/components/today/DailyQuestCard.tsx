@@ -25,7 +25,10 @@ export function DailyQuestCard() {
   if (!quest) return null;
 
   const completed = quest.current >= quest.target;
-  const progressPct = Math.min(100, Math.round((quest.current / quest.target) * 100));
+  const progressPct = Math.min(
+    100,
+    Math.round((quest.current / quest.target) * 100),
+  );
 
   function handleClaim() {
     if (claiming) return;
@@ -37,7 +40,9 @@ export function DailyQuestCard() {
   }
 
   return (
-    <Card className={`overflow-hidden transition-all ${completed && !claimed ? "ring-1 ring-emerald-500/40" : ""}`}>
+    <Card
+      className={`overflow-hidden transition-all ${completed && !claimed ? "ring-1 ring-emerald-500/40" : ""}`}
+    >
       <div className="p-4">
         <div className="mb-3 flex items-center justify-between">
           <h3 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted">
@@ -56,14 +61,18 @@ export function DailyQuestCard() {
         <div className="mt-3">
           <div className="mb-1 flex items-center justify-between text-xs text-muted">
             <span>
-              Progress: <span className="font-mono font-semibold">{quest.current}</span>
+              Progress:{" "}
+              <span className="font-mono font-semibold">{quest.current}</span>
               <span className="text-faint">/{quest.target}</span>
             </span>
             <span className="flex items-center gap-1 font-medium text-amber-500">
               <Coins className="size-3" aria-hidden />+{quest.reward}
             </span>
           </div>
-          <ProgressBar value={progressPct} color={completed ? "#10b981" : undefined} />
+          <ProgressBar
+            value={progressPct}
+            color={completed ? "#10b981" : undefined}
+          />
         </div>
 
         {completed && !claimed && (

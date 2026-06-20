@@ -19,7 +19,15 @@ import type {
   Profile,
 } from "./types";
 import type { ThemeSettings } from "./theme";
-import { DEFAULT_GRACE_HOURS, STORAGE_KEY, dateKey, emptyData, loadData, saveData, addDays } from "./storage";
+import {
+  DEFAULT_GRACE_HOURS,
+  STORAGE_KEY,
+  dateKey,
+  emptyData,
+  loadData,
+  saveData,
+  addDays,
+} from "./storage";
 import { nextStatus } from "./marks";
 import { canEditMark } from "./policy";
 import { uid } from "./util";
@@ -39,7 +47,13 @@ import {
 } from "./economy";
 import { buildGameStats, evaluateAchievements } from "./achievements";
 import { baselineProgressSeen, type CelebrationEvent } from "./celebrations";
-import { pushSnapshot, undo as undoHistory, redo as redoHistory, canUndo, canRedo } from "./history";
+import {
+  pushSnapshot,
+  undo as undoHistory,
+  redo as redoHistory,
+  canUndo,
+  canRedo,
+} from "./history";
 
 let cache: AppData | null = null;
 const listeners = new Set<() => void>();
@@ -62,13 +76,33 @@ function subscribe(listener: () => void): () => void {
   };
 }
 
-function update(updater: (prev: AppData) => AppData, recordHistory = true): void {
+let saveTimer: ReturnType<typeof setTimeout> | null = null;
+
+function scheduleSave(data: AppData): void {
+  if (saveTimer) clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => {
+    saveData(data);
+    saveTimer = null;
+  }, 100);
+}
+
+function update(
+  updater: (prev: AppData) => AppData,
+  recordHistory = true,
+): void {
   const prev = getSnapshot();
   if (recordHistory) {
     pushSnapshot(prev);
   }
   cache = updater(prev);
-  saveData(cache);
+  // Immediate save for undo/redo and destructive actions, debounced for
+  // high-frequency toggles (mark cycling, text input).
+  if (!recordHistory) {
+    scheduleSave(cache);
+  } else {
+    if (saveTimer) clearTimeout(saveTimer);
+    saveData(cache);
+  }
   for (const listener of listeners) listener();
 }
 
@@ -116,7 +150,14 @@ export function addHabit(habit: Habit): void {
   update((prev) => ({
     ...prev,
     habits: [...prev.habits, habit],
-    auditLog: audit(prev, "habit.create", `Created “${habit.name}”`, habit.id, undefined, habit),
+    auditLog: audit(
+      prev,
+      "habit.create",
+      `Created “${habit.name}”`,
+      habit.id,
+      undefined,
+      habit,
+    ),
   }));
 }
 
@@ -125,9 +166,21 @@ export function updateHabit(habit: Habit): void {
     const before = prev.habits.find((h) => h.id === habit.id);
     const scheduleChanged =
       before &&
-      JSON.stringify({ r: before.recurrence, s: before.startDate, t: before.timeOfDay, d: before.repeatDays }) !==
-        JSON.stringify({ r: habit.recurrence, s: habit.startDate, t: habit.timeOfDay, d: habit.repeatDays });
-    const action: AuditAction = scheduleChanged ? "habit.schedule" : "habit.edit";
+      JSON.stringify({
+        r: before.recurrence,
+        s: before.startDate,
+        t: before.timeOfDay,
+        d: before.repeatDays,
+      }) !==
+        JSON.stringify({
+          r: habit.recurrence,
+          s: habit.startDate,
+          t: habit.timeOfDay,
+          d: habit.repeatDays,
+        });
+    const action: AuditAction = scheduleChanged
+      ? "habit.schedule"
+      : "habit.edit";
     const summary = scheduleChanged
       ? `Changed schedule for “${habit.name}”`
       : `Edited “${habit.name}”`;
@@ -145,7 +198,13 @@ export function deleteHabit(id: string): void {
     return {
       ...prev,
       habits: prev.habits.filter((h) => h.id !== id),
-      auditLog: audit(prev, "habit.delete", `Deleted “${before?.name ?? "habit"}”`, id, before),
+      auditLog: audit(
+        prev,
+        "habit.delete",
+        `Deleted “${before?.name ?? "habit"}”`,
+        id,
+        before,
+      ),
     };
   });
 }
@@ -181,7 +240,14 @@ export function duplicateHabit(id: string): void {
     return {
       ...prev,
       habits: [...prev.habits, copy],
-      auditLog: audit(prev, "habit.duplicate", `Duplicated “${src.name}”`, copy.id, undefined, copy),
+      auditLog: audit(
+        prev,
+        "habit.duplicate",
+        `Duplicated “${src.name}”`,
+        copy.id,
+        undefined,
+        copy,
+      ),
     };
   });
 }
@@ -191,7 +257,11 @@ export function duplicateHabit(id: string): void {
 // Cycle a mark. Past/future days are locked per the Honest Tracking Policy,
 // so this is a no-op outside the editable window. Also progresses the daily
 // quest when a habit is marked "done" today.
-export function cycleMark(dateK: string, habitId: string, habitCategory?: string): void {
+export function cycleMark(
+  dateK: string,
+  habitId: string,
+  habitCategory?: string,
+): void {
   // Skip history for individual mark toggles — they're high-frequency and
   // undoing a single mark is rarely the desired action. Users can still undo
   // habit creation/editing/deletion and bulk actions.
@@ -204,13 +274,21 @@ export function cycleMark(dateK: string, habitId: string, habitCategory?: string
     else day[habitId] = next;
     const updated = { ...prev, marks: { ...prev.marks, [dateK]: day } };
     // Marking can satisfy achievements — persist any new unlocks for popups.
-    const { unlocks } = reconcileUnlocks(updated, new Date(), new Date().toISOString());
+    const { unlocks } = reconcileUnlocks(
+      updated,
+      new Date(),
+      new Date().toISOString(),
+    );
     // Progress daily quest if marking done today
     const todayKey = dateKey(new Date());
     let eco = updated.economy;
     if (dateK === todayKey && next === "done") {
       const q = eco.currentQuest;
-      if (q && q.current < q.target && (!q.category || q.category === habitCategory)) {
+      if (
+        q &&
+        q.current < q.target &&
+        (!q.category || q.category === habitCategory)
+      ) {
         eco = { ...eco, currentQuest: { ...q, current: q.current + 1 } };
       }
     }
@@ -222,7 +300,11 @@ export function cycleMark(dateK: string, habitId: string, habitCategory?: string
 
 /* ---------------- notes ---------------- */
 
-export function addNote(input: { body: string; tags?: string[]; links?: NoteLinks }): Note {
+export function addNote(input: {
+  body: string;
+  tags?: string[];
+  links?: NoteLinks;
+}): Note {
   const now = new Date().toISOString();
   const note: Note = {
     id: uid(),
@@ -236,7 +318,10 @@ export function addNote(input: { body: string; tags?: string[]; links?: NoteLink
   return note;
 }
 
-export function updateNote(id: string, patch: Partial<Omit<Note, "id" | "createdAt">>): void {
+export function updateNote(
+  id: string,
+  patch: Partial<Omit<Note, "id" | "createdAt">>,
+): void {
   update((prev) => ({
     ...prev,
     notes: prev.notes.map((n) =>
@@ -252,16 +337,23 @@ export function deleteNote(id: string): void {
 // Upsert the single "daily note" for a date (used by Today's quick note box).
 export function setDailyNote(dateK: string, text: string): void {
   update((prev) => {
-    const existing = prev.notes.find((n) => n.links.date === dateK && !n.links.habitId && !n.links.goalId);
+    const existing = prev.notes.find(
+      (n) => n.links.date === dateK && !n.links.habitId && !n.links.goalId,
+    );
     const trimmed = text.trim();
     if (existing) {
       if (trimmed === "") {
-        return { ...prev, notes: prev.notes.filter((n) => n.id !== existing.id) };
+        return {
+          ...prev,
+          notes: prev.notes.filter((n) => n.id !== existing.id),
+        };
       }
       return {
         ...prev,
         notes: prev.notes.map((n) =>
-          n.id === existing.id ? { ...n, body: text, updatedAt: new Date().toISOString() } : n,
+          n.id === existing.id
+            ? { ...n, body: text, updatedAt: new Date().toISOString() }
+            : n,
         ),
       };
     }
@@ -306,14 +398,20 @@ export function setTheme(patch: Partial<ThemeSettings>): void {
 }
 
 export function setGraceHours(hours: number): void {
-  update((prev) => ({ ...prev, settings: { ...prev.settings, graceHours: Math.max(0, hours) } }));
+  update((prev) => ({
+    ...prev,
+    settings: { ...prev.settings, graceHours: Math.max(0, hours) },
+  }));
 }
 
 export function markTemplateUsed(templateId: string): void {
   update((prev) => {
     const used = new Set(prev.settings.usedTemplateIds ?? []);
     used.add(templateId);
-    return { ...prev, settings: { ...prev.settings, usedTemplateIds: [...used] } };
+    return {
+      ...prev,
+      settings: { ...prev.settings, usedTemplateIds: [...used] },
+    };
   });
 }
 
@@ -347,7 +445,9 @@ export function removeCustomCategory(name: string): void {
     ...prev,
     settings: {
       ...prev.settings,
-      customCategories: (prev.settings.customCategories ?? []).filter((c) => c !== name),
+      customCategories: (prev.settings.customCategories ?? []).filter(
+        (c) => c !== name,
+      ),
     },
   }));
 }
@@ -357,7 +457,9 @@ export function resetTemplateUsage(templateId: string): void {
     ...prev,
     settings: {
       ...prev.settings,
-      usedTemplateIds: (prev.settings.usedTemplateIds ?? []).filter((id) => id !== templateId),
+      usedTemplateIds: (prev.settings.usedTemplateIds ?? []).filter(
+        (id) => id !== templateId,
+      ),
     },
   }));
 }
@@ -373,7 +475,10 @@ export function clearAllData(): void {
     ...emptyData,
     settings: prev.settings,
     profile: prev.profile,
-    progressSeen: { ...emptyData.progressSeen, seeded: prev.progressSeen.seeded },
+    progressSeen: {
+      ...emptyData.progressSeen,
+      seeded: prev.progressSeen.seeded,
+    },
   }));
 }
 
@@ -399,7 +504,11 @@ export function importRawData(text: string): string | null {
   if (typeof window === "undefined") return "No storage available";
   try {
     const parsed = JSON.parse(text);
-    if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
+    if (
+      typeof parsed !== "object" ||
+      parsed === null ||
+      Array.isArray(parsed)
+    ) {
       return "Root must be a JSON object";
     }
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed));
@@ -423,7 +532,11 @@ export function updateProfile(patch: Partial<Profile>): void {
 // Call once on app mount, before celebrations start watching.
 export function seedUnlocksSeen(): void {
   update((prev) => {
-    const { unlocks, newlyUnlocked } = reconcileUnlocks(prev, new Date(), new Date().toISOString());
+    const { unlocks, newlyUnlocked } = reconcileUnlocks(
+      prev,
+      new Date(),
+      new Date().toISOString(),
+    );
     if (newlyUnlocked.length === 0) return prev;
     const seeded = { ...unlocks };
     for (const id of newlyUnlocked) seeded[id] = { ...seeded[id], seen: true };
@@ -435,7 +548,11 @@ export function seedUnlocksSeen(): void {
 // Safe to call on load / on focus; a no-op when nothing changed.
 export function syncAchievements(): void {
   update((prev) => {
-    const { unlocks } = reconcileUnlocks(prev, new Date(), new Date().toISOString());
+    const { unlocks } = reconcileUnlocks(
+      prev,
+      new Date(),
+      new Date().toISOString(),
+    );
     return unlocks === prev.unlocks ? prev : { ...prev, unlocks };
   });
 }
@@ -479,11 +596,23 @@ export function acknowledgeCelebration(event: CelebrationEvent): void {
   update((prev) => {
     const ps = prev.progressSeen;
     let next: typeof ps | null = null;
-    if (event.kind === "levelup" && event.level != null && event.level > ps.level) {
+    if (
+      event.kind === "levelup" &&
+      event.level != null &&
+      event.level > ps.level
+    ) {
       next = { ...ps, level: event.level };
-    } else if (event.kind === "title" && event.titleName && event.titleName !== ps.title) {
+    } else if (
+      event.kind === "title" &&
+      event.titleName &&
+      event.titleName !== ps.title
+    ) {
       next = { ...ps, title: event.titleName };
-    } else if (event.kind === "shop" && event.shopId && !ps.shop.includes(event.shopId)) {
+    } else if (
+      event.kind === "shop" &&
+      event.shopId &&
+      !ps.shop.includes(event.shopId)
+    ) {
       next = { ...ps, shop: [...ps.shop, event.shopId] };
     } else if (
       event.kind === "streak" &&
@@ -502,11 +631,19 @@ export function acknowledgeCelebration(event: CelebrationEvent): void {
 // Spendable balance for the current data snapshot. Derives earned coins from
 // history (same path as the UI) minus the persisted spend ledger.
 function balanceOf(data: AppData, today: Date): number {
-  const stats = buildGameStats(data.habits, data.marks, today, frozenSet(data.economy));
+  const stats = buildGameStats(
+    data.habits,
+    data.marks,
+    today,
+    frozenSet(data.economy),
+  );
   const unlockedRarities = evaluateAchievements(stats)
     .filter((a) => a.unlocked)
     .map((a) => a.def.rarity);
-  return coinBalance(coinsEarned(stats, unlockedRarities, data.economy), data.economy);
+  return coinBalance(
+    coinsEarned(stats, unlockedRarities, data.economy),
+    data.economy,
+  );
 }
 
 // Buy a cosmetic: must exist, not already owned, meet any level gate, and be
@@ -540,7 +677,14 @@ export function buyCosmetic(itemId: string): void {
         // Auto-equip the freshly-bought item in its slot.
         equipped: { ...prev.economy.equipped, [item.slot]: itemId },
       },
-      auditLog: audit(prev, "shop.buy", `Bought “${item.name}” for ${item.price} coins`, undefined, undefined, entry),
+      auditLog: audit(
+        prev,
+        "shop.buy",
+        `Bought “${item.name}” for ${item.price} coins`,
+        undefined,
+        undefined,
+        entry,
+      ),
     };
   });
 }
@@ -556,7 +700,10 @@ export function equipCosmetic(slot: CosmeticSlot, itemId: string): void {
     }
     return {
       ...prev,
-      economy: { ...prev.economy, equipped: { ...prev.economy.equipped, [slot]: itemId } },
+      economy: {
+        ...prev.economy,
+        equipped: { ...prev.economy.equipped, [slot]: itemId },
+      },
     };
   });
 }
@@ -573,7 +720,12 @@ export function redeemFreeze(habitId: string, dateK: string): void {
 
     const nowIso = new Date().toISOString();
     const freeze = makeFreezeEntry(habitId, dateK, uid(), nowIso);
-    const spend = { id: uid(), at: nowIso, amount: FREEZE_PRICE, item: "freeze" };
+    const spend = {
+      id: uid(),
+      at: nowIso,
+      amount: FREEZE_PRICE,
+      item: "freeze",
+    };
     return {
       ...prev,
       economy: {
@@ -633,8 +785,10 @@ export function refreshDailyQuest(): void {
   update((prev) => {
     const todayKey = dateKey(new Date());
     // If quest was already claimed today (lastQuestDate=today, currentQuest=null), don't regenerate
-    if (prev.economy.lastQuestDate === todayKey && !prev.economy.currentQuest) return prev;
-    if (prev.economy.lastQuestDate === todayKey && prev.economy.currentQuest) return prev;
+    if (prev.economy.lastQuestDate === todayKey && !prev.economy.currentQuest)
+      return prev;
+    if (prev.economy.lastQuestDate === todayKey && prev.economy.currentQuest)
+      return prev;
     const quest = generateDailyQuest(prev.habits);
     return {
       ...prev,
@@ -665,8 +819,13 @@ export function claimDailyQuest(): void {
 }
 
 // Do the daily spin. Returns the reward won, or null if already spun today.
-export function doDailySpin(): { label: string; amount: number; isFreeze: boolean } | null {
-  let result: { label: string; amount: number; isFreeze: boolean } | null = null;
+export function doDailySpin(): {
+  label: string;
+  amount: number;
+  isFreeze: boolean;
+} | null {
+  let result: { label: string; amount: number; isFreeze: boolean } | null =
+    null;
   update((prev) => {
     const todayKey = dateKey(new Date());
     if (prev.economy.lastSpinDate === todayKey) return prev; // already spun
@@ -675,7 +834,9 @@ export function doDailySpin(): { label: string; amount: number; isFreeze: boolea
     // When the spin lands on "Streak Freeze", give a coin consolation prize
     // since a scatter-shot freeze entry can't target a real missed day.
     const effectiveAmount = isFreeze ? 25 : reward.amount;
-    const effectiveLabel = isFreeze ? `25 coins (freeze consolation)` : reward.label;
+    const effectiveLabel = isFreeze
+      ? `25 coins (freeze consolation)`
+      : reward.label;
     result = { label: effectiveLabel, amount: effectiveAmount, isFreeze };
     return {
       ...prev,

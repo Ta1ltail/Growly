@@ -22,21 +22,30 @@ export function GoalForm({
 }) {
   const [title, setTitle] = useState(initial?.title ?? "");
   const [target, setTarget] = useState(initial?.target ?? 20);
-  const [category, setCategory] = useState<Category | "">(initial?.category ?? "");
+  const [category, setCategory] = useState<Category | "">(
+    initial?.category ?? "",
+  );
   const [deadline, setDeadline] = useState(initial?.deadline ?? "");
   const [linked, setLinked] = useState<string[]>(initial?.linkedHabitIds ?? []);
-  const [milestones, setMilestones] = useState<Milestone[]>(initial?.milestones ?? []);
+  const [milestones, setMilestones] = useState<Milestone[]>(
+    initial?.milestones ?? [],
+  );
   const [msTitle, setMsTitle] = useState("");
   const [msAt, setMsAt] = useState(0);
 
   function toggleLinked(id: string) {
-    setLinked((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+    setLinked((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
+    );
   }
 
   function addMilestone() {
     if (!msTitle.trim() || msAt <= 0) return;
     setMilestones((prev) =>
-      [...prev, { id: uid(), title: msTitle.trim(), at: msAt, done: false }].sort((a, b) => a.at - b.at),
+      [
+        ...prev,
+        { id: uid(), title: msTitle.trim(), at: msAt, done: false },
+      ].sort((a, b) => a.at - b.at),
     );
     setMsTitle("");
     setMsAt(0);
@@ -100,7 +109,9 @@ export function GoalForm({
             type="button"
             onClick={() => setCategory("")}
             className={`rounded-full border px-2.5 py-1 text-xs font-medium transition-all ${
-              category === "" ? "border-accent bg-accent/10 text-accent" : "border-line text-muted hover:text-ink"
+              category === ""
+                ? "border-accent bg-accent/10 text-accent"
+                : "border-line text-muted hover:text-ink"
             }`}
           >
             None
@@ -113,13 +124,19 @@ export function GoalForm({
                 type="button"
                 onClick={() => setCategory(c)}
                 className={`flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium transition-all ${
-                  active ? "border-transparent text-white" : "border-line text-muted hover:text-ink"
+                  active
+                    ? "border-transparent text-white"
+                    : "border-line text-muted hover:text-ink"
                 }`}
-                style={active ? { backgroundColor: CATEGORY_COLORS[c] } : undefined}
+                style={
+                  active ? { backgroundColor: CATEGORY_COLORS[c] } : undefined
+                }
               >
                 <span
                   className="size-2 rounded-full"
-                  style={{ backgroundColor: active ? "#fff" : CATEGORY_COLORS[c] }}
+                  style={{
+                    backgroundColor: active ? "#fff" : CATEGORY_COLORS[c],
+                  }}
                 />
                 {c}
               </button>
@@ -140,7 +157,9 @@ export function GoalForm({
                   type="button"
                   onClick={() => toggleLinked(h.id)}
                   className={`rounded-full border px-2.5 py-1 text-xs font-medium transition-all ${
-                    active ? "border-accent bg-accent/10 text-accent" : "border-line text-muted hover:text-ink"
+                    active
+                      ? "border-accent bg-accent/10 text-accent"
+                      : "border-line text-muted hover:text-ink"
                   }`}
                 >
                   {h.name}
@@ -161,11 +180,14 @@ export function GoalForm({
                 className="flex items-center justify-between rounded-lg border border-line bg-surface2 px-3 py-1.5 text-xs"
               >
                 <span>
-                  {m.title} <span className="font-mono text-muted">@ {m.at}</span>
+                  {m.title}{" "}
+                  <span className="font-mono text-muted">@ {m.at}</span>
                 </span>
                 <button
                   type="button"
-                  onClick={() => setMilestones((prev) => prev.filter((x) => x.id !== m.id))}
+                  onClick={() =>
+                    setMilestones((prev) => prev.filter((x) => x.id !== m.id))
+                  }
                   className="text-muted hover:text-missed"
                   aria-label="Remove milestone"
                 >
@@ -215,7 +237,8 @@ export function GoalForm({
           disabled={!title.trim()}
           className="flex items-center gap-1.5 rounded-xl bg-accent px-4 py-2 text-sm font-semibold text-white transition-all hover:brightness-110 active:scale-95 disabled:opacity-50"
         >
-          <Check className="size-4" strokeWidth={2.5} /> {initial ? "Save goal" : "Add goal"}
+          <Check className="size-4" strokeWidth={2.5} />{" "}
+          {initial ? "Save goal" : "Add goal"}
         </button>
       </div>
     </div>

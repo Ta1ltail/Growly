@@ -4,7 +4,16 @@
 // Add/edit happen in a modal.
 
 import { useState } from "react";
-import { Plus, Minus, Trash2, Target, Check, Pencil, Flag, CircleDot } from "lucide-react";
+import {
+  Plus,
+  Minus,
+  Trash2,
+  Target,
+  Check,
+  Pencil,
+  Flag,
+  CircleDot,
+} from "lucide-react";
 import { CATEGORY_COLORS } from "@/lib/categories";
 import type { Goal } from "@/lib/types";
 import { addGoal, deleteGoal, updateGoal, useAppData } from "@/lib/store";
@@ -24,7 +33,10 @@ export default function GoalsPage() {
 
   function step(goal: Goal, delta: number) {
     const current = Math.max(0, Math.min(goal.target, goal.current + delta));
-    const milestones = goal.milestones?.map((m) => ({ ...m, done: current >= m.at }));
+    const milestones = goal.milestones?.map((m) => ({
+      ...m,
+      done: current >= m.at,
+    }));
     updateGoal({ ...goal, current, milestones });
   }
 
@@ -68,43 +80,74 @@ export default function GoalsPage() {
                 <div className="mb-3 flex items-start justify-between gap-2">
                   <div className="min-w-0">
                     <span className="flex items-center gap-2 text-sm font-semibold">
-                      {complete && <Check className="size-4 text-done" strokeWidth={3} />}
+                      {complete && (
+                        <Check className="size-4 text-done" strokeWidth={3} />
+                      )}
                       {goal.title}
                     </span>
                     <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px] text-muted">
                       {goal.category && (
                         <span className="flex items-center gap-1">
-                          <span className="size-2 rounded-full" style={{ backgroundColor: CATEGORY_COLORS[goal.category] }} />
+                          <span
+                            className="size-2 rounded-full"
+                            style={{
+                              backgroundColor: CATEGORY_COLORS[goal.category],
+                            }}
+                          />
                           {goal.category}
                         </span>
                       )}
                       {goal.deadline && (
                         <span className="flex items-center gap-1">
                           <Flag className="size-3" />
-                          {parseDateKey(goal.deadline).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+                          {parseDateKey(goal.deadline).toLocaleDateString(
+                            undefined,
+                            { month: "short", day: "numeric" },
+                          )}
                         </span>
                       )}
                     </div>
                   </div>
                   <div className="flex gap-0.5">
-                    <button onClick={() => setEditing(goal)} className="rounded-lg p-1 text-muted transition-colors hover:bg-surface2 hover:text-ink" aria-label="Edit goal">
+                    <button
+                      onClick={() => setEditing(goal)}
+                      className="rounded-lg p-1 text-muted transition-colors hover:bg-surface2 hover:text-ink"
+                      aria-label="Edit goal"
+                    >
                       <Pencil className="size-3.5" />
                     </button>
-                    <button onClick={() => deleteGoal(goal.id)} className="rounded-lg p-1 text-muted transition-colors hover:bg-missed/10 hover:text-missed" aria-label="Delete goal">
+                    <button
+                      onClick={() => deleteGoal(goal.id)}
+                      className="rounded-lg p-1 text-muted transition-colors hover:bg-missed/10 hover:text-missed"
+                      aria-label="Delete goal"
+                    >
                       <Trash2 className="size-3.5" />
                     </button>
                   </div>
                 </div>
 
-                <ProgressBar value={pct} color={complete ? "var(--color-done)" : undefined} />
+                <ProgressBar
+                  value={pct}
+                  color={complete ? "var(--color-done)" : undefined}
+                />
 
                 <div className="mt-3 flex items-center justify-between">
-                  <span className="font-mono text-xs text-muted">{goal.current} / {goal.target} · {pct}%</span>
+                  <span className="font-mono text-xs text-muted">
+                    {goal.current} / {goal.target} · {pct}%
+                  </span>
                   <div className="flex gap-1.5">
-                    <button onClick={() => step(goal, -1)} aria-label={`Decrease ${goal.title} progress`} className="flex size-8 items-center justify-center rounded-lg border border-line text-muted transition-all hover:bg-surface2 active:scale-90">
+                    <button
+                      onClick={() => step(goal, -1)}
+                      aria-label={`Decrease ${goal.title} progress`}
+                      className="flex size-8 items-center justify-center rounded-lg border border-line text-muted transition-all hover:bg-surface2 active:scale-90"
+                    >
                       <Minus className="size-4" />
                     </button>
-                    <button onClick={() => step(goal, 1)} aria-label={`Increase ${goal.title} progress`} className="flex size-8 items-center justify-center rounded-lg bg-accent text-white transition-all hover:brightness-110 active:scale-90">
+                    <button
+                      onClick={() => step(goal, 1)}
+                      aria-label={`Increase ${goal.title} progress`}
+                      className="flex size-8 items-center justify-center rounded-lg bg-accent text-white transition-all hover:brightness-110 active:scale-90"
+                    >
                       <Plus className="size-4" />
                     </button>
                   </div>
@@ -113,10 +156,21 @@ export default function GoalsPage() {
                 {goal.milestones && goal.milestones.length > 0 && (
                   <ul className="mt-3 flex flex-col gap-1 border-t border-line pt-3">
                     {goal.milestones.map((m) => (
-                      <li key={m.id} className={`flex items-center gap-2 text-xs ${m.done ? "text-done" : "text-muted"}`}>
-                        {m.done ? <Check className="size-3.5" strokeWidth={3} /> : <CircleDot className="size-3.5" />}
-                        <span className={m.done ? "line-through" : ""}>{m.title}</span>
-                        <span className="ml-auto font-mono text-faint">@ {m.at}</span>
+                      <li
+                        key={m.id}
+                        className={`flex items-center gap-2 text-xs ${m.done ? "text-done" : "text-muted"}`}
+                      >
+                        {m.done ? (
+                          <Check className="size-3.5" strokeWidth={3} />
+                        ) : (
+                          <CircleDot className="size-3.5" />
+                        )}
+                        <span className={m.done ? "line-through" : ""}>
+                          {m.title}
+                        </span>
+                        <span className="ml-auto font-mono text-faint">
+                          @ {m.at}
+                        </span>
                       </li>
                     ))}
                   </ul>

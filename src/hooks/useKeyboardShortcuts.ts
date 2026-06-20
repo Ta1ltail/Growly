@@ -18,18 +18,18 @@ interface Shortcut {
 }
 
 const ROUTE_MAP: Record<string, string> = {
-  d: "/",          // dashboard
-  t: "/today",     // today
-  h: "/habits",    // habits
-  r: "/tracker",   // tracker (grid)
-  c: "/calendar",   // calendar
-  s: "/stats",     // stats
+  d: "/", // dashboard
+  t: "/today", // today
+  h: "/habits", // habits
+  r: "/tracker", // tracker (grid)
+  c: "/calendar", // calendar
+  s: "/stats", // stats
   a: "/achievements", // achievements
-  p: "/profile",   // profile
-  o: "/shop",      // shop (coins)
-  n: "/notes",     // notes
-  g: "/goals",     // goals
-  l: "/settings",  // settings
+  p: "/profile", // profile
+  o: "/shop", // shop (coins)
+  n: "/notes", // notes
+  g: "/goals", // goals
+  l: "/settings", // settings
 };
 
 export function useKeyboardShortcuts() {
@@ -80,9 +80,7 @@ export function useKeyboardShortcuts() {
       // --- Show shortcuts help ---
       if (e.key === "?" && !e.shiftKey) {
         e.preventDefault();
-        window.dispatchEvent(
-          new CustomEvent("kb:toggle-help"),
-        );
+        window.dispatchEvent(new CustomEvent("kb:toggle-help"));
         return;
       }
 

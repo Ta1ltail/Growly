@@ -24,12 +24,17 @@ export function NextMilestoneWidget({
       <div className="flex flex-col gap-3.5">
         {milestones.map((m) => {
           const remaining = Math.max(0, m.target - m.current);
-          const pct = m.target > 0 ? Math.min(100, Math.round((m.current / m.target) * 100)) : 0;
+          const pct =
+            m.target > 0
+              ? Math.min(100, Math.round((m.current / m.target) * 100))
+              : 0;
           return (
             <div key={m.label}>
               <div className="mb-1 flex items-baseline justify-between gap-3">
                 <span className="text-sm font-medium">{m.label}</span>
-                <span className="font-mono text-xs text-faint">{remaining.toLocaleString()} to go</span>
+                <span className="font-mono text-xs text-faint">
+                  {remaining.toLocaleString()} to go
+                </span>
               </div>
               <ProgressBar value={pct} />
             </div>

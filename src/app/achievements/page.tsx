@@ -1,12 +1,7 @@
 "use client";
 
-// Achievement Gallery (spec §14): every achievement with unlock state and
-// progress, plus badge-collection summary, category/rarity/status filters, and
-// search. Pagination keeps the grid manageable. Fixed card sizes prevent layout
-// shifting. Better unlock animations for badges.
-
 import { useMemo, useState } from "react";
-import { Search, TrendingUp, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, TrendingUp } from "lucide-react";
 import { useAppData } from "@/lib/store";
 import { useToday } from "@/hooks/useToday";
 import { summarizeProgress } from "@/lib/progress";
@@ -19,6 +14,7 @@ import { Card } from "@/components/ui/Card";
 import { Segmented } from "@/components/ui/Segmented";
 import { PageSkeleton } from "@/components/ui/PageSkeleton";
 import { ProgressBar } from "@/components/ui/ProgressBar";
+import { Pagination } from "@/components/ui/Pagination";
 import { AchievementBadge } from "@/components/achievements/AchievementBadge";
 
 const CATEGORY_OPTS: { value: AchievementCategory | "all"; label: string }[] = [
@@ -68,8 +64,17 @@ export default function AchievementsPage() {
     const q = query.trim().toLowerCase();
     return summary.achievements
       .filter((a) => category === "all" || a.def.category === category)
-      .filter((a) => status === "all" || (status === "unlocked" ? a.unlocked : !a.unlocked))
-      .filter((a) => !q || a.def.name.toLowerCase().includes(q) || a.def.description.toLowerCase().includes(q))
+      .filter(
+        (a) =>
+          status === "all" ||
+          (status === "unlocked" ? a.unlocked : !a.unlocked),
+      )
+      .filter(
+        (a) =>
+          !q ||
+          a.def.name.toLowerCase().includes(q) ||
+          a.def.description.toLowerCase().includes(q),
+      )
       .sort((a, b) => {
         if (a.unlocked !== b.unlocked) return a.unlocked ? -1 : 1;
         const r = RARITY_ORDER[b.def.rarity] - RARITY_ORDER[a.def.rarity];
@@ -127,13 +132,20 @@ export default function AchievementsPage() {
                     </span>
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-semibold">{a.def.name}</p>
-                    <p className="mt-0.5 truncate text-[11px] text-muted">{a.def.description}</p>
+                    <p className="truncate text-sm font-semibold">
+                      {a.def.name}
+                    </p>
+                    <p className="mt-0.5 truncate text-[11px] text-muted">
+                      {a.def.description}
+                    </p>
                     <div className="mt-1.5 flex items-center gap-2">
                       <div className="flex-1">
                         <ProgressBar value={a.progressPct} color={r.accent} />
                       </div>
-                      <span className="shrink-0 font-mono text-[11px] font-bold" style={{ color: r.accent }}>
+                      <span
+                        className="shrink-0 font-mono text-[11px] font-bold"
+                        style={{ color: r.accent }}
+                      >
                         {a.progressPct}%
                       </span>
                     </div>
@@ -154,12 +166,17 @@ export default function AchievementsPage() {
           return (
             <Card key={rarity} className="p-4 h-[120px] flex flex-col">
               <div className="flex items-center justify-between">
-                <span className="text-lg" aria-hidden>{r.medal}</span>
+                <span className="text-lg" aria-hidden>
+                  {r.medal}
+                </span>
                 <span className="font-mono text-sm font-bold">
                   {c.unlocked}/{c.total}
                 </span>
               </div>
-              <p className="mt-1 text-xs font-semibold" style={{ color: r.accent }}>
+              <p
+                className="mt-1 text-xs font-semibold"
+                style={{ color: r.accent }}
+              >
                 {RARITY_LABEL[rarity]}
               </p>
               <div className="mt-auto">
@@ -183,14 +200,24 @@ export default function AchievementsPage() {
           />
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <Segmented options={CATEGORY_OPTS} value={category} onChange={setCategory} />
-          <Segmented options={STATUS_OPTS} value={status} onChange={setStatus} />
+          <Segmented
+            options={CATEGORY_OPTS}
+            value={category}
+            onChange={setCategory}
+          />
+          <Segmented
+            options={STATUS_OPTS}
+            value={status}
+            onChange={setStatus}
+          />
         </div>
       </div>
 
       {/* Grid */}
       {visible.length === 0 ? (
-        <Card className="p-10 text-center text-sm text-muted">No achievements match your filters.</Card>
+        <Card className="p-10 text-center text-sm text-muted">
+          No achievements match your filters.
+        </Card>
       ) : (
         <>
           <div className="grid gap-3 sm:grid-cols-2 stagger-children">
@@ -209,7 +236,9 @@ export default function AchievementsPage() {
                   />
                   <div className="min-w-0 flex-1 flex flex-col">
                     <div className="flex items-center gap-2">
-                      <h3 className="truncate text-sm font-semibold">{a.def.name}</h3>
+                      <h3 className="truncate text-sm font-semibold">
+                        {a.def.name}
+                      </h3>
                       <span
                         className="shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-bold uppercase"
                         style={{ background: `${r.accent}1f`, color: r.accent }}
@@ -217,7 +246,9 @@ export default function AchievementsPage() {
                         {RARITY_LABEL[a.def.rarity]}
                       </span>
                     </div>
-                    <p className="mt-0.5 line-clamp-2 text-xs text-muted">{a.def.description}</p>
+                    <p className="mt-0.5 line-clamp-2 text-xs text-muted">
+                      {a.def.description}
+                    </p>
                     {a.unlocked ? (
                       <p className="mt-auto pt-2 text-xs font-semibold text-done animate-fade-in">
                         ✓ Unlocked
@@ -237,34 +268,13 @@ export default function AchievementsPage() {
           </div>
 
           {/* Pagination */}
-          {pageCount > 1 && (
-            <div className="mt-6 flex items-center justify-between gap-3">
-              <span className="font-mono text-xs text-muted">
-                {start}–{end} of {visible.length}
-              </span>
-              <div className="flex items-center gap-1">
-                <button
-                  onClick={() => setPage((p) => Math.max(0, p - 1))}
-                  disabled={safePage === 0}
-                  aria-label="Previous page"
-                  className="flex size-8 items-center justify-center rounded-lg border border-line text-muted transition-colors hover:bg-surface2 hover:text-ink disabled:pointer-events-none disabled:opacity-40"
-                >
-                  <ChevronLeft className="size-4" />
-                </button>
-                <span className="px-3 font-mono text-xs text-muted">
-                  {safePage + 1} / {pageCount}
-                </span>
-                <button
-                  onClick={() => setPage((p) => Math.min(pageCount - 1, p + 1))}
-                  disabled={safePage >= pageCount - 1}
-                  aria-label="Next page"
-                  className="flex size-8 items-center justify-center rounded-lg border border-line text-muted transition-colors hover:bg-surface2 hover:text-ink disabled:pointer-events-none disabled:opacity-40"
-                >
-                  <ChevronRight className="size-4" />
-                </button>
-              </div>
-            </div>
-          )}
+          <Pagination
+            page={safePage}
+            pageCount={pageCount}
+            total={visible.length}
+            pageSize={PAGE_SIZE}
+            onChange={setPage}
+          />
         </>
       )}
     </div>

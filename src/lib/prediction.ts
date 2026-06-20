@@ -95,14 +95,26 @@ export function weeklyProjection(
   for (let i = 14; i >= 1; i--) {
     const d = addDays(today, -i);
     const r = dayCompletion(active, marks, d);
-    if (i <= 7) olderRates.push(r);
-    else recentRates.push(r);
+    if (i <= 7) recentRates.push(r);
+    else olderRates.push(r);
   }
-  const recentAvg = recentRates.length > 0 ? recentRates.reduce((s, r) => s + r, 0) / recentRates.length : 0;
-  const olderAvg = olderRates.length > 0 ? olderRates.reduce((s, r) => s + r, 0) / olderRates.length : 0;
+  const recentAvg =
+    recentRates.length > 0
+      ? recentRates.reduce((s, r) => s + r, 0) / recentRates.length
+      : 0;
+  const olderAvg =
+    olderRates.length > 0
+      ? olderRates.reduce((s, r) => s + r, 0) / olderRates.length
+      : 0;
 
   const diff = recentAvg - olderAvg;
-  const trend: "up" | "down" | "stable" = diff > 5 ? "up" : diff < -5 ? "down" : "stable";
+  const trend: "up" | "down" | "stable" =
+    diff > 5 ? "up" : diff < -5 ? "down" : "stable";
 
-  return { estimatedCompletion, estimatedStreak, estimatedDaysToNextLevel: daysToNextLevel, trend };
+  return {
+    estimatedCompletion,
+    estimatedStreak,
+    estimatedDaysToNextLevel: daysToNextLevel,
+    trend,
+  };
 }

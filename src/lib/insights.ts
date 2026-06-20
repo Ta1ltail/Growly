@@ -17,7 +17,15 @@ export interface Insight {
   text: string;
 }
 
-const WEEKDAY_NAMES = ["Sundays", "Mondays", "Tuesdays", "Wednesdays", "Thursdays", "Fridays", "Saturdays"];
+const WEEKDAY_NAMES = [
+  "Sundays",
+  "Mondays",
+  "Tuesdays",
+  "Wednesdays",
+  "Thursdays",
+  "Fridays",
+  "Saturdays",
+];
 
 // Build up to `limit` insights, most useful first.
 export function buildInsights(
@@ -36,24 +44,43 @@ export function buildInsights(
   // Overall momentum.
   const consistency = consistencyScore(active, marks, today, 14);
   if (consistency >= 80) {
-    out.push({ tone: "good", text: `You're on a roll — ${consistency}% consistency over the last two weeks.` });
+    out.push({
+      tone: "good",
+      text: `You're on a roll — ${consistency}% consistency over the last two weeks.`,
+    });
   } else if (consistency >= 50) {
-    out.push({ tone: "info", text: `Steady progress: ${consistency}% consistency in the last 14 days.` });
+    out.push({
+      tone: "info",
+      text: `Steady progress: ${consistency}% consistency in the last 14 days.`,
+    });
   } else if (month.scheduled > 0) {
-    out.push({ tone: "info", text: `One day at a time — ${consistency}% consistency so far. Small wins add up.` });
+    out.push({
+      tone: "info",
+      text: `One day at a time — ${consistency}% consistency so far. Small wins add up.`,
+    });
   }
 
   // Best weekday.
-  const byDay = completionByWeekday(active, marks, today, 28).filter((d) => d.rate > 0);
+  const byDay = completionByWeekday(active, marks, today, 28).filter(
+    (d) => d.rate > 0,
+  );
   if (byDay.length >= 2) {
     const best = byDay.reduce((a, b) => (b.rate > a.rate ? b : a));
-    out.push({ tone: "good", text: `${WEEKDAY_NAMES[best.weekday]} are your strongest day (${best.rate}% done).` });
+    out.push({
+      tone: "good",
+      text: `${WEEKDAY_NAMES[best.weekday]} are your strongest day (${best.rate}% done).`,
+    });
   }
 
   // Strongest category.
-  const cats = categoryCompletion(active, marks, monthFrom, today).filter((c) => c.rate > 0);
+  const cats = categoryCompletion(active, marks, monthFrom, today).filter(
+    (c) => c.rate > 0,
+  );
   if (cats.length > 0 && cats[0].rate >= 60) {
-    out.push({ tone: "good", text: `${cats[0].category} is your most consistent category at ${cats[0].rate}%.` });
+    out.push({
+      tone: "good",
+      text: `${cats[0].category} is your most consistent category at ${cats[0].rate}%.`,
+    });
   }
 
   // Needs attention (gentle).

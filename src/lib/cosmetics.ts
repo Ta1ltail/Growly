@@ -35,7 +35,10 @@ export const BANNER_PRESETS: BannerPreset[] = [
   { id: "sunset", gradient: "linear-gradient(120deg,#f59e0b,#f43f5e,#7c3aed)" },
   { id: "forest", gradient: "linear-gradient(120deg,#059669,#0ea5e9)" },
   { id: "ember", gradient: "linear-gradient(120deg,#f43f5e,#f59e0b)" },
-  { id: "midnight", gradient: "linear-gradient(120deg,#1e293b,#334155,#0ea5e9)" },
+  {
+    id: "midnight",
+    gradient: "linear-gradient(120deg,#1e293b,#334155,#0ea5e9)",
+  },
   { id: "candy", gradient: "linear-gradient(120deg,#ec4899,#8b5cf6,#22d3ee)" },
 ];
 
@@ -44,7 +47,8 @@ export type ResolvedAvatar =
   | { kind: "glyph"; glyph: string };
 
 export function resolveAvatar(avatar: string | undefined): ResolvedAvatar {
-  if (avatar && avatar.startsWith("data:")) return { kind: "image", src: avatar };
+  if (avatar && avatar.startsWith("data:"))
+    return { kind: "image", src: avatar };
   const preset = AVATAR_PRESETS.find((p) => p.id === avatar);
   return { kind: "glyph", glyph: (preset ?? AVATAR_PRESETS[0]).glyph };
 }

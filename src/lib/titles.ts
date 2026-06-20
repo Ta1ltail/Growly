@@ -2,7 +2,12 @@
 // from history-based XP) and can't be manually selected. The current title is
 // the highest one whose level requirement is met.
 
-export type Rank = "Beginner" | "Intermediate" | "Advanced" | "Expert" | "Legendary";
+export type Rank =
+  | "Beginner"
+  | "Intermediate"
+  | "Advanced"
+  | "Expert"
+  | "Legendary";
 
 export interface Title {
   name: string;

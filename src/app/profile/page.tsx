@@ -1,11 +1,5 @@
 "use client";
 
-// Profile — a character progression page (spec §9). Banner + rank-bordered
-// avatar, animated title/rank, level + XP, a stat strip (badges, achievements,
-// current & longest streak), the Next Milestone widget, a showcase of the
-// user's proudest things, and a badge gallery. Everything except the editable
-// identity is DERIVED from history via summarizeProgress (Honest Tracking).
-
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import {
@@ -66,7 +60,8 @@ export default function ProfilePage() {
     const counts = new Map<string, number>();
     for (const day of Object.values(data.marks)) {
       for (const [habitId, status] of Object.entries(day)) {
-        if (status === "done") counts.set(habitId, (counts.get(habitId) ?? 0) + 1);
+        if (status === "done")
+          counts.set(habitId, (counts.get(habitId) ?? 0) + 1);
       }
     }
     let bestId: string | null = null;
@@ -84,12 +79,13 @@ export default function ProfilePage() {
   if (!hydrated) return <PageSkeleton />;
 
   const { profile } = data;
-  const { stats, level, title, unlockedCount, totalCount, coinBalance } = summary;
+  const { stats, level, title, unlockedCount, totalCount, coinBalance } =
+    summary;
   const rank = RANK_STYLE[title.current.rank];
   const banner = resolveBanner(profile.banner);
 
   const showcaseBadge = profile.showcaseBadgeId
-    ? unlockedDefs.find((d) => d.id === profile.showcaseBadgeId) ?? null
+    ? (unlockedDefs.find((d) => d.id === profile.showcaseBadgeId) ?? null)
     : null;
   const bestAchievement = unlockedDefs[0] ?? null; // sorted highest-rarity first
 
@@ -111,7 +107,11 @@ export default function ProfilePage() {
 
         <div className="px-5 pb-5">
           <div className="-mt-12 flex items-end gap-4">
-            <RankAvatar rank={title.current.rank} avatar={profile.avatar} size={88} />
+            <RankAvatar
+              rank={title.current.rank}
+              avatar={profile.avatar}
+              size={88}
+            />
             <div className="mb-1 flex items-center gap-2 font-mono text-sm font-bold">
               <span className="grid size-7 place-items-center rounded-lg bg-accent/15 text-accent">
                 {level.level}
@@ -121,13 +121,26 @@ export default function ProfilePage() {
           </div>
 
           <div className="mt-3">
-            <h1 className="text-2xl font-bold tracking-tight">{profile.displayName}</h1>
+            <h1 className="text-2xl font-bold tracking-tight">
+              {profile.displayName}
+            </h1>
             <p className="text-sm text-muted">@{profile.username}</p>
-            <TitleDisplay title={title} size="md" className="mt-2.5" onClick={() => setShowTitles(true)} />
+            <TitleDisplay
+              title={title}
+              size="md"
+              className="mt-2.5"
+              onClick={() => setShowTitles(true)}
+            />
             {profile.motto && (
-              <p className="mt-2 text-sm italic text-muted">“{profile.motto}”</p>
+              <p className="mt-2 text-sm italic text-muted">
+                “{profile.motto}”
+              </p>
             )}
-            {profile.bio && <p className="mt-2 max-w-prose text-sm text-ink/90">{profile.bio}</p>}
+            {profile.bio && (
+              <p className="mt-2 max-w-prose text-sm text-ink/90">
+                {profile.bio}
+              </p>
+            )}
           </div>
         </div>
       </Card>
@@ -138,11 +151,28 @@ export default function ProfilePage() {
       </Card>
 
       <div className="mb-6 grid grid-cols-2 gap-3 stagger-children sm:grid-cols-5">
-        <StatCard icon={Medal} value={`${unlockedCount}/${totalCount}`} label="Badges" accent />
+        <StatCard
+          icon={Medal}
+          value={`${unlockedCount}/${totalCount}`}
+          label="Badges"
+          accent
+        />
         <StatCard icon={Trophy} value={unlockedCount} label="Achievements" />
-        <StatCard icon={Flame} value={stats.maxCurrentStreak} label="Current streak" />
-        <StatCard icon={Award} value={stats.maxBestStreak} label="Longest streak" />
-        <Link href="/shop" aria-label="Open shop" className="transition-transform hover:scale-[1.03]">
+        <StatCard
+          icon={Flame}
+          value={stats.maxCurrentStreak}
+          label="Current streak"
+        />
+        <StatCard
+          icon={Award}
+          value={stats.maxBestStreak}
+          label="Longest streak"
+        />
+        <Link
+          href="/shop"
+          aria-label="Open shop"
+          className="transition-transform hover:scale-[1.03]"
+        >
           <StatCard icon={Coins} value={coinBalance} label="Coins" />
         </Link>
       </div>
@@ -155,7 +185,9 @@ export default function ProfilePage() {
 
         {/* ---- Showcase ---- */}
         <Card className="p-5">
-          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted">Showcase</h2>
+          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted">
+            Showcase
+          </h2>
           <div className="flex flex-col gap-3">
             <ShowcaseRow label="Favorite badge">
               {showcaseBadge ? (
@@ -172,20 +204,26 @@ export default function ProfilePage() {
               )}
             </ShowcaseRow>
             <ShowcaseRow label="Current title">
-              <span className="flex items-center gap-1.5 text-sm font-semibold" style={{ color: rank.accent }}>
+              <span
+                className="flex items-center gap-1.5 text-sm font-semibold"
+                style={{ color: rank.accent }}
+              >
                 <span aria-hidden>{rank.icon}</span> {title.current.name}
               </span>
             </ShowcaseRow>
             <ShowcaseRow label="Longest streak">
               <span className="flex items-center gap-1.5 text-sm font-semibold">
-                <Flame className="size-4 text-orange-500" /> {stats.maxBestStreak} days
+                <Flame className="size-4 text-orange-500" />{" "}
+                {stats.maxBestStreak} days
               </span>
             </ShowcaseRow>
             <ShowcaseRow label="Most completed">
               {mostCompleted ? (
                 <span className="flex items-center gap-1.5 text-sm font-semibold">
                   <Repeat className="size-4 text-accent" /> {mostCompleted.name}
-                  <span className="font-mono text-xs text-faint">×{mostCompleted.count}</span>
+                  <span className="font-mono text-xs text-faint">
+                    ×{mostCompleted.count}
+                  </span>
                 </span>
               ) : (
                 <span className="text-xs text-faint">None yet</span>
@@ -198,8 +236,13 @@ export default function ProfilePage() {
       {/* ---- Badge gallery ---- */}
       <section className="mt-6">
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-muted">Badge collection</h2>
-          <Link href="/achievements" className="flex items-center gap-1 text-xs font-semibold text-accent hover:underline">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-muted">
+            Badge collection
+          </h2>
+          <Link
+            href="/achievements"
+            className="flex items-center gap-1 text-xs font-semibold text-accent hover:underline"
+          >
             View all <ChevronRight className="size-3.5" />
           </Link>
         </div>
@@ -211,8 +254,15 @@ export default function ProfilePage() {
           <Card className="p-5">
             <div className="flex flex-wrap gap-3">
               {unlockedDefs.map((def) => (
-                <div key={def.id} title={`${def.name} · ${RARITY_LABEL[def.rarity]}`}>
-                  <AchievementBadge def={def} size={56} shine={def.rarity === "legendary"} />
+                <div
+                  key={def.id}
+                  title={`${def.name} · ${RARITY_LABEL[def.rarity]}`}
+                >
+                  <AchievementBadge
+                    def={def}
+                    size={56}
+                    shine={def.rarity === "legendary"}
+                  />
                 </div>
               ))}
             </div>
@@ -222,12 +272,29 @@ export default function ProfilePage() {
 
       {/* ---- Jump to ---- */}
       <section className="mt-6">
-        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted">Jump to</h2>
+        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted">
+          Jump to
+        </h2>
         <Card className="divide-y divide-line overflow-hidden">
-          <LinkRow href="/achievements" icon={Trophy} label="Achievements" trailing={`${unlockedCount}/${totalCount}`} />
-          <LinkRow href="/goals" icon={Target} label="Goals" trailing={`${data.goals.length}`} />
+          <LinkRow
+            href="/achievements"
+            icon={Trophy}
+            label="Achievements"
+            trailing={`${unlockedCount}/${totalCount}`}
+          />
+          <LinkRow
+            href="/goals"
+            icon={Target}
+            label="Goals"
+            trailing={`${data.goals.length}`}
+          />
           <LinkRow href="/templates" icon={LayoutTemplate} label="Templates" />
-          <LinkRow href="/notes" icon={NotebookPen} label="Notes" trailing={`${data.notes.length}`} />
+          <LinkRow
+            href="/notes"
+            icon={NotebookPen}
+            label="Notes"
+            trailing={`${data.notes.length}`}
+          />
           <LinkRow href="/settings" icon={Settings2} label="Settings" />
         </Card>
       </section>
@@ -253,7 +320,13 @@ export default function ProfilePage() {
   );
 }
 
-function ShowcaseRow({ label, children }: { label: string; children: React.ReactNode }) {
+function ShowcaseRow({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
   return (
     <div className="flex items-center justify-between gap-3">
       <span className="text-xs text-muted">{label}</span>
@@ -286,10 +359,15 @@ function LinkRow({
   trailing?: string;
 }) {
   return (
-    <Link href={href} className="flex items-center gap-3 px-4 py-3.5 text-sm transition-colors hover:bg-surface2/50">
+    <Link
+      href={href}
+      className="flex items-center gap-3 px-4 py-3.5 text-sm transition-colors hover:bg-surface2/50"
+    >
       <Icon className="size-[18px] text-muted" />
       <span className="flex-1">{label}</span>
-      {trailing && <span className="font-mono text-xs text-muted">{trailing}</span>}
+      {trailing && (
+        <span className="font-mono text-xs text-muted">{trailing}</span>
+      )}
       <ChevronRight className="size-4 text-faint" />
     </Link>
   );

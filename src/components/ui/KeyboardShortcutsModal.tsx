@@ -21,11 +21,12 @@ export function KeyboardShortcutsModal() {
   // Group shortcuts
   const navShortcuts = ALL_SHORTCUTS.filter((s) => s.keys.startsWith("g then"));
   const actionShortcuts = ALL_SHORTCUTS.filter(
-    (s) => !s.keys.startsWith("g then") && s.keys !== "?" && !s.keys.startsWith("Ctrl"),
+    (s) =>
+      !s.keys.startsWith("g then") &&
+      s.keys !== "?" &&
+      !s.keys.startsWith("Ctrl"),
   );
-  const editShortcuts = ALL_SHORTCUTS.filter((s) =>
-    s.keys.startsWith("Ctrl"),
-  );
+  const editShortcuts = ALL_SHORTCUTS.filter((s) => s.keys.startsWith("Ctrl"));
 
   return (
     <Modal
@@ -99,7 +100,10 @@ export function KeyboardShortcutsModal() {
         <div className="rounded-lg bg-accent/5 p-3 text-xs text-muted">
           <p className="flex items-center gap-2">
             <Keyboard className="size-3.5" />
-            Press <kbd className="rounded bg-surface px-1.5 py-0.5 font-mono text-[10px] text-accent ring-1 ring-line">?</kbd>{" "}
+            Press{" "}
+            <kbd className="rounded bg-surface px-1.5 py-0.5 font-mono text-[10px] text-accent ring-1 ring-line">
+              ?
+            </kbd>{" "}
             anytime to toggle this modal.
           </p>
         </div>

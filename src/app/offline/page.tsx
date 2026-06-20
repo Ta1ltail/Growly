@@ -10,7 +10,8 @@ export default function OfflinePage() {
       </div>
       <h1 className="text-xl font-bold">You&apos;re offline</h1>
       <p className="max-w-xs text-sm text-muted">
-        Your habits and progress are saved locally and will sync when you&apos;re back online.
+        Your habits and progress are saved locally and will sync when
+        you&apos;re back online.
       </p>
     </div>
   );

@@ -28,13 +28,21 @@ export const Pagination = memo(function Pagination({
         {start}–{end} of {total}
       </span>
       <div className="flex items-center gap-1">
-        <PageBtn label="Previous page" disabled={page === 0} onClick={() => onChange(page - 1)}>
+        <PageBtn
+          label="Previous page"
+          disabled={page === 0}
+          onClick={() => onChange(page - 1)}
+        >
           <ChevronLeft className="size-4" />
         </PageBtn>
         <span className="px-2 font-mono text-xs text-muted">
           {page + 1} / {pageCount}
         </span>
-        <PageBtn label="Next page" disabled={page >= pageCount - 1} onClick={() => onChange(page + 1)}>
+        <PageBtn
+          label="Next page"
+          disabled={page >= pageCount - 1}
+          onClick={() => onChange(page + 1)}
+        >
           <ChevronRight className="size-4" />
         </PageBtn>
       </div>

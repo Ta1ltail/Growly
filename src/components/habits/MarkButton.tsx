@@ -45,8 +45,10 @@ export function MarkButton({
       disabled={locked && !status}
       aria-label={`${locked ? `Locked${status ? `, marked ${status}` : ""}` : status ? `Marked ${status}` : "Not marked"}${frozen ? ", protected by a streak freeze" : ""}`}
       style={{ width: size, height: size }}
-      className={`relative flex shrink-0 items-center justify-center rounded-full border transition-all active:scale-90 ${
-        status ? STYLES[status] : "border-line bg-surface2 hover:border-accent hover:scale-110"
+      className={`relative flex shrink-0 items-center justify-center rounded-full border transition-all active:scale-90 before:absolute before:inset-1/2 before:-translate-x-1/2 before:-translate-y-1/2 before:min-w-[44px] before:min-h-[44px] before:content-[''] ${
+        status
+          ? STYLES[status]
+          : "border-line bg-surface2 hover:border-accent hover:scale-110"
       } ${locked ? "cursor-not-allowed opacity-70" : ""}`}
     >
       {status === "done" && (
@@ -62,9 +64,15 @@ export function MarkButton({
           aria-hidden
           title="Protected by a streak freeze"
           className="absolute -right-1 -top-1 grid place-items-center rounded-full bg-sky-500 text-white ring-2 ring-surface"
-          style={{ width: Math.round(size * 0.5), height: Math.round(size * 0.5) }}
+          style={{
+            width: Math.round(size * 0.5),
+            height: Math.round(size * 0.5),
+          }}
         >
-          <Snowflake style={{ width: size * 0.3, height: size * 0.3 }} strokeWidth={3} />
+          <Snowflake
+            style={{ width: size * 0.3, height: size * 0.3 }}
+            strokeWidth={3}
+          />
         </span>
       )}
     </button>

@@ -13,11 +13,21 @@ export function matchQuery(query: string, terms: string): boolean {
   return q.split(/\s+/).every((t) => hay.includes(t));
 }
 
-export function DevGroup({ title, children }: { title: string; children: ReactNode }) {
+export function DevGroup({
+  title,
+  children,
+}: {
+  title: string;
+  children: ReactNode;
+}) {
   return (
     <div className="mb-5">
-      <p className="mb-1 px-1 text-[10px] font-bold uppercase tracking-wider text-faint">{title}</p>
-      <div className="rounded-xl border border-line bg-surface/60 px-3 divide-y divide-line">{children}</div>
+      <p className="mb-1 px-1 text-[10px] font-bold uppercase tracking-wider text-faint">
+        {title}
+      </p>
+      <div className="rounded-xl border border-line bg-surface/60 px-3 divide-y divide-line">
+        {children}
+      </div>
     </div>
   );
 }
@@ -40,9 +50,13 @@ export function DevRow({
     <div className="flex items-center justify-between gap-3 py-2.5">
       <div className="min-w-0">
         <p className="text-sm font-medium">{label}</p>
-        {hint && <p className="mt-0.5 text-xs leading-snug text-muted">{hint}</p>}
+        {hint && (
+          <p className="mt-0.5 text-xs leading-snug text-muted">{hint}</p>
+        )}
       </div>
-      {children && <div className="flex shrink-0 items-center gap-2">{children}</div>}
+      {children && (
+        <div className="flex shrink-0 items-center gap-2">{children}</div>
+      )}
     </div>
   );
 }
@@ -71,7 +85,15 @@ export function DevStack({
   );
 }
 
-export function DevToggle({ checked, onChange, label }: { checked: boolean; onChange: (v: boolean) => void; label?: string }) {
+export function DevToggle({
+  checked,
+  onChange,
+  label,
+}: {
+  checked: boolean;
+  onChange: (v: boolean) => void;
+  label?: string;
+}) {
   return (
     <button
       type="button"

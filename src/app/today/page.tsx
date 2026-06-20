@@ -6,7 +6,17 @@
 
 import { useMemo, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Flame, NotebookPen, ListChecks, Clock, Sparkles, Coins, RotateCcw, Snowflake } from "lucide-react";
+import {
+  Plus,
+  Flame,
+  NotebookPen,
+  ListChecks,
+  Clock,
+  Sparkles,
+  Coins,
+  RotateCcw,
+  Snowflake,
+} from "lucide-react";
 import { StreakFlame } from "@/components/habits/StreakFlame";
 import { AnimatedCounter } from "@/components/ui/AnimatedCounter";
 import { CATEGORIES, CATEGORY_COLORS, type Category } from "@/lib/categories";
@@ -59,13 +69,19 @@ export default function TodayPage() {
       list.push(h);
       map.set(h.category, list);
     }
-    return CATEGORIES.map((c) => ({ category: c, habits: map.get(c) ?? [] })).filter(
-      (g) => g.habits.length > 0,
-    );
+    return CATEGORIES.map((c) => ({
+      category: c,
+      habits: map.get(c) ?? [],
+    })).filter((g) => g.habits.length > 0);
   }, [todaysHabits]);
 
-  const doneCount = todaysHabits.filter((h) => data.marks[todayKey]?.[h.id] === "done").length;
-  const progress = todaysHabits.length === 0 ? 0 : Math.round((doneCount / todaysHabits.length) * 100);
+  const doneCount = todaysHabits.filter(
+    (h) => data.marks[todayKey]?.[h.id] === "done",
+  ).length;
+  const progress =
+    todaysHabits.length === 0
+      ? 0
+      : Math.round((doneCount / todaysHabits.length) * 100);
 
   const upcoming = useMemo(
     () =>
@@ -79,27 +95,37 @@ export default function TodayPage() {
   const frozen = useMemo(() => frozenSet(data.economy), [data.economy]);
   const bestStreakToday = useMemo(() => {
     let best = 0;
-    for (const h of todaysHabits) best = Math.max(best, habitStreaks(h, data.marks, today, frozen).current);
+    for (const h of todaysHabits)
+      best = Math.max(best, habitStreaks(h, data.marks, today, frozen).current);
     return best;
   }, [todaysHabits, data.marks, today, frozen]);
 
   const greeting =
-    today.getHours() < 12 ? "Good morning" : today.getHours() < 18 ? "Good afternoon" : "Good evening";
+    today.getHours() < 12
+      ? "Good morning"
+      : today.getHours() < 18
+        ? "Good afternoon"
+        : "Good evening";
 
   const [showSpin, setShowSpin] = useState(false);
 
   const dailyNote =
-    data.notes.find((n) => n.links.date === todayKey && !n.links.habitId && !n.links.goalId)?.body ?? "";
+    data.notes.find(
+      (n) => n.links.date === todayKey && !n.links.habitId && !n.links.goalId,
+    )?.body ?? "";
 
   function handleAdd(value: Parameters<typeof makeHabit>[0]) {
     addHabit(makeHabit(value));
     setShowAdd(false);
   }
 
-  const mark = (habitId: string, category: Category) => cycleMark(todayKey, habitId, category);
+  const mark = (habitId: string, category: Category) =>
+    cycleMark(todayKey, habitId, category);
 
-  if (!hydrated) return <PageSkeleton />;          const alreadySpun = data.economy.lastSpinDate === todayKey;
-          const spinResult = data.economy.lastSpinResult;
+  const alreadySpun = data.economy.lastSpinDate === todayKey;
+  const spinResult = data.economy.lastSpinResult;
+
+  if (!hydrated) return <PageSkeleton />;
 
   return (
     <div className="animate-fade-in flex flex-col min-h-0 h-[calc(100dvh-128px)] md:h-[calc(100dvh-72px)]">
@@ -118,18 +144,31 @@ export default function TodayPage() {
           </ProgressRing>
           <div className="min-w-0">
             <p className="text-xs font-medium uppercase tracking-wide text-accent">
-              {today.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" })}
+              {today.toLocaleDateString(undefined, {
+                weekday: "long",
+                month: "long",
+                day: "numeric",
+              })}
             </p>
-            <h1 className="truncate text-xl font-bold tracking-tight sm:text-2xl">{greeting}, {data.profile.displayName}</h1>
-            <p className="mt-1 text-sm text-muted">{todayHeadline(doneCount, todaysHabits.length)}</p>
+            <h1 className="truncate text-xl font-bold tracking-tight sm:text-2xl">
+              {greeting}, {data.profile.displayName}
+            </h1>
+            <p className="mt-1 text-sm text-muted">
+              {todayHeadline(doneCount, todaysHabits.length)}
+            </p>
             <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted">
               <span className="flex items-center gap-1.5">
                 <ListChecks className="size-4 text-accent" />
-                <AnimatedCounter value={doneCount} />/{todaysHabits.length} habits
+                <AnimatedCounter value={doneCount} />/{todaysHabits.length}{" "}
+                habits
               </span>
               <span className="flex items-center gap-1.5">
                 {bestStreakToday > 0 ? (
-                  <StreakFlame streak={bestStreakToday} size={18} showCount={false} />
+                  <StreakFlame
+                    streak={bestStreakToday}
+                    size={18}
+                    showCount={false}
+                  />
                 ) : (
                   <Flame className="size-4 text-faint" />
                 )}
@@ -152,14 +191,19 @@ export default function TodayPage() {
               </h2>
               <Card className="divide-y divide-line overflow-hidden">
                 {upcoming.map((h) => (
-                  <div key={h.id} className="flex items-center gap-3 px-4 py-2.5">
+                  <div
+                    key={h.id}
+                    className="flex items-center gap-3 px-4 py-2.5"
+                  >
                     <MarkButton
                       status={data.marks[todayKey]?.[h.id]}
                       onClick={() => mark(h.id, h.category)}
                       size={24}
                     />
                     <span className="flex-1 text-sm">{h.name}</span>
-                    <span className="font-mono text-xs text-accent">{formatTime(h.timeOfDay!)}</span>
+                    <span className="font-mono text-xs text-accent">
+                      {formatTime(h.timeOfDay!)}
+                    </span>
                   </div>
                 ))}
               </Card>
@@ -168,7 +212,9 @@ export default function TodayPage() {
 
           {/* Habits header */}
           <div className="shrink-0 flex items-center justify-between">
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-muted">Today&apos;s habits</h2>
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-muted">
+              Today&apos;s habits
+            </h2>
             {todaysHabits.length > 0 && (
               <Button variant="soft" size="sm" onClick={() => setShowAdd(true)}>
                 <Plus className="size-3.5" strokeWidth={2.5} /> Add
@@ -192,15 +238,29 @@ export default function TodayPage() {
               {grouped.map((group) => (
                 <div key={group.category}>
                   <div className="mb-2 flex items-center gap-2 px-1">
-                    <span className="size-2.5 rounded-full" style={{ backgroundColor: CATEGORY_COLORS[group.category] }} />
-                    <h3 className="text-xs font-semibold uppercase tracking-wide text-muted">{group.category}</h3>
+                    <span
+                      className="size-2.5 rounded-full"
+                      style={{
+                        backgroundColor: CATEGORY_COLORS[group.category],
+                      }}
+                    />
+                    <h3 className="text-xs font-semibold uppercase tracking-wide text-muted">
+                      {group.category}
+                    </h3>
                   </div>
                   <Card className="divide-y divide-line overflow-hidden">
                     {group.habits.map((habit) => {
                       const status = data.marks[todayKey]?.[habit.id];
                       return (
-                        <div key={habit.id} className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-surface2/50">
-                          <MarkButton status={status}                          onClick={() => mark(habit.id, habit.category)} size={26} />
+                        <div
+                          key={habit.id}
+                          className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-surface2/50"
+                        >
+                          <MarkButton
+                            status={status}
+                            onClick={() => mark(habit.id, habit.category)}
+                            size={26}
+                          />
                           <span
                             className={`flex-1 text-sm transition-colors ${
                               status === "done"
@@ -213,7 +273,9 @@ export default function TodayPage() {
                             {habit.name}
                           </span>
                           {habit.timeOfDay && (
-                            <span className="font-mono text-[11px] text-faint">{formatTime(habit.timeOfDay)}</span>
+                            <span className="font-mono text-[11px] text-faint">
+                              {formatTime(habit.timeOfDay)}
+                            </span>
                           )}
                         </div>
                       );
@@ -234,7 +296,11 @@ export default function TodayPage() {
           <Card className="p-4 shrink-0">
             <div className="flex items-center gap-4">
               <span className="grid size-12 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-amber-400/20 to-rose-400/20 text-2xl">
-                {alreadySpun && spinResult?.isFreeze ? "❄️" : alreadySpun ? "🪙" : "🎰"}
+                {alreadySpun && spinResult?.isFreeze
+                  ? "❄️"
+                  : alreadySpun
+                    ? "🪙"
+                    : "🎰"}
               </span>
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-semibold">Daily Spin</p>
@@ -271,10 +337,7 @@ export default function TodayPage() {
                   </div>
                 )}
               </div>
-              <Button
-                onClick={() => setShowSpin(true)}
-                size="sm"
-              >
+              <Button onClick={() => setShowSpin(true)} size="sm">
                 <Sparkles className="size-3.5" aria-hidden />
                 {alreadySpun ? "View" : "Spin"}
               </Button>

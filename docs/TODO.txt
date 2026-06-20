@@ -2,15 +2,11 @@
 #                                                          #
 #   PROJECT 101 - TODO / PROGRESS CHECKLIST                #
 #   [x] = done   [ ] = not yet                            #
-#   Updated: 2026-06-18 (v2)                                    #
+#   Updated: 2026-06-20 (v3 - optimization complete)       #
 #                                                          #
 ############################################################
 
-  Current gates: tsc 0 errors, lint 0 errors/1 warning,
-  vitest 81/81 passing, build clean.
-
-  Dev server: npm run dev (uses --webpack due to Turbopack
-  Windows crash in Next.js 16.2.9)
+  Current gates: tsc 0 errors, vitest 81/81 passing, prettier formatted.
 
 
 ==========================================================
@@ -30,7 +26,7 @@
 
 
 ==========================================================
- GAMIFICATION + UI REDESIGN   (COMPLETE — verified)
+ GAMIFICATION + UI REDESIGN   (COMPLETE)
 ==========================================================
   [x] Part 1 - Engine: XP, 28 achievements, titles/ranks, progress facade
   [x] Part 2 - Visual base: ambient background, motion tokens
@@ -42,7 +38,7 @@
 
 
 ==========================================================
- COINS + SHOP ECONOMY   (COMPLETE — verified)
+ COINS + SHOP ECONOMY   (COMPLETE)
 ==========================================================
   [x] Engine - coinsEarned/coinBalance/coinBreakdown, shop catalog
   [x] Schema v4 - economy state + validators + store actions
@@ -69,57 +65,50 @@
   [x] Light theme: warm cream tones
   [x] Dark theme: deep purple-black
   [x] Animated nav icons (bounce, wiggle)
-  [x] Particle background (stars + aurora blobs)
   [x] Card hover effects, GPU-composited animations
+  [x] Touch targets (44px on MarkButton + IconBtn)
 
 
 ==========================================================
- FEATURE CATEGORIES   (COMPLETE — 2026-06-18)
+ FEATURE CATEGORIES   (COMPLETE)
 ==========================================================
-  🧠 UX & Navigation
   [x] Keyboard shortcuts (g-prefix + ? + n)
   [x] Undo/redo (Ctrl+Z/Shift+Z)
   [x] Onboarding wizard (5 steps)
   [x] Dashboard reordering (drag-and-drop)
-
-  📊 Data & Insights
   [x] Prediction engine (completion, streak, level ETA)
-  [x] CSV/JSON export/import (Settings page)
+  [x] CSV/JSON export/import (Settings)
   [x] Habit correlations (co-occurrence on /stats)
-
-  🎨 Customization & Social
   [x] Custom categories (Settings UI)
   [x] Achievements next-achievable section
-
-  ⚡ Performance & Polish
   [x] PWA manifest + service worker + offline page
   [x] a11y: aria-current on nav, focus-visible
-  [ ] Memoization optimization
+  [x] Memoization optimization
 
 
 ==========================================================
- BUG FIXES   (2026-06-17/18)
+ OPTIMIZATION PASS   (2026-06-20)
 ==========================================================
-  [x] Render-phase setState (habits pagination)
-  [x] CosmeticSlot duplication
-  [x] Invalid Date guard (freezesUsedInWindow)
-  [x] Next.js Image + data URIs (RankAvatar)
-  [x] Flame flicker tiers (2.2s/1.6s/0.9s)
-  [x] uid() refactor (5 → 1)
-  [x] useKeyboardShortcuts server error
-  [x] Script tag React warning
-  [x] "Rendered fewer hooks" error
-  [x] Turbopack Windows crash (--webpack)
-  [x] 17 lint issues fixed
-
-
-==========================================================
- ARCHITECTURE CLEANUP   (2026-06-18)
-==========================================================
-  [x] Moved 6 loose components into proper subdirectories
-  [x] Updated all imports (14 files)
-  [x] Updated all docs (ARCHITECTURE, PROGRESS, TODO, BUILD_PLAN)
-  [x] Removed outdated docs
+  [x] Installed: motion, sonner, clsx, tailwind-merge, zod, knip, prettier
+  [x] Removed: @dnd-kit/*, culori, date-fns (unused deps)
+  [x] 10 unused exports removed (inert AI config, dead code)
+  [x] AiSettingsSection.tsx + CelebrationToast.tsx deleted
+  [x] Debounced localStorage saves (100ms)
+  [x] React.memo on 8 leaf components
+  [x] Lazy-loaded Confetti (React.lazy + Suspense)
+  [x] Zod v4 validation for importJSON
+  [x] Page transitions (AnimatePresence + motion.div)
+  [x] Micro-interactions (Card whileHover, Button whileTap)
+  [x] StaggerContainer component for list animations
+  [x] TONE extracted to util.ts, IconBtn extracted to shared component
+  [x] CATEGORY_COLORS_MAP duplicate removed
+  [x] Shared Pagination in achievements page
+  [x] cn() consolidated into util.ts, duplicate utils.ts deleted
+  [x] Prettier formatted 95 files
+  [x] Bundle analyzer configured
+  [x] TOOLS_USED.md created
+  [x] SYSTEM_FEATURES.md created
+  [x] ARCHITECTURE.txt, PROGRESS.md, TODO.txt updated
 
 
 ==========================================================
@@ -131,7 +120,7 @@
   [ ] Drizzle ORM + database tables
   [ ] Move localStorage -> Supabase
   [ ] Row Level Security (RLS)
-  [ ] Zod input validation
+  [ ] Zod input validation (full pipeline)
   [ ] Email (verify/reset) via Resend
   [ ] Free vs Pro subscription
   [ ] Payments (PayMongo + PayPal)
@@ -142,6 +131,4 @@
   [ ] Analytics
 
 
-############################################################
-#                 END OF TODO LIST                         #
 ############################################################

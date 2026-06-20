@@ -3,7 +3,7 @@
 #   PROJECT 101 - FINAL BUILD PLAN                         #
 #   App: "LifeGrid" - a spreadsheet-style habit tracker    #
 #   Web-first | Built with Claude                          #
-#   Updated: 2026-06-18 (v2)                                    #
+#   Updated: 2026-06-20 (v3)                                    #
 #                                                          #
 ############################################################
 
@@ -20,7 +20,10 @@
      +-- Bug fixes + Architecture cleanup ....... DONE (verified)
      +-- Memoization optimization ............... DONE (verified)
      +-- Layout fixes ........................... DONE (verified)
-         All gates green (81 tests, tsc 0, lint 0 errors/1 warning).
+     +-- Architecture cleanup ................... DONE (verified)
+         All gates green: tsc 0, lint 0, vitest 81/81 passing.
+         Dead code removed (AmbientBackground, DashboardWidgets),
+         stale comments cleaned, unused imports purged.
    Phase 4 ACCOUNTS, CLOUD & SECURITY ........... NOT STARTED
    Phase 5 BUSINESS & LAUNCH .................... NOT STARTED
 

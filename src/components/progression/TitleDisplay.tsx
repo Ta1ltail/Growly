@@ -22,7 +22,11 @@ export function TitleDisplay({
 }) {
   const rank = RANK_STYLE[title.current.rank];
   const text =
-    size === "lg" ? "text-2xl sm:text-3xl" : size === "sm" ? "text-base" : "text-xl";
+    size === "lg"
+      ? "text-2xl sm:text-3xl"
+      : size === "sm"
+        ? "text-base"
+        : "text-xl";
 
   const inner = (
     <>

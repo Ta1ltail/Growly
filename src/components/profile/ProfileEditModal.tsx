@@ -90,7 +90,9 @@ export function ProfileEditModal({
           </Field>
           <Field label="Username">
             <div className="relative">
-              <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-faint">@</span>
+              <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-faint">
+                @
+              </span>
               <input
                 value={draft.username}
                 onChange={(e) => set("username", e.target.value)}
@@ -126,7 +128,10 @@ export function ProfileEditModal({
         <Field label="Avatar">
           <div className="flex flex-wrap gap-2">
             {AVATAR_PRESETS.map((p) => {
-              const active = !uploaded && resolveAvatar(draft.avatar).kind === "glyph" && draft.avatar === p.id;
+              const active =
+                !uploaded &&
+                resolveAvatar(draft.avatar).kind === "glyph" &&
+                draft.avatar === p.id;
               return (
                 <button
                   key={p.id}
@@ -135,7 +140,9 @@ export function ProfileEditModal({
                   aria-label={p.id}
                   aria-pressed={active}
                   className={`grid size-11 place-items-center rounded-xl border text-xl transition-colors ${
-                    active ? "border-accent bg-accent/10" : "border-line bg-surface2 hover:border-accent/40"
+                    active
+                      ? "border-accent bg-accent/10"
+                      : "border-line bg-surface2 hover:border-accent/40"
                   }`}
                 >
                   {p.glyph}
@@ -144,12 +151,19 @@ export function ProfileEditModal({
             })}
             <label
               className={`flex size-11 cursor-pointer items-center justify-center rounded-xl border text-muted transition-colors hover:border-accent/40 hover:text-ink ${
-                uploaded ? "border-accent bg-accent/10 text-accent" : "border-line bg-surface2"
+                uploaded
+                  ? "border-accent bg-accent/10 text-accent"
+                  : "border-line bg-surface2"
               }`}
               title="Upload an image"
             >
               <Upload className="size-4" />
-              <input type="file" accept="image/*" onChange={onPickImage} className="hidden" />
+              <input
+                type="file"
+                accept="image/*"
+                onChange={onPickImage}
+                className="hidden"
+              />
             </label>
           </div>
         </Field>
@@ -179,11 +193,15 @@ export function ProfileEditModal({
         {/* Showcase badge */}
         <Field label="Showcase badge">
           {unlockedDefs.length === 0 ? (
-            <p className="text-xs text-faint">Unlock an achievement to feature it here.</p>
+            <p className="text-xs text-faint">
+              Unlock an achievement to feature it here.
+            </p>
           ) : (
             <select
               value={draft.showcaseBadgeId ?? ""}
-              onChange={(e) => set("showcaseBadgeId", e.target.value || undefined)}
+              onChange={(e) =>
+                set("showcaseBadgeId", e.target.value || undefined)
+              }
               className={INPUT}
             >
               <option value="">None</option>
@@ -203,10 +221,18 @@ export function ProfileEditModal({
 const INPUT =
   "w-full rounded-xl border border-line bg-surface px-3 py-2.5 text-sm outline-none transition-colors focus:border-accent";
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
   return (
     <label className="block">
-      <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-muted">{label}</span>
+      <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-muted">
+        {label}
+      </span>
       {children}
     </label>
   );

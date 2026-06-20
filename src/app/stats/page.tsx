@@ -6,7 +6,20 @@
 // shifting. The Last 7 Days section is fixed with internal scrolling.
 
 import { useMemo, useState } from "react";
-import { Target, CircleCheckBig, Flame, TrendingUp, Activity, ChartColumnIncreasing, Sparkles, Gauge, ArrowUp, ArrowDown, Minus, Link2 } from "lucide-react";
+import {
+  Target,
+  CircleCheckBig,
+  Flame,
+  TrendingUp,
+  Activity,
+  ChartColumnIncreasing,
+  Sparkles,
+  Gauge,
+  ArrowUp,
+  ArrowDown,
+  Minus,
+  Link2,
+} from "lucide-react";
 import { CATEGORY_COLORS } from "@/lib/categories";
 import { useAppData } from "@/lib/store";
 import { useToday } from "@/hooks/useToday";
@@ -23,6 +36,7 @@ import {
 import { frozenSet } from "@/lib/economy";
 import { buildInsights } from "@/lib/insights";
 import { WEEKDAY_SHORT } from "@/lib/format";
+import { TONE } from "@/lib/util";
 import { weeklyProjection } from "@/lib/prediction";
 import { summarizeProgress } from "@/lib/progress";
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -31,6 +45,10 @@ import { StatCard } from "@/components/ui/StatCard";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Segmented } from "@/components/ui/Segmented";
+import {
+  StaggerContainer,
+  StaggerItem,
+} from "@/components/ui/StaggerContainer";
 import { TrendLineChart } from "@/components/stats/TrendLineChart";
 
 const PERIODS = [
@@ -39,33 +57,54 @@ const PERIODS = [
   { value: "90" as const, label: "90 days" },
 ];
 
-const TONE: Record<string, string> = {
-  good: "border-done/30 bg-done/5 text-done",
-  info: "border-accent/30 bg-accent/5 text-accent",
-  warn: "border-amber-500/30 bg-amber-500/5 text-amber-500",
-};
-
 export default function StatsPage() {
   const data = useAppData();
   const today = useToday();
   const [period, setPeriod] = useState<"7" | "30" | "90">("30");
   const days = Number(period);
-  const active = useMemo(() => data.habits.filter((h) => !h.archived), [data.habits]);
+  const active = useMemo(
+    () => data.habits.filter((h) => !h.archived),
+    [data.habits],
+  );
   const from = useMemo(() => addDays(today, -(days - 1)), [today, days]);
 
-  const range = useMemo(() => rangeCompletion(active, data.marks, from, today), [active, data.marks, from, today]);
+  const range = useMemo(
+    () => rangeCompletion(active, data.marks, from, today),
+    [active, data.marks, from, today],
+  );
   const chart = useMemo(
     () => lastNDaysCompletion(active, data.marks, today, Math.min(days, 14)),
     [active, data.marks, today, days],
   );
-  const byCategory = useMemo(() => categoryCompletion(active, data.marks, from, today), [active, data.marks, from, today]);
-  const topCategories = useMemo(() => [...byCategory].sort((a, b) => b.rate - a.rate), [byCategory]);
-  const week7 = useMemo(() => lastNDaysCompletion(active, data.marks, today, 7), [active, data.marks, today]);
-  const byWeekday = useMemo(() => completionByWeekday(active, data.marks, today, days), [active, data.marks, today, days]);
-  const consistency = useMemo(() => consistencyScore(active, data.marks, today, days), [active, data.marks, today, days]);
-  const insights = useMemo(() => buildInsights(active, data.marks, today, 4), [active, data.marks, today]);
+  const byCategory = useMemo(
+    () => categoryCompletion(active, data.marks, from, today),
+    [active, data.marks, from, today],
+  );
+  const topCategories = useMemo(
+    () => [...byCategory].sort((a, b) => b.rate - a.rate),
+    [byCategory],
+  );
+  const week7 = useMemo(
+    () => lastNDaysCompletion(active, data.marks, today, 7),
+    [active, data.marks, today],
+  );
+  const byWeekday = useMemo(
+    () => completionByWeekday(active, data.marks, today, days),
+    [active, data.marks, today, days],
+  );
+  const consistency = useMemo(
+    () => consistencyScore(active, data.marks, today, days),
+    [active, data.marks, today, days],
+  );
+  const insights = useMemo(
+    () => buildInsights(active, data.marks, today, 4),
+    [active, data.marks, today],
+  );
   const frozen = useMemo(() => frozenSet(data.economy), [data.economy]);
-  const correlations = useMemo(() => habitCorrelations(active, data.marks), [active, data.marks]);
+  const correlations = useMemo(
+    () => habitCorrelations(active, data.marks),
+    [active, data.marks],
+  );
 
   // Prediction engine
   const summary = useMemo(() => summarizeProgress(data, today), [data, today]);
@@ -75,16 +114,27 @@ export default function StatsPage() {
       const d = new Date(h.createdAt);
       return d < earliest ? d : earliest;
     }, new Date());
-    const daysElapsed = Math.max(1, Math.round((today.getTime() - firstDate.getTime()) / 86400000));
+    const daysElapsed = Math.max(
+      1,
+      Math.round((today.getTime() - firstDate.getTime()) / 86400000),
+    );
     return Math.round(summary.xp / daysElapsed);
   }, [active, summary.xp, today]);
 
   const projection = useMemo(
-    () => weeklyProjection(active, data.marks, today, xpPerDay, summary.level.xpForNext - summary.level.xpIntoLevel),
+    () =>
+      weeklyProjection(
+        active,
+        data.marks,
+        today,
+        xpPerDay,
+        summary.level.xpForNext - summary.level.xpIntoLevel,
+      ),
     [active, data.marks, today, xpPerDay, summary.level],
   );
   const streaks = useMemo(() => {
-    let best = 0, current = 0;
+    let best = 0,
+      current = 0;
     for (const h of active) {
       const s = habitStreaks(h, data.marks, today, frozen);
       best = Math.max(best, s.best);
@@ -97,7 +147,11 @@ export default function StatsPage() {
     return (
       <div className="animate-fade-in">
         <PageHeader title="Statistics" subtitle="Your progress over time" />
-        <EmptyState icon={ChartColumnIncreasing} title="No data yet" hint="Add and mark some habits to unlock your stats." />
+        <EmptyState
+          icon={ChartColumnIncreasing}
+          title="No data yet"
+          hint="Add and mark some habits to unlock your stats."
+        />
       </div>
     );
   }
@@ -107,28 +161,49 @@ export default function StatsPage() {
       <PageHeader
         title="Statistics"
         subtitle="Your progress over time"
-        action={<Segmented options={PERIODS} value={period} onChange={setPeriod} />}
+        action={
+          <Segmented options={PERIODS} value={period} onChange={setPeriod} />
+        }
       />
 
       {/* Fixed-size stat cards */}
-      <div className="grid grid-cols-2 gap-3 stagger-children sm:grid-cols-5">
-        <StatCard icon={Target} value={`${range.rate}%`} label="Completion" accent />
-        <StatCard icon={Activity} value={`${consistency}%`} label="Consistency" />
+      <StaggerContainer className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+        <StatCard
+          icon={Target}
+          value={`${range.rate}%`}
+          label="Completion"
+          accent
+        />
+        <StatCard
+          icon={Activity}
+          value={`${consistency}%`}
+          label="Consistency"
+        />
         <StatCard icon={CircleCheckBig} value={range.done} label="Done" />
         <StatCard icon={Flame} value={streaks.best} label="Best streak" />
-        <StatCard icon={TrendingUp} value={streaks.current} label="Current streak" />
-      </div>
+        <StatCard
+          icon={TrendingUp}
+          value={streaks.current}
+          label="Current streak"
+        />
+      </StaggerContainer>
 
       {insights.length > 0 && (
         <div className="mt-6">
           <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-muted">
             <Sparkles className="size-4" /> Insights
           </h2>
-          <div className="grid gap-3 sm:grid-cols-2">
+          <StaggerContainer className="grid gap-3 sm:grid-cols-2">
             {insights.map((ins, i) => (
-              <div key={i} className={`rounded-2xl border px-4 py-3 text-sm ${TONE[ins.tone]}`}>{ins.text}</div>
+              <StaggerItem key={i}>
+                <div
+                  className={`rounded-2xl border px-4 py-3 text-sm ${TONE[ins.tone]}`}
+                >
+                  {ins.text}
+                </div>
+              </StaggerItem>
             ))}
-          </div>
+          </StaggerContainer>
         </div>
       )}
 
@@ -141,17 +216,29 @@ export default function StatsPage() {
           <div className="grid gap-4 sm:grid-cols-4">
             <Card className="p-4 h-[100px] flex flex-col justify-center">
               <p className="text-xs text-muted">Estimated completion</p>
-              <p className="mt-1 text-2xl font-bold">{projection.estimatedCompletion}%</p>
+              <p className="mt-1 text-2xl font-bold">
+                {projection.estimatedCompletion}%
+              </p>
               <div className="mt-1 flex items-center gap-1">
-                {projection.trend === "up" && <ArrowUp className="size-3.5 text-done" />}
-                {projection.trend === "down" && <ArrowDown className="size-3.5 text-missed" />}
-                {projection.trend === "stable" && <Minus className="size-3.5 text-muted" />}
-                <span className="text-[11px] text-muted capitalize">{projection.trend}</span>
+                {projection.trend === "up" && (
+                  <ArrowUp className="size-3.5 text-done" />
+                )}
+                {projection.trend === "down" && (
+                  <ArrowDown className="size-3.5 text-missed" />
+                )}
+                {projection.trend === "stable" && (
+                  <Minus className="size-3.5 text-muted" />
+                )}
+                <span className="text-[11px] text-muted capitalize">
+                  {projection.trend}
+                </span>
               </div>
             </Card>
             <Card className="p-4 h-[100px] flex flex-col justify-center">
               <p className="text-xs text-muted">Projected streak</p>
-              <p className="mt-1 text-2xl font-bold">{projection.estimatedStreak} days</p>
+              <p className="mt-1 text-2xl font-bold">
+                {projection.estimatedStreak} days
+              </p>
               <p className="mt-1 text-[11px] text-muted">In the next 7 days</p>
             </Card>
             <Card className="p-4 h-[100px] flex flex-col justify-center">
@@ -176,7 +263,9 @@ export default function StatsPage() {
       <div className="mt-6 grid gap-6 sm:grid-cols-2">
         {/* Recent trends — interactive line chart */}
         <div className="h-[280px]">
-          <h2 className="mb-3 shrink-0 text-sm font-semibold uppercase tracking-wide text-muted">Recent trends</h2>
+          <h2 className="mb-3 shrink-0 text-sm font-semibold uppercase tracking-wide text-muted">
+            Recent trends
+          </h2>
           <Card className="p-5 h-[calc(100%-28px)] flex flex-col">
             <div className="flex-1 min-h-0">
               <TrendLineChart points={chart} height={180} />
@@ -186,17 +275,23 @@ export default function StatsPage() {
 
         {/* Last 7 Days — fixed with bar chart, proper sizing */}
         <div className="h-[280px]">
-          <h2 className="mb-3 shrink-0 text-sm font-semibold uppercase tracking-wide text-muted">Last 7 days</h2>
+          <h2 className="mb-3 shrink-0 text-sm font-semibold uppercase tracking-wide text-muted">
+            Last 7 days
+          </h2>
           <Card className="p-5 h-[calc(100%-28px)] flex flex-col">
             <div className="flex-1 flex items-end justify-between gap-2">
               {week7.map(({ date, rate }) => (
-                <div key={date.toISOString()} className="flex flex-1 flex-col items-center gap-2 h-full justify-end">
+                <div
+                  key={date.toISOString()}
+                  className="flex flex-1 flex-col items-center gap-2 h-full justify-end"
+                >
                   <div className="flex w-full flex-1 items-end justify-center">
                     <div
                       className="w-full max-w-9 rounded-t-lg transition-all duration-500 hover:opacity-80"
                       style={{
                         height: `${Math.max(rate, 4)}%`,
-                        background: rate >= 100 ? "var(--color-done)" : "var(--c-accent)",
+                        background:
+                          rate >= 100 ? "var(--color-done)" : "var(--c-accent)",
                         opacity: rate === 0 ? 0.25 : 1,
                       }}
                       title={`${rate}%`}
@@ -213,23 +308,35 @@ export default function StatsPage() {
 
         {/* Top categories — fixed height, internal scroll */}
         <div className="h-[280px]">
-          <h2 className="mb-3 shrink-0 text-sm font-semibold uppercase tracking-wide text-muted">Top categories</h2>
+          <h2 className="mb-3 shrink-0 text-sm font-semibold uppercase tracking-wide text-muted">
+            Top categories
+          </h2>
           <Card className="p-5 h-[calc(100%-28px)] flex flex-col">
             <div className="flex-1 min-h-0 overflow-y-auto pr-1">
               <div className="flex flex-col gap-3.5">
                 {topCategories.length === 0 ? (
-                  <p className="text-sm text-muted">Complete some habits to see category breakdowns.</p>
+                  <p className="text-sm text-muted">
+                    Complete some habits to see category breakdowns.
+                  </p>
                 ) : (
                   topCategories.map(({ category, rate }) => (
                     <div key={category}>
                       <div className="mb-1.5 flex items-center justify-between text-xs">
                         <span className="flex items-center gap-1.5 font-medium">
-                          <span className="size-2 rounded-full" style={{ backgroundColor: CATEGORY_COLORS[category] }} />
+                          <span
+                            className="size-2 rounded-full"
+                            style={{
+                              backgroundColor: CATEGORY_COLORS[category],
+                            }}
+                          />
                           {category}
                         </span>
                         <span className="font-mono text-muted">{rate}%</span>
                       </div>
-                      <ProgressBar value={rate} color={CATEGORY_COLORS[category]} />
+                      <ProgressBar
+                        value={rate}
+                        color={CATEGORY_COLORS[category]}
+                      />
                     </div>
                   ))
                 )}
@@ -240,15 +347,23 @@ export default function StatsPage() {
 
         {/* By weekday — fixed height, internal scroll */}
         <div className="h-[280px]">
-          <h2 className="mb-3 shrink-0 text-sm font-semibold uppercase tracking-wide text-muted">By weekday</h2>
+          <h2 className="mb-3 shrink-0 text-sm font-semibold uppercase tracking-wide text-muted">
+            By weekday
+          </h2>
           <Card className="p-5 h-[calc(100%-28px)] flex flex-col">
             <div className="flex-1 min-h-0 overflow-y-auto pr-1">
               <div className="flex flex-col gap-2.5">
                 {byWeekday.map(({ weekday, rate }) => (
                   <div key={weekday} className="flex items-center gap-3">
-                    <span className="w-9 shrink-0 font-mono text-xs text-muted">{WEEKDAY_SHORT[weekday]}</span>
-                    <div className="flex-1"><ProgressBar value={rate} /></div>
-                    <span className="w-9 shrink-0 text-right font-mono text-xs text-muted">{rate}%</span>
+                    <span className="w-9 shrink-0 font-mono text-xs text-muted">
+                      {WEEKDAY_SHORT[weekday]}
+                    </span>
+                    <div className="flex-1">
+                      <ProgressBar value={rate} />
+                    </div>
+                    <span className="w-9 shrink-0 text-right font-mono text-xs text-muted">
+                      {rate}%
+                    </span>
                   </div>
                 ))}
               </div>
@@ -265,8 +380,8 @@ export default function StatsPage() {
           </h2>
           <Card className="p-5">
             <p className="mb-3 text-xs text-muted">
-              Habits you tend to complete together. Higher strength means when you do one,
-              you almost always do the other.
+              Habits you tend to complete together. Higher strength means when
+              you do one, you almost always do the other.
             </p>
             <div className="grid gap-3 sm:grid-cols-2">
               {correlations.slice(0, 6).map((pair) => (

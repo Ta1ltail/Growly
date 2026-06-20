@@ -39,12 +39,17 @@ export function pushSnapshot(data: AppData): void {
 export function undo(currentData: AppData): AppData | null {
   const snapshot = undoStack.pop();
   if (!snapshot) return null;
-  // Push current state onto redo stack
-  redoStack.push(JSON.parse(JSON.stringify(currentData)) as AppData);
-  if (redoStack.length > MAX_HISTORY) {
-    redoStack.shift();
-  }
+  redoStack = replaceStack(
+    redoStack,
+    JSON.parse(JSON.stringify(currentData)) as AppData,
+    MAX_HISTORY,
+  );
   return snapshot;
+}
+
+function replaceStack(stack: AppData[], item: AppData, max: number): AppData[] {
+  const next = [...stack, item];
+  return next.length > max ? next.slice(1) : next;
 }
 
 // Redo: restore the most recently undone snapshot.
@@ -52,11 +57,11 @@ export function undo(currentData: AppData): AppData | null {
 export function redo(currentData: AppData): AppData | null {
   const snapshot = redoStack.pop();
   if (!snapshot) return null;
-  // Push current state onto undo stack
-  undoStack.push(JSON.parse(JSON.stringify(currentData)) as AppData);
-  if (undoStack.length > MAX_HISTORY) {
-    undoStack.shift();
-  }
+  undoStack = replaceStack(
+    undoStack,
+    JSON.parse(JSON.stringify(currentData)) as AppData,
+    MAX_HISTORY,
+  );
   return snapshot;
 }
 
@@ -66,22 +71,4 @@ export function canUndo(): boolean {
 
 export function canRedo(): boolean {
   return redoStack.length > 0;
-}
-
-// Get the description of the next undoable action (for UI tooltip).
-export function undoLabel(): string {
-  if (undoStack.length === 0) return "Nothing to undo";
-  return "Undo last action";
-}
-
-// Get the description of the next redoable action (for UI tooltip).
-export function redoLabel(): string {
-  if (redoStack.length === 0) return "Nothing to redo";
-  return "Redo last undone action";
-}
-
-// Debug: clear both stacks (useful for dev mode)
-export function clearHistory(): void {
-  undoStack = [];
-  redoStack = [];
 }

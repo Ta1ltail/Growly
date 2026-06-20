@@ -37,7 +37,9 @@ export function RankAvatar({
         <span
           aria-hidden
           className="animate-[spin-slow_7s_linear_infinite] pointer-events-none absolute inset-0 rounded-full opacity-50"
-          style={{ background: `conic-gradient(from 0deg, transparent, ${r.accent}, transparent 45%)` }}
+          style={{
+            background: `conic-gradient(from 0deg, transparent, ${r.accent}, transparent 45%)`,
+          }}
         />
       )}
       <span

@@ -23,7 +23,12 @@ import {
   Sparkles,
   Target,
 } from "lucide-react";
-import { useAppData, updateProfile, addHabit, completeOnboarding } from "@/lib/store";
+import {
+  useAppData,
+  updateProfile,
+  addHabit,
+  completeOnboarding,
+} from "@/lib/store";
 import { makeHabit } from "@/lib/habits";
 import { CATEGORIES, type Category } from "@/lib/categories";
 import { Button } from "./Button";
@@ -62,7 +67,9 @@ export function OnboardingWizard() {
   const [displayName, setDisplayName] = useState("");
   const [habitName, setHabitName] = useState("");
   const [habitCategory, setHabitCategory] = useState<Category>("Personal");
-  const [habitRecurrence, setHabitRecurrence] = useState<"daily" | "weekly">("daily");
+  const [habitRecurrence, setHabitRecurrence] = useState<"daily" | "weekly">(
+    "daily",
+  );
   const [habitWeekdays] = useState<number[]>([1, 2, 3, 4, 5]); // Mon-Fri
   const [completing, setCompleting] = useState(false);
 
@@ -162,9 +169,9 @@ export function OnboardingWizard() {
               </div>
               <h2 className="text-xl font-bold">Welcome to project_101</h2>
               <p className="mt-2 text-sm text-muted">
-                A simple, honest habit tracker. Mark habits done each day,
-                build streaks, earn rewards, and watch your progress grow.
-                No ads, no gimmicks — just you and your habits.
+                A simple, honest habit tracker. Mark habits done each day, build
+                streaks, earn rewards, and watch your progress grow. No ads, no
+                gimmicks — just you and your habits.
               </p>
               <p className="mt-4 text-xs text-faint">
                 Let&apos;s get you set up in just a few steps.
@@ -228,7 +235,9 @@ export function OnboardingWizard() {
                   </label>
                   <select
                     value={habitCategory}
-                    onChange={(e) => setHabitCategory(e.target.value as Category)}
+                    onChange={(e) =>
+                      setHabitCategory(e.target.value as Category)
+                    }
                     className="w-full rounded-xl border border-line bg-surface2 px-4 py-2.5 text-sm outline-none transition-all focus:border-accent focus:ring-1 focus:ring-accent"
                   >
                     {CATEGORIES.map((cat) => (
@@ -309,7 +318,8 @@ export function OnboardingWizard() {
                   : "Your profile is ready. Start adding habits whenever you'd like."}
               </p>
               <p className="mt-1 text-xs text-faint">
-                Remember: small improvements every day lead to remarkable results.
+                Remember: small improvements every day lead to remarkable
+                results.
               </p>
             </div>
           )}
@@ -326,7 +336,10 @@ export function OnboardingWizard() {
             )}
 
             {step < totalSteps - 1 ? (
-              <Button onClick={handleNext} disabled={step === 1 && !displayName.trim()}>
+              <Button
+                onClick={handleNext}
+                disabled={step === 1 && !displayName.trim()}
+              >
                 Next
                 <ArrowRight className="size-4" />
               </Button>

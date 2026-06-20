@@ -41,6 +41,7 @@ import { ProgressBar } from "@/components/ui/ProgressBar";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { PageSkeleton } from "@/components/ui/PageSkeleton";
 import { buttonClasses } from "@/components/ui/Button";
+import { TONE } from "@/lib/util";
 import { StreakFlame } from "@/components/habits/StreakFlame";
 import { AchievementBadge } from "@/components/achievements/AchievementBadge";
 import { XpBar } from "@/components/progression/XpBar";
@@ -48,15 +49,13 @@ import { TitleDisplay } from "@/components/progression/TitleDisplay";
 import { NextMilestoneWidget } from "@/components/progression/NextMilestoneWidget";
 import { CoinChip } from "@/components/economy/CoinChip";
 import {
+  StaggerContainer,
+  StaggerItem,
+} from "@/components/ui/StaggerContainer";
+import {
   ReorderableGrid,
   type ReorderableItem,
 } from "@/components/ui/ReorderableGrid";
-
-const TONE: Record<string, string> = {
-  good: "border-done/30 bg-done/5 text-done",
-  info: "border-accent/30 bg-accent/5 text-accent",
-  warn: "border-amber-500/30 bg-amber-500/5 text-amber-500",
-};
 
 const BY_ID = new Map(ACHIEVEMENTS.map((a) => [a.id, a]));
 
@@ -134,159 +133,174 @@ export default function DashboardPage() {
     ? Math.round((unlockedCount / totalCount) * 100)
     : 0;
 
-  const widgetContent: Record<
-    WidgetId,
-    { content: React.ReactNode; span?: string }
-  > = {
-    "xp-level": {
-      span: "lg:col-span-3",
-      content: (
-        <Card className="p-5 h-[180px] flex flex-col">
-          <TitleDisplay title={title} size="sm" className="mb-3 shrink-0" />
-          <div className="flex-1 min-h-0">
-            <XpBar level={level} nextUnlock={title.next?.name} />
-          </div>
-        </Card>
-      ),
-    },
-    "badge-collection": {
-      content: (
-        <Card className="p-4 h-[140px] flex flex-col justify-between">
-          <div className="flex items-center justify-between">
-            <h3 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-muted">
-              <Sparkles className="size-4 icon-accent" /> Badges
-            </h3>
-            <span className="font-mono text-sm font-bold">
-              {unlockedCount}/{totalCount}
-            </span>
-          </div>
-          <ProgressBar value={badgePct} className="my-2" />
-          <div className="flex flex-wrap gap-1.5">
-            {(["legendary", "epic", "rare", "common"] as const).map(
-              (rarity) => {
-                const n = summary.achievements.filter(
-                  (a) => a.unlocked && a.def.rarity === rarity,
-                ).length;
-                if (n === 0) return null;
-                const r = RARITY_STYLE[rarity];
-                return (
-                  <span
-                    key={rarity}
-                    className="rounded-full px-2 py-0.5 text-[11px] font-bold"
-                    style={{ background: `${r.accent}1f`, color: r.accent }}
-                  >
-                    {r.medal} {n}
-                  </span>
-                );
-              },
-            )}
-          </div>
-        </Card>
-      ),
-    },
-    "current-streak": {
-      content: (
-        <Card className="flex items-center gap-4 p-4 h-[140px]">
-          {summary.stats.maxCurrentStreak > 0 ? (
-            <StreakFlame
-              streak={summary.stats.maxCurrentStreak}
-              size={48}
-              showCount={false}
-            />
-          ) : (
-            <Flame className="size-10 text-faint" />
-          )}
-          <div>
-            <div className="font-mono text-2xl font-bold tracking-tight">
-              {summary.stats.maxCurrentStreak}
+  const widgetContent = useMemo(
+    (): Record<WidgetId, { content: React.ReactNode; span?: string }> => ({
+      "xp-level": {
+        span: "lg:col-span-3",
+        content: (
+          <Card className="p-5 h-[180px] flex flex-col">
+            <TitleDisplay title={title} size="sm" className="mb-3 shrink-0" />
+            <div className="flex-1 min-h-0">
+              <XpBar level={level} nextUnlock={title.next?.name} />
             </div>
-            <div className="text-xs text-muted mt-0.5">day current streak</div>
-          </div>
-        </Card>
-      ),
-    },
-    "recent-achievements": {
-      content: (
-        <Card className="p-4 h-[140px] flex flex-col">
-          <div className="flex items-center justify-between shrink-0 mb-2">
-            <h3 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-muted">
-              <Activity className="size-4 icon-accent" /> Recent
-            </h3>
-            <Link
-              href="/achievements"
-              className="text-[10px] font-semibold text-accent hover:underline shrink-0"
-            >
-              All
-            </Link>
-          </div>
-          <div className="flex-1 min-h-0">
-            {recent.length === 0 ? (
-              <p className="text-[10px] text-faint truncate">
-                Complete habits to unlock achievements.
-              </p>
+          </Card>
+        ),
+      },
+      "badge-collection": {
+        content: (
+          <Card className="p-4 h-[140px] flex flex-col justify-between">
+            <div className="flex items-center justify-between">
+              <h3 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-muted">
+                <Sparkles className="size-4 icon-accent" /> Badges
+              </h3>
+              <span className="font-mono text-sm font-bold">
+                {unlockedCount}/{totalCount}
+              </span>
+            </div>
+            <ProgressBar value={badgePct} className="my-2" />
+            <div className="flex flex-wrap gap-1.5">
+              {(["legendary", "epic", "rare", "common"] as const).map(
+                (rarity) => {
+                  const n = summary.achievements.filter(
+                    (a) => a.unlocked && a.def.rarity === rarity,
+                  ).length;
+                  if (n === 0) return null;
+                  const r = RARITY_STYLE[rarity];
+                  return (
+                    <span
+                      key={rarity}
+                      className="rounded-full px-2 py-0.5 text-[11px] font-bold"
+                      style={{ background: `${r.accent}1f`, color: r.accent }}
+                    >
+                      {r.medal} {n}
+                    </span>
+                  );
+                },
+              )}
+            </div>
+          </Card>
+        ),
+      },
+      "current-streak": {
+        content: (
+          <Card className="flex items-center gap-4 p-4 h-[140px]">
+            {summary.stats.maxCurrentStreak > 0 ? (
+              <StreakFlame
+                streak={summary.stats.maxCurrentStreak}
+                size={48}
+                showCount={false}
+              />
             ) : (
-              <div className="flex flex-wrap gap-2">
-                {recent.map((def) => (
-                  <div key={def.id} title={`${def.name} · ${def.rarity}`}>
-                    <AchievementBadge
-                      def={def}
-                      size={36}
-                      shine={def.rarity === "legendary"}
+              <Flame className="size-10 text-faint" />
+            )}
+            <div>
+              <div className="font-mono text-2xl font-bold tracking-tight">
+                {summary.stats.maxCurrentStreak}
+              </div>
+              <div className="text-xs text-muted mt-0.5">
+                day current streak
+              </div>
+            </div>
+          </Card>
+        ),
+      },
+      "recent-achievements": {
+        content: (
+          <Card className="p-4 h-[140px] flex flex-col">
+            <div className="flex items-center justify-between shrink-0 mb-2">
+              <h3 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-muted">
+                <Activity className="size-4 icon-accent" /> Recent
+              </h3>
+              <Link
+                href="/achievements"
+                className="text-[10px] font-semibold text-accent hover:underline shrink-0"
+              >
+                All
+              </Link>
+            </div>
+            <div className="flex-1 min-h-0">
+              {recent.length === 0 ? (
+                <p className="text-[10px] text-faint truncate">
+                  Complete habits to unlock achievements.
+                </p>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {recent.map((def) => (
+                    <div key={def.id} title={`${def.name} · ${def.rarity}`}>
+                      <AchievementBadge
+                        def={def}
+                        size={36}
+                        shine={def.rarity === "legendary"}
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </Card>
+        ),
+      },
+      "next-milestone": {
+        content: (
+          <Card className="p-5 h-[180px] overflow-y-auto">
+            <NextMilestoneWidget
+              milestones={summary.nextMilestones.slice(0, 2)}
+            />
+          </Card>
+        ),
+      },
+      "weekly-trend": {
+        content: (
+          <Card className="p-5 h-[180px] flex flex-col">
+            <div className="mb-2 flex items-center justify-between shrink-0">
+              <h3 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-muted">
+                <CalendarRange className="size-4 icon-accent" /> Weekly
+              </h3>
+              <span className="font-mono text-sm font-bold">{weekAvg}%</span>
+            </div>
+            <div className="flex-1 min-h-0 flex items-end justify-between gap-1.5">
+              {weekData.map(({ date, rate }) => (
+                <div
+                  key={date.toISOString()}
+                  className="flex flex-1 flex-col items-center gap-1 justify-end h-full"
+                >
+                  <div
+                    className="flex-1 w-full flex items-end justify-center"
+                    style={{ maxHeight: "85%" }}
+                  >
+                    <div
+                      className="w-full max-w-6 rounded-t-md transition-[height] duration-500"
+                      style={{
+                        height: `${Math.max(rate, 6)}%`,
+                        background:
+                          rate >= 100 ? "var(--color-done)" : "var(--c-accent)",
+                        opacity: rate === 0 ? 0.3 : 1,
+                      }}
+                      title={`${rate}%`}
                     />
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </Card>
-      ),
-    },
-    "next-milestone": {
-      content: (
-        <Card className="p-5 h-[180px] overflow-y-auto">
-          <NextMilestoneWidget
-            milestones={summary.nextMilestones.slice(0, 2)}
-          />
-        </Card>
-      ),
-    },
-    "weekly-trend": {
-      content: (
-        <Card className="p-5 h-[180px] flex flex-col">
-          <div className="mb-2 flex items-center justify-between shrink-0">
-            <h3 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-muted">
-              <CalendarRange className="size-4 icon-accent" /> Weekly
-            </h3>
-            <span className="font-mono text-sm font-bold">{weekAvg}%</span>
-          </div>
-          <div className="flex-1 min-h-0 flex items-end justify-between gap-1.5">
-            {weekData.map(({ date, rate }) => (
-              <div
-                key={date.toISOString()}
-                className="flex flex-1 flex-col items-center gap-1 justify-end h-full"
-              >
-                <div className="flex-1 w-full flex items-end justify-center" style={{ maxHeight: "85%" }}>
-                  <div
-                    className="w-full max-w-6 rounded-t-md transition-[height] duration-500"
-                    style={{
-                      height: `${Math.max(rate, 6)}%`,
-                      background:
-                        rate >= 100 ? "var(--color-done)" : "var(--c-accent)",
-                      opacity: rate === 0 ? 0.3 : 1,
-                    }}
-                    title={`${rate}%`}
-                  />
+                  <span className="font-mono text-[10px] text-faint shrink-0">
+                    {date.toLocaleDateString(undefined, { weekday: "narrow" })}
+                  </span>
                 </div>
-                <span className="font-mono text-[10px] text-faint shrink-0">
-                  {date.toLocaleDateString(undefined, { weekday: "narrow" })}
-                </span>
-              </div>
-            ))}
-          </div>
-        </Card>
-      ),
-    },
-  };
+              ))}
+            </div>
+          </Card>
+        ),
+      },
+    }),
+    [
+      summary,
+      recent,
+      weekData,
+      weekAvg,
+      badgePct,
+      unlockedCount,
+      totalCount,
+      level,
+      title,
+    ],
+  );
 
   const widgetOrder: string[] = data.settings.widgetOrder ?? [...WIDGET_IDS];
   const orderedIds: string[] = [...WIDGET_IDS].sort((a: string, b: string) => {
@@ -461,16 +475,17 @@ export default function DashboardPage() {
           <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-muted">
             <Sparkles className="size-4" /> Insights
           </h2>
-          <div className="grid gap-3 stagger-children sm:grid-cols-2">
+          <StaggerContainer className="grid gap-3 sm:grid-cols-2">
             {insights.map((ins, i) => (
-              <div
-                key={i}
-                className={`rounded-2xl border px-4 py-3 text-sm ${TONE[ins.tone]}`}
-              >
-                {ins.text}
-              </div>
+              <StaggerItem key={i}>
+                <div
+                  className={`rounded-2xl border px-4 py-3 text-sm ${TONE[ins.tone]}`}
+                >
+                  {ins.text}
+                </div>
+              </StaggerItem>
             ))}
-          </div>
+          </StaggerContainer>
         </div>
       )}
     </div>

@@ -49,18 +49,31 @@ export function recurrenceText(rec: Recurrence): string {
     case "daily":
       return "Every day";
     case "weekly": {
-      if (rec.weekdays.length === 0 || rec.weekdays.length === 7) return "Every day";
-      const ordered = WEEKDAYS_MON_FIRST.filter((d) => rec.weekdays.includes(d));
+      if (rec.weekdays.length === 0 || rec.weekdays.length === 7)
+        return "Every day";
+      const ordered = WEEKDAYS_MON_FIRST.filter((d) =>
+        rec.weekdays.includes(d),
+      );
       // Weekdays / weekends shortcuts.
-      if (rec.weekdays.length === 5 && [1, 2, 3, 4, 5].every((d) => rec.weekdays.includes(d)))
+      if (
+        rec.weekdays.length === 5 &&
+        [1, 2, 3, 4, 5].every((d) => rec.weekdays.includes(d))
+      )
         return "Weekdays";
-      if (rec.weekdays.length === 2 && [0, 6].every((d) => rec.weekdays.includes(d)))
+      if (
+        rec.weekdays.length === 2 &&
+        [0, 6].every((d) => rec.weekdays.includes(d))
+      )
         return "Weekends";
       return ordered.map((d) => WEEKDAY_SHORT[d]).join(", ");
     }
     case "monthly":
       if (rec.monthDays.length === 0) return "Monthly";
-      return `Monthly on the ${rec.monthDays.slice().sort((a, b) => a - b).map(ORDINAL).join(", ")}`;
+      return `Monthly on the ${rec.monthDays
+        .slice()
+        .sort((a, b) => a - b)
+        .map(ORDINAL)
+        .join(", ")}`;
   }
 }
 

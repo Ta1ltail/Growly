@@ -17,7 +17,10 @@ function habit(over: Partial<Habit> = {}): Habit {
   };
 }
 
-function marksFor(id: string, days: Record<string, "done" | "missed" | "skipped">): Marks {
+function marksFor(
+  id: string,
+  days: Record<string, "done" | "missed" | "skipped">,
+): Marks {
   const m: Marks = {};
   for (const [k, status] of Object.entries(days)) m[k] = { [id]: status };
   return m;
@@ -53,7 +56,11 @@ describe("buildGameStats", () => {
   });
 
   it("counts missed marks and flags anyMissed", () => {
-    const withMiss = buildGameStats(HABITS, marksFor("h1", { "2026-06-09": "missed" }), TODAY);
+    const withMiss = buildGameStats(
+      HABITS,
+      marksFor("h1", { "2026-06-09": "missed" }),
+      TODAY,
+    );
     expect(withMiss.missedCount).toBe(1);
     expect(withMiss.anyMissed).toBe(true);
   });
@@ -102,7 +109,9 @@ describe("levelInfo", () => {
 describe("totalXp", () => {
   it("sums completions, perfect days, and achievement rarity bonuses", () => {
     const stats = buildGameStats(HABITS, MARKS, TODAY);
-    const unlocked = evaluateAchievements(stats).filter((a) => a.unlocked).map((a) => a.def);
+    const unlocked = evaluateAchievements(stats)
+      .filter((a) => a.unlocked)
+      .map((a) => a.def);
     // 3 done (30) + 3 perfect days (75) + 3 common achievements (75) = 180.
     expect(totalXp(stats, unlocked)).toBe(180);
   });
@@ -155,11 +164,18 @@ describe("summarizeProgress", () => {
 describe("reconcileUnlocks", () => {
   it("records newly-satisfied achievements as unseen", () => {
     const data: AppData = { ...emptyData, habits: HABITS, marks: MARKS };
-    const { unlocks, newlyUnlocked } = reconcileUnlocks(data, TODAY, "2026-06-10T12:00:00.000Z");
+    const { unlocks, newlyUnlocked } = reconcileUnlocks(
+      data,
+      TODAY,
+      "2026-06-10T12:00:00.000Z",
+    );
     expect(newlyUnlocked).toContain("done-1");
     expect(newlyUnlocked).toContain("streak-3");
     expect(newlyUnlocked).not.toContain("streak-7");
-    expect(unlocks["done-1"]).toEqual({ at: "2026-06-10T12:00:00.000Z", seen: false });
+    expect(unlocks["done-1"]).toEqual({
+      at: "2026-06-10T12:00:00.000Z",
+      seen: false,
+    });
   });
 
   it("returns the same map reference when nothing is new", () => {

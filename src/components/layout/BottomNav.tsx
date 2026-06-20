@@ -31,7 +31,9 @@ export function BottomNav() {
                   }`}
                 />
               </span>
-              <span className={`transition-colors duration-200 ${active ? "text-accent" : "text-faint"}`}>
+              <span
+                className={`transition-colors duration-200 ${active ? "text-accent" : "text-faint"}`}
+              >
                 {label}
               </span>
               {active && (

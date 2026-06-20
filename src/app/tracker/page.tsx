@@ -58,7 +58,13 @@ const TrackerCell = memo(function TrackerCell({
       <button
         onClick={() => editable && onMark(dateKey, habitId)}
         disabled={!editable || (!scheduled && !status)}
-        title={cellFrozen ? "Protected by a streak freeze" : locked ? "Locked — past days can't be changed" : undefined}
+        title={
+          cellFrozen
+            ? "Protected by a streak freeze"
+            : locked
+              ? "Locked — past days can't be changed"
+              : undefined
+        }
         className={`relative flex size-7 items-center justify-center rounded-md text-[11px] font-bold transition-all ${
           editable ? "hover:scale-110 active:scale-90" : "cursor-not-allowed"
         } ${
@@ -73,7 +79,13 @@ const TrackerCell = memo(function TrackerCell({
               : "cursor-default bg-transparent"
         }`}
       >
-        {status ? MARK_LABEL[status] : locked && scheduled ? <Lock className="size-2.5" /> : ""}
+        {status ? (
+          MARK_LABEL[status]
+        ) : locked && scheduled ? (
+          <Lock className="size-2.5" />
+        ) : (
+          ""
+        )}
         {cellFrozen && (
           <span
             aria-hidden
@@ -96,7 +108,10 @@ export default function TrackerPage() {
   const daysShown = Number(range);
 
   const columns = useMemo(
-    () => Array.from({ length: daysShown }, (_, i) => addDays(today, -(daysShown - 1 - i))),
+    () =>
+      Array.from({ length: daysShown }, (_, i) =>
+        addDays(today, -(daysShown - 1 - i)),
+      ),
     [today, daysShown],
   );
 
@@ -113,17 +128,26 @@ export default function TrackerPage() {
     cycleMark(key, habitId);
   }, []);
   const usedCategories = useMemo(
-    () => CATEGORIES.filter((c) => data.habits.some((h) => !h.archived && h.category === c)),
+    () =>
+      CATEGORIES.filter((c) =>
+        data.habits.some((h) => !h.archived && h.category === c),
+      ),
     [data.habits],
   );
   const filterOptions = useMemo(
-    () => [{ value: "All" as const, label: "All" }, ...usedCategories.map((c) => ({ value: c, label: c }))],
+    () => [
+      { value: "All" as const, label: "All" },
+      ...usedCategories.map((c) => ({ value: c, label: c })),
+    ],
     [usedCategories],
   );
 
   return (
     <div className="animate-fade-in">
-      <PageHeader title="Tracker" subtitle="Tap a cell to mark · past days lock automatically" />
+      <PageHeader
+        title="Tracker"
+        subtitle="Tap a cell to mark · past days lock automatically"
+      />
 
       {habits.length === 0 ? (
         <EmptyState
@@ -134,97 +158,133 @@ export default function TrackerPage() {
       ) : (
         <>
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-            <Segmented options={filterOptions} value={filter} onChange={setFilter} />
+            <Segmented
+              options={filterOptions}
+              value={filter}
+              onChange={setFilter}
+            />
             <Segmented options={RANGES} value={range} onChange={setRange} />
           </div>
 
           {/* Fixed-height container with internal scroll for long habit lists */}
           <div className="h-[calc(100vh-230px)] min-h-[300px]">
-          <Card className="overflow-hidden h-full">
-            <div className="h-full overflow-y-auto">
-              <div
-                className={
-                  daysShown === 30
-                    ? "overflow-x-scroll overflow-y-hidden"
-                    : "overflow-x-auto"
-                }
-                style={
-                  daysShown === 30
-                    ? { paddingBottom: "8px" }
-                    : undefined
-                }
-              >
-                <table className="w-full border-collapse text-center font-mono text-xs">
-                  <thead>
-                    <tr>
-                      <th className="sticky top-0 z-20 min-w-36 bg-surface px-3 py-3 text-left font-semibold shadow-sm">Habit</th>
-                      {columns.map((d) => {
-                        const isToday = dateKey(d) === dateKey(today);
+            <Card className="overflow-hidden h-full">
+              <div className="h-full overflow-y-auto">
+                <div
+                  className={
+                    daysShown === 30
+                      ? "overflow-x-scroll overflow-y-hidden"
+                      : "overflow-x-auto"
+                  }
+                  style={
+                    daysShown === 30 ? { paddingBottom: "8px" } : undefined
+                  }
+                >
+                  <table className="w-full border-collapse text-center font-mono text-xs">
+                    <thead>
+                      <tr>
+                        <th className="sticky top-0 z-20 min-w-36 bg-surface px-3 py-3 text-left font-semibold shadow-sm">
+                          Habit
+                        </th>
+                        {columns.map((d) => {
+                          const isToday = dateKey(d) === dateKey(today);
+                          return (
+                            <th
+                              key={dateKey(d)}
+                              className={`sticky top-0 z-20 bg-surface px-1 py-2 font-medium shadow-sm ${isToday ? "text-accent" : "text-faint"}`}
+                            >
+                              <div className="text-[10px] uppercase">
+                                {d.toLocaleDateString(undefined, {
+                                  weekday: "narrow",
+                                })}
+                              </div>
+                              <div className="text-[11px]">{d.getDate()}</div>
+                            </th>
+                          );
+                        })}
+                        <th className="sticky top-0 z-20 bg-surface px-2 py-2 shadow-sm">
+                          <Flame className="mx-auto size-4 text-amber-500" />
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {habits.map((habit) => {
+                        const { current } = habitStreaks(
+                          habit,
+                          data.marks,
+                          today,
+                          frozen,
+                        );
                         return (
-                          <th key={dateKey(d)} className={`sticky top-0 z-20 bg-surface px-1 py-2 font-medium shadow-sm ${isToday ? "text-accent" : "text-faint"}`}>
-                            <div className="text-[10px] uppercase">{d.toLocaleDateString(undefined, { weekday: "narrow" })}</div>
-                            <div className="text-[11px]">{d.getDate()}</div>
-                          </th>
+                          <tr key={habit.id} className="border-t border-line">
+                            <td className="sticky left-0 z-10 min-w-36 border-r border-line bg-surface px-3 py-2 text-left">
+                              <span className="flex items-center gap-2">
+                                <span
+                                  className="size-2 shrink-0 rounded-full"
+                                  style={{
+                                    backgroundColor:
+                                      CATEGORY_COLORS[habit.category],
+                                  }}
+                                />
+                                <span className="truncate font-sans text-[13px]">
+                                  {habit.name}
+                                </span>
+                              </span>
+                            </td>
+                            {columns.map((d) => {
+                              const key = dateKey(d);
+                              const status = data.marks[key]?.[habit.id];
+                              const scheduled = isScheduled(habit, d);
+                              const editable = canEditMark(key, today, grace);
+                              const future = isFutureDay(key, today);
+                              const cellFrozen =
+                                status === "missed" &&
+                                isFrozen(frozen, habit.id, key);
+                              return (
+                                <TrackerCell
+                                  key={key}
+                                  dateKey={key}
+                                  habitId={habit.id}
+                                  status={status}
+                                  scheduled={scheduled}
+                                  editable={editable}
+                                  future={future}
+                                  cellFrozen={cellFrozen}
+                                  onMark={handleCellMark}
+                                />
+                              );
+                            })}
+                            <td className="px-2 font-semibold">
+                              {current > 0 ? (
+                                <StreakFlame
+                                  streak={current}
+                                  size={15}
+                                  className="justify-center"
+                                />
+                              ) : (
+                                <span className="text-faint">0</span>
+                              )}
+                            </td>
+                          </tr>
                         );
                       })}
-                      <th className="sticky top-0 z-20 bg-surface px-2 py-2 shadow-sm"><Flame className="mx-auto size-4 text-amber-500" /></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {habits.map((habit) => {
-                      const { current } = habitStreaks(habit, data.marks, today, frozen);
-                      return (
-                        <tr key={habit.id} className="border-t border-line">
-                          <td className="sticky left-0 z-10 min-w-36 border-r border-line bg-surface px-3 py-2 text-left">
-                            <span className="flex items-center gap-2">
-                              <span className="size-2 shrink-0 rounded-full" style={{ backgroundColor: CATEGORY_COLORS[habit.category] }} />
-                              <span className="truncate font-sans text-[13px]">{habit.name}</span>
-                            </span>
-                          </td>
-                          {columns.map((d) => {
-                            const key = dateKey(d);
-                            const status = data.marks[key]?.[habit.id];
-                            const scheduled = isScheduled(habit, d);
-                            const editable = canEditMark(key, today, grace);
-                            const future = isFutureDay(key, today);
-                            const cellFrozen = status === "missed" && isFrozen(frozen, habit.id, key);
-                            return (
-                              <TrackerCell
-                                key={key}
-                                dateKey={key}
-                                habitId={habit.id}
-                                status={status}
-                                scheduled={scheduled}
-                                editable={editable}
-                                future={future}
-                                cellFrozen={cellFrozen}
-                                onMark={handleCellMark}
-                              />
-                            );
-                          })}
-                          <td className="px-2 font-semibold">
-                            {current > 0 ? (
-                              <StreakFlame streak={current} size={15} className="justify-center" />
-                            ) : (
-                              <span className="text-faint">0</span>
-                            )}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+                    </tbody>
+                  </table>
+                </div>
               </div>
-            </div>
-          </Card>
+            </Card>
           </div>
 
           <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-xs text-muted">
             <Legend className="bg-done" label="done" />
             <Legend className="bg-missed" label="missed" />
             <Legend className="bg-skipped" label="skipped" />
-            <span className="flex items-center gap-1.5"><Lock className="size-3.5" /> locked (past)</span>
-            <span className="flex items-center gap-1.5"><Flame className="size-3.5 text-amber-500" /> current streak</span>
+            <span className="flex items-center gap-1.5">
+              <Lock className="size-3.5" /> locked (past)
+            </span>
+            <span className="flex items-center gap-1.5">
+              <Flame className="size-3.5 text-amber-500" /> current streak
+            </span>
           </div>
         </>
       )}

@@ -3,11 +3,13 @@ import Script from "next/script";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeApplier } from "@/components/layout/ThemeApplier";
-import { AmbientBackground } from "@/components/layout/AmbientBackground";
 import { AppShell } from "@/components/layout/AppShell";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
-const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
+const geistMono = Geist_Mono({
+  variable: "--font-geist-mono",
+  subsets: ["latin"],
+});
 
 export const metadata: Metadata = {
   title: "project_101 — habit tracker",
@@ -27,17 +29,23 @@ r.dataset.theme=resolved;r.style.colorScheme=resolved;
 r.style.setProperty('--c-accent',a[0]);r.style.setProperty('--c-accent-glow',a[1]);
 }catch(e){document.documentElement.dataset.theme='dark';}})();`;
 
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+export default function RootLayout({
+  children,
+}: Readonly<{ children: React.ReactNode }>) {
   return (
     <html
       lang="en"
       data-theme="dark"
+      data-scroll-behavior="smooth"
       suppressHydrationWarning
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <head>
         <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta
+          name="apple-mobile-web-app-status-bar-style"
+          content="black-translucent"
+        />
         <meta name="mobile-web-app-capable" content="yes" />
       </head>
       <body className="min-h-full">
@@ -54,7 +62,6 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           }}
         />
         <ThemeApplier />
-        <AmbientBackground />
         <AppShell>{children}</AppShell>
       </body>
     </html>

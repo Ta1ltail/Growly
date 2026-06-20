@@ -42,9 +42,16 @@ function stats(over: Partial<GameStats> = {}): GameStats {
 
 function economy(over: Partial<Economy> = {}): Economy {
   return {
-    spent: [], owned: [], equipped: {}, freezes: [],
-    bonusCoins: 0, lastCheckIn: null, checkInStreak: 0,
-    lastQuestDate: null, currentQuest: null, lastSpinDate: null,
+    spent: [],
+    owned: [],
+    equipped: {},
+    freezes: [],
+    bonusCoins: 0,
+    lastCheckIn: null,
+    checkInStreak: 0,
+    lastQuestDate: null,
+    currentQuest: null,
+    lastSpinDate: null,
     lastSpinResult: null,
     ...over,
   } as Economy;
@@ -62,8 +69,13 @@ describe("coinsEarned", () => {
   });
 
   it("adds rarity bonuses for unlocked achievements", () => {
-    const earned = coinsEarned(stats({ doneCount: 1 }), ["common", "legendary"]);
-    expect(earned).toBe(COINS_PER_COMPLETION + RARITY_COINS.common + RARITY_COINS.legendary);
+    const earned = coinsEarned(stats({ doneCount: 1 }), [
+      "common",
+      "legendary",
+    ]);
+    expect(earned).toBe(
+      COINS_PER_COMPLETION + RARITY_COINS.common + RARITY_COINS.legendary,
+    );
   });
 
   it("is zero for an empty history", () => {
@@ -75,8 +87,14 @@ describe("coinsEarned", () => {
 
 describe("coinBreakdown", () => {
   it("itemizes the derivation and reconciles to balance", () => {
-    const eco = economy({ spent: [{ id: "a", at: "x", amount: 75, item: "freeze" }] });
-    const b = coinBreakdown(stats({ doneCount: 10, perfectDays: 3 }), ["rare"], eco);
+    const eco = economy({
+      spent: [{ id: "a", at: "x", amount: 75, item: "freeze" }],
+    });
+    const b = coinBreakdown(
+      stats({ doneCount: 10, perfectDays: 3 }),
+      ["rare"],
+      eco,
+    );
     expect(b.fromCompletions).toBe(20); // 10 × 2
     expect(b.fromPerfectDays).toBe(30); // 3 × 10
     expect(b.fromAchievements).toBe(RARITY_COINS.rare); // 30
@@ -86,7 +104,9 @@ describe("coinBreakdown", () => {
   });
 
   it("agrees with coinsEarned / coinBalance", () => {
-    const eco = economy({ spent: [{ id: "a", at: "x", amount: 40, item: "flame-azure" }] });
+    const eco = economy({
+      spent: [{ id: "a", at: "x", amount: 40, item: "flame-azure" }],
+    });
     const s = stats({ doneCount: 7, perfectDays: 1 });
     const rarities: Rarity[] = ["common", "epic"];
     const b = coinBreakdown(s, rarities, eco);
@@ -95,7 +115,9 @@ describe("coinBreakdown", () => {
   });
 
   it("clamps balance at zero when overspent", () => {
-    const eco = economy({ spent: [{ id: "a", at: "x", amount: 999, item: "z" }] });
+    const eco = economy({
+      spent: [{ id: "a", at: "x", amount: 999, item: "z" }],
+    });
     expect(coinBreakdown(stats({ doneCount: 1 }), [], eco).balance).toBe(0);
   });
 });
@@ -106,7 +128,12 @@ describe("coinBalance", () => {
   it("is earned minus the spend ledger", () => {
     const eco = economy({
       spent: [
-        { id: "a", at: "2026-06-10T00:00:00.000Z", amount: 30, item: "flame-azure" },
+        {
+          id: "a",
+          at: "2026-06-10T00:00:00.000Z",
+          amount: 30,
+          item: "flame-azure",
+        },
         { id: "b", at: "2026-06-11T00:00:00.000Z", amount: 20, item: "freeze" },
       ],
     });
@@ -115,12 +142,16 @@ describe("coinBalance", () => {
   });
 
   it("clamps at zero so a corrupted ledger can't go negative", () => {
-    const eco = economy({ spent: [{ id: "a", at: "x", amount: 500, item: "z" }] });
+    const eco = economy({
+      spent: [{ id: "a", at: "x", amount: 500, item: "z" }],
+    });
     expect(coinBalance(100, eco)).toBe(0);
   });
 
   it("ignores negative ledger amounts", () => {
-    const eco = economy({ spent: [{ id: "a", at: "x", amount: -50, item: "z" }] });
+    const eco = economy({
+      spent: [{ id: "a", at: "x", amount: -50, item: "z" }],
+    });
     expect(coinsSpent(eco)).toBe(0);
   });
 });
@@ -147,8 +178,18 @@ describe("freeze window cap", () => {
   it("counts only freezes inside the rolling window", () => {
     const eco = economy({
       freezes: [
-        { id: "1", at: "2026-06-09T00:00:00.000Z", date: "2026-06-08", habitId: "h1" }, // in window
-        { id: "2", at: "2026-06-01T00:00:00.000Z", date: "2026-05-31", habitId: "h1" }, // >7d ago
+        {
+          id: "1",
+          at: "2026-06-09T00:00:00.000Z",
+          date: "2026-06-08",
+          habitId: "h1",
+        }, // in window
+        {
+          id: "2",
+          at: "2026-06-01T00:00:00.000Z",
+          date: "2026-05-31",
+          habitId: "h1",
+        }, // >7d ago
       ],
     });
     expect(freezesUsedInWindow(eco, now)).toBe(1);
@@ -156,7 +197,14 @@ describe("freeze window cap", () => {
 
   it("blocks a second freeze within the window", () => {
     const eco = economy({
-      freezes: [{ id: "1", at: "2026-06-09T00:00:00.000Z", date: "2026-06-08", habitId: "h1" }],
+      freezes: [
+        {
+          id: "1",
+          at: "2026-06-09T00:00:00.000Z",
+          date: "2026-06-08",
+          habitId: "h1",
+        },
+      ],
     });
     expect(FREEZE_MAX_PER_WINDOW).toBe(1);
     expect(canUseFreeze(eco, now)).toBe(false);
@@ -164,7 +212,14 @@ describe("freeze window cap", () => {
 
   it("allows a freeze once the window has cleared", () => {
     const eco = economy({
-      freezes: [{ id: "1", at: "2026-06-01T00:00:00.000Z", date: "2026-05-31", habitId: "h1" }],
+      freezes: [
+        {
+          id: "1",
+          at: "2026-06-01T00:00:00.000Z",
+          date: "2026-05-31",
+          habitId: "h1",
+        },
+      ],
     });
     expect(canUseFreeze(eco, now)).toBe(true);
   });
@@ -188,7 +243,14 @@ describe("freeze eligibility", () => {
 
   it("a day already frozen can't be frozen again", () => {
     const eco = economy({
-      freezes: [{ id: "1", at: "2026-06-08T10:00:00.000Z", date: "2026-06-08", habitId: "h1" }],
+      freezes: [
+        {
+          id: "1",
+          at: "2026-06-08T10:00:00.000Z",
+          date: "2026-06-08",
+          habitId: "h1",
+        },
+      ],
     });
     expect(canFreezeDay(eco, marks, "h1", "2026-06-08")).toBe(false);
   });
@@ -203,7 +265,9 @@ describe("freeze eligibility", () => {
       freezes: [{ id: "1", at: "x", date: "2026-06-07", habitId: "h1" }],
     });
     // 06-09 missed & not frozen -> eligible; 06-07 frozen -> excluded.
-    expect(freezableDays(eco, m, "h1", D("2026-06-10"))).toEqual(["2026-06-09"]);
+    expect(freezableDays(eco, m, "h1", D("2026-06-10"))).toEqual([
+      "2026-06-09",
+    ]);
   });
 });
 

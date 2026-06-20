@@ -1,14 +1,13 @@
 "use client";
 
-// Shop (gamification §15 economy layer). Spend coins — which are DERIVED from
-// the immutable history, never granted — on cosmetics (flame skins, confetti
-// palettes) and a limited streak-freeze consumable. Buying appends to an
-// append-only spend ledger; the balance is always earned − spent, so the
-// economy can't be cheated. Owned cosmetics equip into one slot each.
-
 import { useMemo, useState } from "react";
 import { Check, Lock, Snowflake, Info } from "lucide-react";
-import { useAppData, buyCosmetic, equipCosmetic, redeemFreeze } from "@/lib/store";
+import {
+  useAppData,
+  buyCosmetic,
+  equipCosmetic,
+  redeemFreeze,
+} from "@/lib/store";
 import { useToday } from "@/hooks/useToday";
 import { useHydrated } from "@/hooks/useHydrated";
 import { summarizeProgress } from "@/lib/progress";
@@ -84,7 +83,9 @@ export default function ShopPage() {
         const equipped = equippedOrDefault(data.economy, slot);
         return (
           <section key={slot} className="mb-8">
-            <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted">{SLOT_LABEL[slot]}</h2>
+            <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted">
+              {SLOT_LABEL[slot]}
+            </h2>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {/* Free default is always available + equippable. */}
               <CosmeticCard
@@ -138,16 +139,23 @@ function CosmeticCard({
   onEquip?: () => void;
 }) {
   const name = defaultCard ? "Default" : item!.name;
-  const description = defaultCard ? "The classic look. Always free." : item!.description;
+  const description = defaultCard
+    ? "The classic look. Always free."
+    : item!.description;
   const preview = defaultCard ? DEFAULT_PREVIEW[slot] : item!.preview;
   const canEquip = defaultCard || owned;
 
   return (
-    <Card className={`flex flex-col gap-3 p-4 transition-colors ${equipped ? "ring-2 ring-accent" : ""}`}>
+    <Card
+      className={`flex flex-col gap-3 p-4 transition-colors ${equipped ? "ring-2 ring-accent" : ""}`}
+    >
       <div className="flex items-center gap-3">
         <span
           className="size-10 shrink-0 rounded-xl"
-          style={{ background: preview, boxShadow: `0 4px 16px -4px ${preview}` }}
+          style={{
+            background: preview,
+            boxShadow: `0 4px 16px -4px ${preview}`,
+          }}
           aria-hidden
         />
         <div className="min-w-0">
@@ -169,7 +177,10 @@ function CosmeticCard({
             </Button>
           )
         ) : !levelOk ? (
-          <span className="flex items-center gap-1 text-xs text-faint" title={`Reach level ${item!.minLevel}`}>
+          <span
+            className="flex items-center gap-1 text-xs text-faint"
+            title={`Reach level ${item!.minLevel}`}
+          >
             <Lock className="size-3.5" /> Lvl {item!.minLevel}
           </span>
         ) : (
@@ -187,20 +198,26 @@ function FreezeSection({ balance }: { balance: number }) {
   const today = useToday();
   const [habitId, setHabitId] = useState<string>("");
 
-  const active = useMemo(() => data.habits.filter((h) => !h.archived), [data.habits]);
+  const active = useMemo(
+    () => data.habits.filter((h) => !h.archived),
+    [data.habits],
+  );
   const allowed = canUseFreeze(data.economy, today);
   const usedInWindow = freezesUsedInWindow(data.economy, today);
   const affordable = balance >= FREEZE_PRICE;
 
   // Eligible missed days for the chosen habit (genuine misses only).
   const days = useMemo(
-    () => (habitId ? freezableDays(data.economy, data.marks, habitId, today) : []),
+    () =>
+      habitId ? freezableDays(data.economy, data.marks, habitId, today) : [],
     [habitId, data.economy, data.marks, today],
   );
 
   return (
     <section className="mb-4">
-      <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted">Consumables</h2>
+      <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted">
+        Consumables
+      </h2>
       <Card className="p-5">
         <div className="flex items-start gap-3">
           <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-sky-500/15 text-sky-400">
@@ -212,8 +229,9 @@ function FreezeSection({ balance }: { balance: number }) {
               <CoinChip amount={FREEZE_PRICE} size="sm" />
             </div>
             <p className="mt-0.5 text-xs text-muted">
-              Protect one past missed day so it doesn&apos;t break your streak. The miss stays in your
-              history — honest tracking — it just won&apos;t count against the run. Limited to{" "}
+              Protect one past missed day so it doesn&apos;t break your streak.
+              The miss stays in your history — honest tracking — it just
+              won&apos;t count against the run. Limited to{" "}
               {FREEZE_MAX_PER_WINDOW} per {FREEZE_WINDOW_DAYS} days.
             </p>
 
@@ -242,7 +260,9 @@ function FreezeSection({ balance }: { balance: number }) {
               </select>
 
               {habitId && days.length === 0 && (
-                <span className="text-xs text-faint">No eligible missed days in the last 30 days.</span>
+                <span className="text-xs text-faint">
+                  No eligible missed days in the last 30 days.
+                </span>
               )}
 
               {habitId &&

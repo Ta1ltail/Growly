@@ -17,7 +17,11 @@ export function DevMode() {
   // Global unlock/lock shortcut.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === "D" || e.key === "d")) {
+      if (
+        (e.ctrlKey || e.metaKey) &&
+        e.shiftKey &&
+        (e.key === "D" || e.key === "d")
+      ) {
         e.preventDefault();
         setDev({ enabled: !readPersistedEnabled() });
       }
@@ -89,10 +93,11 @@ function DevStyleInjector({
     el.textContent = [
       grid &&
         `body::after{content:"";position:fixed;inset:0;z-index:9990;pointer-events:none;background-image:linear-gradient(to right,color-mix(in srgb,var(--c-accent) 22%,transparent) 1px,transparent 1px),linear-gradient(to bottom,color-mix(in srgb,var(--c-accent) 22%,transparent) 1px,transparent 1px);background-size:24px 24px;}`,
-      outline && `*{outline:1px solid color-mix(in srgb,var(--c-accent) 35%,transparent) !important;}`,
+      outline &&
+        `*{outline:1px solid color-mix(in srgb,var(--c-accent) 35%,transparent) !important;}`,
       reduceMotion &&
         `*,*::before,*::after{animation-duration:.001ms !important;animation-iteration-count:1 !important;transition-duration:.001ms !important;}`,
-      hideAmbient && `[data-ambient]{display:none !important;}`,
+      hideAmbient && `.fixed.inset-0.\-z-10{display:none!important;}`,
     ]
       .filter(Boolean)
       .join("\n");
@@ -129,7 +134,8 @@ function FpsMeter() {
   const color = fps >= 50 ? "#22c55e" : fps >= 30 ? "#f59e0b" : "#f43f5e";
   return (
     <div className="fixed left-4 top-4 z-[68] rounded-lg border border-line bg-surface/90 px-2.5 py-1 font-mono text-xs shadow-lg backdrop-blur">
-      <span style={{ color }}>{fps}</span> <span className="text-faint">fps</span>
+      <span style={{ color }}>{fps}</span>{" "}
+      <span className="text-faint">fps</span>
     </div>
   );
 }

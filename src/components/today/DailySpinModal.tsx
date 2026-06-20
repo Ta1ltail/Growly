@@ -19,7 +19,11 @@ export function DailySpinModal({
 }) {
   const data = useAppData();
   const [spinning, setSpinning] = useState(false);
-  const [result, setResult] = useState<{ label: string; amount: number; isFreeze: boolean } | null>(null);
+  const [result, setResult] = useState<{
+    label: string;
+    amount: number;
+    isFreeze: boolean;
+  } | null>(null);
   const [rotation, setRotation] = useState(0);
   const wheelRef = useRef<HTMLDivElement>(null);
 
@@ -95,7 +99,9 @@ export function DailySpinModal({
               {spinning ? (
                 <RotateCw className="size-8 animate-spin text-white/60" />
               ) : result ? (
-                <span className="text-3xl">{result.isFreeze ? "❄️" : "🪙"}</span>
+                <span className="text-3xl">
+                  {result.isFreeze ? "❄️" : "🪙"}
+                </span>
               ) : (
                 <Sparkles className="size-8 text-accent" />
               )}
@@ -105,7 +111,10 @@ export function DailySpinModal({
 
         {/* Spin button */}
         {!alreadySpun && !spinning && !result && (
-          <Button onClick={handleSpin} className="mx-auto block px-6 py-2.5 text-base">
+          <Button
+            onClick={handleSpin}
+            className="mx-auto block px-6 py-2.5 text-base"
+          >
             <Sparkles className="size-4" aria-hidden />
             Spin!
           </Button>

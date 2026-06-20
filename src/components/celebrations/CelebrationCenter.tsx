@@ -5,11 +5,16 @@
 // Escape — which hands the event off to a bottom-right toast and reveals the
 // next queued event. Legendary achievements get the confetti burst.
 
-import { useEffect } from "react";
+import { useEffect, lazy, Suspense } from "react";
 import type { CelebrationEvent } from "@/lib/celebrations";
 import { RARITY_STYLE } from "@/lib/rarity";
 import { AchievementBadge } from "@/components/achievements/AchievementBadge";
-import { Confetti } from "@/components/celebrations/Confetti";
+
+const Confetti = lazy(() =>
+  import("@/components/celebrations/Confetti").then((m) => ({
+    default: m.Confetti,
+  })),
+);
 
 // Stable seed per event so confetti is deterministic (no Math.random in render).
 function seedFromKey(key: string): number {
@@ -18,7 +23,7 @@ function seedFromKey(key: string): number {
     h ^= key.charCodeAt(i);
     h = Math.imul(h, 16777619);
   }
-  return (h >>> 0) || 1;
+  return h >>> 0 || 1;
 }
 
 export function CelebrationCenter({
@@ -36,8 +41,9 @@ export function CelebrationCenter({
     return () => document.removeEventListener("keydown", onKey);
   }, [onDismiss]);
 
-  const confettiColors =
-    event.badgeDef ? RARITY_STYLE[event.badgeDef.rarity].confettiColors : [event.accent];
+  const confettiColors = event.badgeDef
+    ? RARITY_STYLE[event.badgeDef.rarity].confettiColors
+    : [event.accent];
 
   return (
     <div
@@ -49,7 +55,15 @@ export function CelebrationCenter({
         if (e.target === e.currentTarget) onDismiss();
       }}
     >
-      {event.confetti && <Confetti colors={confettiColors} count={90} seed={seedFromKey(event.key)} />}
+      {event.confetti && (
+        <Suspense fallback={null}>
+          <Confetti
+            colors={confettiColors}
+            count={90}
+            seed={seedFromKey(event.key)}
+          />
+        </Suspense>
+      )}
 
       {/* radial glow behind the icon */}
       <div
@@ -68,11 +82,18 @@ export function CelebrationCenter({
 
         <div className="my-5 animate-[celebrate-in_0.6s_var(--ease-spring)_both]">
           {event.badgeDef ? (
-            <AchievementBadge def={event.badgeDef} size={108} shine={event.confetti || event.badgeDef.rarity === "epic"} />
+            <AchievementBadge
+              def={event.badgeDef}
+              size={108}
+              shine={event.confetti || event.badgeDef.rarity === "epic"}
+            />
           ) : (
             <span
               className="grid size-24 place-items-center rounded-2xl text-5xl"
-              style={{ background: `${event.accent}1f`, boxShadow: `0 12px 36px -8px ${event.glow}` }}
+              style={{
+                background: `${event.accent}1f`,
+                boxShadow: `0 12px 36px -8px ${event.glow}`,
+              }}
               aria-hidden
             >
               {event.emoji}

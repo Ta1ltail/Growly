@@ -5,10 +5,22 @@
 // Fixed 3x2 grid with pagination — no page-level scrolling.
 
 import { useState } from "react";
-import { Plus, Check, LayoutTemplate, RotateCcw, Eye, Sparkles } from "lucide-react";
-import { CATEGORY_COLORS } from "@/lib/categories";
+import {
+  Plus,
+  Check,
+  LayoutTemplate,
+  RotateCcw,
+  Eye,
+  Sparkles,
+} from "lucide-react";
+import { CATEGORY_COLORS, type Category } from "@/lib/categories";
 import { TEMPLATES } from "@/lib/templates";
-import { addHabit, markTemplateUsed, resetTemplateUsage, useAppData } from "@/lib/store";
+import {
+  addHabit,
+  markTemplateUsed,
+  resetTemplateUsage,
+  useAppData,
+} from "@/lib/store";
 import { dateKey } from "@/lib/storage";
 import { uid } from "@/lib/util";
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -17,23 +29,38 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { Pagination } from "@/components/ui/Pagination";
-import type { Template } from "@/lib/templates";
 
 // Extended templates with more variety
-const EXTENDED_TEMPLATES: (Template & {
+const EXTENDED_TEMPLATES: {
+  id: string;
+  name: string;
+  description: string;
   benefits?: string;
   difficulty?: "Beginner" | "Intermediate" | "Advanced";
-})[] = [
-  ...TEMPLATES.map(t => ({
+  habits: { name: string; category: Category; repeatDays: number[] }[];
+}[] = [
+  ...TEMPLATES.map((t) => ({
     ...t,
-    benefits: t.id === "gym" ? "Build strength, improve recovery, and establish a consistent fitness routine." :
-              t.id === "student" ? "Sharpen your focus, retain more information, and ace your studies." :
-              t.id === "morning" ? "Start each day with purpose and set a positive tone for the hours ahead." :
-              t.id === "wellbeing" ? "Reduce stress, increase mindfulness, and find calm in your daily life." : undefined,
-    difficulty: t.id === "gym" ? "Intermediate" as const :
-                t.id === "student" ? "Intermediate" as const :
-                t.id === "morning" ? "Beginner" as const :
-                t.id === "wellbeing" ? "Beginner" as const : undefined,
+    benefits:
+      t.id === "gym"
+        ? "Build strength, improve recovery, and establish a consistent fitness routine."
+        : t.id === "student"
+          ? "Sharpen your focus, retain more information, and ace your studies."
+          : t.id === "morning"
+            ? "Start each day with purpose and set a positive tone for the hours ahead."
+            : t.id === "wellbeing"
+              ? "Reduce stress, increase mindfulness, and find calm in your daily life."
+              : undefined,
+    difficulty:
+      t.id === "gym"
+        ? ("Intermediate" as const)
+        : t.id === "student"
+          ? ("Intermediate" as const)
+          : t.id === "morning"
+            ? ("Beginner" as const)
+            : t.id === "wellbeing"
+              ? ("Beginner" as const)
+              : undefined,
   })),
   {
     id: "evening-winddown",
@@ -42,7 +69,11 @@ const EXTENDED_TEMPLATES: (Template & {
     benefits: "Improve sleep quality, process your day, and wake up refreshed.",
     difficulty: "Beginner",
     habits: [
-      { name: "No screens 1hr before bed", category: "Lifestyle", repeatDays: [] },
+      {
+        name: "No screens 1hr before bed",
+        category: "Lifestyle",
+        repeatDays: [],
+      },
       { name: "Journal 5 min", category: "Personal", repeatDays: [] },
       { name: "Read fiction 20 min", category: "Hobbies", repeatDays: [] },
       { name: "Stretch / light yoga", category: "Health", repeatDays: [] },
@@ -53,13 +84,22 @@ const EXTENDED_TEMPLATES: (Template & {
     id: "productivity-max",
     name: "Productivity Max",
     description: "Crush your work goals with laser focus.",
-    benefits: "Eliminate distractions, maintain deep focus, and ship more work.",
+    benefits:
+      "Eliminate distractions, maintain deep focus, and ship more work.",
     difficulty: "Advanced",
     habits: [
-      { name: "Pomodoro 4x sessions", category: "Work", repeatDays: [1, 2, 3, 4, 5] },
+      {
+        name: "Pomodoro 4x sessions",
+        category: "Work",
+        repeatDays: [1, 2, 3, 4, 5],
+      },
       { name: "Inbox zero", category: "Work", repeatDays: [1, 2, 3, 4, 5] },
       { name: "Top 3 priorities list", category: "Personal", repeatDays: [] },
-      { name: "No social media until noon", category: "Lifestyle", repeatDays: [1, 2, 3, 4, 5] },
+      {
+        name: "No social media until noon",
+        category: "Lifestyle",
+        repeatDays: [1, 2, 3, 4, 5],
+      },
       { name: "Review weekly goals", category: "Work", repeatDays: [5] },
     ],
   },
@@ -67,7 +107,8 @@ const EXTENDED_TEMPLATES: (Template & {
     id: "mindful-living",
     name: "Mindful Living",
     description: "Cultivate presence and gratitude every day.",
-    benefits: "Reduce anxiety, increase happiness, and build emotional resilience.",
+    benefits:
+      "Reduce anxiety, increase happiness, and build emotional resilience.",
     difficulty: "Beginner",
     habits: [
       { name: "Meditate 10 min", category: "Health", repeatDays: [] },
@@ -87,7 +128,11 @@ const EXTENDED_TEMPLATES: (Template & {
       { name: "Workout 45 min", category: "Workout", repeatDays: [1, 2, 4, 5] },
       { name: "Drink 8 glasses water", category: "Health", repeatDays: [] },
       { name: "Sleep 8 hours", category: "Health", repeatDays: [] },
-      { name: "Meal prep / healthy eating", category: "Health", repeatDays: [0] },
+      {
+        name: "Meal prep / healthy eating",
+        category: "Health",
+        repeatDays: [0],
+      },
       { name: "Walk 10k steps", category: "Workout", repeatDays: [] },
       { name: "Take vitamins", category: "Health", repeatDays: [] },
     ],
@@ -99,20 +144,21 @@ const EXTENDED_TEMPLATES: (Template & {
     benefits: "Unlock creativity, learn new skills, and find joy in creation.",
     difficulty: "Beginner",
     habits: [
-      { name: "Create something (write/draw/build)", category: "Hobbies", repeatDays: [] },
-      { name: "Learn a new skill 30 min", category: "Studies", repeatDays: [1, 3, 5] },
+      {
+        name: "Create something (write/draw/build)",
+        category: "Hobbies",
+        repeatDays: [],
+      },
+      {
+        name: "Learn a new skill 30 min",
+        category: "Studies",
+        repeatDays: [1, 3, 5],
+      },
       { name: "Read inspiring content", category: "Hobbies", repeatDays: [] },
       { name: "Brain dump ideas", category: "Personal", repeatDays: [] },
     ],
   },
 ];
-
-const CATEGORY_COLORS_MAP: Record<string, string> = {
-  ...CATEGORY_COLORS,
-  Lifestyle: "#F59E0B",
-  Personal: "#F43F5E",
-  Chores: "#94A3B8",
-};
 
 const TEMPLATES_PER_PAGE = 6; // 3x2 grid
 
@@ -121,18 +167,18 @@ export default function TemplatesPage() {
   const used = new Set(data.settings.usedTemplateIds ?? []);
   const available = EXTENDED_TEMPLATES.filter((t) => !used.has(t.id));
   const usedTemplates = EXTENDED_TEMPLATES.filter((t) => used.has(t.id));
-  const [preview, setPreview] = useState<(typeof EXTENDED_TEMPLATES[number]) | null>(null);
+  const [preview, setPreview] = useState<
+    (typeof EXTENDED_TEMPLATES)[number] | null
+  >(null);
   const [page, setPage] = useState(0);
 
   const pageCount = Math.ceil(available.length / TEMPLATES_PER_PAGE);
-  const pageItems = available.slice(page * TEMPLATES_PER_PAGE, (page + 1) * TEMPLATES_PER_PAGE);
+  const pageItems = available.slice(
+    page * TEMPLATES_PER_PAGE,
+    (page + 1) * TEMPLATES_PER_PAGE,
+  );
 
-  // Reset to page 0 when available templates change
-  if (page >= pageCount && pageCount > 0) {
-    // Will be handled on next render via effect
-  }
-
-  function applyTemplate(template: typeof EXTENDED_TEMPLATES[number]) {
+  function applyTemplate(template: (typeof EXTENDED_TEMPLATES)[number]) {
     const stamp = new Date().toISOString();
     const start = dateKey(new Date());
     for (const h of template.habits) {
@@ -145,7 +191,9 @@ export default function TemplatesPage() {
         startDate: start,
         priority: "med",
         recurrence:
-          h.repeatDays.length === 0 ? { kind: "daily" } : { kind: "weekly", weekdays: h.repeatDays },
+          h.repeatDays.length === 0
+            ? { kind: "daily" }
+            : { kind: "weekly", weekdays: h.repeatDays },
       });
     }
     markTemplateUsed(template.id);
@@ -182,22 +230,35 @@ export default function TemplatesPage() {
           {/* 3x2 grid — fixed, no scroll */}
           <div className="flex-1 min-h-0 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 grid-rows-2 gap-4">
             {pageItems.map((template) => (
-              <Card key={template.id} className="p-5 flex flex-col cursor-pointer" interactive>
-                <button onClick={() => setPreview(template)} className="flex flex-col flex-1 text-left w-full min-h-0">
+              <Card
+                key={template.id}
+                className="p-5 flex flex-col cursor-pointer"
+                interactive
+              >
+                <button
+                  onClick={() => setPreview(template)}
+                  className="flex flex-col flex-1 text-left w-full min-h-0"
+                >
                   <div className="flex items-start justify-between gap-3 shrink-0">
                     <div className="flex items-start gap-3 min-w-0 flex-1">
                       <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-accent/10 text-accent">
                         <LayoutTemplate className="size-5" />
                       </span>
                       <div className="min-w-0">
-                        <h2 className="text-sm font-semibold truncate">{template.name}</h2>
-                        <p className="mt-0.5 text-xs text-muted line-clamp-2">{template.description}</p>
+                        <h2 className="text-sm font-semibold truncate">
+                          {template.name}
+                        </h2>
+                        <p className="mt-0.5 text-xs text-muted line-clamp-2">
+                          {template.description}
+                        </p>
                       </div>
                     </div>
                   </div>
 
                   {template.difficulty && (
-                    <span className={`inline-flex self-start mt-2 rounded-full px-2 py-0.5 text-[10px] font-semibold ${difficultyColor(template.difficulty)}`}>
+                    <span
+                      className={`inline-flex self-start mt-2 rounded-full px-2 py-0.5 text-[10px] font-semibold ${difficultyColor(template.difficulty)}`}
+                    >
                       {template.difficulty}
                     </span>
                   )}
@@ -205,8 +266,17 @@ export default function TemplatesPage() {
                   <div className="mt-3 flex-1 min-h-0 overflow-y-auto pointer-events-none">
                     <div className="flex flex-wrap gap-1.5">
                       {template.habits.map((h) => (
-                        <span key={h.name} className="flex items-center gap-1.5 rounded-full border border-line px-2 py-1 text-[11px] text-muted">
-                          <span className="size-1.5 rounded-full shrink-0" style={{ backgroundColor: CATEGORY_COLORS_MAP[h.category] || "#94a3b8" }} />
+                        <span
+                          key={h.name}
+                          className="flex items-center gap-1.5 rounded-full border border-line px-2 py-1 text-[11px] text-muted"
+                        >
+                          <span
+                            className="size-1.5 rounded-full shrink-0"
+                            style={{
+                              backgroundColor:
+                                CATEGORY_COLORS[h.category] || "#94a3b8",
+                            }}
+                          />
                           {h.name}
                         </span>
                       ))}
@@ -215,7 +285,11 @@ export default function TemplatesPage() {
                 </button>
 
                 <div className="mt-4 flex items-center gap-2 shrink-0">
-                  <Button size="sm" className="flex-1" onClick={() => applyTemplate(template)}>
+                  <Button
+                    size="sm"
+                    className="flex-1"
+                    onClick={() => applyTemplate(template)}
+                  >
                     <Plus className="size-3.5" strokeWidth={2.5} /> Add
                   </Button>
                   <button
@@ -229,9 +303,11 @@ export default function TemplatesPage() {
               </Card>
             ))}
             {/* Fill empty slots with invisible placeholders to maintain 3x2 grid */}
-            {Array.from({ length: TEMPLATES_PER_PAGE - pageItems.length }).map((_, i) => (
-              <div key={`empty-${i}`} className="invisible" />
-            ))}
+            {Array.from({ length: TEMPLATES_PER_PAGE - pageItems.length }).map(
+              (_, i) => (
+                <div key={`empty-${i}`} className="invisible" />
+              ),
+            )}
           </div>
 
           {/* Pagination below the grid */}
@@ -249,7 +325,9 @@ export default function TemplatesPage() {
 
       {usedTemplates.length > 0 && (
         <>
-          <h2 className="mb-3 mt-6 text-xs font-semibold uppercase tracking-wide text-faint">Used templates</h2>
+          <h2 className="mb-3 mt-6 text-xs font-semibold uppercase tracking-wide text-faint">
+            Used templates
+          </h2>
           <Card className="divide-y divide-line overflow-hidden">
             {usedTemplates.map((t) => (
               <div key={t.id} className="flex items-center gap-3 px-4 py-3">
@@ -292,7 +370,9 @@ export default function TemplatesPage() {
             {preview.difficulty && (
               <div className="flex items-center gap-2">
                 <span className="text-xs text-muted">Difficulty:</span>
-                <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${difficultyColor(preview.difficulty)}`}>
+                <span
+                  className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${difficultyColor(preview.difficulty)}`}
+                >
                   {preview.difficulty}
                 </span>
               </div>
@@ -304,18 +384,40 @@ export default function TemplatesPage() {
               </h3>
               <div className="space-y-2">
                 {preview.habits.map((h, i) => (
-                  <div key={i} className="flex items-center gap-3 rounded-lg bg-surface2/50 px-3 py-2">
-                    <span className="size-2 rounded-full shrink-0" style={{ backgroundColor: CATEGORY_COLORS_MAP[h.category] || "#94a3b8" }} />
+                  <div
+                    key={i}
+                    className="flex items-center gap-3 rounded-lg bg-surface2/50 px-3 py-2"
+                  >
+                    <span
+                      className="size-2 rounded-full shrink-0"
+                      style={{
+                        backgroundColor:
+                          CATEGORY_COLORS[h.category] || "#94a3b8",
+                      }}
+                    />
                     <span className="flex-1 text-sm">{h.name}</span>
                     <span className="text-[11px] text-faint">
-                      {h.repeatDays.length === 0 ? "Daily" : h.repeatDays.length === 5 && [1,2,3,4,5].every(d => h.repeatDays.includes(d)) ? "Weekdays" : `${h.repeatDays.length} days/wk`}
+                      {h.repeatDays.length === 0
+                        ? "Daily"
+                        : h.repeatDays.length === 5 &&
+                            [1, 2, 3, 4, 5].every((d) =>
+                              h.repeatDays.includes(d),
+                            )
+                          ? "Weekdays"
+                          : `${h.repeatDays.length} days/wk`}
                     </span>
                   </div>
                 ))}
               </div>
             </div>
 
-            <Button className="w-full" onClick={() => { applyTemplate(preview); setPreview(null); }}>
+            <Button
+              className="w-full"
+              onClick={() => {
+                applyTemplate(preview);
+                setPreview(null);
+              }}
+            >
               <Plus className="size-4" strokeWidth={2.5} /> Add this template
             </Button>
           </div>
