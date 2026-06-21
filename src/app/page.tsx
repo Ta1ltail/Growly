@@ -68,6 +68,15 @@ const WIDGET_IDS = [
 
 type WidgetId = (typeof WIDGET_IDS)[number];
 
+const DEFAULT_ORDER: WidgetId[] = [
+  "current-streak",
+  "recent-achievements",
+  "badge-collection",
+  "xp-level",
+  "next-milestone",
+  "weekly-trend",
+];
+
 export default function DashboardPage() {
   const data = useAppData();
   const today = useToday();
@@ -298,15 +307,6 @@ export default function DashboardPage() {
       title,
     ],
   );
-
-  const DEFAULT_ORDER: WidgetId[] = [
-    "current-streak",
-    "recent-achievements",
-    "badge-collection",
-    "xp-level",
-    "next-milestone",
-    "weekly-trend",
-  ];
 
   const orderedIds: WidgetId[] = useMemo(() => {
     const saved = data.settings.widgetOrder as WidgetId[] | undefined;

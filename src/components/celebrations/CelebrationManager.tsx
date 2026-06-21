@@ -11,10 +11,12 @@ import { toast } from "sonner";
 import {
   useAppData,
   seedCelebrationsSeen,
+  seedUnlocksSeen,
   acknowledgeCelebration,
 } from "@/lib/store";
 import { useToday } from "@/hooks/useToday";
 import { buildCelebrationQueue } from "@/lib/celebrations";
+import { CONFETTI_SKINS, equippedOrDefault } from "@/lib/economy";
 import { CelebrationCenter } from "./CelebrationCenter";
 
 export function CelebrationManager() {
@@ -24,6 +26,10 @@ export function CelebrationManager() {
   const [currentIndex, setCurrentIndex] = useState(0);
 
   useEffect(() => {
+    // Baseline both the achievement seen-flags and the progress markers once on
+    // mount so a returning/migrating user isn't flooded with celebrations for
+    // progress earned before this session.
+    seedUnlocksSeen();
     seedCelebrationsSeen();
     const id = requestAnimationFrame(() => setReady(true));
     return () => cancelAnimationFrame(id);
@@ -34,12 +40,24 @@ export function CelebrationManager() {
     [data, today],
   );
 
-  // Reset index when queue changes (new achievements, etc.)
-  useEffect(() => {
+  // Reset index when the queue changes (new achievements, etc.). Done during
+  // render — the documented React pattern — rather than in an effect, which
+  // would trigger a cascading re-render.
+  const [prevLen, setPrevLen] = useState(queue.length);
+  if (prevLen !== queue.length) {
+    setPrevLen(queue.length);
     setCurrentIndex(0);
-  }, [queue.length]);
+  }
 
   const center = ready && queue.length > 0 ? queue[currentIndex] : null;
+
+  // Equipped confetti cosmetic — override the default colors only when the user
+  // has bought and equipped a non-default palette.
+  const confettiSkin = equippedOrDefault(data.economy, "confetti");
+  const confettiPalette =
+    confettiSkin === "confetti-default"
+      ? undefined
+      : CONFETTI_SKINS[confettiSkin];
 
   function dismissCenter() {
     if (!center) return;
@@ -120,6 +138,7 @@ export function CelebrationManager() {
       onDismiss={dismissCenter}
       queueIndex={currentIndex}
       queueTotal={queue.length}
+      confettiPalette={confettiPalette}
     />
   );
 }

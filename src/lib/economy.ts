@@ -43,28 +43,33 @@ const LEVEL_UP_COINS = [
   100, // level 10
 ];
 // For levels beyond 10: 100 + (level - 10) * 25
-function levelUpBonus(level: number): number {
+export function levelUpBonus(level: number): number {
   if (level <= 1) return 0;
   if (level <= LEVEL_UP_COINS.length) return LEVEL_UP_COINS[level - 1];
   return 100 + (level - 10) * 25;
 }
 
-// Streak milestone rewards: bonus coins for reaching streak milestones.
-// Ordered by increasing milestone — computed from maxBestStreak.
-const STREAK_MILESTONES = [7, 14, 30, 60, 100] as const;
+// Total level-up coins for advancing from `fromLevel` to `toLevel` — sums every
+// level crossed, so jumping several levels in one go still pays out in full.
+export function levelUpCoinsBetween(fromLevel: number, toLevel: number): number {
+  let total = 0;
+  for (let lvl = fromLevel + 1; lvl <= toLevel; lvl++) total += levelUpBonus(lvl);
+  return total;
+}
+
+// Streak milestone rewards: one-time bonus coins for reaching a per-habit streak
+// milestone. Keyed to the celebration tiers in celebrations.ts (streakTier); an
+// unknown tier pays 0 so the two lists can never silently double-grant.
 const STREAK_MILESTONE_REWARDS: Record<number, number> = {
   7: 25,
   14: 50,
   30: 100,
-  60: 200,
-  100: 500,
+  50: 200,
+  100: 400,
+  365: 1000,
 };
-function streakMilestoneBonus(maxBestStreak: number): number {
-  let total = 0;
-  for (const m of STREAK_MILESTONES) {
-    if (maxBestStreak >= m) total += STREAK_MILESTONE_REWARDS[m];
-  }
-  return total;
+export function streakMilestoneReward(tier: number): number {
+  return STREAK_MILESTONE_REWARDS[tier] ?? 0;
 }
 
 // Daily check-in bonus: scales with streak.
@@ -212,6 +217,7 @@ export interface CoinBreakdown {
   fromCompletions: number;
   fromPerfectDays: number;
   fromAchievements: number;
+  fromBonuses: number; // check-ins, quests, spins, level-ups, streak milestones
   earned: number;
   spent: number;
   balance: number;
@@ -238,6 +244,7 @@ export function coinBreakdown(
     fromCompletions,
     fromPerfectDays,
     fromAchievements,
+    fromBonuses,
     earned,
     spent,
     balance: Math.max(0, earned - spent),
@@ -275,7 +282,7 @@ export const FLAME_SKINS: Record<
 };
 
 // Confetti palettes keyed by item id (consumed by Confetti / celebrations).
-const CONFETTI_SKINS: Record<string, string[]> = {
+export const CONFETTI_SKINS: Record<string, string[]> = {
   "confetti-default": ["#4b8bf7", "#7c3aed", "#22d3ee", "#f59e0b", "#f43f5e"],
   "confetti-mono": ["#e2e8f0", "#94a3b8", "#cbd5e1", "#f8fafc"],
   "confetti-neon": ["#22d3ee", "#a3e635", "#f472b6", "#fb923c"],
@@ -486,6 +493,14 @@ export function equippedAccent(
   economy: Economy,
 ): { accent: string; glow: string } | null {
   return ACCENT_SKINS[equippedOrDefault(economy, "accent")] ?? null;
+}
+
+// Resolve the equipped confetti palette, falling back to the free default.
+export function equippedConfetti(economy: Economy): string[] {
+  return (
+    CONFETTI_SKINS[equippedOrDefault(economy, "confetti")] ??
+    CONFETTI_SKINS["confetti-default"]
+  );
 }
 
 export function shopItem(id: string): ShopItem | undefined {

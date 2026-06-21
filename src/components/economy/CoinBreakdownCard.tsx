@@ -5,7 +5,7 @@
 // days, achievement bonuses) minus the spend ledger, so the number in the shop
 // header is never a mystery.
 
-import { CheckCircle2, Sparkles, Trophy, Coins, Minus } from "lucide-react";
+import { CheckCircle2, Sparkles, Trophy, Coins, Minus, Gift } from "lucide-react";
 import type { CoinBreakdown } from "@/lib/economy";
 import {
   COINS_PER_COMPLETION,
@@ -80,6 +80,14 @@ export function CoinBreakdownCard({
           detail="by rarity"
           coins={breakdown.fromAchievements}
         />
+        {breakdown.fromBonuses > 0 && (
+          <EarnRow
+            icon={Gift}
+            label="Rewards & bonuses"
+            detail="check-ins, quests, spins, milestones"
+            coins={breakdown.fromBonuses}
+          />
+        )}
       </div>
 
       <div className="mt-2 flex items-center justify-between border-t border-line pt-2.5">

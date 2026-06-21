@@ -16,7 +16,13 @@ import { ACHIEVEMENTS, RARITY_LABEL, RARITY_ORDER } from "./achievements";
 import { RARITY_STYLE } from "./rarity";
 import { RARITY_XP } from "./xp";
 import { RANK_STYLE } from "./ranks";
-import { RARITY_COINS, SHOP_ITEMS, frozenSet } from "./economy";
+import {
+  RARITY_COINS,
+  SHOP_ITEMS,
+  frozenSet,
+  levelUpCoinsBetween,
+  streakMilestoneReward,
+} from "./economy";
 import { habitStreaks } from "./stats";
 import { summarizeProgress } from "./progress";
 
@@ -119,6 +125,7 @@ export function progressEvents(data: AppData, today: Date): CelebrationEvent[] {
 
   // Level up — one event for the current (highest) level.
   if (summary.level.level > seen.level) {
+    const coins = levelUpCoinsBetween(seen.level, summary.level.level);
     out.push({
       key: `level:${summary.level.level}`,
       kind: "levelup",
@@ -127,7 +134,7 @@ export function progressEvents(data: AppData, today: Date): CelebrationEvent[] {
       description: "Your XP just pushed you to a new level.",
       accent: LEVEL_ACCENT,
       glow: LEVEL_GLOW,
-      reward: `Lv ${summary.level.level}`,
+      reward: coins > 0 ? `Lv ${summary.level.level} · +${coins} 🪙` : `Lv ${summary.level.level}`,
       emoji: "⭐",
       level: summary.level.level,
     });
@@ -177,6 +184,7 @@ export function progressEvents(data: AppData, today: Date): CelebrationEvent[] {
     const current = habitStreaks(h, data.marks, today, frozen).current;
     const tier = streakTier(current);
     if (tier > (seen.streaks[h.id] ?? 0)) {
+      const coins = streakMilestoneReward(tier);
       out.push({
         key: `streak:${h.id}:${tier}`,
         kind: "streak",
@@ -185,7 +193,7 @@ export function progressEvents(data: AppData, today: Date): CelebrationEvent[] {
         description: h.name,
         accent: STREAK_ACCENT,
         glow: STREAK_GLOW,
-        reward: `🔥 ${tier}`,
+        reward: coins > 0 ? `🔥 ${tier} · +${coins} 🪙` : `🔥 ${tier}`,
         emoji: "🔥",
         habitId: h.id,
         tier,
@@ -207,7 +215,7 @@ function tierUnlockEvents(data: AppData): CelebrationEvent[] {
   const tiers: Rarity[] = ["common", "rare", "epic", "legendary"];
   // Collect all unlocked rarities
   const unlockedRarities = new Set<Rarity>();
-  for (const [id, rec] of Object.entries(data.unlocks)) {
+  for (const id of Object.keys(data.unlocks)) {
     const def = BY_ID.get(id);
     if (def) unlockedRarities.add(def.rarity);
   }
@@ -216,7 +224,6 @@ function tierUnlockEvents(data: AppData): CelebrationEvent[] {
     if (!unlockedRarities.has(rarity)) continue;
     if (seenSet.has(rarity)) continue;
     const info = TIER_INFO[rarity];
-    // Count how many achievements of this tier are unlocked
     // Count how many achievements of this tier are unlocked
     const count = Object.keys(data.unlocks).filter((id) => {
       const def = BY_ID.get(id);

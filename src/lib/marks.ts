@@ -1,4 +1,4 @@
-// Shared logic for habit marks: the tap cycle and display labels.
+// Shared logic for habit marks: the tap cycle.
 
 import type { MarkStatus } from "./types";
 
@@ -15,9 +15,3 @@ export function nextStatus(
 ): MarkStatus | undefined {
   return CYCLE[(CYCLE.indexOf(cur) + 1) % CYCLE.length];
 }
-
-const MARK_LABEL: Record<MarkStatus, string> = {
-  done: "✓",
-  missed: "✕",
-  skipped: "–",
-};

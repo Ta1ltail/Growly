@@ -30,11 +30,14 @@ export function CelebrationCenter({
   onDismiss,
   queueIndex,
   queueTotal,
+  confettiPalette,
 }: {
   event: CelebrationEvent;
   onDismiss: () => void;
   queueIndex?: number;
   queueTotal?: number;
+  // Equipped confetti cosmetic — overrides the default rarity/accent colors.
+  confettiPalette?: string[];
 }) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -44,9 +47,11 @@ export function CelebrationCenter({
     return () => document.removeEventListener("keydown", onKey);
   }, [onDismiss]);
 
-  const confettiColors = event.badgeDef
-    ? RARITY_STYLE[event.badgeDef.rarity].confettiColors
-    : [event.accent];
+  const confettiColors =
+    confettiPalette ??
+    (event.badgeDef
+      ? RARITY_STYLE[event.badgeDef.rarity].confettiColors
+      : [event.accent]);
 
   return (
     <div

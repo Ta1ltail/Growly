@@ -31,8 +31,6 @@ export function CheckInPopup() {
     return () => clearTimeout(timer);
   }, []);
 
-  if (!result || dismissed) return null;
-
   // Save mood/energy to daily note when both are set
   useEffect(() => {
     if (mood > 0 && energy > 0) {
@@ -44,6 +42,8 @@ export function CheckInPopup() {
       window.localStorage.setItem(`mood:${todayKey}`, JSON.stringify(entry));
     }
   }, [mood, energy]);
+
+  if (!result || dismissed) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-fade-in">

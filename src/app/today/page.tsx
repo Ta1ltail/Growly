@@ -107,17 +107,20 @@ export default function TodayPage() {
         ? "Good afternoon"
         : "Good evening";
 
-  const [activeCategory, setActiveCategory] = useState<string | null>(null);
-  // Reset category filter when todaysHabits change
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const categoriesWithHabits = useMemo(
     () => [...new Set(todaysHabits.map((h) => h.category))],
     [todaysHabits],
   );
-  useEffect(() => {
-    if (activeCategory && !categoriesWithHabits.includes(activeCategory as Category)) {
-      setActiveCategory(null);
-    }
-  }, [categoriesWithHabits, activeCategory]);
+  // Derive the effective filter during render: if the selected category no
+  // longer has habits (deleted/archived), it falls back to null automatically
+  // instead of resetting state in an effect.
+  const activeCategory =
+    selectedCategory &&
+    categoriesWithHabits.includes(selectedCategory as Category)
+      ? selectedCategory
+      : null;
+  const setActiveCategory = setSelectedCategory;
 
   const filteredGroups = useMemo(() => {
     if (!activeCategory) return grouped;
@@ -267,7 +270,7 @@ export default function TodayPage() {
           {/* Habits header */}
           <div className="shrink-0 flex items-center justify-between">
             <h2 className="text-sm font-semibold uppercase tracking-wide text-muted">
-              {activeCategory ? activeCategory : "Today&apos;s habits"}
+              {activeCategory ? activeCategory : "Today's habits"}
             </h2>
             {todaysHabits.length > 0 && (
               <Button variant="soft" size="sm" onClick={() => setShowAdd(true)}>

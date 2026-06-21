@@ -41,9 +41,11 @@ import {
   FREEZE_PRICE,
   frozenSet,
   generateDailyQuest,
+  levelUpCoinsBetween,
   makeFreezeEntry,
   randomSpinReward,
   shopItem,
+  streakMilestoneReward,
 } from "./economy";
 import { buildGameStats, evaluateAchievements } from "./achievements";
 import { baselineProgressSeen, type CelebrationEvent } from "./celebrations";
@@ -528,7 +530,7 @@ export function updateProfile(patch: Partial<Profile>): void {
 // a flood of celebration popups for history they earned before this session.
 // Only fills GAPS — anything already recorded keeps its existing seen flag.
 // Call once on app mount, before celebrations start watching.
-function seedUnlocksSeen(): void {
+export function seedUnlocksSeen(): void {
   update((prev) => {
     const { unlocks, newlyUnlocked } = reconcileUnlocks(
       prev,
@@ -539,19 +541,6 @@ function seedUnlocksSeen(): void {
     const seeded = { ...unlocks };
     for (const id of newlyUnlocked) seeded[id] = { ...seeded[id], seen: true };
     return { ...prev, unlocks: seeded };
-  });
-}
-
-// Recompute unlocks from history and persist any newly-satisfied achievements.
-// Safe to call on load / on focus; a no-op when nothing changed.
-function syncAchievements(): void {
-  update((prev) => {
-    const { unlocks } = reconcileUnlocks(
-      prev,
-      new Date(),
-      new Date().toISOString(),
-    );
-    return unlocks === prev.unlocks ? prev : { ...prev, unlocks };
   });
 }
 
@@ -594,12 +583,16 @@ export function acknowledgeCelebration(event: CelebrationEvent): void {
   update((prev) => {
     const ps = prev.progressSeen;
     let next: typeof ps | null = null;
+    // Reward coins granted alongside advancing the seen-marker. Tied to the
+    // one-time marker bump so an event can never pay out twice.
+    let bonus = 0;
     if (
       event.kind === "levelup" &&
       event.level != null &&
       event.level > ps.level
     ) {
       next = { ...ps, level: event.level };
+      bonus = levelUpCoinsBetween(ps.level, event.level);
     } else if (
       event.kind === "title" &&
       event.titleName &&
@@ -619,6 +612,7 @@ export function acknowledgeCelebration(event: CelebrationEvent): void {
       event.tier > (ps.streaks[event.habitId] ?? 0)
     ) {
       next = { ...ps, streaks: { ...ps.streaks, [event.habitId]: event.tier } };
+      bonus = streakMilestoneReward(event.tier);
     } else if (event.kind === "tier" && event.tier != null) {
       // Reverse-lookup rarity from RARITY_ORDER value
       const RARITY_BY_ORDER: Record<number, string> = {
@@ -629,7 +623,12 @@ export function acknowledgeCelebration(event: CelebrationEvent): void {
         next = { ...ps, tierUnlocks: [...ps.tierUnlocks, rarity] };
       }
     }
-    return next ? { ...prev, progressSeen: next } : prev;
+    if (!next) return prev;
+    const economy =
+      bonus > 0
+        ? { ...prev.economy, bonusCoins: prev.economy.bonusCoins + bonus }
+        : prev.economy;
+    return { ...prev, progressSeen: next, economy };
   });
 }
 
