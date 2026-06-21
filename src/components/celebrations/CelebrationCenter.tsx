@@ -16,7 +16,6 @@ const Confetti = lazy(() =>
   })),
 );
 
-// Stable seed per event so confetti is deterministic (no Math.random in render).
 function seedFromKey(key: string): number {
   let h = 2166136261;
   for (let i = 0; i < key.length; i++) {
@@ -29,9 +28,13 @@ function seedFromKey(key: string): number {
 export function CelebrationCenter({
   event,
   onDismiss,
+  queueIndex,
+  queueTotal,
 }: {
   event: CelebrationEvent;
   onDismiss: () => void;
+  queueIndex?: number;
+  queueTotal?: number;
 }) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -65,7 +68,6 @@ export function CelebrationCenter({
         </Suspense>
       )}
 
-      {/* radial glow behind the icon */}
       <div
         aria-hidden
         className="animate-glow-pulse pointer-events-none absolute size-72 rounded-full blur-3xl"
@@ -113,11 +115,38 @@ export function CelebrationCenter({
           </div>
         )}
 
+        {/* Queue progress */}
+        {queueTotal !== undefined && queueTotal > 1 && (
+          <div className="mt-4 flex items-center gap-1.5">
+            {Array.from({ length: queueTotal }, (_, i) => (
+              <span
+                key={i}
+                className="h-1 rounded-full transition-all duration-500"
+                style={{
+                  width: i === (queueIndex ?? 0) ? 16 : 6,
+                  background:
+                    i === (queueIndex ?? 0)
+                      ? event.accent
+                      : i < (queueIndex ?? 0)
+                        ? `${event.accent}40`
+                        : "var(--c-line)",
+                }}
+              />
+            ))}
+          </div>
+        )}
+
         <button
           onClick={onDismiss}
           className="mt-6 w-full rounded-xl bg-accent px-4 py-2.5 text-sm font-semibold text-white transition-transform active:scale-95"
+          style={{
+            background: `linear-gradient(135deg, ${event.accent}, color-mix(in srgb, ${event.accent} 80%, #000))`,
+            boxShadow: `0 4px 16px -4px ${event.glow}`,
+          }}
         >
-          Awesome!
+          {queueTotal && queueTotal > 1 && (queueIndex ?? 0) < queueTotal - 1
+            ? "Next achievement →"
+            : "Awesome!"}
         </button>
       </div>
     </div>

@@ -2,10 +2,12 @@
 
 // App shell: sidebar (desktop) + bottom nav (mobile) + the page content area.
 // Content is offset by the sidebar width on desktop and given a max width.
+// No AnimatePresence wrapper — individual pages have their own animate-fade-in
+// entrance animation which avoids the layout-shifting bug where both exiting
+// and entering pages occupy the DOM simultaneously during transitions.
 
-import type { ReactNode } from "react";
+import { type ReactNode } from "react";
 import { Toaster } from "sonner";
-import { AnimatePresence, motion } from "motion/react";
 import { usePathname } from "next/navigation";
 import { Sidebar } from "./Sidebar";
 import { BottomNav } from "./BottomNav";
@@ -25,17 +27,9 @@ export function AppShell({ children }: { children: ReactNode }) {
       <BottomNav />
       <div className="md:pl-60">
         <main className="mx-auto w-full max-w-5xl px-4 pb-28 pt-4 sm:px-6 md:pb-12 md:pt-8">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={pathname}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              transition={{ duration: 0.2, ease: "easeInOut" }}
-            >
-              {children}
-            </motion.div>
-          </AnimatePresence>
+          <div key={pathname} className="animate-fade-in">
+            {children}
+          </div>
           <KeyboardShortcutsModal />
           <OnboardingWizard />
         </main>

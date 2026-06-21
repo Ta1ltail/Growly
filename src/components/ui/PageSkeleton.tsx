@@ -6,7 +6,7 @@ import { Skeleton } from "./Skeleton";
 
 export function PageSkeleton() {
   return (
-    <div className="animate-fade-in">
+    <div className="opacity-60">
       <div className="mb-6 flex items-end justify-between gap-4">
         <div className="flex flex-col gap-2">
           <Skeleton className="h-8 w-44" />

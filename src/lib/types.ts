@@ -247,6 +247,7 @@ export interface ProgressSeen {
   title: string; // last celebrated title name (TITLES[].name)
   shop: string[]; // shop item ids whose level-gate unlock was celebrated
   streaks: Record<string, number>; // habitId -> highest streak tier celebrated (7/30/100/365)
+  tierUnlocks: string[]; // rarity tiers celebrated as milestones ("common","rare","epic","legendary")
 }
 
 export const DEFAULT_PROGRESS_SEEN: ProgressSeen = {
@@ -255,6 +256,7 @@ export const DEFAULT_PROGRESS_SEEN: ProgressSeen = {
   title: "Habit Newbie",
   shop: [],
   streaks: {},
+  tierUnlocks: [],
 };
 
 // Editable, user-owned profile (the "character page").

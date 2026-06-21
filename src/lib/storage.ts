@@ -328,6 +328,9 @@ function cleanProgressSeen(v: unknown): ProgressSeen {
         streaks[habitId] = tier;
     }
   }
+  const tierUnlocks = Array.isArray(v.tierUnlocks)
+    ? v.tierUnlocks.filter((x): x is string => typeof x === "string")
+    : [];
   return {
     seeded: v.seeded === true,
     level:
@@ -339,6 +342,7 @@ function cleanProgressSeen(v: unknown): ProgressSeen {
       ? v.shop.filter((x): x is string => typeof x === "string")
       : [],
     streaks,
+    tierUnlocks,
   };
 }
 

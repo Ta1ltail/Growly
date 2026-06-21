@@ -16,7 +16,7 @@ import {
   ChevronRight,
   CalendarRange,
 } from "lucide-react";
-import { useAppData, setWidgetOrder } from "@/lib/store";
+import { useAppData } from "@/lib/store";
 import { useToday } from "@/hooks/useToday";
 import { useHydrated } from "@/hooks/useHydrated";
 import { dateKey } from "@/lib/storage";
@@ -52,10 +52,6 @@ import {
   StaggerContainer,
   StaggerItem,
 } from "@/components/ui/StaggerContainer";
-import {
-  ReorderableGrid,
-  type ReorderableItem,
-} from "@/components/ui/ReorderableGrid";
 
 const BY_ID = new Map(ACHIEVEMENTS.map((a) => [a.id, a]));
 
@@ -136,7 +132,6 @@ export default function DashboardPage() {
   const widgetContent = useMemo(
     (): Record<WidgetId, { content: React.ReactNode; span?: string }> => ({
       "xp-level": {
-        span: "lg:col-span-3",
         content: (
           <Card className="p-5 h-[180px] flex flex-col">
             <TitleDisplay title={title} size="sm" className="mb-3 shrink-0" />
@@ -302,23 +297,14 @@ export default function DashboardPage() {
     ],
   );
 
-  const widgetOrder: string[] = data.settings.widgetOrder ?? [...WIDGET_IDS];
-  const orderedIds: string[] = [...WIDGET_IDS].sort((a: string, b: string) => {
-    const ai = widgetOrder.indexOf(a);
-    const bi = widgetOrder.indexOf(b);
-    return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
-  });
-
-  const handleReorder = useMemo(
-    () => (ids: string[]) => setWidgetOrder(ids),
-    [],
-  );
-
-  const reorderableItems: ReorderableItem[] = orderedIds.map((id: string) => {
-    const w = widgetContent[id as WidgetId];
-    if (!w) return { id, content: null };
-    return { id, content: <div className={w.span ?? ""}>{w.content}</div> };
-  });
+  const orderedIds: WidgetId[] = [
+    "current-streak",
+    "recent-achievements",
+    "badge-collection",
+    "xp-level",
+    "next-milestone",
+    "weekly-trend",
+  ];
 
   if (!hydrated) return <PageSkeleton />;
 
@@ -330,6 +316,7 @@ export default function DashboardPage() {
           icon={Activity}
           title="Welcome to project_101"
           hint="Create your first habit to start building momentum. Your dashboard fills in as you go."
+          illustration="dashboard"
           action={
             <Link href="/today" className={buttonClasses()}>
               Go to Today <ArrowRight className="size-4" />
@@ -462,11 +449,11 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        <ReorderableGrid
-          items={reorderableItems}
-          onReorder={handleReorder}
-          className="grid gap-4 lg:grid-cols-3"
-        />
+        <div className="grid gap-4 lg:grid-cols-3">
+          {orderedIds.map((id) => (
+            <div key={id}>{widgetContent[id].content}</div>
+          ))}
+        </div>
       </section>
 
       {/* Insights */}

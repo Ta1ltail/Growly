@@ -184,7 +184,7 @@ export default function CalendarPage() {
       : `${weekCells[0].toLocaleDateString(undefined, { month: "short", day: "numeric" })} – ${weekCells[6].toLocaleDateString(undefined, { month: "short", day: "numeric" })}`;
 
   return (
-    <div className="animate-fade-in flex flex-col min-h-0 h-[calc(100vh-110px)]">
+    <div className="animate-fade-in flex flex-col min-h-0 h-[calc(100dvh-110px)]">
       <PageHeader
         title="Calendar"
         action={

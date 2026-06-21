@@ -165,7 +165,7 @@ export default function NotesPage() {
   }
 
   return (
-    <div className="animate-fade-in flex flex-col min-h-0 h-[calc(100vh-110px)]">
+    <div className="animate-fade-in flex flex-col min-h-0 h-[calc(100dvh-110px)]">
       <PageHeader
         title="Notes"
         subtitle={`${data.notes.length} note${data.notes.length === 1 ? "" : "s"}`}
@@ -181,6 +181,7 @@ export default function NotesPage() {
           icon={NotebookPen}
           title="No notes yet"
           hint="Capture reflections, missed-task reasons, or weekly reviews. Link them to habits, goals, or dates."
+          illustration="notes"
           action={
             <Button onClick={() => setAdding(true)}>
               <Plus className="size-4" strokeWidth={2.5} /> Add note

@@ -151,6 +151,7 @@ export default function StatsPage() {
           icon={ChartColumnIncreasing}
           title="No data yet"
           hint="Add and mark some habits to unlock your stats."
+          illustration="stats"
         />
       </div>
     );

@@ -11,7 +11,7 @@
 // Anti-flood: `baselineProgressSeen` records current progress once on first run
 // (store.seedCelebrationsSeen) so an existing history doesn't re-celebrate.
 
-import type { AchievementDef, AppData, ProgressSeen } from "./types";
+import type { AchievementDef, AppData, ProgressSeen, Rarity } from "./types";
 import { ACHIEVEMENTS, RARITY_LABEL, RARITY_ORDER } from "./achievements";
 import { RARITY_STYLE } from "./rarity";
 import { RARITY_XP } from "./xp";
@@ -25,7 +25,8 @@ export type CelebrationKind =
   | "levelup"
   | "title"
   | "shop"
-  | "streak";
+  | "streak"
+  | "tier";
 
 // Per-habit streak milestones that earn a celebration. Includes the same
 // thresholds as streak achievements so progression always feels recognized.
@@ -63,6 +64,14 @@ export interface CelebrationEvent {
 }
 
 const BY_ID = new Map(ACHIEVEMENTS.map((a) => [a.id, a]));
+
+// Rarity tier unlock — emoji, accent, and description for each tier milestone.
+const TIER_INFO: Record<string, { emoji: string; accent: string; glow: string; description: string }> = {
+  common: { emoji: "🥉", accent: "#a98256", glow: "rgba(169,130,86,0.45)", description: "You unlocked your first Common achievement. Every journey starts somewhere!" },
+  rare: { emoji: "🥈", accent: "#7d93b0", glow: "rgba(125,147,176,0.5)", description: "You unlocked your first Rare achievement. Your dedication is growing!" },
+  epic: { emoji: "🥇", accent: "#f0b429", glow: "rgba(240,180,41,0.55)", description: "You unlocked your first Epic achievement. A significant milestone!" },
+  legendary: { emoji: "💎", accent: "#22d3ee", glow: "rgba(34,211,238,0.6)", description: "You unlocked your first Legendary achievement. Truly legendary!" },
+};
 
 // Color cues for the non-achievement kinds (lib stays framework-free, so these
 // are literal colors, mirroring rarity.ts/ranks.ts).
@@ -187,13 +196,64 @@ export function progressEvents(data: AppData, today: Date): CelebrationEvent[] {
   return out;
 }
 
-// The full ordered queue: achievements (by rarity) first, then level, title,
-// shop, streaks (the order progressEvents emits them).
+// Tier unlock events: detect when the user has unlocked their first achievement
+// of each rarity tier. Compared against the persisted seen-tierUnlocks.
+export function tierUnlockEvents(data: AppData): CelebrationEvent[] {
+  const seen = data.progressSeen.tierUnlocks;
+  const seenSet = new Set(seen);
+  const out: CelebrationEvent[] = [];
+
+  // Which rarity tiers does the user currently have at least one unlock for?
+  const tiers: Rarity[] = ["common", "rare", "epic", "legendary"];
+  // Collect all unlocked rarities
+  const unlockedRarities = new Set<Rarity>();
+  for (const [id, rec] of Object.entries(data.unlocks)) {
+    const def = BY_ID.get(id);
+    if (def) unlockedRarities.add(def.rarity);
+  }
+
+  for (const rarity of tiers) {
+    if (!unlockedRarities.has(rarity)) continue;
+    if (seenSet.has(rarity)) continue;
+    const info = TIER_INFO[rarity];
+    // Count how many achievements of this tier are unlocked
+    // Count how many achievements of this tier are unlocked
+    const count = Object.keys(data.unlocks).filter((id) => {
+      const def = BY_ID.get(id);
+      return def?.rarity === rarity;
+    }).length;
+    out.push({
+      key: `tier:${rarity}`,
+      kind: "tier",
+      eyebrow: "Tier Unlocked",
+      name: `First ${rarity.charAt(0).toUpperCase() + rarity.slice(1)} Achievement`,
+      description: info.description,
+      accent: info.accent,
+      glow: info.glow,
+      reward: `${count} ${rarity} · ${info.emoji}`,
+      emoji: info.emoji,
+      confetti: rarity === "legendary",
+      tier: RARITY_ORDER[rarity],
+    });
+  }
+
+  // Insert tier unlocks right after achievements, sorted by rarity order
+  // so the most prestigious tier fires last
+  out.sort((a, b) => (b.tier ?? 0) - (a.tier ?? 0));
+  return out;
+}
+
+// The full ordered queue: achievements (by rarity) first, then tier unlocks,
+// then level, title, shop, streaks.
 export function buildCelebrationQueue(
   data: AppData,
   today: Date,
 ): CelebrationEvent[] {
-  return [...achievementEvents(data), ...progressEvents(data, today)];
+  return [
+    ...achievementEvents(data),
+    ...tierUnlockEvents(data),
+    ...progressEvents(data, today),
+  ];
 }
 
 // Current progress as a fully-"seen" baseline — written once so an existing
@@ -212,11 +272,23 @@ export function baselineProgressSeen(data: AppData, today: Date): ProgressSeen {
     if (tier > 0) streaks[h.id] = tier;
   }
 
+  // Record already-unlocked rarity tiers so they don't re-fire.
+  const tierUnlocks: string[] = [];
+  const tiers: Rarity[] = ["common", "rare", "epic", "legendary"];
+  for (const rarity of tiers) {
+    const hasUnlock = Object.keys(data.unlocks).some((id) => {
+      const def = BY_ID.get(id);
+      return def?.rarity === rarity;
+    });
+    if (hasUnlock) tierUnlocks.push(rarity);
+  }
+
   return {
     seeded: true,
     level: summary.level.level,
     title: summary.title.current.name,
     shop,
     streaks,
+    tierUnlocks,
   };
 }

@@ -13,6 +13,7 @@
 
 import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { useHydrated } from "@/hooks/useHydrated";
 import {
   ArrowRight,
   Check,
@@ -62,6 +63,7 @@ const TOUR_ITEMS = [
 
 export function OnboardingWizard() {
   const data = useAppData();
+  const hydrated = useHydrated();
   const router = useRouter();
   const [step, setStep] = useState(0);
   const [displayName, setDisplayName] = useState("");
@@ -120,6 +122,10 @@ export function OnboardingWizard() {
     habitWeekdays,
     router,
   ]);
+
+  // Don't render at all until hydration completes — prevents SSR flash where
+  // emptyData makes it look like onboarding hasn't run yet.
+  if (!hydrated) return null;
 
   // Check if onboarding should show — AFTER all hooks so hook count never
   // changes between SSR and client renders.

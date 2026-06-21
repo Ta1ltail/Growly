@@ -107,6 +107,23 @@ export default function TodayPage() {
         ? "Good afternoon"
         : "Good evening";
 
+  const [activeCategory, setActiveCategory] = useState<string | null>(null);
+  // Reset category filter when todaysHabits change
+  const categoriesWithHabits = useMemo(
+    () => [...new Set(todaysHabits.map((h) => h.category))],
+    [todaysHabits],
+  );
+  useEffect(() => {
+    if (activeCategory && !categoriesWithHabits.includes(activeCategory as Category)) {
+      setActiveCategory(null);
+    }
+  }, [categoriesWithHabits, activeCategory]);
+
+  const filteredGroups = useMemo(() => {
+    if (!activeCategory) return grouped;
+    return grouped.filter((g) => g.category === activeCategory);
+  }, [grouped, activeCategory]);
+
   const [showSpin, setShowSpin] = useState(false);
 
   const dailyNote =
@@ -128,7 +145,7 @@ export default function TodayPage() {
   if (!hydrated) return <PageSkeleton />;
 
   return (
-    <div className="animate-fade-in flex flex-col min-h-0 h-[calc(100dvh-128px)] md:h-[calc(100dvh-72px)]">
+    <div className="animate-fade-in flex flex-col min-h-0 h-[calc(100dvh-168px)] md:h-[calc(100dvh-72px)]">
       <CheckInPopup />
 
       {/* Hero */}
@@ -210,10 +227,47 @@ export default function TodayPage() {
             </div>
           )}
 
+          {/* Category tabs */}
+          {todaysHabits.length > 0 && categoriesWithHabits.length > 1 && (
+            <div className="shrink-0 -mx-1 overflow-x-auto [&::-webkit-scrollbar]:hidden">
+              <div className="flex gap-1.5 px-1 pb-1">
+                <button
+                  onClick={() => setActiveCategory(null)}
+                  className={`shrink-0 rounded-full px-3 py-1.5 text-[11px] font-medium whitespace-nowrap transition-all ${
+                    !activeCategory
+                      ? "bg-accent text-white shadow-sm"
+                      : "bg-surface2/60 text-muted hover:bg-surface2 hover:text-ink"
+                  }`}
+                >
+                  All
+                </button>
+                {categoriesWithHabits.map((cat) => (
+                  <button
+                    key={cat}
+                    onClick={() =>
+                      setActiveCategory(activeCategory === cat ? null : cat)
+                    }
+                    className={`shrink-0 flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-medium whitespace-nowrap transition-all ${
+                      activeCategory === cat
+                        ? "bg-accent text-white shadow-sm"
+                        : "bg-surface2/60 text-muted hover:bg-surface2 hover:text-ink"
+                    }`}
+                  >
+                    <span
+                      className="size-1.5 rounded-full"
+                      style={{ backgroundColor: CATEGORY_COLORS[cat] }}
+                    />
+                    {cat}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Habits header */}
           <div className="shrink-0 flex items-center justify-between">
             <h2 className="text-sm font-semibold uppercase tracking-wide text-muted">
-              Today&apos;s habits
+              {activeCategory ? activeCategory : "Today&apos;s habits"}
             </h2>
             {todaysHabits.length > 0 && (
               <Button variant="soft" size="sm" onClick={() => setShowAdd(true)}>
@@ -227,6 +281,7 @@ export default function TodayPage() {
               icon={ListChecks}
               title="No habits for today"
               hint="Add your first habit, or grab a ready-made routine from Templates."
+              illustration="today"
               action={
                 <Button onClick={() => setShowAdd(true)}>
                   <Plus className="size-4" strokeWidth={2.5} /> Add habit
@@ -235,7 +290,7 @@ export default function TodayPage() {
             />
           ) : (
             <div className="flex-1 min-h-0 overflow-y-auto pr-1 space-y-4">
-              {grouped.map((group) => (
+              {filteredGroups.map((group) => (
                 <div key={group.category}>
                   <div className="mb-2 flex items-center gap-2 px-1">
                     <span

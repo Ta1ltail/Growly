@@ -64,6 +64,7 @@ export default function GoalsPage() {
           icon={Target}
           title="No goals yet"
           hint="Set a target like “Workout 20 times this month” and watch the bar fill."
+          illustration="goals"
           action={
             <Button onClick={() => setAdding(true)}>
               <Plus className="size-4" strokeWidth={2.5} /> Add goal
@@ -71,7 +72,7 @@ export default function GoalsPage() {
           }
         />
       ) : (
-        <div className="grid gap-3 stagger-children sm:grid-cols-2 max-h-[calc(100vh-220px)] overflow-y-auto pr-1">
+        <div className="grid gap-3 stagger-children sm:grid-cols-2 max-h-[calc(100dvh-220px)] overflow-y-auto pr-1">
           {data.goals.map((goal) => {
             const pct = Math.round((goal.current / goal.target) * 100);
             const complete = goal.current >= goal.target;

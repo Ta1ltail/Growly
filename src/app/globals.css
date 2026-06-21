@@ -50,8 +50,7 @@
   --animate-icon-bounce: icon-bounce 2s ease-in-out infinite;
   --animate-icon-pulse: icon-pulse 3s ease-in-out infinite;
   --animate-icon-wiggle: icon-wiggle 0.4s ease-in-out;
-  --animate-particle-float: particle-float 6s ease-in-out infinite;
-  --animate-particle-float-alt: particle-float-alt 8s ease-in-out infinite;
+
 }
 
 /* Motion language */
@@ -181,20 +180,7 @@
     transform: scale(1.18);
   }
 }
-/* Rising ember particle for long-term streaks. */
-@keyframes ember {
-  0% {
-    transform: translateY(0) scale(1);
-    opacity: 0;
-  }
-  20% {
-    opacity: 0.9;
-  }
-  100% {
-    transform: translateY(-14px) scale(0.3);
-    opacity: 0;
-  }
-}
+
 /* One-shot celebratory burst on habit completion. */
 @keyframes burst {
   0% {
@@ -259,6 +245,22 @@
     opacity: 1;
   }
 }
+/* Sparkle particles burst outward from center — used in celebration popups */
+@keyframes sparkle-drift {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0);
+  }
+  30% {
+    opacity: 1;
+    transform: translate(calc(-50% + var(--sx, 0px)), calc(-50% + var(--sy, 0px))) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(calc(-50% + var(--sx, 0px) * 1.5), calc(-50% + var(--sy, 0px) * 1.5)) scale(0.3);
+  }
+}
+
 /* Conic shine sweeping behind a legendary badge. */
 @keyframes spin-slow {
   to {
@@ -316,38 +318,7 @@
   }
 }
 
-/* Floating particle (ambient stars) — rises and fades */
-@keyframes particle-float {
-  0% {
-    transform: translateY(0) scale(0);
-    opacity: 0;
-  }
-  20% {
-    opacity: 0.8;
-    transform: translateY(-20px) scale(1);
-  }
-  80% {
-    opacity: 0.6;
-  }
-  100% {
-    transform: translateY(-120px) scale(0.2);
-    opacity: 0;
-  }
-}
-@keyframes particle-float-alt {
-  0% {
-    transform: translateY(40px) scale(0);
-    opacity: 0;
-  }
-  30% {
-    opacity: 0.6;
-    transform: translateY(-10px) scale(0.8);
-  }
-  100% {
-    transform: translateY(-90px) scale(0);
-    opacity: 0;
-  }
-}
+
 
 * {
   -webkit-tap-highlight-color: transparent;
@@ -414,14 +385,11 @@ body {
   background: var(--c-bg);
 }
 
-/* Accent ring helper */
-.ring-accent-soft {
-  box-shadow:
-    0 0 0 1px color-mix(in srgb, var(--c-accent) 40%, transparent),
-    0 8px 30px -12px color-mix(in srgb, var(--c-accent) 50%, transparent);
-}
 
-/* Skeleton placeholder: a soft, gently pulsing block for loading states. */
+
+/* Skeleton placeholder: a soft, static block for loading states.
+   No animation — the brief hydration flash should not draw attention.
+   The gradient still gives it depth without a pulsing effect. */
 .skeleton {
   background: linear-gradient(
     100deg,
@@ -430,7 +398,6 @@ body {
     var(--c-surface2) 70%
   );
   border-radius: 0.5rem;
-  animation: var(--animate-shimmer);
 }
 
 /* Staggered entrance: children rise in sequence. Add to a list/grid wrapper. */
@@ -465,23 +432,7 @@ body {
   animation-delay: 0.34s;
 }
 
-/* Fixed-size component system — prevents layout shifting */
-.fixed-card {
-  height: 180px;
-  overflow-y: auto;
-}
-.fixed-card-sm {
-  height: 140px;
-  overflow-y: auto;
-}
-.fixed-card-lg {
-  height: 240px;
-  overflow-y: auto;
-}
-.fixed-card-xl {
-  height: 300px;
-  overflow-y: auto;
-}
+
 
 /* Internal scroll container — content scrolls, container stays fixed */
 .scroll-y {
@@ -492,16 +443,7 @@ body {
   overflow-x: auto;
 }
 
-/* Split-level scroll shadows: subtle top/bottom fade when content is scrollable */
-.scroll-shadows {
-  background:
-    linear-gradient(var(--c-surface) 30%, transparent) center top,
-    linear-gradient(transparent, var(--c-surface) 70%) center bottom;
-  background-size:
-    100% 40px,
-    100% 40px;
-  background-attachment: local, local;
-}
+
 
 /* Icon color styling system */
 .icon-accent {
@@ -550,8 +492,5 @@ body {
   }
   html {
     scroll-behavior: auto;
-  }
-  .skeleton {
-    animation: none;
   }
 }

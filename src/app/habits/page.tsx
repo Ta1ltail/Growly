@@ -131,6 +131,7 @@ export default function HabitsPage() {
           icon={ListTodo}
           title="No habits yet"
           hint="Create a habit with a schedule and it will show up across the app."
+          illustration="habits"
           action={
             <Button onClick={() => setAdding(true)}>
               <Plus className="size-4" strokeWidth={2.5} /> Add habit

@@ -213,7 +213,7 @@ export default function TemplatesPage() {
   };
 
   return (
-    <div className="animate-fade-in flex flex-col min-h-0 h-[calc(100vh-110px)]">
+    <div className="animate-fade-in flex flex-col min-h-0 h-[calc(100dvh-110px)]">
       <PageHeader
         title="Templates"
         subtitle={`${data.habits.filter((h) => !h.archived).length} active habits`}
@@ -224,6 +224,7 @@ export default function TemplatesPage() {
           icon={LayoutTemplate}
           title="All templates used"
           hint="You've applied every starter routine. Re-enable one below to add it again."
+          illustration="templates"
         />
       ) : (
         <div className="flex-1 min-h-0 flex flex-col">
