@@ -51,8 +51,6 @@ import {
   pushSnapshot,
   undo as undoHistory,
   redo as redoHistory,
-  canUndo,
-  canRedo,
 } from "./history";
 
 let cache: AppData | null = null;
@@ -492,7 +490,7 @@ export function replaceData(next: AppData): void {
 
 // Re-read from localStorage into the cache and notify. Used after a raw write
 // so the validated/migrated result flows back through the normal load path.
-export function reloadData(): void {
+function reloadData(): void {
   cache = loadData();
   for (const listener of listeners) listener();
 }
@@ -530,7 +528,7 @@ export function updateProfile(patch: Partial<Profile>): void {
 // a flood of celebration popups for history they earned before this session.
 // Only fills GAPS — anything already recorded keeps its existing seen flag.
 // Call once on app mount, before celebrations start watching.
-export function seedUnlocksSeen(): void {
+function seedUnlocksSeen(): void {
   update((prev) => {
     const { unlocks, newlyUnlocked } = reconcileUnlocks(
       prev,
@@ -546,7 +544,7 @@ export function seedUnlocksSeen(): void {
 
 // Recompute unlocks from history and persist any newly-satisfied achievements.
 // Safe to call on load / on focus; a no-op when nothing changed.
-export function syncAchievements(): void {
+function syncAchievements(): void {
   update((prev) => {
     const { unlocks } = reconcileUnlocks(
       prev,
@@ -898,8 +896,4 @@ export function redoAction(): boolean {
   return didRedo;
 }
 
-// Check if undo/redo is available.
-export { canUndo, canRedo };
 
-// Re-export for convenience in pages that build keys.
-export { dateKey };

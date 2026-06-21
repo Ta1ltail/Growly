@@ -36,6 +36,10 @@ import { XpBar } from "@/components/progression/XpBar";
 import { NextMilestoneWidget } from "@/components/progression/NextMilestoneWidget";
 import { ProfileEditModal } from "@/components/profile/ProfileEditModal";
 import { Button } from "@/components/ui/Button";
+import {
+  StaggerContainer,
+  StaggerItem,
+} from "@/components/ui/StaggerContainer";
 
 export default function ProfilePage() {
   const data = useAppData();
@@ -150,32 +154,42 @@ export default function ProfilePage() {
         <XpBar level={level} nextUnlock={title.next?.name} />
       </Card>
 
-      <div className="mb-6 grid grid-cols-2 gap-3 stagger-children sm:grid-cols-5">
-        <StatCard
-          icon={Medal}
-          value={`${unlockedCount}/${totalCount}`}
-          label="Badges"
-          accent
-        />
-        <StatCard icon={Trophy} value={unlockedCount} label="Achievements" />
-        <StatCard
-          icon={Flame}
-          value={stats.maxCurrentStreak}
-          label="Current streak"
-        />
-        <StatCard
-          icon={Award}
-          value={stats.maxBestStreak}
-          label="Longest streak"
-        />
-        <Link
-          href="/shop"
-          aria-label="Open shop"
-          className="transition-transform hover:scale-[1.03]"
-        >
-          <StatCard icon={Coins} value={coinBalance} label="Coins" />
-        </Link>
-      </div>
+      <StaggerContainer className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-5">
+        <StaggerItem>
+          <StatCard
+            icon={Medal}
+            value={`${unlockedCount}/${totalCount}`}
+            label="Badges"
+            accent
+          />
+        </StaggerItem>
+        <StaggerItem>
+          <StatCard icon={Trophy} value={unlockedCount} label="Achievements" />
+        </StaggerItem>
+        <StaggerItem>
+          <StatCard
+            icon={Flame}
+            value={stats.maxCurrentStreak}
+            label="Current streak"
+          />
+        </StaggerItem>
+        <StaggerItem>
+          <StatCard
+            icon={Award}
+            value={stats.maxBestStreak}
+            label="Longest streak"
+          />
+        </StaggerItem>
+        <StaggerItem>
+          <Link
+            href="/shop"
+            aria-label="Open shop"
+            className="transition-transform hover:scale-[1.03]"
+          >
+            <StatCard icon={Coins} value={coinBalance} label="Coins" />
+          </Link>
+        </StaggerItem>
+      </StaggerContainer>
 
       <div className="grid gap-6 lg:grid-cols-2">
         {/* ---- Next milestones ---- */}

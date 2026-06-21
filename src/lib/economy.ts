@@ -30,7 +30,7 @@ export const COINS_PER_PERFECT_DAY = 10;
 /* ---------------- engagement rewards ---------------- */
 
 // Level-up bonus: coins granted each time the user levels up.
-export const LEVEL_UP_COINS = [
+const LEVEL_UP_COINS = [
   0, // level 1 (starting, no bonus)
   5, // level 2
   10, // level 3
@@ -43,7 +43,7 @@ export const LEVEL_UP_COINS = [
   100, // level 10
 ];
 // For levels beyond 10: 100 + (level - 10) * 25
-export function levelUpBonus(level: number): number {
+function levelUpBonus(level: number): number {
   if (level <= 1) return 0;
   if (level <= LEVEL_UP_COINS.length) return LEVEL_UP_COINS[level - 1];
   return 100 + (level - 10) * 25;
@@ -51,15 +51,15 @@ export function levelUpBonus(level: number): number {
 
 // Streak milestone rewards: bonus coins for reaching streak milestones.
 // Ordered by increasing milestone — computed from maxBestStreak.
-export const STREAK_MILESTONES = [7, 14, 30, 60, 100] as const;
-export const STREAK_MILESTONE_REWARDS: Record<number, number> = {
+const STREAK_MILESTONES = [7, 14, 30, 60, 100] as const;
+const STREAK_MILESTONE_REWARDS: Record<number, number> = {
   7: 25,
   14: 50,
   30: 100,
   60: 200,
   100: 500,
 };
-export function streakMilestoneBonus(maxBestStreak: number): number {
+function streakMilestoneBonus(maxBestStreak: number): number {
   let total = 0;
   for (const m of STREAK_MILESTONES) {
     if (maxBestStreak >= m) total += STREAK_MILESTONE_REWARDS[m];
@@ -80,11 +80,11 @@ export function checkInReward(streak: number): number {
 }
 
 // Daily quest reward.
-export const QUEST_REWARD_MIN = 15;
-export const QUEST_REWARD_MAX = 40;
+const QUEST_REWARD_MIN = 15;
+const QUEST_REWARD_MAX = 40;
 
 // Daily spin possible rewards.
-export const SPIN_REWARDS = [
+const SPIN_REWARDS = [
   { weight: 20, label: "10 coins", amount: 10 },
   { weight: 20, label: "15 coins", amount: 15 },
   { weight: 18, label: "20 coins", amount: 20 },
@@ -275,7 +275,7 @@ export const FLAME_SKINS: Record<
 };
 
 // Confetti palettes keyed by item id (consumed by Confetti / celebrations).
-export const CONFETTI_SKINS: Record<string, string[]> = {
+const CONFETTI_SKINS: Record<string, string[]> = {
   "confetti-default": ["#4b8bf7", "#7c3aed", "#22d3ee", "#f59e0b", "#f43f5e"],
   "confetti-mono": ["#e2e8f0", "#94a3b8", "#cbd5e1", "#f8fafc"],
   "confetti-neon": ["#22d3ee", "#a3e635", "#f472b6", "#fb923c"],
@@ -288,7 +288,7 @@ export const CONFETTI_SKINS: Record<string, string[]> = {
 // App-wide accent themes keyed by item id (override --c-accent/--c-accent-glow).
 // There is intentionally NO "accent-default" entry: the default clears the
 // override so the per-theme (light/dark) accent from globals.css applies.
-export const ACCENT_SKINS: Record<string, { accent: string; glow: string }> = {
+const ACCENT_SKINS: Record<string, { accent: string; glow: string }> = {
   "accent-crimson": { accent: "#f43f5e", glow: "#fb7185" },
   "accent-emerald": { accent: "#10b981", glow: "#34d399" },
   "accent-violet": { accent: "#8b5cf6", glow: "#a78bfa" },

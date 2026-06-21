@@ -7,7 +7,7 @@
 
 import type { Rarity } from "./types";
 
-export type CelebrationTier = "toast" | "popup" | "fullscreen";
+type CelebrationTier = "toast" | "popup" | "fullscreen";
 
 export interface RarityStyle {
   label: string;

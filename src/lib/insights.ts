@@ -11,7 +11,7 @@ import {
   rangeCompletion,
 } from "./stats";
 
-export type InsightTone = "good" | "info" | "warn";
+type InsightTone = "good" | "info" | "warn";
 export interface Insight {
   tone: InsightTone;
   text: string;

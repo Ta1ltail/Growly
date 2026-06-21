@@ -24,7 +24,7 @@ export interface DevSettings {
   logState: boolean;
 }
 
-export const DEFAULT_DEV: DevSettings = {
+const DEFAULT_DEV: DevSettings = {
   enabled: false,
   section: "general",
   showGridOverlay: false,

@@ -3,7 +3,7 @@
 import type { MarkStatus } from "./types";
 
 // Tap order: none -> done -> missed -> skipped -> none
-export const CYCLE: (MarkStatus | undefined)[] = [
+const CYCLE: (MarkStatus | undefined)[] = [
   undefined,
   "done",
   "missed",
@@ -16,7 +16,7 @@ export function nextStatus(
   return CYCLE[(CYCLE.indexOf(cur) + 1) % CYCLE.length];
 }
 
-export const MARK_LABEL: Record<MarkStatus, string> = {
+const MARK_LABEL: Record<MarkStatus, string> = {
   done: "✓",
   missed: "✕",
   skipped: "–",

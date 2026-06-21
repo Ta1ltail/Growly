@@ -5,8 +5,8 @@
 import type { AchievementDef, Rarity } from "./types";
 import type { GameStats } from "./achievements";
 
-export const XP_PER_COMPLETION = 10;
-export const XP_PER_PERFECT_DAY = 25;
+const XP_PER_COMPLETION = 10;
+const XP_PER_PERFECT_DAY = 25;
 
 export const RARITY_XP: Record<Rarity, number> = {
   common: 25,

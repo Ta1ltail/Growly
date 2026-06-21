@@ -16,6 +16,10 @@ import { PageSkeleton } from "@/components/ui/PageSkeleton";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { Pagination } from "@/components/ui/Pagination";
 import { AchievementBadge } from "@/components/achievements/AchievementBadge";
+import {
+  StaggerContainer,
+  StaggerItem,
+} from "@/components/ui/StaggerContainer";
 
 const CATEGORY_OPTS: { value: AchievementCategory | "all"; label: string }[] = [
   { value: "all", label: "All" },
@@ -95,8 +99,6 @@ export default function AchievementsPage() {
   const pageCount = Math.max(1, Math.ceil(visible.length / PAGE_SIZE));
   const safePage = Math.min(page, pageCount - 1);
   const paged = visible.slice(safePage * PAGE_SIZE, (safePage + 1) * PAGE_SIZE);
-  const start = safePage * PAGE_SIZE + 1;
-  const end = Math.min(visible.length, (safePage + 1) * PAGE_SIZE);
 
   if (!hydrated) return <PageSkeleton />;
 
@@ -220,52 +222,53 @@ export default function AchievementsPage() {
         </Card>
       ) : (
         <>
-          <div className="grid gap-3 sm:grid-cols-2 stagger-children">
+          <StaggerContainer className="grid gap-3 sm:grid-cols-2">
             {paged.map((a) => {
               const r = RARITY_STYLE[a.def.rarity];
               return (
-                <Card
-                  key={a.def.id}
-                  className={`flex gap-4 p-4 transition-all hover:-translate-y-0.5 hover:shadow-md ${a.unlocked ? "" : "opacity-90"}`}
-                >
-                  <AchievementBadge
-                    def={a.def}
-                    size={64}
-                    locked={!a.unlocked}
-                    shine={a.unlocked && a.def.rarity === "legendary"}
-                  />
-                  <div className="min-w-0 flex-1 flex flex-col">
-                    <div className="flex items-center gap-2">
-                      <h3 className="truncate text-sm font-semibold">
-                        {a.def.name}
-                      </h3>
-                      <span
-                        className="shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-bold uppercase"
-                        style={{ background: `${r.accent}1f`, color: r.accent }}
-                      >
-                        {RARITY_LABEL[a.def.rarity]}
-                      </span>
-                    </div>
-                    <p className="mt-0.5 line-clamp-2 text-xs text-muted">
-                      {a.def.description}
-                    </p>
-                    {a.unlocked ? (
-                      <p className="mt-auto pt-2 text-xs font-semibold text-done animate-fade-in">
-                        ✓ Unlocked
-                      </p>
-                    ) : (
-                      <div className="mt-auto pt-2">
-                        <ProgressBar value={a.progressPct} color={r.accent} />
-                        <p className="mt-1 font-mono text-[11px] text-faint">
-                          {a.current}/{a.target}
-                        </p>
+                <StaggerItem key={a.def.id}>
+                  <Card
+                    className={`flex gap-4 p-4 transition-all hover:-translate-y-0.5 hover:shadow-md ${a.unlocked ? "" : "opacity-90"}`}
+                  >
+                    <AchievementBadge
+                      def={a.def}
+                      size={64}
+                      locked={!a.unlocked}
+                      shine={a.unlocked && a.def.rarity === "legendary"}
+                    />
+                    <div className="min-w-0 flex-1 flex flex-col">
+                      <div className="flex items-center gap-2">
+                        <h3 className="truncate text-sm font-semibold">
+                          {a.def.name}
+                        </h3>
+                        <span
+                          className="shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-bold uppercase"
+                          style={{ background: `${r.accent}1f`, color: r.accent }}
+                        >
+                          {RARITY_LABEL[a.def.rarity]}
+                        </span>
                       </div>
-                    )}
-                  </div>
-                </Card>
+                      <p className="mt-0.5 line-clamp-2 text-xs text-muted">
+                        {a.def.description}
+                      </p>
+                      {a.unlocked ? (
+                        <p className="mt-auto pt-2 text-xs font-semibold text-done animate-fade-in">
+                          ✓ Unlocked
+                        </p>
+                      ) : (
+                        <div className="mt-auto pt-2">
+                          <ProgressBar value={a.progressPct} color={r.accent} />
+                          <p className="mt-1 font-mono text-[11px] text-faint">
+                            {a.current}/{a.target}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </Card>
+                </StaggerItem>
               );
             })}
-          </div>
+          </StaggerContainer>
 
           {/* Pagination */}
           <Pagination

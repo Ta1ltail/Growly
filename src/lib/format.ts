@@ -44,7 +44,7 @@ const ORDINAL = (n: number) => {
 };
 
 // "Every day", "Mon, Wed, Fri", "Monthly on the 1st, 15th".
-export function recurrenceText(rec: Recurrence): string {
+function recurrenceText(rec: Recurrence): string {
   switch (rec.kind) {
     case "daily":
       return "Every day";

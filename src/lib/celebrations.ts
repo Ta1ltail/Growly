@@ -20,7 +20,7 @@ import { RARITY_COINS, SHOP_ITEMS, frozenSet } from "./economy";
 import { habitStreaks } from "./stats";
 import { summarizeProgress } from "./progress";
 
-export type CelebrationKind =
+type CelebrationKind =
   | "achievement"
   | "levelup"
   | "title"
@@ -30,7 +30,7 @@ export type CelebrationKind =
 
 // Per-habit streak milestones that earn a celebration. Includes the same
 // thresholds as streak achievements so progression always feels recognized.
-export const STREAK_MILESTONES = [7, 14, 30, 50, 100, 365] as const;
+const STREAK_MILESTONES = [7, 14, 30, 50, 100, 365] as const;
 
 // Highest milestone <= streak (0 if none reached yet).
 export function streakTier(streak: number): number {
@@ -198,7 +198,7 @@ export function progressEvents(data: AppData, today: Date): CelebrationEvent[] {
 
 // Tier unlock events: detect when the user has unlocked their first achievement
 // of each rarity tier. Compared against the persisted seen-tierUnlocks.
-export function tierUnlockEvents(data: AppData): CelebrationEvent[] {
+function tierUnlockEvents(data: AppData): CelebrationEvent[] {
   const seen = data.progressSeen.tierUnlocks;
   const seenSet = new Set(seen);
   const out: CelebrationEvent[] = [];

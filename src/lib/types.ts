@@ -22,7 +22,7 @@ export type Recurrence =
   | { kind: "monthly"; monthDays: number[] };
 
 // Stored-only reminder (no OS notifications without a backend).
-export interface Reminder {
+interface Reminder {
   enabled: boolean;
   time?: string; // "HH:MM" 24h local
 }
@@ -123,7 +123,7 @@ export interface HabitFormValue {
   reminder?: Reminder;
 }
 
-export interface Settings {
+interface Settings {
   theme: ThemeSettings;
   graceHours?: number; // anti-cheat grace window; absent => DEFAULT_GRACE_HOURS
   usedTemplateIds?: string[]; // templates already applied (hidden unless re-enabled)
@@ -160,7 +160,7 @@ export interface AchievementDef {
 }
 
 // Persisted unlock record — the only mutable gamification state.
-export interface AchievementUnlock {
+interface AchievementUnlock {
   at: string; // ISO timestamp the achievement was first satisfied
   seen: boolean; // has the unlock popup been shown?
 }

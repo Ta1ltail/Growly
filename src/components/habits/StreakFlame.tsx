@@ -20,7 +20,7 @@ import { equippedOrDefault, FLAME_SKINS } from "@/lib/economy";
 export type FlameTier = "none" | "small" | "medium" | "large";
 export type FlameColors = Record<Exclude<FlameTier, "none">, string>;
 
-export function flameTier(streak: number): FlameTier {
+function flameTier(streak: number): FlameTier {
   if (streak <= 0) return "none";
   if (streak < 7) return "small";
   if (streak < 30) return "medium";

@@ -52,6 +52,8 @@ import {
   StaggerContainer,
   StaggerItem,
 } from "@/components/ui/StaggerContainer";
+import { ReorderableGrid } from "@/components/ui/ReorderableGrid";
+import { setWidgetOrder } from "@/lib/store";
 
 const BY_ID = new Map(ACHIEVEMENTS.map((a) => [a.id, a]));
 
@@ -297,7 +299,7 @@ export default function DashboardPage() {
     ],
   );
 
-  const orderedIds: WidgetId[] = [
+  const DEFAULT_ORDER: WidgetId[] = [
     "current-streak",
     "recent-achievements",
     "badge-collection",
@@ -305,6 +307,14 @@ export default function DashboardPage() {
     "next-milestone",
     "weekly-trend",
   ];
+
+  const orderedIds: WidgetId[] = useMemo(() => {
+    const saved = data.settings.widgetOrder as WidgetId[] | undefined;
+    if (saved && saved.length === WIDGET_IDS.length && saved.every((id) => WIDGET_IDS.includes(id))) {
+      return saved;
+    }
+    return DEFAULT_ORDER;
+  }, [data.settings.widgetOrder]);
 
   if (!hydrated) return <PageSkeleton />;
 
@@ -449,11 +459,14 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        <div className="grid gap-4 lg:grid-cols-3">
-          {orderedIds.map((id) => (
-            <div key={id}>{widgetContent[id].content}</div>
-          ))}
-        </div>
+        <ReorderableGrid
+          items={orderedIds.map((id) => ({
+            id,
+            content: widgetContent[id].content,
+          }))}
+          onReorder={(ids) => setWidgetOrder(ids)}
+          className="grid gap-4 lg:grid-cols-3"
+        />
       </section>
 
       {/* Insights */}

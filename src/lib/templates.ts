@@ -2,7 +2,7 @@
 
 import type { Category } from "./categories";
 
-export interface TemplateHabit {
+interface TemplateHabit {
   name: string;
   category: Category;
   repeatDays: number[]; // empty = every day

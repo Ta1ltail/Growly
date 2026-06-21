@@ -10,7 +10,7 @@ import { dayCompletion, isScheduled } from "./stats";
 
 // Predict completion rate for the next `days` days based on that many days of
 // recent history (moving average with trend adjustment).
-export function predictedCompletion(
+function predictedCompletion(
   habits: Habit[],
   marks: Marks,
   today: Date,
@@ -44,7 +44,7 @@ export function predictedCompletion(
 }
 
 // Estimate how many days until the next level-up.
-export function estimatedDaysToNextLevel(
+function estimatedDaysToNextLevel(
   xpPerDay: number,
   xpNeeded: number,
 ): number | null {
@@ -53,7 +53,7 @@ export function estimatedDaysToNextLevel(
 }
 
 // Predict the user's streak in `days` days based on current rate.
-export function predictedStreak(
+function predictedStreak(
   habits: Habit[],
   marks: Marks,
   today: Date,
