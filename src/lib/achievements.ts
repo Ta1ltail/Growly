@@ -167,9 +167,12 @@ export function buildGameStats(
           }
         }
         if (!streakStart) continue;
-        // Now check if there was a missed mark within 14 days before streakStart
+        // The streak began the day after `streakStart`, so `streakStart` itself
+        // is the break it recovered from. Scan from there (inclusive) back up to
+        // 14 days for a real miss — otherwise the canonical "missed, then 7+ done"
+        // comeback is skipped entirely.
         for (
-          let d = addDays(streakStart, -1), check = 0;
+          let d = streakStart, check = 0;
           check < 14;
           d = addDays(d, -1), check++
         ) {

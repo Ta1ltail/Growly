@@ -6,6 +6,7 @@
 import { useEffect, useState } from "react";
 import { Coins, Flame, X } from "lucide-react";
 import { claimDailyCheckIn } from "@/lib/store";
+import { dateKey } from "@/lib/storage";
 import { AnimatedCounter } from "@/components/ui/AnimatedCounter";
 
 // Mood/energy tracking — simple 1-5 scale for daily reflection.
@@ -34,7 +35,7 @@ export function CheckInPopup() {
   // Save mood/energy to daily note when both are set
   useEffect(() => {
     if (mood > 0 && energy > 0) {
-      const todayKey = new Date().toISOString().split("T")[0]; // quick dateKey
+      const todayKey = dateKey(new Date()); // local day, matches the rest of the app
       const note = window.localStorage.getItem(`mood:${todayKey}`);
       const entry = note ? JSON.parse(note) : {};
       entry.mood = mood;

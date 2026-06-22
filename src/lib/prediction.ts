@@ -65,6 +65,7 @@ function predictedStreak(
   // Simplified: if you complete at rate R, expected streak = 1/(1-R) capped at days
   const prob = rate / 100;
   if (prob <= 0) return 0;
+  if (prob >= 1) return days; // avoid 1/(1-1) = Infinity
   const expected = Math.round(1 / (1 - prob));
   return Math.min(expected, days);
 }
@@ -94,6 +95,9 @@ export function weeklyProjection(
   const olderRates: number[] = [];
   for (let i = 14; i >= 1; i--) {
     const d = addDays(today, -i);
+    // Skip days with nothing scheduled so the trend reflects performance, not
+    // schedule sparsity (mirrors predictedCompletion).
+    if (!active.some((h) => isScheduled(h, d))) continue;
     const r = dayCompletion(active, marks, d);
     if (i <= 7) recentRates.push(r);
     else olderRates.push(r);

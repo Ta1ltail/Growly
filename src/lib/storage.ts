@@ -40,7 +40,10 @@ export const STORAGE_KEY = "project101.data.v1";
 // v5: added `progressSeen` (celebration seen-markers for level/title/shop/streak).
 //     Older saves default it to an unseeded baseline; the seed step then records
 //     current progress so existing histories don't re-fire celebrations.
-export const SCHEMA_VERSION = 5;
+// v6: added engagement fields on `economy` (bonusCoins, lastCheckIn,
+//     checkInStreak, currentQuest, lastSpinDate, lastSpinResult). Older saves
+//     default them; coins still re-derive from history.
+export const SCHEMA_VERSION = 6;
 
 // How long after midnight a user may still edit "yesterday" before the day
 // locks permanently (Honest Tracking Policy). Tunable in Settings.
@@ -395,6 +398,21 @@ function cleanEconomyV5(v: unknown): Economy {
   const lastQuestDate = asString(v.lastQuestDate) ?? null;
   const lastSpinDate = asString(v.lastSpinDate) ?? null;
 
+  // Last spin reward — preserved across reloads/import so the Today page can
+  // still show what the user won after refreshing.
+  let lastSpinResult: Economy["lastSpinResult"] = null;
+  if (isObject(v.lastSpinResult)) {
+    const r = v.lastSpinResult;
+    if (
+      typeof r.label === "string" &&
+      typeof r.amount === "number" &&
+      Number.isFinite(r.amount) &&
+      typeof r.isFreeze === "boolean"
+    ) {
+      lastSpinResult = { label: r.label, amount: r.amount, isFreeze: r.isFreeze };
+    }
+  }
+
   // Clean currentQuest
   let currentQuest = null;
   if (isObject(v.currentQuest)) {
@@ -435,7 +453,7 @@ function cleanEconomyV5(v: unknown): Economy {
     lastQuestDate,
     currentQuest,
     lastSpinDate,
-    lastSpinResult: null,
+    lastSpinResult,
   };
 }
 
@@ -488,7 +506,10 @@ export function loadData(): AppData {
         : DEFAULT_THEME.accent;
 
     const graceHours =
-      typeof settingsRaw.graceHours === "number" && settingsRaw.graceHours >= 0
+      typeof settingsRaw.graceHours === "number" &&
+      Number.isFinite(settingsRaw.graceHours) &&
+      settingsRaw.graceHours >= 0 &&
+      settingsRaw.graceHours <= 24
         ? settingsRaw.graceHours
         : DEFAULT_GRACE_HOURS;
     const usedTemplateIds = Array.isArray(settingsRaw.usedTemplateIds)

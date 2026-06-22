@@ -13,25 +13,31 @@ const CSV_HEADERS = ["Date", "Habit", "Category", "Status", "Scheduled"];
 // bad import can never crash the app.
 const ImportSchema = z.strictObject({
   version: z.number().optional(),
-  habits: z.array(
-    z.object({
-      id: z.string(),
-      name: z.string(),
-      category: z.string(),
-      repeatDays: z.array(z.number()),
-      createdAt: z.string(),
-      recurrence: z.unknown().optional(),
-      startDate: z.string().optional(),
-      timeOfDay: z.string().optional(),
-      priority: z.string().optional(),
-      archived: z.boolean().optional(),
-      reminder: z.unknown().optional(),
-    }),
-  ),
-  marks: z.record(
-    z.string(),
-    z.record(z.string(), z.enum(["done", "missed", "skipped"])),
-  ),
+  habits: z
+    .array(
+      z.object({
+        id: z.string(),
+        name: z.string(),
+        category: z.string(),
+        repeatDays: z.array(z.number()),
+        createdAt: z.string(),
+        recurrence: z.unknown().optional(),
+        startDate: z.string().optional(),
+        timeOfDay: z.string().optional(),
+        priority: z.string().optional(),
+        archived: z.boolean().optional(),
+        reminder: z.unknown().optional(),
+      }),
+    )
+    .optional()
+    .default([]),
+  marks: z
+    .record(
+      z.string(),
+      z.record(z.string(), z.enum(["done", "missed", "skipped"])),
+    )
+    .optional()
+    .default({}),
   notes: z.array(z.unknown()).optional(),
   goals: z.array(z.unknown()).optional(),
   auditLog: z.array(z.unknown()).optional(),

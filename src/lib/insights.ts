@@ -88,7 +88,7 @@ export function buildInsights(
   if (worst) {
     out.push({
       tone: "warn",
-      text: `“${worst.habit.name}” slipped ${worst.missed} time${worst.missed === 1 ? "" : "s"} this month — worth a smaller goal?`,
+      text: `“${worst.habit.name}” slipped ${worst.missed} time${worst.missed === 1 ? "" : "s"} in the last 30 days — worth a smaller goal?`,
     });
   }
 
