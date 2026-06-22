@@ -2,11 +2,11 @@
 #                                                          #
 #   PROJECT 101 - TODO / PROGRESS CHECKLIST                #
 #   [x] = done   [ ] = not yet                            #
-#   Updated: 2026-06-20 (v3 - optimization complete)       #
+#   Updated: 2026-06-22 (v4 - UI/UX polish + stability)     #
 #                                                          #
 ############################################################
 
-  Current gates: tsc 0 errors, vitest 81/81 passing, prettier formatted.
+  Current gates: tsc 0 errors, eslint 0, vitest 81/81, build clean.
 
 
 ==========================================================
@@ -75,7 +75,7 @@
   [x] Keyboard shortcuts (g-prefix + ? + n)
   [x] Undo/redo (Ctrl+Z/Shift+Z)
   [x] Onboarding wizard (5 steps)
-  [x] Dashboard reordering (drag-and-drop)
+  [-] Dashboard reordering (drag-and-drop) -- REMOVED 2026-06-22 (unwanted)
   [x] Prediction engine (completion, streak, level ETA)
   [x] CSV/JSON export/import (Settings)
   [x] Habit correlations (co-occurrence on /stats)
@@ -109,6 +109,25 @@
   [x] TOOLS_USED.md created
   [x] SYSTEM_FEATURES.md created
   [x] ARCHITECTURE.txt, PROGRESS.md, TODO.txt updated
+
+
+==========================================================
+ UI/UX POLISH + STABILITY PASS   (2026-06-22)
+==========================================================
+  (full detail: docs/CHANGELOG_2026-06-22.txt)
+  [x] Dashboard: removed widget reordering (ReorderableGrid + setWidgetOrder)
+  [x] Dashboard: Recent widget fits more badges (auto-fit + "+N"), same size
+  [x] Today: Daily Quest persists in claimed state after collecting
+  [x] Today: category filter wraps (was clipping on the right)
+  [x] Tracker: removed collapse dropdown
+  [x] Tracker: sticky first column + corner header (both axes)
+  [x] Tracker: status icons in cells (done ✔ / missed ✖ / skipped –)
+  [x] Achievement popup: chip'd rewards (center + toast), real badge in toast
+  [x] Templates: fixed stacking layout break (natural-flow equal-height grid)
+  [x] Notes: redesigned as Keep-style responsive masonry board
+  [x] Responsive column counts (Dashboard / Templates / Notes)
+  [x] a11y: Modal focus trap, Segmented aria-pressed, search labels/rings
+  [x] Cleanup: removed dead equippedConfetti() helper
 
 
 ==========================================================

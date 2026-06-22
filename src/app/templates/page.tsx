@@ -213,7 +213,7 @@ export default function TemplatesPage() {
   };
 
   return (
-    <div className="animate-fade-in flex flex-col min-h-0 h-[calc(100dvh-110px)]">
+    <div className="animate-fade-in">
       <PageHeader
         title="Templates"
         subtitle={`${data.habits.filter((h) => !h.archived).length} active habits`}
@@ -227,65 +227,60 @@ export default function TemplatesPage() {
           illustration="templates"
         />
       ) : (
-        <div className="flex-1 min-h-0 flex flex-col">
-          {/* 3x2 grid — fixed, no scroll */}
-          <div className="flex-1 min-h-0 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 grid-rows-2 gap-4">
+        <div>
+          {/* Responsive auto-height grid — cards in a row stretch to equal
+              height; the page scrolls naturally so stacking never collapses or
+              overlaps a card. */}
+          <div className="grid grid-cols-1 items-stretch gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {pageItems.map((template) => (
               <Card
                 key={template.id}
-                className="p-5 flex flex-col cursor-pointer"
+                className="flex h-full flex-col p-5"
                 interactive
               >
                 <button
                   onClick={() => setPreview(template)}
-                  className="flex flex-col flex-1 text-left w-full min-h-0"
+                  className="flex w-full flex-1 flex-col text-left"
                 >
-                  <div className="flex items-start justify-between gap-3 shrink-0">
-                    <div className="flex items-start gap-3 min-w-0 flex-1">
-                      <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-accent/10 text-accent">
-                        <LayoutTemplate className="size-5" />
-                      </span>
-                      <div className="min-w-0">
-                        <h2 className="text-sm font-semibold truncate">
-                          {template.name}
-                        </h2>
-                        <p className="mt-0.5 text-xs text-muted line-clamp-2">
-                          {template.description}
-                        </p>
-                      </div>
+                  <div className="flex items-start gap-3">
+                    <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-accent/10 text-accent">
+                      <LayoutTemplate className="size-5" />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <h2 className="text-sm font-semibold">{template.name}</h2>
+                      <p className="mt-0.5 text-xs text-muted line-clamp-2">
+                        {template.description}
+                      </p>
                     </div>
+                    {template.difficulty && (
+                      <span
+                        className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ${difficultyColor(template.difficulty)}`}
+                      >
+                        {template.difficulty}
+                      </span>
+                    )}
                   </div>
 
-                  {template.difficulty && (
-                    <span
-                      className={`inline-flex self-start mt-2 rounded-full px-2 py-0.5 text-[10px] font-semibold ${difficultyColor(template.difficulty)}`}
-                    >
-                      {template.difficulty}
-                    </span>
-                  )}
-
-                  <div className="mt-3 flex-1 min-h-0 overflow-y-auto pointer-events-none">
-                    <div className="flex flex-wrap gap-1.5">
-                      {template.habits.map((h) => (
+                  <div className="mt-3 flex flex-wrap gap-1.5 pointer-events-none">
+                    {template.habits.map((h) => (
+                      <span
+                        key={h.name}
+                        className="flex items-center gap-1.5 rounded-full border border-line px-2 py-1 text-[11px] text-muted"
+                      >
                         <span
-                          key={h.name}
-                          className="flex items-center gap-1.5 rounded-full border border-line px-2 py-1 text-[11px] text-muted"
-                        >
-                          <span
-                            className="size-1.5 rounded-full shrink-0"
-                            style={{
-                              backgroundColor:
-                                CATEGORY_COLORS[h.category] || "#94a3b8",
-                            }}
-                          />
-                          {h.name}
-                        </span>
-                      ))}
-                    </div>
+                          className="size-1.5 rounded-full shrink-0"
+                          style={{
+                            backgroundColor:
+                              CATEGORY_COLORS[h.category] || "#94a3b8",
+                          }}
+                        />
+                        {h.name}
+                      </span>
+                    ))}
                   </div>
                 </button>
 
-                <div className="mt-4 flex items-center gap-2 shrink-0">
+                <div className="mt-4 flex items-center gap-2">
                   <Button
                     size="sm"
                     className="flex-1"
@@ -303,12 +298,6 @@ export default function TemplatesPage() {
                 </div>
               </Card>
             ))}
-            {/* Fill empty slots with invisible placeholders to maintain 3x2 grid */}
-            {Array.from({ length: TEMPLATES_PER_PAGE - pageItems.length }).map(
-              (_, i) => (
-                <div key={`empty-${i}`} className="invisible" />
-              ),
-            )}
           </div>
 
           {/* Pagination below the grid */}

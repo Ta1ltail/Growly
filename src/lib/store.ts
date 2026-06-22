@@ -415,13 +415,6 @@ export function markTemplateUsed(templateId: string): void {
   });
 }
 
-export function setWidgetOrder(ids: string[]): void {
-  update((prev) => ({
-    ...prev,
-    settings: { ...prev.settings, widgetOrder: ids },
-  }));
-}
-
 export function completeOnboarding(): void {
   update((prev) => ({
     ...prev,
@@ -811,13 +804,15 @@ export function refreshDailyQuest(): void {
 export function claimDailyQuest(): void {
   update((prev) => {
     const q = prev.economy.currentQuest;
-    if (!q || q.current < q.target) return prev;
+    if (!q || q.current < q.target || q.claimed) return prev;
     return {
       ...prev,
       economy: {
         ...prev.economy,
         bonusCoins: prev.economy.bonusCoins + q.reward,
-        currentQuest: null,
+        // Keep the quest around in a claimed state so the card stays visible
+        // until midnight instead of vanishing the moment it's collected.
+        currentQuest: { ...q, claimed: true },
         lastQuestDate: dateKey(new Date()),
       },
     };

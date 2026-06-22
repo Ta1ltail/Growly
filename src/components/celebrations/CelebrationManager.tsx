@@ -18,6 +18,7 @@ import { useToday } from "@/hooks/useToday";
 import { buildCelebrationQueue } from "@/lib/celebrations";
 import { CONFETTI_SKINS, equippedOrDefault } from "@/lib/economy";
 import { CelebrationCenter } from "./CelebrationCenter";
+import { AchievementBadge } from "@/components/achievements/AchievementBadge";
 
 export function CelebrationManager() {
   const data = useAppData();
@@ -87,35 +88,51 @@ export function CelebrationManager() {
             style={{ background: ev.accent }}
           />
 
-          {/* Icon / badge */}
-          <span
-            className="grid size-10 shrink-0 place-items-center rounded-lg text-lg"
-            style={{
-              background: `${ev.accent}18`,
-              color: ev.accent,
-            }}
-          >
-            {emoji}
-          </span>
+          {/* Icon / badge — real achievement art when available, to match the
+              center popup; emoji tile otherwise. */}
+          {ev.badgeDef ? (
+            <div className="shrink-0">
+              <AchievementBadge def={ev.badgeDef} size={40} />
+            </div>
+          ) : (
+            <span
+              className="grid size-10 shrink-0 place-items-center rounded-lg text-lg"
+              style={{
+                background: `${ev.accent}18`,
+                color: ev.accent,
+              }}
+            >
+              {emoji}
+            </span>
+          )}
 
           {/* Content */}
           <div className="min-w-0 flex-1">
-            <p className="text-sm font-semibold leading-tight text-ink">
+            <p className="truncate text-sm font-semibold leading-tight text-ink">
               {ev.name}
             </p>
-            <p className="mt-0.5 text-xs text-muted leading-tight">
+            <p className="mt-0.5 truncate text-xs text-muted leading-tight">
               {ev.eyebrow}
             </p>
             {ev.reward && (
-              <p
-                className="mt-1 inline-block rounded-full px-2 py-0.5 text-[10px] font-bold"
-                style={{
-                  background: `${ev.accent}15`,
-                  color: ev.accent,
-                }}
-              >
-                {ev.reward}
-              </p>
+              <div className="mt-1.5 flex flex-wrap gap-1">
+                {ev.reward
+                  .split("·")
+                  .map((part) => part.trim())
+                  .filter(Boolean)
+                  .map((part, i) => (
+                    <span
+                      key={i}
+                      className="rounded-full px-2 py-0.5 text-[10px] font-bold"
+                      style={{
+                        background: `${ev.accent}15`,
+                        color: ev.accent,
+                      }}
+                    >
+                      {part}
+                    </span>
+                  ))}
+              </div>
             )}
           </div>
         </div>

@@ -5,7 +5,7 @@
 // Past days lock (only today + a short grace window are editable).
 
 import { memo, useCallback, useMemo, useState, Fragment } from "react";
-import { Flame, LayoutGrid, Lock, Snowflake, ChevronDown, ChevronRight } from "lucide-react";
+import { Flame, LayoutGrid, Lock, Snowflake, Check, X, Minus } from "lucide-react";
 import { StreakFlame } from "@/components/habits/StreakFlame";
 import { CATEGORIES, CATEGORY_COLORS, type Category } from "@/lib/categories";
 import { addDays, dateKey, DEFAULT_GRACE_HOURS } from "@/lib/storage";
@@ -83,6 +83,16 @@ const TrackerCell = memo(function TrackerCell({
               : "bg-transparent"
         }`}
       >
+        {/* Status glyph for instant readability (✔ done · ✖ missed · – skipped) */}
+        {status === "done" && (
+          <Check className="size-4 text-white" strokeWidth={3} aria-hidden />
+        )}
+        {status === "missed" && (
+          <X className="size-4 text-white" strokeWidth={3} aria-hidden />
+        )}
+        {status === "skipped" && (
+          <Minus className="size-4 text-white/80" strokeWidth={3} aria-hidden />
+        )}
         {cellFrozen && (
           <span
             aria-hidden
@@ -123,19 +133,6 @@ export default function TrackerPage() {
   const frozen = useMemo(() => frozenSet(data.economy), [data.economy]);
   const handleCellMark = useCallback((key: string, habitId: string) => {
     cycleMark(key, habitId);
-  }, []);
-
-  // Group habits by category for collapsible sections
-  const [collapsedCategories, setCollapsedCategories] = useState<
-    Set<string>
-  >(new Set());
-  const toggleCategory = useCallback((cat: string) => {
-    setCollapsedCategories((prev) => {
-      const next = new Set(prev);
-      if (next.has(cat)) next.delete(cat);
-      else next.add(cat);
-      return next;
-    });
   }, []);
 
   const groupedHabits = useMemo(() => {
@@ -209,7 +206,7 @@ export default function TrackerPage() {
                   <table className="w-full border-collapse text-center font-mono text-xs">
                     <thead>
                       <tr>
-                        <th className="sticky top-0 z-20 min-w-36 bg-surface px-3 py-3 text-left font-semibold shadow-sm">
+                        <th className="sticky left-0 top-0 z-30 min-w-36 border-r border-line bg-surface px-3 py-3 text-left font-semibold shadow-sm">
                           Habit
                         </th>
                         {columns.map((d) => {
@@ -235,16 +232,10 @@ export default function TrackerPage() {
                     </thead>
                     <tbody>
                       {groupedHabits.map((group) => {
-                        const isCollapsed = collapsedCategories.has(
-                          group.category,
-                        );
                         return (
                           <Fragment key={group.category}>
-                            {/* Category group header */}
-                            <tr
-                              className="cursor-pointer select-none border-t border-line/60"
-                              onClick={() => toggleCategory(group.category)}
-                            >
+                            {/* Category group header — static label */}
+                            <tr className="select-none border-t border-line/60">
                               <td
                                 colSpan={columns.length + 2}
                                 className="sticky left-0 bg-surface2/80 px-3 py-1.5 text-left backdrop-blur-sm"
@@ -260,18 +251,10 @@ export default function TrackerPage() {
                                   <span className="font-mono text-[10px] text-faint">
                                     {group.habits.length}
                                   </span>
-                                  <span className="ml-auto text-faint">
-                                    {isCollapsed ? (
-                                      <ChevronRight className="size-3.5" />
-                                    ) : (
-                                      <ChevronDown className="size-3.5" />
-                                    )}
-                                  </span>
                                 </div>
                               </td>
                             </tr>
-                            {!isCollapsed &&
-                              group.habits.map((habit) => {
+                            {group.habits.map((habit) => {
                                 const { current } = habitStreaks(
                                   habit,
                                   data.marks,

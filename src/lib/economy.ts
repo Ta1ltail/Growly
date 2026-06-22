@@ -495,14 +495,6 @@ export function equippedAccent(
   return ACCENT_SKINS[equippedOrDefault(economy, "accent")] ?? null;
 }
 
-// Resolve the equipped confetti palette, falling back to the free default.
-export function equippedConfetti(economy: Economy): string[] {
-  return (
-    CONFETTI_SKINS[equippedOrDefault(economy, "confetti")] ??
-    CONFETTI_SKINS["confetti-default"]
-  );
-}
-
 export function shopItem(id: string): ShopItem | undefined {
   return SHOP_ITEMS.find((i) => i.id === id);
 }

@@ -419,6 +419,8 @@ function cleanEconomyV5(v: unknown): Economy {
       };
       if (typeof cq.category === "string")
         (currentQuest as { category?: string }).category = cq.category;
+      if (cq.claimed === true)
+        (currentQuest as { claimed?: boolean }).claimed = true;
     }
   }
 

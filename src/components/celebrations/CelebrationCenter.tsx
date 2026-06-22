@@ -112,11 +112,23 @@ export function CelebrationCenter({
         <p className="mt-1 text-sm text-muted">{event.description}</p>
 
         {event.reward && (
-          <div
-            className="mt-4 rounded-full px-4 py-1 font-mono text-sm font-bold"
-            style={{ background: `${event.accent}1f`, color: event.accent }}
-          >
-            {event.reward}
+          <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+            {event.reward
+              .split("·")
+              .map((part) => part.trim())
+              .filter(Boolean)
+              .map((part, i) => (
+                <span
+                  key={i}
+                  className="inline-flex items-center rounded-full px-3 py-1 font-mono text-sm font-bold"
+                  style={{
+                    background: `${event.accent}1f`,
+                    color: event.accent,
+                  }}
+                >
+                  {part}
+                </span>
+              ))}
           </div>
         )}
 

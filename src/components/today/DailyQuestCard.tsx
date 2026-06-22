@@ -4,8 +4,8 @@
 // Tracks progress automatically when habits are marked done. User claims the
 // reward once the target is reached.
 
-import { useEffect, useState } from "react";
-import { Target, Coins, CheckCircle2 } from "lucide-react";
+import { useEffect } from "react";
+import { Target, Coins, CheckCircle2, RotateCcw } from "lucide-react";
 import { useAppData, refreshDailyQuest, claimDailyQuest } from "@/lib/store";
 import { Card } from "@/components/ui/Card";
 import { ProgressBar } from "@/components/ui/ProgressBar";
@@ -14,8 +14,6 @@ import { Button } from "@/components/ui/Button";
 export function DailyQuestCard() {
   const data = useAppData();
   const quest = data.economy.currentQuest;
-  const [claiming, setClaiming] = useState(false);
-  const [claimed, setClaimed] = useState(false);
 
   // Refresh quest if needed on mount
   useEffect(() => {
@@ -24,24 +22,16 @@ export function DailyQuestCard() {
 
   if (!quest) return null;
 
+  const claimed = quest.claimed === true;
   const completed = quest.current >= quest.target;
   const progressPct = Math.min(
     100,
     Math.round((quest.current / quest.target) * 100),
   );
 
-  function handleClaim() {
-    if (claiming) return;
-    setClaiming(true);
-    claimDailyQuest();
-    setClaimed(true);
-    // Reset after animation
-    setTimeout(() => setClaimed(false), 2000);
-  }
-
   return (
     <Card
-      className={`overflow-hidden transition-all ${completed && !claimed ? "ring-1 ring-emerald-500/40" : ""}`}
+      className={`shrink-0 overflow-hidden transition-all ${completed && !claimed ? "ring-1 ring-emerald-500/40" : ""}`}
     >
       <div className="p-4">
         <div className="mb-3 flex items-center justify-between">
@@ -76,16 +66,26 @@ export function DailyQuestCard() {
         </div>
 
         {completed && !claimed && (
-          <Button onClick={handleClaim} className="mt-3 w-full" size="sm">
+          <Button
+            onClick={() => claimDailyQuest()}
+            className="mt-3 w-full"
+            size="sm"
+          >
             <Coins className="size-3.5" aria-hidden />
             Claim {quest.reward} coins
           </Button>
         )}
 
         {claimed && (
-          <div className="mt-3 flex items-center justify-center gap-1.5 text-sm font-semibold text-emerald-500 animate-fade-in">
-            <CheckCircle2 className="size-4" aria-hidden />
-            Claimed! +{quest.reward} 🪙
+          <div className="mt-3 flex items-center justify-between gap-2 rounded-xl bg-emerald-500/10 px-3 py-2 animate-fade-in">
+            <span className="flex items-center gap-1.5 text-sm font-semibold text-emerald-500">
+              <CheckCircle2 className="size-4" aria-hidden />
+              Claimed +{quest.reward} 🪙
+            </span>
+            <span className="flex items-center gap-1 text-[10px] text-muted">
+              <RotateCcw className="size-3" aria-hidden />
+              Resets at midnight
+            </span>
           </div>
         )}
       </div>

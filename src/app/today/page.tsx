@@ -230,40 +230,40 @@ export default function TodayPage() {
             </div>
           )}
 
-          {/* Category tabs */}
+          {/* Category tabs — wrap so nothing gets clipped on the right edge */}
           {todaysHabits.length > 0 && categoriesWithHabits.length > 1 && (
-            <div className="shrink-0 -mx-1 overflow-x-auto [&::-webkit-scrollbar]:hidden">
-              <div className="flex gap-1.5 px-1 pb-1">
+            <div className="shrink-0 flex flex-wrap gap-1.5">
+              <button
+                onClick={() => setActiveCategory(null)}
+                aria-pressed={!activeCategory}
+                className={`rounded-full px-3 py-1.5 text-[11px] font-medium whitespace-nowrap transition-all ${
+                  !activeCategory
+                    ? "bg-accent text-white shadow-sm"
+                    : "bg-surface2/60 text-muted hover:bg-surface2 hover:text-ink"
+                }`}
+              >
+                All
+              </button>
+              {categoriesWithHabits.map((cat) => (
                 <button
-                  onClick={() => setActiveCategory(null)}
-                  className={`shrink-0 rounded-full px-3 py-1.5 text-[11px] font-medium whitespace-nowrap transition-all ${
-                    !activeCategory
+                  key={cat}
+                  onClick={() =>
+                    setActiveCategory(activeCategory === cat ? null : cat)
+                  }
+                  aria-pressed={activeCategory === cat}
+                  className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-medium whitespace-nowrap transition-all ${
+                    activeCategory === cat
                       ? "bg-accent text-white shadow-sm"
                       : "bg-surface2/60 text-muted hover:bg-surface2 hover:text-ink"
                   }`}
                 >
-                  All
+                  <span
+                    className="size-1.5 rounded-full"
+                    style={{ backgroundColor: CATEGORY_COLORS[cat] }}
+                  />
+                  {cat}
                 </button>
-                {categoriesWithHabits.map((cat) => (
-                  <button
-                    key={cat}
-                    onClick={() =>
-                      setActiveCategory(activeCategory === cat ? null : cat)
-                    }
-                    className={`shrink-0 flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-medium whitespace-nowrap transition-all ${
-                      activeCategory === cat
-                        ? "bg-accent text-white shadow-sm"
-                        : "bg-surface2/60 text-muted hover:bg-surface2 hover:text-ink"
-                    }`}
-                  >
-                    <span
-                      className="size-1.5 rounded-full"
-                      style={{ backgroundColor: CATEGORY_COLORS[cat] }}
-                    />
-                    {cat}
-                  </button>
-                ))}
-              </div>
+              ))}
             </div>
           )}
 

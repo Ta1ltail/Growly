@@ -52,30 +52,19 @@ import {
   StaggerContainer,
   StaggerItem,
 } from "@/components/ui/StaggerContainer";
-import { ReorderableGrid } from "@/components/ui/ReorderableGrid";
-import { setWidgetOrder } from "@/lib/store";
 
 const BY_ID = new Map(ACHIEVEMENTS.map((a) => [a.id, a]));
 
-const WIDGET_IDS = [
-  "xp-level",
-  "badge-collection",
+const WIDGET_ORDER = [
   "current-streak",
   "recent-achievements",
+  "badge-collection",
+  "xp-level",
   "next-milestone",
   "weekly-trend",
 ] as const;
 
-type WidgetId = (typeof WIDGET_IDS)[number];
-
-const DEFAULT_ORDER: WidgetId[] = [
-  "current-streak",
-  "recent-achievements",
-  "badge-collection",
-  "xp-level",
-  "next-milestone",
-  "weekly-trend",
-];
+type WidgetId = (typeof WIDGET_ORDER)[number];
 
 export default function DashboardPage() {
   const data = useAppData();
@@ -118,13 +107,17 @@ export default function DashboardPage() {
 
   // Progress widgets data
   const summary = useMemo(() => summarizeProgress(data, today), [data, today]);
-  const recent = useMemo<AchievementDef[]>(() => {
+  const recentAll = useMemo<AchievementDef[]>(() => {
     return Object.entries(data.unlocks)
       .sort((a, b) => (a[1].at < b[1].at ? 1 : -1))
       .map(([id]) => BY_ID.get(id))
-      .filter((d): d is AchievementDef => Boolean(d))
-      .slice(0, 5);
+      .filter((d): d is AchievementDef => Boolean(d));
   }, [data.unlocks]);
+  // Cap the row but keep enough to fill the box on wide screens; the grid
+  // auto-fits as many badges as the width allows and shows a "+N" remainder.
+  const RECENT_MAX = 12;
+  const recent = recentAll.slice(0, RECENT_MAX);
+  const recentExtra = recentAll.length - recent.length;
 
   // Weekly trend data
   const weekData = useMemo(
@@ -224,22 +217,27 @@ export default function DashboardPage() {
                 All
               </Link>
             </div>
-            <div className="flex-1 min-h-0">
+            <div className="flex-1 min-h-0 overflow-hidden">
               {recent.length === 0 ? (
                 <p className="text-[10px] text-faint truncate">
                   Complete habits to unlock achievements.
                 </p>
               ) : (
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap content-start gap-1.5">
                   {recent.map((def) => (
                     <div key={def.id} title={`${def.name} · ${def.rarity}`}>
                       <AchievementBadge
                         def={def}
-                        size={36}
+                        size={32}
                         shine={def.rarity === "legendary"}
                       />
                     </div>
                   ))}
+                  {recentExtra > 0 && (
+                    <span className="grid size-8 shrink-0 place-items-center rounded-full bg-surface2 text-[11px] font-bold text-muted">
+                      +{recentExtra}
+                    </span>
+                  )}
                 </div>
               )}
             </div>
@@ -298,6 +296,7 @@ export default function DashboardPage() {
     [
       summary,
       recent,
+      recentExtra,
       weekData,
       weekAvg,
       badgePct,
@@ -307,14 +306,6 @@ export default function DashboardPage() {
       title,
     ],
   );
-
-  const orderedIds: WidgetId[] = useMemo(() => {
-    const saved = data.settings.widgetOrder as WidgetId[] | undefined;
-    if (saved && saved.length === WIDGET_IDS.length && saved.every((id) => WIDGET_IDS.includes(id))) {
-      return saved;
-    }
-    return DEFAULT_ORDER;
-  }, [data.settings.widgetOrder]);
 
   if (!hydrated) return <PageSkeleton />;
 
@@ -459,14 +450,11 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        <ReorderableGrid
-          items={orderedIds.map((id) => ({
-            id,
-            content: widgetContent[id].content,
-          }))}
-          onReorder={(ids) => setWidgetOrder(ids)}
-          className="grid gap-4 lg:grid-cols-3"
-        />
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {WIDGET_ORDER.map((id) => (
+            <div key={id}>{widgetContent[id].content}</div>
+          ))}
+        </div>
       </section>
 
       {/* Insights */}

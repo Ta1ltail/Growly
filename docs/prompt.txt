@@ -1,37 +1,34 @@
-project_101 — Habit Tracker (Optimized)
+Yes, do it — but before that, remove the widget reordering entirely. I don’t need that feature.
 
-Stack: Next.js 16.2.9 + TypeScript + Tailwind v4 + motion (v12) + sonner + zod (v4)
-Tests: 81/81 vitest | Gates: tsc 0 errors
-Storage: localStorage (schema v6) via useSyncExternalStore
+Also, on the **Today** page, please fix the layout properly and make it much cleaner. Improve the **Daily Rewards** too — after claiming a reward, it should stay visible instead of disappearing.
 
-Core features:
-- Today page: daily habit marking (done/missed/skipped), check-in, quests, spin
-- Tracker grid: spreadsheet-style habits×dates view (7/14/30 day windows)
-- Calendar: month/week views with completion shading and day detail panel
-- Manage Habits: CRUD + archive/duplicate + search/filter + pagination
-- Stats: trends chart, streaks, categories, insights, prediction engine
-- Goals: targets with milestones, deadlines, progress bars
-- Notes: journal with tags, date/habit/goal linking
-- Templates: 8 starter routines with one-tap apply
+The filter section is also bad right now because it gets cut off on the right side, so fix that.
 
-Gamification (all derived from mark history):
-- XP + levels (super-linear curve), 28 achievements (5 cats × 4 rarities)
-- 20 titles across 5 ranks, tiered streak flames
-- Coins (2/completion, 10/perfect-day), shop with cosmetics + streak-freeze
-- Engagement: daily check-in, quests, spin wheel
+For the **Tracker** page:
 
-UI/UX:
-- Page transitions (AnimatePresence fade+slide)
-- Micro-interactions (Card whileHover, Button whileTap springs)
-- Stagger list animations (StaggerContainer motion variants)
-- cn() utility (clsx + tailwind-merge), sonner toasts, Zod-validated import
-- PWA offline-first via service worker
-- 44px touch targets, keyboard shortcuts, undo/redo
-- Developer Mode (Ctrl+Shift+D): data tools, debug overlays
+* Remove the dropdown; it’s unnecessary.
+* Make the table columns fixed/sticky while scrolling.
+* Add status icons like ✔ / ✖ for better readability.
+* Prevent layout shifting across all pages.
 
-Key files: src/lib/store.ts (all actions), src/lib/util.ts (cn/uid/TONE),
-src/lib/export.ts (Zod-validated import), src/components/ui/StaggerContainer.tsx
+Improve the **Achievement popup** as well — especially the center section and the bottom-right part. Keep the design consistent and polished.
 
-Unfinished: community features, cloud sync (Supabase), payments, launch
+For the **Templates** page:
 
-Dev: npm run dev | Build: npm run build | Bundle: ANALYZE=true npm run build
+* Improve the overall layout and UI/UX.
+* When templates stack, it currently breaks the layout and causes shifting. Fix this and make it stable.
+
+For the **Notes** page:
+
+* Redesign it so it feels like an actual notes app/page, not the current layout.
+
+In the **Dashboard**, under **Recent Widget**, fit more achievements into the section without changing its size.
+
+Most importantly, make sure everything is fully **responsive**. The layout should automatically adjust based on screen size. For example:
+
+* On smaller screens, it might show 5 items.
+* On larger screens, it should expand to show 7 or more naturally.
+
+Fix all of these issues, improve the polish, refine the UI/UX, and make the whole app feel cleaner, smoother, and more stable.
+
+i provided screenshots on Justin\dev\screenshots

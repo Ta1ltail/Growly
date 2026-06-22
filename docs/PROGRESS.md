@@ -1,6 +1,6 @@
 # project_101 — Complete Progress
 
-**Last updated:** 2026-06-20 (v3)
+**Last updated:** 2026-06-22 (v4)
 
 ---
 
@@ -93,6 +93,29 @@
 - `cn()` utility consolidated into `util.ts` (deleted duplicate `utils.ts`)
 - Prettier formatted 95 files
 - Shared `Pagination` component used in achievements page (replaced hand-rolled)
+
+## ✅ UI/UX Polish + Stability Pass (2026-06-22 v4)
+
+Driven by `docs/prompt.txt` + reference screenshots. Full detail in
+`docs/CHANGELOG_2026-06-22.txt`.
+
+- **Dashboard:** removed widget reordering entirely (deleted `ReorderableGrid`,
+  `setWidgetOrder`); plain responsive grid. **Recent** widget fits more badges
+  (auto-fit, up to 12 + "+N" chip) without changing box size.
+- **Today:** Daily Quest now **persists in a claimed state** after collecting
+  (added `DailyQuest.claimed`); fixed the category filter clipping (now wraps).
+- **Tracker:** removed the collapse dropdown; sticky first column + corner
+  header on both axes; added ✔/✖/– status glyphs in cells.
+- **Achievement popup:** reward split into chips (center + toast); toast uses
+  real badge art for consistency; no more clipping.
+- **Templates:** fixed the stacking layout break (rigid `grid-rows-2` →
+  natural-flow equal-height grid).
+- **Notes:** redesigned into a Keep-style responsive masonry board.
+- **Responsiveness:** Dashboard/Templates/Notes grids auto-adjust columns.
+- **a11y pass:** Modal focus trap, Segmented `aria-pressed`, search labels +
+  focus rings, calendar day labels.
+- **Cleanup:** deleted dead `equippedConfetti()` helper (cosmetic still works).
+- Gates: **tsc 0 · eslint 0 · vitest 81/81 · build clean**.
 
 ## ❌ Still Unfinished
 

@@ -104,6 +104,7 @@ export function CheckInPopup() {
                 <button
                   key={i}
                   onClick={() => setMood(i + 1)}
+                  aria-pressed={mood === i + 1}
                   className={`flex size-9 items-center justify-center rounded-xl text-lg transition-all ${
                     mood === i + 1
                       ? "bg-accent/20 ring-1 ring-accent scale-110"
@@ -123,6 +124,7 @@ export function CheckInPopup() {
                 <button
                   key={i}
                   onClick={() => setEnergy(i + 1)}
+                  aria-pressed={energy === i + 1}
                   className={`flex-1 rounded-lg py-1.5 text-[10px] font-medium transition-all ${
                     energy === i + 1
                       ? "bg-amber-500/20 text-amber-500 ring-1 ring-amber-500/40"

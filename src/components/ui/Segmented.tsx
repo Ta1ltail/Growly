@@ -14,14 +14,18 @@ function SegmentedInner<T extends string>({
   onChange: (value: T) => void;
 }) {
   return (
-    <div className="inline-flex flex-wrap gap-1 rounded-xl border border-line bg-surface/60 p-1">
+    <div
+      role="group"
+      className="inline-flex flex-wrap gap-1 rounded-xl border border-line bg-surface/60 p-1"
+    >
       {options.map((opt) => {
         const active = opt.value === value;
         return (
           <button
             key={opt.value}
             onClick={() => onChange(opt.value)}
-            className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-all ${
+            aria-pressed={active}
+            className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 ${
               active
                 ? "bg-accent text-white shadow-sm"
                 : "text-muted hover:text-ink"

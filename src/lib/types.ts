@@ -216,6 +216,7 @@ export interface DailyQuest {
   current: number;
   reward: number;
   category?: Category; // if set, only habits in this category count
+  claimed?: boolean; // true once the reward has been collected (card stays visible)
 }
 
 export const DEFAULT_ECONOMY: Economy = {

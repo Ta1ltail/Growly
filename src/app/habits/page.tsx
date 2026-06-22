@@ -147,7 +147,8 @@ export default function HabitsPage() {
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search habits…"
-                className="w-full rounded-xl border border-line bg-surface2 py-2 pl-9 pr-3 text-sm outline-none placeholder:text-faint focus:border-accent"
+                aria-label="Search habits"
+                className="w-full rounded-xl border border-line bg-surface2 py-2 pl-9 pr-3 text-sm outline-none placeholder:text-faint focus:border-accent focus-visible:ring-2 focus-visible:ring-accent/40"
               />
             </div>
             <Segmented

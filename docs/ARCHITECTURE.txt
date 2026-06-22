@@ -1,8 +1,8 @@
 ############################################################
-#   PROJECT 101 - ARCHITECTURE  (v3.0 — optimized)         #
+#   PROJECT 101 - ARCHITECTURE  (v4.0 — UI/UX polish)       #
 #   Folder structure, gamification model, economy model,    #
 #   engagement model, theme, data flow                      #
-#   Updated: 2026-06-20 (v3)                                #
+#   Updated: 2026-06-22 (v4)                                #
 ############################################################
 
   App: "Project 101" — a spreadsheet-style habit & task tracker.

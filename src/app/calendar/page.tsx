@@ -251,7 +251,8 @@ export default function CalendarPage() {
                     <button
                       key={dateKey(d)}
                       onClick={() => setSelected(d)}
-                      className={`relative flex flex-col items-center justify-center gap-1 rounded-xl border py-3 transition-all hover:scale-105 ${shade(rate)} ${
+                      aria-label={`${d.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" })} — ${Math.round(rate * 100)}% complete`}
+                      className={`relative flex flex-col items-center justify-center gap-1 rounded-xl border py-3 transition-all hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 ${shade(rate)} ${
                         isSelected
                           ? "border-accent ring-2 ring-accent/40"
                           : isToday

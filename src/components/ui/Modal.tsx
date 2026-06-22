@@ -28,17 +28,37 @@ export function Modal({
 
   useEffect(() => {
     if (!open) return;
+    const FOCUSABLE =
+      'input, textarea, select, button, a[href], [tabindex]:not([tabindex="-1"])';
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") {
+        onClose();
+        return;
+      }
+      // Trap Tab focus inside the dialog so keyboard users can't tab out.
+      if (e.key === "Tab" && panelRef.current) {
+        const items = Array.from(
+          panelRef.current.querySelectorAll<HTMLElement>(FOCUSABLE),
+        ).filter((el) => !el.hasAttribute("disabled"));
+        if (items.length === 0) return;
+        const first = items[0];
+        const last = items[items.length - 1];
+        const active = document.activeElement;
+        if (e.shiftKey && active === first) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && active === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
     };
     document.addEventListener("keydown", onKey);
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     // Move focus into the panel.
     panelRef.current
-      ?.querySelector<HTMLElement>(
-        "input, textarea, select, button, [tabindex]",
-      )
+      ?.querySelector<HTMLElement>(FOCUSABLE)
       ?.focus();
     return () => {
       document.removeEventListener("keydown", onKey);
