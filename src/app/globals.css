@@ -181,6 +181,21 @@
   }
 }
 
+/* Rising ember particle for large streak flames (30+ days). */
+@keyframes ember {
+  0% {
+    opacity: 0;
+    transform: translateY(0) scale(0.6);
+  }
+  20% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-28px) scale(0.3);
+  }
+}
+
 /* One-shot celebratory burst on habit completion. */
 @keyframes burst {
   0% {
