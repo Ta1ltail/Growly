@@ -458,16 +458,21 @@ export function resetTemplateUsage(templateId: string): void {
 }
 
 export function clearAllData(): void {
-  // Wipe tracked data + unlocks (history is gone), but keep the user's
-  // settings and profile identity. Economy resets too: coins are derived from
-  // history, so wiping history must wipe the ledger or the balance goes
-  // negative/stale. Owned cosmetics are part of that history-derived state.
-  // Preserve progressSeen.seeded to avoid replaying celebrations for old
-  // progress after the wipe.
+  // Wipe tracked data + unlocks (history is gone), but preserve the user's
+  // settings, profile identity, and owned/equipped cosmetics (those were
+  // purchased with coins legitimately earned from now-deleted history).
+  // Economy ledger resets: coins are derived from history, so wiping history
+  // must zero the ledger. Owned cosmetics survive the wipe.
   update((prev) => ({
     ...emptyData,
     settings: prev.settings,
     profile: prev.profile,
+    economy: {
+      ...emptyData.economy,
+      owned: prev.economy.owned,
+      equipped: prev.economy.equipped,
+      freezes: prev.economy.freezes,
+    },
     progressSeen: {
       ...emptyData.progressSeen,
       seeded: prev.progressSeen.seeded,
@@ -843,7 +848,7 @@ export function doDailySpin(): {
       ...prev,
       economy: {
         ...prev.economy,
-        bonusCoins: prev.economy.bonusCoins + reward.amount,
+        bonusCoins: prev.economy.bonusCoins + effectiveAmount,
         lastSpinDate: todayKey,
         lastSpinResult: result,
       },

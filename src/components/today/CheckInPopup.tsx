@@ -18,9 +18,7 @@ export function CheckInPopup() {
   useEffect(() => {
     const timer = setTimeout(() => {
       const { reward, streak } = claimDailyCheckIn();
-      if (reward > 0) {
-        setResult({ reward, streak });
-      }
+      setResult({ reward, streak });
     }, 600);
     return () => clearTimeout(timer);
   }, []);

@@ -5,7 +5,7 @@
 // Escape — which hands the event off to a bottom-right toast and reveals the
 // next queued event. Legendary achievements get the confetti burst.
 
-import { useEffect, lazy, Suspense } from "react";
+import { useEffect, useRef, lazy, Suspense } from "react";
 import type { CelebrationEvent } from "@/lib/celebrations";
 import { RARITY_STYLE } from "@/lib/rarity";
 import { AchievementBadge } from "@/components/achievements/AchievementBadge";
@@ -39,13 +39,15 @@ export function CelebrationCenter({
   // Equipped confetti cosmetic — overrides the default rarity/accent colors.
   confettiPalette?: string[];
 }) {
+  const onDismissRef = useRef(onDismiss);
+  onDismissRef.current = onDismiss;
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onDismiss();
+      if (e.key === "Escape") onDismissRef.current();
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [onDismiss]);
+  }, []);
 
   const confettiColors =
     confettiPalette ??

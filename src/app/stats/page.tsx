@@ -50,6 +50,8 @@ import {
   StaggerItem,
 } from "@/components/ui/StaggerContainer";
 import { TrendLineChart } from "@/components/stats/TrendLineChart";
+import { PageSkeleton } from "@/components/ui/PageSkeleton";
+import { useHydrated } from "@/hooks/useHydrated";
 
 const PERIODS = [
   { value: "7" as const, label: "Week" },
@@ -142,6 +144,9 @@ export default function StatsPage() {
     }
     return { best, current };
   }, [active, data.marks, today, frozen]);
+
+  const hydrated = useHydrated();
+  if (!hydrated) return <PageSkeleton />;
 
   if (active.length === 0) {
     return (

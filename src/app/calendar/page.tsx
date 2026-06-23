@@ -34,6 +34,8 @@ import { MarkButton } from "@/components/habits/MarkButton";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Card } from "@/components/ui/Card";
 import { Segmented } from "@/components/ui/Segmented";
+import { PageSkeleton } from "@/components/ui/PageSkeleton";
+import { useHydrated } from "@/hooks/useHydrated";
 
 const WEEKDAY_LABELS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
 const VIEWS = [
@@ -166,6 +168,7 @@ export default function CalendarPage() {
         ),
     [active, selected],
   );
+  const hydrated = useHydrated();
   const dayNotes = data.notes.filter((n) => n.links.date === selectedKey);
   const deadlines = data.goals.filter((g) => g.deadline === selectedKey);
   const editable = canEditMark(selectedKey, today, grace);
@@ -182,6 +185,8 @@ export default function CalendarPage() {
     view === "month"
       ? anchor.toLocaleDateString(undefined, { month: "long", year: "numeric" })
       : `${weekCells[0].toLocaleDateString(undefined, { month: "short", day: "numeric" })} – ${weekCells[6].toLocaleDateString(undefined, { month: "short", day: "numeric" })}`;
+
+  if (!hydrated) return <PageSkeleton />;
 
   return (
     <div className="animate-fade-in flex flex-col min-h-0 h-[calc(100dvh-110px)]">

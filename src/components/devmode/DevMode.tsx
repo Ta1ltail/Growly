@@ -116,7 +116,9 @@ function FpsMeter() {
 
   useEffect(() => {
     let raf = 0;
+    let mounted = true;
     const loop = (now: number) => {
+      if (!mounted) return;
       if (last.current === 0) last.current = now;
       frames.current += 1;
       const elapsed = now - last.current;
@@ -128,7 +130,7 @@ function FpsMeter() {
       raf = requestAnimationFrame(loop);
     };
     raf = requestAnimationFrame(loop);
-    return () => cancelAnimationFrame(raf);
+    return () => { mounted = false; cancelAnimationFrame(raf); };
   }, []);
 
   const color = fps >= 50 ? "#22c55e" : fps >= 30 ? "#f59e0b" : "#f43f5e";

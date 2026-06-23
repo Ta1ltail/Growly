@@ -4,7 +4,7 @@
 // (theme + accent + live preview), the Honest Tracking grace window, data
 // export/reset, and a transparent audit log.
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import {
   Sun,
   Moon,
@@ -20,6 +20,7 @@ import {
   Plus,
   X,
 } from "lucide-react";
+import { toast } from "sonner";
 import { dateKey, DEFAULT_GRACE_HOURS } from "@/lib/storage";
 import {
   clearAllData,
@@ -52,6 +53,8 @@ export default function SettingsPage() {
   const { mode, accent } = data.settings.theme;
   const grace = data.settings.graceHours ?? DEFAULT_GRACE_HOURS;
   const [confirmReset, setConfirmReset] = useState(false);
+  const dataRef = useRef(data);
+  dataRef.current = data;
 
   function download(content: string, filename: string, type: string) {
     const blob = new Blob([content], { type });
@@ -59,8 +62,10 @@ export default function SettingsPage() {
     const a = document.createElement("a");
     a.href = url;
     a.download = filename;
+    document.body.appendChild(a);
     a.click();
-    URL.revokeObjectURL(url);
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 100);
   }
 
   function exportCsv() {
@@ -90,19 +95,19 @@ export default function SettingsPage() {
         const text = await file.text();
         const { data: imported, error } = importJSON(text);
         if (error || !imported) {
-          alert(error ?? "Invalid backup file.");
+          toast.error(error ?? "Invalid backup file.");
           return;
         }
         replaceData({
-          ...data,
+          ...dataRef.current,
           habits: imported.habits,
           marks: imported.marks,
           notes: imported.notes,
           goals: imported.goals,
         });
-        alert("Data imported successfully!");
+        toast.success("Data imported successfully!");
       } catch {
-        alert("Failed to import: invalid JSON file.");
+        toast.error("Failed to import: invalid JSON file.");
       }
     };
     input.click();

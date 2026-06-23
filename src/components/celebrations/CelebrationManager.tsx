@@ -50,7 +50,7 @@ export function CelebrationManager() {
     setCurrentIndex(0);
   }
 
-  const center = ready && queue.length > 0 ? queue[currentIndex] : null;
+  const center = ready && queue.length > 0 && currentIndex < queue.length ? queue[currentIndex] : null;
 
   // Equipped confetti cosmetic — override the default colors only when the user
   // has bought and equipped a non-default palette.

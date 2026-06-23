@@ -16,6 +16,7 @@ export function IconBtn({
 }) {
   return (
     <button
+      type="button"
       onClick={onClick}
       aria-label={label}
       title={label}

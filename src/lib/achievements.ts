@@ -96,13 +96,14 @@ export function buildGameStats(
     maxCurrentStreak = Math.max(maxCurrentStreak, current);
   }
 
-  // Perfect-day walk over the active habits' lifespan.
-  const active = habits.filter((h) => !h.archived);
+  // Perfect-day walk over all habits (archived included — their marks
+  // are immutable history and past perfect days shouldn't retroactively
+  // vanish when a habit is archived).
   let perfectDays = 0;
   let longestPerfectRun = 0;
   let weekendPerfectDays = 0;
-  if (active.length > 0) {
-    const start = active.reduce(
+  if (habits.length > 0) {
+    const start = habits.reduce(
       (min, h) => Math.min(min, habitStartDay(h).getTime()),
       startOfDay(today).getTime(),
     );
@@ -112,9 +113,9 @@ export function buildGameStats(
       d.getTime() <= startOfDay(today).getTime();
       d = addDays(d, 1)
     ) {
-      const scheduled = active.filter((h) => isScheduled(h, d));
+      const scheduled = habits.filter((h) => isScheduled(h, d));
       if (scheduled.length === 0) continue; // neutral day, doesn't break a run
-      if (dayCompletion(active, marks, d) === 100) {
+      if (dayCompletion(habits, marks, d) === 100) {
         perfectDays += 1;
         run += 1;
         if (run > longestPerfectRun) longestPerfectRun = run;

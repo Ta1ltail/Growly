@@ -125,7 +125,7 @@ export default function NotesPage() {
             n.tags.some((t) => t.toLowerCase().includes(q))
           : true,
       )
-      .sort((a, b) => (a.updatedAt < b.updatedAt ? 1 : -1));
+      .sort((a, b) => (a.updatedAt < b.updatedAt ? 1 : b.updatedAt < a.updatedAt ? -1 : 0));
   }, [data.notes, query, tagFilter]);
 
   function save(draft: NoteDraft) {

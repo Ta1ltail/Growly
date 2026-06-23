@@ -32,7 +32,7 @@ export function WeekdayPicker({
     <div>
       <div className="flex gap-1.5">
         {WEEKDAYS_MON_FIRST.map((day) => {
-          const active = value.length === 0 || value.includes(day);
+          const active = value.includes(day);
           return (
             <button
               key={day}

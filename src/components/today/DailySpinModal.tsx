@@ -39,13 +39,14 @@ export function DailySpinModal({
     setRotation((prev) => prev + spinDeg);
 
     // Wait for spin animation to finish, then get result
-    setTimeout(() => {
+    const timer = setTimeout(() => {
       const reward = doDailySpin();
       if (reward) {
         setResult(reward);
       }
       setSpinning(false);
     }, 2500);
+    return () => clearTimeout(timer);
   }
 
   if (!open) return null;

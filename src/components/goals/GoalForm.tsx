@@ -87,7 +87,10 @@ export function GoalForm({
             type="number"
             min={1}
             value={target}
-            onChange={(e) => setTarget(Number(e.target.value))}
+            onChange={(e) => {
+              const val = Number(e.target.value);
+              if (!isNaN(val)) setTarget(val);
+            }}
             className="w-full rounded-xl border border-line bg-surface2 px-3.5 py-2.5 text-sm outline-none focus:border-accent"
           />
         </div>

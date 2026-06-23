@@ -36,6 +36,7 @@ const CELL_STYLES: Record<string, string> = {
 const TrackerCell = memo(function TrackerCell({
   dateKey,
   habitId,
+  category,
   status,
   scheduled,
   editable,
@@ -45,18 +46,19 @@ const TrackerCell = memo(function TrackerCell({
 }: {
   dateKey: string;
   habitId: string;
+  category: string;
   status: MarkStatus | undefined;
   scheduled: boolean;
   editable: boolean;
   future: boolean;
   cellFrozen: boolean;
-  onMark: (dateKey: string, habitId: string) => void;
+  onMark: (dateKey: string, habitId: string, category: string) => void;
 }) {
   const locked = !editable && !future;
   return (
     <td className="p-0.5">
       <button
-        onClick={() => editable && onMark(dateKey, habitId)}
+        onClick={() => editable && onMark(dateKey, habitId, category)}
         disabled={!editable || (!scheduled && !status)}
         title={
           cellFrozen
@@ -131,8 +133,8 @@ export default function TrackerPage() {
   );
 
   const frozen = useMemo(() => frozenSet(data.economy), [data.economy]);
-  const handleCellMark = useCallback((key: string, habitId: string) => {
-    cycleMark(key, habitId);
+  const handleCellMark = useCallback((key: string, habitId: string, category: string) => {
+    cycleMark(key, habitId, category);
   }, []);
 
   const groupedHabits = useMemo(() => {
@@ -301,6 +303,7 @@ export default function TrackerPage() {
                                           key={key}
                                           dateKey={key}
                                           habitId={habit.id}
+                                          category={habit.category}
                                           status={status}
                                           scheduled={scheduled}
                                           editable={editable}
