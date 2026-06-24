@@ -6,6 +6,7 @@
 // next queued event. Legendary achievements get the confetti burst.
 
 import { useEffect, useRef, lazy, Suspense } from "react";
+import { Coins } from "lucide-react";
 import type { CelebrationEvent } from "@/lib/celebrations";
 import { RARITY_STYLE } from "@/lib/rarity";
 import { AchievementBadge } from "@/components/achievements/AchievementBadge";
@@ -123,18 +124,25 @@ export function CelebrationCenter({
               .split("·")
               .map((part) => part.trim())
               .filter(Boolean)
-              .map((part, i) => (
-                <span
-                  key={i}
-                  className="inline-flex items-center rounded-full px-3 py-1 font-mono text-sm font-bold"
-                  style={{
-                    background: `${event.accent}1f`,
-                    color: event.accent,
-                  }}
-                >
-                  {part}
-                </span>
-              ))}
+              .map((part, i) => {
+                // The coin glyph is an emoji in the reward string; render the
+                // lucide SVG instead so it can't fall back to a missing-glyph box.
+                const isCoin = part.includes("🪙");
+                const text = part.replace("🪙", "").trim();
+                return (
+                  <span
+                    key={i}
+                    className="inline-flex items-center gap-1 rounded-full px-3 py-1 font-mono text-sm font-bold"
+                    style={{
+                      background: `${event.accent}1f`,
+                      color: event.accent,
+                    }}
+                  >
+                    {text}
+                    {isCoin && <Coins className="size-3.5" aria-hidden />}
+                  </span>
+                );
+              })}
           </div>
         )}
 

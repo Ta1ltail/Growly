@@ -7,6 +7,7 @@
 // Queue progress dots show how many events remain.
 
 import { useEffect, useMemo, useState } from "react";
+import { Coins } from "lucide-react";
 import { toast } from "sonner";
 import {
   useAppData,
@@ -120,18 +121,25 @@ export function CelebrationManager() {
                   .split("·")
                   .map((part) => part.trim())
                   .filter(Boolean)
-                  .map((part, i) => (
-                    <span
-                      key={i}
-                      className="rounded-full px-2 py-0.5 text-[10px] font-bold"
-                      style={{
-                        background: `${ev.accent}15`,
-                        color: ev.accent,
-                      }}
-                    >
-                      {part}
-                    </span>
-                  ))}
+                  .map((part, i) => {
+                    // Render the coin glyph as the lucide SVG instead of the
+                    // emoji so it can't fall back to a missing-glyph box.
+                    const isCoin = part.includes("🪙");
+                    const text = part.replace("🪙", "").trim();
+                    return (
+                      <span
+                        key={i}
+                        className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold"
+                        style={{
+                          background: `${ev.accent}15`,
+                          color: ev.accent,
+                        }}
+                      >
+                        {text}
+                        {isCoin && <Coins className="size-3" aria-hidden />}
+                      </span>
+                    );
+                  })}
               </div>
             )}
           </div>
