@@ -101,7 +101,11 @@ export function DailySpinModal({
                 <RotateCw className="size-8 animate-spin text-white/60" />
               ) : result ? (
                 <span className="text-3xl">
-                  {result.isFreeze ? "❄️" : "🪙"}
+                  {result.isFreeze ? (
+                    "❄️"
+                  ) : (
+                    <Coins className="size-8 text-amber-300" aria-hidden />
+                  )}
                 </span>
               ) : (
                 <Sparkles className="size-8 text-accent" />

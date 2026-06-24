@@ -80,7 +80,8 @@ export function DailyQuestCard() {
           <div className="mt-3 flex items-center justify-between gap-2 rounded-xl bg-emerald-500/10 px-3 py-2 animate-fade-in">
             <span className="flex items-center gap-1.5 text-sm font-semibold text-emerald-500">
               <CheckCircle2 className="size-4" aria-hidden />
-              Claimed +{quest.reward} 🪙
+              Claimed +{quest.reward}
+              <Coins className="size-3.5" aria-hidden />
             </span>
             <span className="flex items-center gap-1 text-[10px] text-muted">
               <RotateCcw className="size-3" aria-hidden />

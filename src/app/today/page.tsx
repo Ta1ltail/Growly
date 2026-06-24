@@ -354,11 +354,13 @@ export default function TodayPage() {
           <Card className="p-4 shrink-0">
             <div className="flex items-center gap-4">
               <span className="grid size-12 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-amber-400/20 to-rose-400/20 text-2xl">
-                {alreadySpun && spinResult?.isFreeze
-                  ? "❄️"
-                  : alreadySpun
-                    ? "🪙"
-                    : "🎰"}
+                {alreadySpun && spinResult?.isFreeze ? (
+                  "❄️"
+                ) : alreadySpun ? (
+                  <Coins className="size-6 text-amber-500" aria-hidden />
+                ) : (
+                  "🎰"
+                )}
               </span>
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-semibold">Daily Spin</p>
