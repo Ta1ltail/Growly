@@ -32,6 +32,7 @@ export function NoteEditor({
   const [tags, setTags] = useState((initial?.tags ?? []).join(", "));
   const [habitId, setHabitId] = useState(initial?.links.habitId ?? "");
   const [goalId, setGoalId] = useState(initial?.links.goalId ?? "");
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   function submit() {
     if (!body.trim()) return;
@@ -111,13 +112,33 @@ export function NoteEditor({
 
       <div className="flex items-center justify-between gap-2">
         {onDelete ? (
-          <button
-            type="button"
-            onClick={onDelete}
-            className="flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-medium text-missed transition-colors hover:bg-missed/10"
-          >
-            <Trash2 className="size-4" /> Delete
-          </button>
+          confirmDelete ? (
+            <span className="flex items-center gap-1.5 text-sm">
+              <span className="text-muted">Delete note?</span>
+              <button
+                type="button"
+                onClick={onDelete}
+                className="rounded-lg px-2.5 py-1.5 font-semibold text-missed transition-colors hover:bg-missed/10"
+              >
+                Confirm
+              </button>
+              <button
+                type="button"
+                onClick={() => setConfirmDelete(false)}
+                className="rounded-lg px-2.5 py-1.5 font-medium text-muted transition-colors hover:text-ink"
+              >
+                Cancel
+              </button>
+            </span>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setConfirmDelete(true)}
+              className="flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-medium text-missed transition-colors hover:bg-missed/10"
+            >
+              <Trash2 className="size-4" /> Delete
+            </button>
+          )
         ) : (
           <span />
         )}

@@ -34,6 +34,7 @@ export default function GoalsPage() {
   const data = useAppData();
   const [adding, setAdding] = useState(false);
   const [editing, setEditing] = useState<Goal | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<Goal | null>(null);
 
   function step(goal: Goal, delta: number) {
     const current = Math.max(0, Math.min(goal.target, goal.current + delta));
@@ -123,7 +124,8 @@ export default function GoalsPage() {
                         <Pencil className="size-3.5" />
                       </button>
                       <button
-                        onClick={() => deleteGoal(goal.id)}
+                        type="button"
+                        onClick={() => setConfirmDelete(goal)}
                         className="rounded-lg p-1 text-muted transition-colors hover:bg-missed/10 hover:text-missed"
                         aria-label="Delete goal"
                       >
@@ -206,6 +208,35 @@ export default function GoalsPage() {
             setEditing(null);
           }}
         />
+      </Modal>
+
+      {/* Delete confirm */}
+      <Modal
+        open={confirmDelete !== null}
+        onClose={() => setConfirmDelete(null)}
+        title="Delete goal?"
+        size="sm"
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setConfirmDelete(null)}>
+              Cancel
+            </Button>
+            <Button
+              variant="danger"
+              onClick={() => {
+                if (confirmDelete) deleteGoal(confirmDelete.id);
+                setConfirmDelete(null);
+              }}
+            >
+              Delete
+            </Button>
+          </>
+        }
+      >
+        <p className="text-sm text-muted">
+          Delete “{confirmDelete?.title}”? Its progress and milestones will be
+          removed. This cannot be undone.
+        </p>
       </Modal>
     </div>
   );

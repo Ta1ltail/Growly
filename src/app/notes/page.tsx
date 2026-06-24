@@ -14,6 +14,7 @@ import {
   ListTodo,
   Target,
 } from "lucide-react";
+import { toast } from "sonner";
 import type { Note } from "@/lib/types";
 import { addNote, updateNote, deleteNote, useAppData } from "@/lib/store";
 import { parseDateKey } from "@/lib/storage";
@@ -133,6 +134,7 @@ export default function NotesPage() {
     else addNote(draft);
     setAdding(false);
     setEditing(null);
+    toast.success(editing ? "Note updated" : "Note saved");
   }
 
   return (
