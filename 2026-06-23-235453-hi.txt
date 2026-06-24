@@ -145,7 +145,7 @@
   ⎿  Added 1 line, removed 1 line
       843        ...prev,
       844        economy: {
-      845          ...prev.economy,
+      845          ...prev.economy,s
       846 -        bonusCoins: prev.economy.bonusCoins + reward.amount,  
       846 +        bonusCoins: prev.economy.bonusCoins + effectiveAmount,
       847          lastSpinDate: todayKey,
