@@ -137,7 +137,21 @@ export function CelebrationManager() {
           </div>
         </div>
       ),
-      { duration: 5000 },
+      {
+        duration: 5000,
+        // The card below brings its own surface, border, and bevel shadow.
+        // Strip Sonner's default container chrome (and the global closeButton +
+        // toastOptions.style from <Toaster>) so it doesn't render a second
+        // bordered rectangle behind the card.
+        unstyled: true,
+        closeButton: false,
+        style: {
+          background: "transparent",
+          border: "none",
+          boxShadow: "none",
+          padding: 0,
+        },
+      },
     );
 
     // Advance to next event or close
