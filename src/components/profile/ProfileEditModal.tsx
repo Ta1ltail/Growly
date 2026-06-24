@@ -5,7 +5,7 @@
 // the showcased badge. Local draft state commits to the store via
 // updateProfile on save — nothing here is derived, these are user-owned fields.
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Upload } from "lucide-react";
 import type { AchievementDef, Profile } from "@/lib/types";
 import { updateProfile } from "@/lib/store";
@@ -28,9 +28,13 @@ export function ProfileEditModal({
   const [draft, setDraft] = useState<Profile>(profile);
 
   // Re-seed the draft each time the modal opens so it reflects the latest save.
-  useEffect(() => {
+  // Render-phase adjustment (React's "adjusting state when a prop changes"
+  // pattern) — runs only on the open transition, never mid-edit.
+  const [wasOpen, setWasOpen] = useState(open);
+  if (open !== wasOpen) {
+    setWasOpen(open);
     if (open) setDraft(profile);
-  }, [open, profile]);
+  }
 
   const set = <K extends keyof Profile>(key: K, value: Profile[K]) =>
     setDraft((d) => ({ ...d, [key]: value }));

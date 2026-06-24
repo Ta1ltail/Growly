@@ -39,8 +39,12 @@ export function CelebrationCenter({
   // Equipped confetti cosmetic — overrides the default rarity/accent colors.
   confettiPalette?: string[];
 }) {
+  // Keep the latest onDismiss in a ref (updated in an effect, not during
+  // render) so the keydown listener below can stay subscribed once with [].
   const onDismissRef = useRef(onDismiss);
-  onDismissRef.current = onDismiss;
+  useEffect(() => {
+    onDismissRef.current = onDismiss;
+  });
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onDismissRef.current();

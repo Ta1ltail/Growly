@@ -154,7 +154,7 @@
 
   Thought for 6s (ctrl+o to expand)
 
-● Update(src\lib\store.ts)
+● Update(src\lib\store.ts
   ⎿  Added 11 lines, removed 6 lines
       458  }
       459  

@@ -4,7 +4,7 @@
 // (theme + accent + live preview), the Honest Tracking grace window, data
 // export/reset, and a transparent audit log.
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
   Sun,
   Moon,
@@ -53,8 +53,12 @@ export default function SettingsPage() {
   const { mode, accent } = data.settings.theme;
   const grace = data.settings.graceHours ?? DEFAULT_GRACE_HOURS;
   const [confirmReset, setConfirmReset] = useState(false);
+  // Latest data kept in a ref (updated in an effect, not during render) so the
+  // async import handler reads fresh state instead of a stale closure.
   const dataRef = useRef(data);
-  dataRef.current = data;
+  useEffect(() => {
+    dataRef.current = data;
+  });
 
   function download(content: string, filename: string, type: string) {
     const blob = new Blob([content], { type });

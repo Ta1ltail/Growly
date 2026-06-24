@@ -6,7 +6,7 @@
 // identical (avoids hydration mismatch and the banned Math.random). Renders
 // nothing when the user prefers reduced motion.
 
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useSyncExternalStore } from "react";
 
 // Tiny seeded PRNG (mulberry32) — deterministic per seed.
 function mulberry32(seed: number): () => number {
@@ -21,16 +21,18 @@ function mulberry32(seed: number): () => number {
 }
 
 function usePrefersReducedMotion(): boolean {
-  const [prefers, setPrefers] = useState(false);
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
-    setPrefers(mq.matches);
-    const handler = (e: MediaQueryListEvent) => setPrefers(e.matches);
-    mq.addEventListener("change", handler);
-    return () => mq.removeEventListener("change", handler);
-  }, []);
-  return prefers;
+  // Subscribe to the media query via useSyncExternalStore: the server snapshot
+  // is always false (avoids hydration mismatch and the banned Math.random),
+  // and the client stays reactive to OS-level preference changes.
+  return useSyncExternalStore(
+    (onChange) => {
+      const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+      mq.addEventListener("change", onChange);
+      return () => mq.removeEventListener("change", onChange);
+    },
+    () => window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+    () => false,
+  );
 }
 
 export function Confetti({
