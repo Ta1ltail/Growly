@@ -62,7 +62,7 @@ Comprehensive documentation of every feature in the habit tracking app.
 - **Habit correlations** — co-occurrence analysis showing habits done together
 - **Prediction engine** — estimated completion %, projected streak, XP per day, level-up ETA
 
-### Dashboard (`/`)
+### Dashboard (`/dashboard`)
 
 - **Progress widgets** — 6 reorderable cards (XP/Level, Badge Collection, Current Streak, Recent Achievements, Next Milestone, Weekly Trend)
 - **Today summary** — completion ring, done/remaining counts, time-of-day indicator
@@ -190,13 +190,58 @@ Comprehensive documentation of every feature in the habit tracking app.
 
 ### Navigation
 
-- **Sidebar** — desktop icon+label nav with active highlighting and icon animations
+- **Sidebar** — desktop icon+label nav with active highlighting, icon animations, and logout button
 - **Bottom nav** — mobile-optimized tab bar with 5 primary destinations
 - **Keyboard shortcuts** — `g+d` Dashboard, `g+t` Today, `g+h` Habits, `g+s` Stats, `g+c` Calendar, `g+a` Achievements, `g+p` Profile, `g+o` Shop, `g+e` Templates, `g+n` Notes, `g+l` Goals, `g+,` Settings, `?` help, `n` new habit, Ctrl+Z/Ctrl+Shift+Z undo/redo
 
 ---
 
-## 8. Performance Optimizations
+## 8. Authentication & Security
+
+### Route Architecture
+
+| Route            | Access    | Description              |
+|------------------|-----------|--------------------------|
+| `/`              | Public    | Landing page, marketing  |
+| `/login`         | Public    | Sign in form             |
+| `/register`      | Public    | Create account           |
+| `/dashboard`     | Protected | Main dashboard (was `/`) |
+| `/today`         | Protected | Daily habit marking      |
+| All other pages  | Protected | Habits, tracker, etc.    |
+
+### Auth Flow
+
+- **Supabase Auth** (email/password) — sessions managed via secure cookies
+- **proxy.ts** — Next.js 16 proxy (replaces middleware.ts) handles:
+  - Session refresh on every request (`getUser()` server-side verification)
+  - Redirects unauthenticated users to `/login`
+  - Redirects authenticated users away from `/login`/`/register` to `/dashboard`
+- **Login**: Professional form with show/hide password, Remember Me toggle, user-friendly error mapping
+- **Register**: Auto-login after successful signup (email confirmation disabled), display name optional
+- **Logout**: Button in sidebar with hard redirect to landing page
+
+### Remember Me
+
+- **Checked (default)**: Session persists across browser restarts via localStorage flag + Supabase cookies
+- **Unchecked**: User is signed out on tab close — a `useAuth` hook monitors the flag on page load and signs out if missing
+
+### Session Handling
+
+- **Token refresh**: Proxy calls `getUser()` on every request to refresh expired tokens
+- **Auto-logout**: Expired/invalid sessions are silently redirected to `/login`
+- **Auth state changes**: `useAuth` hook subscribes to `onAuthStateChange` for real-time updates
+- **Hard navigation**: Login/register use `window.location.href` instead of `router.push()` to ensure proxy runs on redirect
+
+### Environment Variables
+
+```env
+NEXT_PUBLIC_SUPABASE_URL=https://<project>.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=<anon-key>
+```
+
+---
+
+## 9. Performance Optimizations
 
 ### Rendering
 
@@ -220,7 +265,7 @@ Comprehensive documentation of every feature in the habit tracking app.
 
 ---
 
-## 9. PWA & Offline
+## 10. PWA & Offline
 
 - **Web app manifest** — standalone display, SVG icons (192×192, 512×512), theme color
 - **Service worker** — offline-first caching strategy (network-first for navigation, cache-first for assets)
@@ -229,7 +274,7 @@ Comprehensive documentation of every feature in the habit tracking app.
 
 ---
 
-## 10. Developer Mode
+## 11. Developer Mode
 
 Hidden panel (Ctrl/Cmd+Shift+D) with:
 
@@ -242,7 +287,7 @@ Hidden panel (Ctrl/Cmd+Shift+D) with:
 
 ---
 
-## 11. Data Management
+## 12. Data Management
 
 ### Persistence
 
@@ -262,7 +307,7 @@ Hidden panel (Ctrl/Cmd+Shift+D) with:
 
 ---
 
-## 12. Accessibility
+## 13. Accessibility
 
 - **aria-current="page"** — on active navigation links
 - **aria-labels** — on all interactive elements (buttons, inputs, icon buttons)
@@ -274,7 +319,7 @@ Hidden panel (Ctrl/Cmd+Shift+D) with:
 
 ---
 
-## 13. Testing
+## 14. Testing
 
 - **81 unit tests** across 5 files:
   - `storage.test.ts` (18) — data load/save, migration, sanitization

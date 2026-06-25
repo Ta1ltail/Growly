@@ -16,6 +16,8 @@ All dependencies and tools installed in this project, with purpose and rationale
 | `clsx`                | 2.1     | Conditional className construction — foundational utility for the `cn()` helper                                                      |
 | `tailwind-merge`      | 3.6     | Tailwind class conflict resolution — foundational utility for the `cn()` helper                                                      |
 | `zod`                 | 4.4     | Runtime schema validation — used in `importJSON()` to validate imported backup files instead of unsafe `as unknown as AppData` casts |
+| `@supabase/supabase-js` | 2.108  | Supabase JavaScript client — database queries and authentication API calls                                                             |
+| `@supabase/ssr`         | 0.12    | Supabase SSR utilities — server/client cookie management for Next.js App Router auth                                                 |
 | `postcss`             | 8.5     | CSS processing (peer dep of Tailwind)                                                                                                |
 
 ## Dev Dependencies

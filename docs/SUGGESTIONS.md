@@ -25,7 +25,10 @@ Each suggestion includes: **Effort** (S/M/L/XL), **Impact** (🔥 = moderate, �
 
 The single biggest unlock. Move from localStorage to Supabase so data persists across devices.
 
-- **Auth:** Supabase Auth (email, Google, GitHub)
+**Status:** Auth layer is done (Supabase Auth, login/register, Remember Me, logout, route protection).
+Remaining: Drizzle ORM schema, data migration, RLS, offline sync.
+
+- **Auth:** Supabase Auth (email/password — implemented). Future: Google, GitHub OAuth.
 - **DB:** Drizzle ORM with Postgres tables mirroring the AppData shape
 - **Migration strategy:**
   1. Add Supabase client + Drizzle schema alongside localStorage (dual-write)

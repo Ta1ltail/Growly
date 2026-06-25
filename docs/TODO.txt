@@ -131,11 +131,19 @@
 
 
 ==========================================================
- PHASE 4-5   (not started)
+ PHASE 4-5   (in progress)
 ==========================================================
-  [ ] Community challenges
-  [ ] Friend leaderboards
-  [ ] Accounts + sign in (Supabase Auth)
+  [x] Community challenges
+  [x] Friend leaderboards
+  [x] Supabase project setup
+  [x] Supabase Auth (email/password)
+  [x] Login / Register pages (professional redesign)
+  [x] Remember Me (session persistence toggle)
+  [x] Logout (sidebar button)
+  [x] Route protection (proxy.ts replacing middleware.ts)
+  [x] Landing page (/)
+  [x] Dashboard moved to /dashboard
+  [x] Hard redirect fix (window.location.href after login)
   [ ] Drizzle ORM + database tables
   [ ] Move localStorage -> Supabase
   [ ] Row Level Security (RLS)

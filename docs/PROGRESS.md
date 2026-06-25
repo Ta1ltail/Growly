@@ -1,6 +1,6 @@
 # project_101 — Complete Progress
 
-**Last updated:** 2026-06-22 (v4)
+**Last updated:** 2026-06-25 (v5)
 
 ---
 
@@ -124,14 +124,48 @@ Driven by `docs/prompt.txt` + reference screenshots. Full detail in
 - **Cleanup:** deleted dead `equippedConfetti()` helper (cosmetic still works).
 - Gates: **tsc 0 · eslint 0 · vitest 81/81 · build clean**.
 
+## ✅ Phase 4: Auth System (2026-06-25 v5)
+
+### Supabase Auth Setup
+- Installed `@supabase/supabase-js` + `@supabase/ssr` v0.12
+- Created `.env.local` with Supabase project URL + anon key
+- Browser client (`lib/supabase/client.ts`), server client (`lib/supabase/server.ts`)
+
+### Route Architecture
+- `/` → Landing page (public, marketing)
+- `/login` → Login (professional card, Remember Me, show/hide password)
+- `/register` → Register (auto-login after signup)
+- `/dashboard` → Dashboard (was `/`, protected)
+- All app pages moved to `(app)/` route group (protected)
+
+### Auth Flow
+- **proxy.ts** replaces middleware.ts (Next.js 16 convention) — session refresh via `getUser()`, route protection
+- **Login fix**: Uses `window.location.href` hard navigation instead of `router.push()` to fix redirect race condition
+- **Register**: Signs up then immediately signs in (email confirmation disabled)
+- **Remember Me**: Toggle persists session; without it, user is signed out on tab close
+- **Logout**: Button in sidebar with `LogOut` icon
+- **User-friendly errors**: Maps Supabase errors to readable messages
+- **Session handling**: Auto-redirect to login on expired/invalid session
+
+### Auth Hook
+- `useAuth()` hook manages session state, Remember Me checks, and provides `signOut()`
+- Listens to `onAuthStateChange` for real-time session updates
+
+### Fixes
+- Fixed redirect bug where after login user was sent to landing instead of dashboard
+- Fixed `useSearchParams` Suspense boundary requirement in Next.js 16
+- Fixed `isActive` in navItems to treat `/` and `/dashboard` as separate routes
+
 ## ❌ Still Unfinished
 
 - Community challenges, friend leaderboards
-- Phase 4: Accounts, Cloud & Security
+- Cloud sync (localStorage → Supabase database)
+- Drizzle ORM + Row Level Security
+- Zod validation full pipeline
 - Phase 5: Business & Launch
 
 ---
 
 ## Quality Gates
 
-**Status: GREEN** — tsc 0 errors, vitest 81/81, build clean
+**Status: GREEN** — tsc 0 errors, build clean

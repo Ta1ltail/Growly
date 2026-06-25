@@ -1,15 +1,16 @@
 ############################################################
-#   PROJECT 101 - ARCHITECTURE  (v4.0 — UI/UX polish)       #
+#   PROJECT 101 - ARCHITECTURE  (v5.0 — Auth & Cloud)        #
 #   Folder structure, gamification model, economy model,    #
-#   engagement model, theme, data flow                      #
-#   Updated: 2026-06-22 (v4)                                #
+#   engagement model, theme, data flow, auth system         #
+#   Updated: 2026-06-25 (v5)                                #
 ############################################################
 
   App: "Project 101" — a spreadsheet-style habit & task tracker.
   Stack: Next.js 16.2.9 (App Router) + TypeScript + Tailwind v4,
   localStorage persistence (schema v6), Vitest, motion (v12),
-  sonner, zod (v4), clsx + tailwind-merge.
-  Cloud/accounts/payments are still future phases.
+  sonner, zod (v4), clsx + tailwind-merge,
+  Supabase Auth (email/password, @supabase/ssr v0.12).
+  Cloud sync and payments are still future phases.
 
   Dev server: npm run dev (uses --webpack due to Turbopack Windows crash)
 
@@ -18,17 +19,26 @@
  FOLDER STRUCTURE  (src/)
 ==========================================================
   app/                      <- routes (Next.js App Router)
-    layout.tsx                root: fonts, no-flash theme script, AppShell
+    proxy.ts                  Next.js 16 proxy (replaces middleware) — session refresh + route protection
+    layout.tsx                root: fonts, no-flash theme script
     globals.css               design system (tokens, dark/light, keyframes)
+    page.tsx                  Landing page (public, marketing)
     loading.tsx               route-level Suspense skeleton
+    (auth)/                   Auth route group (no sidebar, centered layout)
+      layout.tsx              Branded auth layout (logo, gradients, footer)
+      login/                  Login page (email/password, Remember Me, show/hide password)
+      register/               Register page (auto-login after signup)
+    (app)/                    App route group (protected, with sidebar)
+      layout.tsx              AppShell layout
+      dashboard/              Dashboard (widgets + progress + insights)
+      today/                  daily habit marking + check-in + quest + spin
+      tracker/ calendar/ stats/ goals/ templates/ notes/
+      habits/                 Manage habits (CRUD, archive, duplicate, paginated)
+      profile/                character page (level, XP, title, showcase, coins)
+      achievements/           Achievement Gallery (filters + search + next-achievable)
+      shop/                   coin shop: cosmetics + streak-freeze + coin breakdown
+      settings/               theme, grace window, custom categories, data tools
     offline/                  offline fallback page (PWA)
-    page.tsx                  Dashboard (widgets + progress + insights)
-    tracker/ calendar/ stats/ goals/ templates/ notes/
-    profile/                  character page (level, XP, title, showcase, coins)
-    achievements/             Achievement Gallery (filters + search + next-achievable)
-    shop/                     coin shop: cosmetics + streak-freeze + coin breakdown
-    settings/                 theme, grace window, custom categories, data tools
-    today/                    daily habit marking + check-in + quest + spin
 
   components/
     layout/                   AppShell, Sidebar, BottomNav, navItems, ThemeApplier
@@ -53,6 +63,7 @@
     useToday.ts               one stable Date for the session
     useHydrated.ts            true after mount (gate client-only UI)
     useKeyboardShortcuts.ts   global keyboard shortcuts (g-prefix nav, undo/redo)
+    useAuth.ts                Session state, Remember Me logic, signOut provider
 
   lib/                        framework-free logic (tested + reusable)
     types.ts                  data shapes
@@ -70,6 +81,11 @@
     theme.ts                  theme modes + accent presets
     prediction.ts             completion/streak prediction engine
     export.ts                 CSV/JSON export/import (Zod-validated)
+    supabase/                 Supabase Auth library
+      client.ts               Browser client (createBrowserClient)
+      server.ts               Server client (createServerClient with cookies)
+      proxy.ts                updateSession utility — session refresh + route protection
+      actions.ts              Server actions (login, register, logout)
     -- gamification engine (all PURE + derived from marks) --
     xp.ts                     XP sources + super-linear level curve
     achievements.ts           28 achievement defs, buildGameStats, evaluateAchievements
@@ -210,8 +226,8 @@
   - Turbopack crashes on Windows (uses --webpack dev flag)
   - postcss vulnerability in next@16.2.9 transitive dep
     (requires Next.js upgrade to fix)
-  - No cloud sync — data is localStorage-only
-  - No accounts/auth — all data is device-local
+  - No cloud sync — data is localStorage-only (Phase 4 planned)
+  - Auth is email/password only — social OAuth (Google, GitHub) planned
 
 
 ############################################################

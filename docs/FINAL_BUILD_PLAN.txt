@@ -24,7 +24,7 @@
          All gates green: tsc 0, lint 0, vitest 81/81 passing.
          Dead code removed (AmbientBackground, DashboardWidgets),
          stale comments cleaned, unused imports purged.
-   Phase 4 ACCOUNTS, CLOUD & SECURITY ........... NOT STARTED
+   Phase 4 ACCOUNTS, CLOUD & SECURITY ........... PARTIALLY DONE
    Phase 5 BUSINESS & LAUNCH .................... NOT STARTED
 
 
@@ -98,10 +98,16 @@ PHASE 0-3 ............... [x] DONE (all core + gamification + economy
                                   + engagement + UI overhaul + feature
                                   categories + architecture cleanup)
 
-PHASE 4 - ACCOUNTS, CLOUD & SECURITY .... [ ] NOT STARTED
-  [ ] Accounts + sign in (Supabase Auth)
+PHASE 4 - ACCOUNTS, CLOUD & SECURITY .... [ ] PARTIALLY DONE
+  [x] Accounts + sign in (Supabase Auth — email/password)
+  [x] Login / Register pages (professional redesign)
+  [x] Remember Me toggle + session management
+  [x] Logout (sidebar button)
+  [x] Route protection (proxy.ts replacing middleware.ts)
+  [x] Landing page (public marketing)
+  [x] Dashboard moved to /dashboard
   [ ] Drizzle ORM + DB tables (migrations)
-  [ ] Move data localStorage -> Supabase  (KNOWN, PLANNED REWORK)
+  [ ] Move data localStorage -> Supabase
   [ ] Row Level Security (RLS)            <- CRITICAL
   [ ] Validate all input with Zod
   [ ] Transactional email (verify/reset) via Resend
