@@ -2,7 +2,6 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-
 import { createClient } from "@/lib/supabase/server";
 
 export async function login(formData: FormData) {
@@ -10,6 +9,7 @@ export async function login(formData: FormData) {
 
   const email = formData.get("email") as string;
   const password = formData.get("password") as string;
+  const rememberMe = formData.get("rememberMe") === "true";
 
   const { error } = await supabase.auth.signInWithPassword({
     email,
@@ -45,11 +45,19 @@ export async function register(formData: FormData) {
     return { error: error.message };
   }
 
-  // If email confirmation is disabled, sign them in immediately
-  return {
-    success:
-      "Check your email for a confirmation link. You can close this tab.",
-  };
+  // Since email confirmation is disabled, sign them in immediately
+  // This server-side sign-in ensures the session cookie is set before redirect
+  const { error: signInError } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+  });
+
+  if (signInError) {
+    return { error: "Account created. Please sign in." };
+  }
+
+  revalidatePath("/", "layout");
+  redirect("/dashboard");
 }
 
 export async function logout() {

@@ -3,9 +3,15 @@
 // Desktop sidebar (hidden on mobile). Brand, grouped nav links, footer note.
 // Icons are colourized with idle animations for a premium feel.
 
+"use client";
+
+// Desktop sidebar (hidden on mobile). Brand, grouped nav links, footer logout.
+// Icons are colourized with idle animations for a premium feel.
+
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Activity } from "lucide-react";
+import { Activity, LogOut } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 import { NAV_GROUPS, isActive } from "./navItems";
 
 // Icon color map for navigation items — gives each section a distinct accent
@@ -27,6 +33,7 @@ const ICON_COLORS: Record<string, string> = {
 
 export function Sidebar() {
   const pathname = usePathname();
+  const { signOut } = useAuth();
   return (
     <aside className="glass fixed inset-y-0 left-0 z-20 hidden w-60 flex-col border-r border-line px-3 py-5 md:flex">
       <div className="flex items-center gap-2 px-3 pb-5">
@@ -84,11 +91,16 @@ export function Sidebar() {
         ))}
       </nav>
 
-      <p className="px-3 pt-4 font-mono text-[10px] leading-relaxed text-faint">
-        Honest Tracking · local data
-        <br />
-        v0.3 — web-first rework
-      </p>
+      {/* Logout button */}
+      <div className="border-t border-line pt-3 mt-2">
+        <button
+          onClick={signOut}
+          className="group flex w-full items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-muted transition-all duration-200 hover:bg-missed/10 hover:text-missed"
+        >
+          <LogOut className="size-4.5 transition-all duration-300 group-hover:-translate-x-0.5" strokeWidth={2} />
+          Sign out
+        </button>
+      </div>
     </aside>
   );
 }
