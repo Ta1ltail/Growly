@@ -72,11 +72,38 @@ export interface CelebrationEvent {
 const BY_ID = new Map(ACHIEVEMENTS.map((a) => [a.id, a]));
 
 // Rarity tier unlock — emoji, accent, and description for each tier milestone.
-const TIER_INFO: Record<string, { emoji: string; accent: string; glow: string; description: string }> = {
-  common: { emoji: "🥉", accent: "#a98256", glow: "rgba(169,130,86,0.45)", description: "You unlocked your first Common achievement. Every journey starts somewhere!" },
-  rare: { emoji: "🥈", accent: "#7d93b0", glow: "rgba(125,147,176,0.5)", description: "You unlocked your first Rare achievement. Your dedication is growing!" },
-  epic: { emoji: "🥇", accent: "#f0b429", glow: "rgba(240,180,41,0.55)", description: "You unlocked your first Epic achievement. A significant milestone!" },
-  legendary: { emoji: "💎", accent: "#22d3ee", glow: "rgba(34,211,238,0.6)", description: "You unlocked your first Legendary achievement. Truly legendary!" },
+const TIER_INFO: Record<
+  string,
+  { emoji: string; accent: string; glow: string; description: string }
+> = {
+  common: {
+    emoji: "🥉",
+    accent: "#a98256",
+    glow: "rgba(169,130,86,0.45)",
+    description:
+      "You unlocked your first Common achievement. Every journey starts somewhere!",
+  },
+  rare: {
+    emoji: "🥈",
+    accent: "#7d93b0",
+    glow: "rgba(125,147,176,0.5)",
+    description:
+      "You unlocked your first Rare achievement. Your dedication is growing!",
+  },
+  epic: {
+    emoji: "🥇",
+    accent: "#f0b429",
+    glow: "rgba(240,180,41,0.55)",
+    description:
+      "You unlocked your first Epic achievement. A significant milestone!",
+  },
+  legendary: {
+    emoji: "💎",
+    accent: "#22d3ee",
+    glow: "rgba(34,211,238,0.6)",
+    description:
+      "You unlocked your first Legendary achievement. Truly legendary!",
+  },
 };
 
 // Color cues for the non-achievement kinds (lib stays framework-free, so these
@@ -134,7 +161,10 @@ export function progressEvents(data: AppData, today: Date): CelebrationEvent[] {
       description: "Your XP just pushed you to a new level.",
       accent: LEVEL_ACCENT,
       glow: LEVEL_GLOW,
-      reward: coins > 0 ? `Lv ${summary.level.level} · +${coins} 🪙` : `Lv ${summary.level.level}`,
+      reward:
+        coins > 0
+          ? `Lv ${summary.level.level} · +${coins} 🪙`
+          : `Lv ${summary.level.level}`,
       emoji: "⭐",
       level: summary.level.level,
     });

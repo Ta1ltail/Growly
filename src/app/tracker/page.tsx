@@ -5,7 +5,15 @@
 // Past days lock (only today + a short grace window are editable).
 
 import { memo, useCallback, useMemo, useState, Fragment } from "react";
-import { Flame, LayoutGrid, Lock, Snowflake, Check, X, Minus } from "lucide-react";
+import {
+  Flame,
+  LayoutGrid,
+  Lock,
+  Snowflake,
+  Check,
+  X,
+  Minus,
+} from "lucide-react";
 import { StreakFlame } from "@/components/habits/StreakFlame";
 import { CATEGORIES, CATEGORY_COLORS, type Category } from "@/lib/categories";
 import { addDays, dateKey, DEFAULT_GRACE_HOURS } from "@/lib/storage";
@@ -133,9 +141,12 @@ export default function TrackerPage() {
   );
 
   const frozen = useMemo(() => frozenSet(data.economy), [data.economy]);
-  const handleCellMark = useCallback((key: string, habitId: string, category: string) => {
-    cycleMark(key, habitId, category);
-  }, []);
+  const handleCellMark = useCallback(
+    (key: string, habitId: string, category: string) => {
+      cycleMark(key, habitId, category);
+    },
+    [],
+  );
 
   const groupedHabits = useMemo(() => {
     const map = new Map<string, typeof habits>();
@@ -192,7 +203,7 @@ export default function TrackerPage() {
           </div>
 
           {/* Fixed-height container with internal scroll for long habit lists */}
-          <div className="h-[calc(100dvh-230px)] min-h-[300px]">
+          <div className="h-[calc(100dvh-18rem)] min-h-[300px] md:h-[calc(100dvh-15rem)]">
             <Card className="overflow-hidden h-full">
               <div className="h-full overflow-y-auto">
                 <div
@@ -257,76 +268,73 @@ export default function TrackerPage() {
                               </td>
                             </tr>
                             {group.habits.map((habit) => {
-                                const { current } = habitStreaks(
-                                  habit,
-                                  data.marks,
-                                  today,
-                                  frozen,
-                                );
-                                return (
-                                  <tr
-                                    key={habit.id}
-                                    className="border-t border-line transition-colors hover:bg-surface2/30"
-                                  >
-                                    <td className="sticky left-0 z-10 min-w-36 border-r border-line bg-surface px-3 py-2 text-left">
-                                      <span className="flex items-center gap-2 pl-5">
-                                        <span
-                                          className="size-1.5 shrink-0 rounded-full"
-                                          style={{
-                                            backgroundColor:
-                                              CATEGORY_COLORS[
-                                                habit.category
-                                              ],
-                                          }}
-                                        />
-                                        <span className="truncate font-sans text-[13px]">
-                                          {habit.name}
-                                        </span>
+                              const { current } = habitStreaks(
+                                habit,
+                                data.marks,
+                                today,
+                                frozen,
+                              );
+                              return (
+                                <tr
+                                  key={habit.id}
+                                  className="border-t border-line transition-colors hover:bg-surface2/30"
+                                >
+                                  <td className="sticky left-0 z-10 min-w-36 border-r border-line bg-surface px-3 py-2 text-left">
+                                    <span className="flex items-center gap-2 pl-5">
+                                      <span
+                                        className="size-1.5 shrink-0 rounded-full"
+                                        style={{
+                                          backgroundColor:
+                                            CATEGORY_COLORS[habit.category],
+                                        }}
+                                      />
+                                      <span className="truncate font-sans text-[13px]">
+                                        {habit.name}
                                       </span>
-                                    </td>
-                                    {columns.map((d) => {
-                                      const key = dateKey(d);
-                                      const status =
-                                        data.marks[key]?.[habit.id];
-                                      const scheduled = isScheduled(habit, d);
-                                      const editable = canEditMark(
-                                        key,
-                                        today,
-                                        grace,
-                                      );
-                                      const future = isFutureDay(key, today);
-                                      const cellFrozen =
-                                        status === "missed" &&
-                                        isFrozen(frozen, habit.id, key);
-                                      return (
-                                        <TrackerCell
-                                          key={key}
-                                          dateKey={key}
-                                          habitId={habit.id}
-                                          category={habit.category}
-                                          status={status}
-                                          scheduled={scheduled}
-                                          editable={editable}
-                                          future={future}
-                                          cellFrozen={cellFrozen}
-                                          onMark={handleCellMark}
-                                        />
-                                      );
-                                    })}
-                                    <td className="px-2 font-semibold">
-                                      {current > 0 ? (
-                                        <StreakFlame
-                                          streak={current}
-                                          size={15}
-                                          className="justify-center"
-                                        />
-                                      ) : (
-                                        <span className="text-faint">0</span>
-                                      )}
-                                    </td>
-                                  </tr>
-                                );
-                              })}
+                                    </span>
+                                  </td>
+                                  {columns.map((d) => {
+                                    const key = dateKey(d);
+                                    const status = data.marks[key]?.[habit.id];
+                                    const scheduled = isScheduled(habit, d);
+                                    const editable = canEditMark(
+                                      key,
+                                      today,
+                                      grace,
+                                    );
+                                    const future = isFutureDay(key, today);
+                                    const cellFrozen =
+                                      status === "missed" &&
+                                      isFrozen(frozen, habit.id, key);
+                                    return (
+                                      <TrackerCell
+                                        key={key}
+                                        dateKey={key}
+                                        habitId={habit.id}
+                                        category={habit.category}
+                                        status={status}
+                                        scheduled={scheduled}
+                                        editable={editable}
+                                        future={future}
+                                        cellFrozen={cellFrozen}
+                                        onMark={handleCellMark}
+                                      />
+                                    );
+                                  })}
+                                  <td className="px-2 font-semibold">
+                                    {current > 0 ? (
+                                      <StreakFlame
+                                        streak={current}
+                                        size={15}
+                                        className="justify-center"
+                                      />
+                                    ) : (
+                                      <span className="text-faint">0</span>
+                                    )}
+                                  </td>
+                                </tr>
+                              );
+                            })}
                           </Fragment>
                         );
                       })}

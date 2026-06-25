@@ -130,7 +130,10 @@ function FpsMeter() {
       raf = requestAnimationFrame(loop);
     };
     raf = requestAnimationFrame(loop);
-    return () => { mounted = false; cancelAnimationFrame(raf); };
+    return () => {
+      mounted = false;
+      cancelAnimationFrame(raf);
+    };
   }, []);
 
   const color = fps >= 50 ? "#22c55e" : fps >= 30 ? "#f59e0b" : "#f43f5e";

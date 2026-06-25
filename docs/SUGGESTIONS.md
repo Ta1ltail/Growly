@@ -20,6 +20,7 @@ Each suggestion includes: **Effort** (S/M/L/XL), **Impact** (🔥 = moderate, �
 # PHASE A — FOUNDATION (P0)
 
 ## A1. Cloud Sync (Supabase + Drizzle ORM)
+
 **Effort:** XL | **Impact:** 🔥🔥🔥
 
 The single biggest unlock. Move from localStorage to Supabase so data persists across devices.
@@ -35,6 +36,7 @@ The single biggest unlock. Move from localStorage to Supabase so data persists a
 - **Key decision:** Real-time sync via Supabase Realtime (WebSockets) vs. manual pull-to-refresh.
 
 ## A2. Full Zod Validation Pipeline
+
 **Effort:** M | **Impact:** 🔥🔥
 
 Currently Zod is only used in `importJSON()`. Extend it to the full data pipeline.
@@ -46,6 +48,7 @@ Currently Zod is only used in `importJSON()`. Extend it to the full data pipelin
 - Save ~200 lines of hand-rolled sanitization code
 
 ## A3. Fix Security Vulnerability (postcss)
+
 **Effort:** S | **Impact:** 🔥🔥
 
 `next@16.2.9` depends on `postcss@8.4.31` which has a moderate XSS vulnerability.
@@ -54,6 +57,7 @@ Currently Zod is only used in `importJSON()`. Extend it to the full data pipelin
 - Test thoroughly — Next.js upgrades can break the dev server config
 
 ## A4. Error Monitoring (Sentry)
+
 **Effort:** S | **Impact:** 🔥🔥
 
 Zero visibility into production errors currently.
@@ -67,6 +71,7 @@ Zero visibility into production errors currently.
 # PHASE B — SOCIAL & COMMUNITY (P1)
 
 ## B1. Friend System
+
 **Effort:** L | **Impact:** 🔥🔥🔥
 
 Account-to-account connections that unlock all social features.
@@ -77,6 +82,7 @@ Account-to-account connections that unlock all social features.
 - **Implementation:** Supabase RLS + Realtime for live friend status updates
 
 ## B2. Accountability Parties
+
 **Effort:** XL | **Impact:** 🔥🔥🔥
 
 Inspired by Habitica's party system — groups where members see each other's progress.
@@ -91,6 +97,7 @@ Inspired by Habitica's party system — groups where members see each other's pr
 - **Privacy:** Habits are never shared — only completion rates and streak counts
 
 ## B3. Friend Leaderboards
+
 **Effort:** M | **Impact:** 🔥🔥
 
 Lightweight competition between friends.
@@ -102,6 +109,7 @@ Lightweight competition between friends.
 - **UX:** See where you rank among friends with animated rank changes
 
 ## B4. Community Challenges
+
 **Effort:** L | **Impact:** 🔥🔥
 
 Time-limited global challenges everyone can participate in.
@@ -119,6 +127,7 @@ Time-limited global challenges everyone can participate in.
 # PHASE C — AI & INTELLIGENCE (P1)
 
 ## C1. AI Habit Coach
+
 **Effort:** XL | **Impact:** 🔥🔥🔥
 
 LLM-powered coach that gives personalized advice based on the user's actual data.
@@ -135,6 +144,7 @@ LLM-powered coach that gives personalized advice based on the user's actual data
 - **UX:** Chat panel in the dashboard, optional weekly email summary
 
 ## C2. Smart Scheduling (Adaptive AI)
+
 **Effort:** L | **Impact:** 🔥🔥
 
 AI that learns when you're most likely to complete each habit and suggests schedule changes.
@@ -149,6 +159,7 @@ AI that learns when you're most likely to complete each habit and suggests sched
   - One-tap to accept the schedule change
 
 ## C3. Burnout & Plateau Detection
+
 **Effort:** M | **Impact:** 🔥🔥
 
 Detect when a user is burning out (declining engagement) and suggest recovery strategies.
@@ -162,6 +173,7 @@ Detect when a user is burning out (declining engagement) and suggest recovery st
 - **Tech:** Simple trend analysis in `lib/insights.ts` — extend `buildInsights()` with burnout signals
 
 ## C4. Natural Language Habit Creation
+
 **Effort:** M | **Impact:** 🔥🔥
 
 "Add 'read 20 minutes every weekday at 9pm'" → auto-parses and fills the form.
@@ -175,14 +187,17 @@ Detect when a user is burning out (declining engagement) and suggest recovery st
 # PHASE D — UI/UX POLISH (P1-P2)
 
 ## D1. Dark/Light Mode Auto-Schedule
+
 **Effort:** S | **Impact:** 🔥
 
 Currently theme mode is manual (light/dark/system). Add:
+
 - Schedule: "Dark mode from sunset to sunrise"
 - Location-based: Use browser geolocation or IP to determine sunset time
 - **Tech:** `date-fns-tz` or hand-rolled sunset calculation based on lat/lng
 
 ## D2. Mobile App (PWA + TWA)
+
 **Effort:** L | **Impact:** 🔥🔥🔥
 
 The PWA is already functional. Elevate it to feel native.
@@ -195,6 +210,7 @@ The PWA is already functional. Elevate it to feel native.
 - **Trusted Web Activity (TWA):** Wrap for Google Play Store distribution
 
 ## D3. Widgets (iOS + Android)
+
 **Effort:** L | **Impact:** 🔥🔥
 
 - **iOS:** Use Scriptable or build a native widget extension
@@ -206,11 +222,13 @@ The PWA is already functional. Elevate it to feel native.
 - **Fallback:** If native widgets aren't feasible, a pinned browser shortcut with `?widget=true` URL param
 
 ## D4. Habit Categories as Tabs
+
 **Effort:** S | **Impact:** 🔥
 
 On the Today page, add horizontal category tabs at the top so users can focus on one category at a time (Workout, Studies, etc.). Clear visual indicator of which category is active.
 
 ## D5. Drag-to-Reorder Habits
+
 **Effort:** M | **Impact:** 🔥🔥
 
 Add drag-and-drop reordering within Today's habit list and the Manage Habits page.
@@ -219,19 +237,23 @@ Add drag-and-drop reordering within Today's habit list and the Manage Habits pag
 - **Persistence:** Order stored in settings. User-controlled priority.
 
 ## D6. Empty State Illustrations
+
 **Effort:** S | **Impact:** 🔥
 
 The current empty states are text-only. Add simple inline SVG illustrations for each (no habits, no goals, no achievements, etc.). Creates emotional warmth (like Finch's approach).
 
 ## D7. Streak Recovery Animations
+
 **Effort:** S | **Impact:** 🔥
 
 When a streak is broken and then rebuilt, show a special animation:
+
 - "Streak revived!" badge
 - Small flame re-igniting animation
 - The "Never Miss Twice" principle — celebrate the recovery, not just the streak
 
 ## D8. Weekly Progress Report (Email + In-App)
+
 **Effort:** M | **Impact:** 🔥🔥
 
 - **Content:** Completion % vs. previous week, best streak, top category, insight of the week, upcoming challenges
@@ -244,6 +266,7 @@ When a streak is broken and then rebuilt, show a special animation:
 # PHASE E — GAMIFICATION ENHANCEMENTS (P2)
 
 ## E1. Monthly/Yearly Streaks
+
 **Effort:** S | **Impact:** 🔥🔥
 
 Beyond daily streaks, track monthly and yearly completions.
@@ -254,19 +277,23 @@ Beyond daily streaks, track monthly and yearly completions.
 - **Rewards:** Bonus coins and exclusive badges for monthly/yearly milestones
 
 ## E2. Streak Freeze Shop Upgrade
+
 **Effort:** S | **Impact:** 🔥
 
 Make streak freezes more engaging:
+
 - **Multi-pack discount:** Buy 3 freezes for the price of 2
 - **Free daily freeze:** One free streak freeze per week (claimed on Monday)
 - **Streak freeze cap:** Max 3 active freezes to prevent abuse
 
 ## E3. Achievement Tier Unlock Animations
+
 **Effort:** M | **Impact:** 🔥🔥
 
 When a user gets their first Legendary achievement, first Epic, etc., show a special "tier unlock" celebration — not just the achievement popup but a collection milestone with confetti and a summary of what this tier means.
 
 ## E4. Character Customization Expansion
+
 **Effort:** M | **Impact:** 🔥🔥
 
 - **More slots:** Background (banner), title font, frame/border for the RankAvatar
@@ -274,6 +301,7 @@ When a user gets their first Legendary achievement, first Epic, etc., show a spe
 - **Gacha pulls:** Random cosmetic for coins (with duplicate protection)
 
 ## E5. Title Prestige System
+
 **Effort:** M | **Impact:** 🔥
 
 After reaching the max title (Titan), allow "prestiging" — reset your level but keep achievements, with a special prestige badge and exclusive cosmetics.
@@ -283,6 +311,7 @@ After reaching the max title (Titan), allow "prestiging" — reset your level bu
 # PHASE F — DATA & ANALYTICS (P2)
 
 ## F1. Advanced Insights Engine
+
 **Effort:** M | **Impact:** 🔥🔥
 
 Extend `buildInsights()` with 10+ new insight types:
@@ -295,6 +324,7 @@ Extend `buildInsights()` with 10+ new insight types:
 - **Streak predictions:** "You'll hit a 30-day streak in 2 more days at your current pace"
 
 ## F2. Export Enhancements
+
 **Effort:** S | **Impact:** 🔥
 
 - **PDF export:** Beautiful, printable monthly report with charts and insights
@@ -302,6 +332,7 @@ Extend `buildInsights()` with 10+ new insight types:
 - **CSV with all fields:** Include notes, goals, and audit log alongside marks
 
 ## F3. Habit Templates User-Created
+
 **Effort:** M | **Impact:** 🔥
 
 Let users create, save, and share their own templates.
@@ -312,6 +343,7 @@ Let users create, save, and share their own templates.
 - **Featured:** Curated community templates with ratings
 
 ## F4. Mood & Energy Tracking
+
 **Effort:** M | **Impact:** 🔥🔥
 
 Add a simple mood/energy slider to the daily check-in.
@@ -326,6 +358,7 @@ Add a simple mood/energy slider to the daily check-in.
 # PHASE G — INTERNATIONALIZATION & ACCESSIBILITY (P2)
 
 ## G1. i18n (Internationalization)
+
 **Effort:** L | **Impact:** 🔥🔥
 
 - **Framework:** `next-intl` or `react-intl` for Next.js App Router
@@ -335,6 +368,7 @@ Add a simple mood/energy slider to the daily check-in.
 - **Persistence:** Language preference stored in settings
 
 ## G2. Accessibility Audit & Improvements
+
 **Effort:** M | **Impact:** 🔥🔥
 
 Beyond the current a11y basics:
@@ -347,6 +381,7 @@ Beyond the current a11y basics:
 - **Touch targets audit:** Ensure ALL interactive elements (not just MarkButton/IconBtn) meet 44×44px
 
 ## G3. RTL Support
+
 **Effort:** M | **Impact:** 🔥
 
 Right-to-left layout for Arabic, Hebrew, and Persian users.
@@ -360,6 +395,7 @@ Right-to-left layout for Arabic, Hebrew, and Persian users.
 # PHASE H — PERFORMANCE & ARCHITECTURE (P2)
 
 ## H1. Image Optimization
+
 **Effort:** S | **Impact:** 🔥
 
 - Convert all SVG icons from `<img>` to inline SVGs or `next/image`
@@ -367,6 +403,7 @@ Right-to-left layout for Arabic, Hebrew, and Persian users.
 - Add `loading="lazy"` to any off-screen images
 
 ## H2. Route-Level Code Splitting
+
 **Effort:** M | **Impact:** 🔥🔥
 
 - Audit bundle with `ANALYZE=true npm run build`
@@ -375,6 +412,7 @@ Right-to-left layout for Arabic, Hebrew, and Persian users.
 - Dynamic imports for heavy pages (Stats with TrendLineChart, Shop with full catalog)
 
 ## H3. Service Worker Upgrade
+
 **Effort:** M | **Impact:** 🔥
 
 The current `sw.js` is a basic cache-first strategy. Upgrade to:
@@ -385,6 +423,7 @@ The current `sw.js` is a basic cache-first strategy. Upgrade to:
 - **Offline analytics:** Queue page views when offline, send when connected
 
 ## H4. Pagination Refactor
+
 **Effort:** S | **Impact:** 🔥
 
 The current pagination resets to page 0 when filters change. Improve:
@@ -398,6 +437,7 @@ The current pagination resets to page 0 when filters change. Improve:
 # PHASE I — PLATFORM & INFRASTRUCTURE (P2-P3)
 
 ## I1. GitHub Actions CI/CD
+
 **Effort:** M | **Impact:** 🔥🔥
 
 Automated quality gates on every push:
@@ -416,6 +456,7 @@ Automated quality gates on every push:
 - **Preview deployments:** Vercel preview URLs for every PR
 
 ## I2. E2E Tests (Playwright)
+
 **Effort:** L | **Impact:** 🔥🔥
 
 Critical user paths end-to-end:
@@ -427,6 +468,7 @@ Critical user paths end-to-end:
 - **Responsive:** Test mobile viewport (375×667) for all critical paths
 
 ## I3. Rate Limiting (Upstash)
+
 **Effort:** S | **Impact:** 🔥🔥
 
 Protect API routes and auth endpoints:
@@ -437,6 +479,7 @@ Protect API routes and auth endpoints:
 - **Tech:** `@upstash/ratelimit` with Redis for serverless compatibility
 
 ## I4. Analytics (PostHog / Plausible)
+
 **Effort:** S | **Impact:** 🔥🔥
 
 Understand how users actually use the app:
@@ -451,25 +494,27 @@ Understand how users actually use the app:
 # PHASE J — BUSINESS & MONETIZATION (P3)
 
 ## J1. Free vs. Pro Tiers
+
 **Effort:** L | **Impact:** 🔥🔥🔥
 
-| Feature | Free | Pro |
-|---------|------|-----|
-| Habits | Unlimited | Unlimited |
-| Templates | 8 basic | All + community |
-| Stats | 7/30/90 day | Custom date range + export |
-| AI Coach | — | ✓ |
-| Cloud sync | — | ✓ (up to 3 devices) |
-| Social | View leaderboards | Create challenges, parties |
-| Cosmetics | Standard | Full catalog |
-| Backup | Manual JSON | Auto-daily cloud backup |
-| Support | Community | Priority email |
+| Feature    | Free              | Pro                        |
+| ---------- | ----------------- | -------------------------- |
+| Habits     | Unlimited         | Unlimited                  |
+| Templates  | 8 basic           | All + community            |
+| Stats      | 7/30/90 day       | Custom date range + export |
+| AI Coach   | —                 | ✓                          |
+| Cloud sync | —                 | ✓ (up to 3 devices)        |
+| Social     | View leaderboards | Create challenges, parties |
+| Cosmetics  | Standard          | Full catalog               |
+| Backup     | Manual JSON       | Auto-daily cloud backup    |
+| Support    | Community         | Priority email             |
 
 - **Pricing:** $4.99/month or $39.99/year (common for this category)
 - **Trial:** 14-day free Pro trial on signup
 - **Grandfathering:** Early users (pre-cloud) get lifetime Pro discount
 
 ## J2. Payment Integration (PayMongo + PayPal)
+
 **Effort:** L | **Impact:** 🔥🔥
 
 - **PayMongo:** Primary processor for Philippines (GCash, Maya, card)
@@ -479,6 +524,7 @@ Understand how users actually use the app:
 - **Legal:** Privacy Policy + Terms of Service pages REQUIRED before taking money
 
 ## J3. Referral Program
+
 **Effort:** M | **Impact:** 🔥🔥
 
 - **Mechanic:** Share a referral link → friend signs up for Pro → you get 1 month free
@@ -487,6 +533,7 @@ Understand how users actually use the app:
 - **UX:** Referral card in Settings with share button
 
 ## J4. Team/Organization Plans
+
 **Effort:** XL | **Impact:** 🔥🔥
 
 B2B play — teams use the app together for shared habit challenges:
@@ -502,6 +549,7 @@ B2B play — teams use the app together for shared habit challenges:
 # PHASE K — DEEP GAMIFICATION (P3)
 
 ## K1. Skill Trees
+
 **Effort:** XL | **Impact:** 🔥🔥🔥
 
 Each category becomes a skill tree with unlockable nodes:
@@ -513,6 +561,7 @@ Each category becomes a skill tree with unlockable nodes:
 - **Engagement:** Unlockable passives make users feel their history has lasting value
 
 ## K2. Seasonal Battle Pass
+
 **Effort:** L | **Impact:** 🔥🔥
 
 - **Duration:** 4-week seasons with a theme (e.g., "Summer of Strength")
@@ -522,6 +571,7 @@ Each category becomes a skill tree with unlockable nodes:
 - **UX:** Battle pass UI in a dedicated tab with reward preview
 
 ## K3. Daily/Weekly Quests Expansion
+
 **Effort:** M | **Impact:** 🔥
 
 The current daily quest is one generic challenge. Expand to:
@@ -536,6 +586,7 @@ The current daily quest is one generic challenge. Expand to:
 # PHASE L — INTEGRATIONS (P3)
 
 ## L1. Google Calendar Sync
+
 **Effort:** M | **Impact:** 🔥🔥
 
 Two-way sync with Google Calendar:
@@ -546,6 +597,7 @@ Two-way sync with Google Calendar:
 - **Tech:** Google Calendar API + OAuth2
 
 ## L2. Apple Health / Google Fit Integration
+
 **Effort:** M | **Impact:** 🔥🔥
 
 Auto-track health metrics as habits:
@@ -556,6 +608,7 @@ Auto-track health metrics as habits:
 - **Tech:** Web app can't directly read Health/Fit APIs — needs native companion app or Apple Watch integration
 
 ## L3. IFTTT / Zapier Connector
+
 **Effort:** M | **Impact:** 🔥
 
 Let users create automations:
@@ -565,6 +618,7 @@ Let users create automations:
 - "Log completed habits to a Google Sheet"
 
 ## L4. Discord / Slack Integration
+
 **Effort:** S | **Impact:** 🔥
 
 - **Daily summary bot:** Post your daily habit progress to a Discord channel
@@ -577,6 +631,7 @@ Let users create automations:
 # PHASE M — LOGISTICAL & TECHNICAL DEBT (P2-P3)
 
 ## M1. Monorepo Split
+
 **Effort:** L | **Impact:** 🔥🔥
 
 Split into a monorepo for clearer separation:
@@ -596,6 +651,7 @@ project_101/
 - **Benefit:** Types and business logic shared between web and potential mobile app
 
 ## M2. Storybook Component Library
+
 **Effort:** M | **Impact:** 🔥
 
 - Catalog all 30+ UI components in Storybook
@@ -604,6 +660,7 @@ project_101/
 - Interactive playground for each component
 
 ## M3. Performance Budget
+
 **Effort:** S | **Impact:** 🔥
 
 Define and enforce performance budgets:
@@ -615,6 +672,7 @@ Define and enforce performance budgets:
 - **Enforcement:** CI fails if budget is exceeded
 
 ## M4. Remove Remaining Dead Code
+
 **Effort:** S | **Impact:** 🔥
 
 Knip still reports ~20 unused exports:
@@ -628,6 +686,7 @@ Knip still reports ~20 unused exports:
 These are low-risk removals. Run `knip` after each to verify.
 
 ## M5. CSS Cleanup
+
 **Effort:** M | **Impact:** 🔥
 
 - Remove unused keyframes: `particle-float`, `particle-float-alt`, `ember` (ambient background was removed)
@@ -640,6 +699,7 @@ These are low-risk removals. Run `knip` after each to verify.
 # PHASE N — MOONSHOTS (P4)
 
 ## N1. AR Mode (Mobile)
+
 **Effort:** XL | **Impact:** 🔥🔥🔥
 
 Using the phone camera, overlay habit progress and streaks on the real world through AR.
@@ -649,6 +709,7 @@ Using the phone camera, overlay habit progress and streaks on the real world thr
 - **Tech:** WebXR API or native ARKit/ARCore integration
 
 ## N2. Habit Marketplace
+
 **Effort:** XL | **Impact:** 🔥🔥
 
 Community-curated habit templates that users can sell:
@@ -659,6 +720,7 @@ Community-curated habit templates that users can sell:
 - **Categories:** Fitness, Study, Career, Mental Health, Finance, etc.
 
 ## N3. Predictive Relapse Prevention
+
 **Effort:** XL | **Impact:** 🔥🔥🔥
 
 Using machine learning to predict when a user is likely to abandon a habit and intervene before it happens.
@@ -668,6 +730,7 @@ Using machine learning to predict when a user is likely to abandon a habit and i
 - **Action:** When risk is high (>70%), show a motivational prompt, suggest lowering difficulty, or trigger a friend notification (with user consent)
 
 ## N4. Biofeedback Integration
+
 **Effort:** XL | **Impact:** 🔥🔥
 
 Integrate with wearables for biofeedback-driven habit suggestions:
@@ -678,6 +741,7 @@ Integrate with wearables for biofeedback-driven habit suggestions:
 - **Tech:** Apple Health API, Google Fit API, or direct wearable SDKs (requires companion app)
 
 ## N5. Gamified Life RPG
+
 **Effort:** XL | **Impact:** 🔥🔥🔥
 
 Turn the app into a full life RPG:
@@ -694,18 +758,18 @@ Turn the app into a full life RPG:
 
 These are small-effort, high-impact items that can be implemented in a single session:
 
-| # | Suggestion | Effort | Impact | File(s) |
-|---|-----------|--------|--------|---------|
-| 1 | Fix postcss vulnerability (upgrade Next.js) | S | 🔥🔥 | package.json |
-| 2 | Add Sentry error monitoring | S | 🔥🔥 | New + next.config.ts |
-| 3 | Category tabs on Today page | S | 🔥 | today/page.tsx |
-| 4 | Empty state illustrations (SVG) | S | 🔥 | EmptyState.tsx + pages |
-| 5 | Streak recovery animation | S | 🔥 | CelebrationManager.tsx |
-| 6 | Mood/energy slider in check-in | M | 🔥🔥 | CheckInPopup.tsx |
-| 7 | Full Zod validation in loadData | M | 🔥🔥 | storage.ts, export.ts |
-| 8 | GitHub Actions CI | M | 🔥🔥 | .github/workflows/ |
-| 9 | Remove remaining dead CSS/CSS vars | S | 🔥 | globals.css |
-| 10 | Drag-to-reorder habits (with removed @dnd-kit or reorderable list) | M | 🔥🔥 | today/page.tsx |
+| #   | Suggestion                                                         | Effort | Impact | File(s)                |
+| --- | ------------------------------------------------------------------ | ------ | ------ | ---------------------- |
+| 1   | Fix postcss vulnerability (upgrade Next.js)                        | S      | 🔥🔥   | package.json           |
+| 2   | Add Sentry error monitoring                                        | S      | 🔥🔥   | New + next.config.ts   |
+| 3   | Category tabs on Today page                                        | S      | 🔥     | today/page.tsx         |
+| 4   | Empty state illustrations (SVG)                                    | S      | 🔥     | EmptyState.tsx + pages |
+| 5   | Streak recovery animation                                          | S      | 🔥     | CelebrationManager.tsx |
+| 6   | Mood/energy slider in check-in                                     | M      | 🔥🔥   | CheckInPopup.tsx       |
+| 7   | Full Zod validation in loadData                                    | M      | 🔥🔥   | storage.ts, export.ts  |
+| 8   | GitHub Actions CI                                                  | M      | 🔥🔥   | .github/workflows/     |
+| 9   | Remove remaining dead CSS/CSS vars                                 | S      | 🔥     | globals.css            |
+| 10  | Drag-to-reorder habits (with removed @dnd-kit or reorderable list) | M      | 🔥🔥   | today/page.tsx         |
 
 ---
 
@@ -752,4 +816,4 @@ Phase K+ — Advanced (Weeks 20+)
 
 ---
 
-*This document was generated on 2026-06-20. It is a living document — revisit and reprioritize as the app evolves and user feedback comes in.*
+_This document was generated on 2026-06-20. It is a living document — revisit and reprioritize as the app evolves and user feedback comes in._

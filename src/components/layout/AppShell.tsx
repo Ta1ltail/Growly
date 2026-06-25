@@ -6,17 +6,22 @@
 // entrance animation which avoids the layout-shifting bug where both exiting
 // and entering pages occupy the DOM simultaneously during transitions.
 
-import { type ReactNode } from "react";
+import { type ReactNode, lazy, Suspense } from "react";
 import { Toaster } from "sonner";
 import { usePathname } from "next/navigation";
 import { Sidebar } from "./Sidebar";
 import { BottomNav } from "./BottomNav";
 import { CelebrationManager } from "@/components/celebrations/CelebrationManager";
 import { AccentThemeApplier } from "@/components/economy/AccentThemeApplier";
-import { DevMode } from "@/components/devmode/DevMode";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { KeyboardShortcutsModal } from "@/components/ui/KeyboardShortcutsModal";
 import { OnboardingWizard } from "@/components/ui/OnboardingWizard";
+
+const DevModeLazy = lazy(() =>
+  import("@/components/devmode/DevMode").then((m) => ({
+    default: m.DevMode,
+  })),
+);
 
 export function AppShell({ children }: { children: ReactNode }) {
   useKeyboardShortcuts();
@@ -48,7 +53,9 @@ export function AppShell({ children }: { children: ReactNode }) {
       />
       <CelebrationManager />
       <AccentThemeApplier />
-      <DevMode />
+      <Suspense fallback={null}>
+        <DevModeLazy />
+      </Suspense>
     </div>
   );
 }

@@ -47,17 +47,19 @@
 ## ✅ Optimization Pass (2026-06-20 v3)
 
 ### Tool Installations
-| Tool | Purpose |
-|------|---------|
-| `motion` | Page transitions, stagger animations, micro-interactions |
-| `sonner` | Toast notifications — replaced custom toast stack |
-| `clsx` + `tailwind-merge` | `cn()` utility for className composition |
-| `zod` (v4) | Runtime schema validation for importJSON |
-| `knip` | Dead code detection |
-| `prettier` | Code formatting (95 files) |
-| `@next/bundle-analyzer` | Visual bundle size reports |
+
+| Tool                      | Purpose                                                  |
+| ------------------------- | -------------------------------------------------------- |
+| `motion`                  | Page transitions, stagger animations, micro-interactions |
+| `sonner`                  | Toast notifications — replaced custom toast stack        |
+| `clsx` + `tailwind-merge` | `cn()` utility for className composition                 |
+| `zod` (v4)                | Runtime schema validation for importJSON                 |
+| `knip`                    | Dead code detection                                      |
+| `prettier`                | Code formatting (95 files)                               |
+| `@next/bundle-analyzer`   | Visual bundle size reports                               |
 
 ### Dead Code Removed
+
 - `exportNotesText`, `MARK_FILL`, `isDayLocked`, `toggleDev`/`enableDevMode`, `undoLabel`/`redoLabel`/`clearHistory` — 10 unused exports
 - Inert AI config (`AiDevConfig`, `cleanAi`, `setAi`, `ai` field) — 60 lines, 4 files
 - `AiSettingsSection.tsx`, `CelebrationToast.tsx` — 2 files deleted
@@ -65,6 +67,7 @@
 - Unused deps: `@dnd-kit/*`, `culori`, `date-fns` (installed but never integrated)
 
 ### Performance
+
 - Debounced localStorage saves (100ms batch for mark toggles)
 - `React.memo` on 8 components (StatCard, ProgressBar, ProgressRing, CoinChip, EmptyState, Pagination, Segmented, CircularProgress)
 - `useMemo` on widgetContent, streak calculations, insight generation
@@ -72,12 +75,14 @@
 - `useAppDataSelector` for granular subscriptions
 
 ### Type Safety
+
 - Zod v4 schema validates importJSON (z.strictObject) — replaces `as unknown as AppData`
 - TONE constant extracted to `util.ts`, shared across page.tsx and stats/page.tsx
 - IconBtn extracted to shared component at `components/ui/IconBtn.tsx`
 - CATEGORY_COLORS_MAP duplicate removed from templates page
 
 ### Animations & Micro-interactions
+
 - **Page transitions:** `AnimatePresence mode="wait"` with fade+slide (0.2s), keyed by `usePathname()`
 - **Card hover:** motion.div `whileHover` spring (scale 1.015, y -2)
 - **Button tap:** motion.div wrapper `whileTap` spring (scale 0.93)
@@ -85,11 +90,13 @@
 - CSS `transition-all` restricted to avoid competing with motion springs
 
 ### Bundle Analysis
+
 - `@next/bundle-analyzer` installed and configured
 - Run with: `ANALYZE=true npm run build`
 - Reports: `.next/analyze/{client,nodejs,edge}.html`
 
 ### Architecture Cleanup
+
 - `cn()` utility consolidated into `util.ts` (deleted duplicate `utils.ts`)
 - Prettier formatted 95 files
 - Shared `Pagination` component used in achievements page (replaced hand-rolled)

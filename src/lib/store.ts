@@ -614,7 +614,10 @@ export function acknowledgeCelebration(event: CelebrationEvent): void {
     } else if (event.kind === "tier" && event.tier != null) {
       // Reverse-lookup rarity from RARITY_ORDER value
       const RARITY_BY_ORDER: Record<number, string> = {
-        0: "common", 1: "rare", 2: "epic", 3: "legendary",
+        0: "common",
+        1: "rare",
+        2: "epic",
+        3: "legendary",
       };
       const rarity = RARITY_BY_ORDER[event.tier];
       if (rarity && !ps.tierUnlocks.includes(rarity)) {
@@ -894,5 +897,3 @@ export function redoAction(): boolean {
   }, false); // don't record history for redo itself
   return didRedo;
 }
-
-

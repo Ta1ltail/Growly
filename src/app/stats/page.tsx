@@ -266,13 +266,12 @@ export default function StatsPage() {
       )}
 
       {/* Equal-height analytics cards — fixed height, internal scroll for overflow */}
-      <div className="mt-6 grid gap-6 sm:grid-cols-2">
-        {/* Recent trends — interactive line chart */}
-        <div className="h-[280px]">
+      <div className="mt-6 grid gap-6 sm:grid-cols-2">          {/* Recent trends — interactive line chart */}
+        <div className="min-h-[240px] lg:h-[280px]">
           <h2 className="mb-3 shrink-0 text-sm font-semibold uppercase tracking-wide text-muted">
             Recent trends
           </h2>
-          <Card className="p-5 h-[calc(100%-28px)] flex flex-col">
+          <Card className="p-5 min-h-[calc(100%-28px)] flex flex-col">
             <div className="flex-1 min-h-0">
               <TrendLineChart points={chart} height={180} />
             </div>
@@ -280,11 +279,11 @@ export default function StatsPage() {
         </div>
 
         {/* Last 7 Days — fixed with bar chart, proper sizing */}
-        <div className="h-[280px]">
+        <div className="min-h-[240px] lg:h-[280px]">
           <h2 className="mb-3 shrink-0 text-sm font-semibold uppercase tracking-wide text-muted">
             Last 7 days
           </h2>
-          <Card className="p-5 h-[calc(100%-28px)] flex flex-col">
+          <Card className="p-5 min-h-[calc(100%-28px)] flex flex-col">
             <div className="flex-1 flex items-end justify-between gap-2">
               {week7.map(({ date, rate }) => (
                 <div
@@ -313,11 +312,11 @@ export default function StatsPage() {
         </div>
 
         {/* Top categories — fixed height, internal scroll */}
-        <div className="h-[280px]">
+        <div className="min-h-[240px] lg:h-[280px]">
           <h2 className="mb-3 shrink-0 text-sm font-semibold uppercase tracking-wide text-muted">
             Top categories
           </h2>
-          <Card className="p-5 h-[calc(100%-28px)] flex flex-col">
+          <Card className="p-5 min-h-[calc(100%-28px)] flex flex-col">
             <div className="flex-1 min-h-0 overflow-y-auto pr-1">
               <div className="flex flex-col gap-3.5">
                 {topCategories.length === 0 ? (
@@ -352,11 +351,11 @@ export default function StatsPage() {
         </div>
 
         {/* By weekday — fixed height, internal scroll */}
-        <div className="h-[280px]">
+        <div className="min-h-[240px] lg:h-[280px]">
           <h2 className="mb-3 shrink-0 text-sm font-semibold uppercase tracking-wide text-muted">
             By weekday
           </h2>
-          <Card className="p-5 h-[calc(100%-28px)] flex flex-col">
+          <Card className="p-5 min-h-[calc(100%-28px)] flex flex-col">
             <div className="flex-1 min-h-0 overflow-y-auto pr-1">
               <div className="flex flex-col gap-2.5">
                 {byWeekday.map(({ weekday, rate }) => (

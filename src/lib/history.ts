@@ -11,7 +11,6 @@
 //   - Call `pushSnapshot(data)` BEFORE any store mutation (inside update()).
 //   - Call `undo()` to go back; returns the restored AppData or null.
 //   - Call `redo()` to go forward; returns the restored AppData or null.
-//   - Call `canUndo()` / `canRedo()` to check availability (for UI indicators).
 
 import type { AppData } from "./types";
 
@@ -63,12 +62,4 @@ export function redo(currentData: AppData): AppData | null {
     MAX_HISTORY,
   );
   return snapshot;
-}
-
-export function canUndo(): boolean {
-  return undoStack.length > 0;
-}
-
-export function canRedo(): boolean {
-  return redoStack.length > 0;
 }

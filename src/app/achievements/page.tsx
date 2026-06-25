@@ -243,7 +243,10 @@ export default function AchievementsPage() {
                         </h3>
                         <span
                           className="shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-bold uppercase"
-                          style={{ background: `${r.accent}1f`, color: r.accent }}
+                          style={{
+                            background: `${r.accent}1f`,
+                            color: r.accent,
+                          }}
                         >
                           {RARITY_LABEL[a.def.rarity]}
                         </span>

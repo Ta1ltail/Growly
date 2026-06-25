@@ -409,7 +409,11 @@ function cleanEconomyV5(v: unknown): Economy {
       Number.isFinite(r.amount) &&
       typeof r.isFreeze === "boolean"
     ) {
-      lastSpinResult = { label: r.label, amount: r.amount, isFreeze: r.isFreeze };
+      lastSpinResult = {
+        label: r.label,
+        amount: r.amount,
+        isFreeze: r.isFreeze,
+      };
     }
   }
 

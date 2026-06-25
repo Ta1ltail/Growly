@@ -48,7 +48,11 @@ export function Button({
       transition={{ type: "spring", stiffness: 400, damping: 15 }}
       className="contents"
     >
-      <button type="button" className={buttonClasses(variant, size, className)} {...props}>
+      <button
+        type="button"
+        className={buttonClasses(variant, size, className)}
+        {...props}
+      >
         {children}
       </button>
     </motion.div>

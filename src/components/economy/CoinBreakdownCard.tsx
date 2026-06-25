@@ -5,7 +5,14 @@
 // days, achievement bonuses) minus the spend ledger, so the number in the shop
 // header is never a mystery.
 
-import { CheckCircle2, Sparkles, Trophy, Coins, Minus, Gift } from "lucide-react";
+import {
+  CheckCircle2,
+  Sparkles,
+  Trophy,
+  Coins,
+  Minus,
+  Gift,
+} from "lucide-react";
 import type { CoinBreakdown } from "@/lib/economy";
 import {
   COINS_PER_COMPLETION,

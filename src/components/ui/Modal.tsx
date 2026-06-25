@@ -57,9 +57,7 @@ export function Modal({
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     // Move focus into the panel.
-    panelRef.current
-      ?.querySelector<HTMLElement>(FOCUSABLE)
-      ?.focus();
+    panelRef.current?.querySelector<HTMLElement>(FOCUSABLE)?.focus();
     return () => {
       document.removeEventListener("keydown", onKey);
       document.body.style.overflow = prevOverflow;

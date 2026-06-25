@@ -137,7 +137,7 @@ export default function DashboardPage() {
     (): Record<WidgetId, { content: React.ReactNode; span?: string }> => ({
       "xp-level": {
         content: (
-          <Card className="p-5 h-[180px] flex flex-col">
+          <Card className="p-5 min-h-[160px] lg:h-[180px] flex flex-col">
             <TitleDisplay title={title} size="sm" className="mb-3 shrink-0" />
             <div className="flex-1 min-h-0">
               <XpBar level={level} nextUnlock={title.next?.name} />
@@ -147,7 +147,7 @@ export default function DashboardPage() {
       },
       "badge-collection": {
         content: (
-          <Card className="p-4 h-[140px] flex flex-col justify-between">
+          <Card className="p-4 min-h-[130px] lg:h-[140px] flex flex-col justify-between">
             <div className="flex items-center justify-between">
               <h3 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-muted">
                 <Sparkles className="size-4 icon-accent" /> Badges
@@ -182,7 +182,7 @@ export default function DashboardPage() {
       },
       "current-streak": {
         content: (
-          <Card className="flex items-center gap-4 p-4 h-[140px]">
+          <Card className="flex items-center gap-4 p-4 min-h-[120px] lg:h-[140px]">
             {summary.stats.maxCurrentStreak > 0 ? (
               <StreakFlame
                 streak={summary.stats.maxCurrentStreak}
@@ -205,7 +205,7 @@ export default function DashboardPage() {
       },
       "recent-achievements": {
         content: (
-          <Card className="p-4 h-[140px] flex flex-col">
+          <Card className="p-4 min-h-[130px] lg:h-[140px] flex flex-col">
             <div className="flex items-center justify-between shrink-0 mb-2">
               <h3 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-muted">
                 <Activity className="size-4 icon-accent" /> Recent
@@ -246,7 +246,7 @@ export default function DashboardPage() {
       },
       "next-milestone": {
         content: (
-          <Card className="p-5 h-[180px] overflow-y-auto">
+          <Card className="p-5 min-h-[160px] lg:h-[180px] overflow-y-auto">
             <NextMilestoneWidget
               milestones={summary.nextMilestones.slice(0, 2)}
             />
@@ -255,7 +255,7 @@ export default function DashboardPage() {
       },
       "weekly-trend": {
         content: (
-          <Card className="p-5 h-[180px] flex flex-col">
+          <Card className="p-5 min-h-[160px] lg:h-[180px] flex flex-col">
             <div className="mb-2 flex items-center justify-between shrink-0">
               <h3 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-muted">
                 <CalendarRange className="size-4 icon-accent" /> Weekly

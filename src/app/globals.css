@@ -50,7 +50,6 @@
   --animate-icon-bounce: icon-bounce 2s ease-in-out infinite;
   --animate-icon-pulse: icon-pulse 3s ease-in-out infinite;
   --animate-icon-wiggle: icon-wiggle 0.4s ease-in-out;
-
 }
 
 /* Motion language */
@@ -223,28 +222,6 @@
     opacity: 1;
   }
 }
-/* Slide-in toast (enters from the right, off the trailing edge). */
-@keyframes toast-in {
-  from {
-    transform: translateX(120%);
-    opacity: 0;
-  }
-  to {
-    transform: translateX(0);
-    opacity: 1;
-  }
-}
-/* Slide-out toast (exits to the right with fade). */
-@keyframes toast-out {
-  from {
-    transform: translateX(0);
-    opacity: 1;
-  }
-  to {
-    transform: translateX(120%);
-    opacity: 0;
-  }
-}
 /* Major-unlock entrance: badge zooms in past final size then settles. */
 @keyframes celebrate-in {
   0% {
@@ -260,22 +237,6 @@
     opacity: 1;
   }
 }
-/* Sparkle particles burst outward from center — used in celebration popups */
-@keyframes sparkle-drift {
-  0% {
-    opacity: 0;
-    transform: translate(-50%, -50%) scale(0);
-  }
-  30% {
-    opacity: 1;
-    transform: translate(calc(-50% + var(--sx, 0px)), calc(-50% + var(--sy, 0px))) scale(1);
-  }
-  100% {
-    opacity: 0;
-    transform: translate(calc(-50% + var(--sx, 0px) * 1.5), calc(-50% + var(--sy, 0px) * 1.5)) scale(0.3);
-  }
-}
-
 /* Conic shine sweeping behind a legendary badge. */
 @keyframes spin-slow {
   to {
@@ -332,8 +293,6 @@
     transform: rotate(5deg);
   }
 }
-
-
 
 * {
   -webkit-tap-highlight-color: transparent;
@@ -400,8 +359,6 @@ body {
   background: var(--c-bg);
 }
 
-
-
 /* Skeleton placeholder: a soft, static block for loading states.
    No animation — the brief hydration flash should not draw attention.
    The gradient still gives it depth without a pulsing effect. */
@@ -414,21 +371,6 @@ body {
   );
   border-radius: 0.5rem;
 }
-
-
-
-
-
-/* Internal scroll container — content scrolls, container stays fixed */
-.scroll-y {
-  overflow-y: auto;
-  min-height: 0;
-}
-.scroll-x {
-  overflow-x: auto;
-}
-
-
 
 /* Icon color styling system */
 .icon-accent {

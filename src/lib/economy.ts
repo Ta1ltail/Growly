@@ -43,7 +43,7 @@ const LEVEL_UP_COINS = [
   100, // level 10
 ];
 // For levels beyond 10: 100 + (level - 10) * 25
-export function levelUpBonus(level: number): number {
+function levelUpBonus(level: number): number {
   if (level <= 1) return 0;
   if (level <= LEVEL_UP_COINS.length) return LEVEL_UP_COINS[level - 1];
   return 100 + (level - 10) * 25;
@@ -51,9 +51,13 @@ export function levelUpBonus(level: number): number {
 
 // Total level-up coins for advancing from `fromLevel` to `toLevel` — sums every
 // level crossed, so jumping several levels in one go still pays out in full.
-export function levelUpCoinsBetween(fromLevel: number, toLevel: number): number {
+export function levelUpCoinsBetween(
+  fromLevel: number,
+  toLevel: number,
+): number {
   let total = 0;
-  for (let lvl = fromLevel + 1; lvl <= toLevel; lvl++) total += levelUpBonus(lvl);
+  for (let lvl = fromLevel + 1; lvl <= toLevel; lvl++)
+    total += levelUpBonus(lvl);
   return total;
 }
 

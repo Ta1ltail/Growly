@@ -3,6 +3,9 @@
 // Today — daily overview: progress, streaks, upcoming-by-time, one-tap
 // completion, motivational insight, and a quick daily note. Editing/deleting
 // habits lives in Manage Habits (Honest Tracking: keep Today about doing).
+//
+// Layout: fixed hero at top, scrollable habits + engagement below.
+// Desktop: 2-column (habits | engagement). Mobile: single column stacking.
 
 import { useMemo, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -16,6 +19,8 @@ import {
   Coins,
   RotateCcw,
   Snowflake,
+  ChevronRight,
+  CalendarDays,
 } from "lucide-react";
 import { StreakFlame } from "@/components/habits/StreakFlame";
 import { AnimatedCounter } from "@/components/ui/AnimatedCounter";
@@ -41,6 +46,7 @@ import { PageSkeleton } from "@/components/ui/PageSkeleton";
 import { CheckInPopup } from "@/components/today/CheckInPopup";
 import { DailyQuestCard } from "@/components/today/DailyQuestCard";
 import { DailySpinModal } from "@/components/today/DailySpinModal";
+import Link from "next/link";
 
 export default function TodayPage() {
   const data = useAppData();
@@ -112,15 +118,11 @@ export default function TodayPage() {
     () => [...new Set(todaysHabits.map((h) => h.category))],
     [todaysHabits],
   );
-  // Derive the effective filter during render: if the selected category no
-  // longer has habits (deleted/archived), it falls back to null automatically
-  // instead of resetting state in an effect.
   const activeCategory =
     selectedCategory &&
     categoriesWithHabits.includes(selectedCategory as Category)
       ? selectedCategory
       : null;
-  const setActiveCategory = setSelectedCategory;
 
   const filteredGroups = useMemo(() => {
     if (!activeCategory) return grouped;
@@ -148,37 +150,40 @@ export default function TodayPage() {
   if (!hydrated) return <PageSkeleton />;
 
   return (
-    <div className="animate-fade-in flex flex-col min-h-0 h-[calc(100dvh-168px)] md:h-[calc(100dvh-72px)]">
+    <div className="animate-fade-in flex flex-col min-h-0 h-[calc(100dvh-8rem)] md:h-[calc(100dvh-5rem)]">
       <CheckInPopup />
 
-      {/* Hero */}
+      {/* ── Hero card ── */}
       <Card className="mb-4 shrink-0 overflow-hidden">
-        <div className="relative flex items-center gap-5 p-5 sm:p-6">
+        <div className="relative flex items-center gap-4 p-4 sm:gap-5 sm:p-5">
           <div
             className="pointer-events-none absolute -right-10 -top-16 size-48 rounded-full opacity-20 blur-3xl"
             style={{ background: "var(--c-accent)" }}
           />
-          <ProgressRing value={progress} size={104}>
-            <span className="font-mono text-2xl font-bold">{progress}%</span>
-            <span className="text-[10px] text-muted">done</span>
+          <ProgressRing value={progress} size={80}>
+            <span className="font-mono text-lg font-bold">{progress}%</span>
+            <span className="text-[9px] text-muted">done</span>
           </ProgressRing>
-          <div className="min-w-0">
-            <p className="text-xs font-medium uppercase tracking-wide text-accent">
-              {today.toLocaleDateString(undefined, {
-                weekday: "long",
-                month: "long",
-                day: "numeric",
-              })}
-            </p>
-            <h1 className="truncate text-xl font-bold tracking-tight sm:text-2xl">
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2 text-xs text-muted">
+              <CalendarDays className="size-3.5 shrink-0" />
+              <span>
+                {today.toLocaleDateString(undefined, {
+                  weekday: "long",
+                  month: "long",
+                  day: "numeric",
+                })}
+              </span>
+            </div>
+            <h1 className="mt-0.5 truncate text-lg font-bold tracking-tight sm:text-xl">
               {greeting}, {data.profile.displayName}
             </h1>
-            <p className="mt-1 text-sm text-muted">
+            <p className="mt-0.5 text-sm text-muted">
               {todayHeadline(doneCount, todaysHabits.length)}
             </p>
-            <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted">
+            <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted">
               <span className="flex items-center gap-1.5">
-                <ListChecks className="size-4 text-accent" />
+                <ListChecks className="size-3.5 text-accent" />
                 <AnimatedCounter value={doneCount} />/{todaysHabits.length}{" "}
                 habits
               </span>
@@ -186,237 +191,257 @@ export default function TodayPage() {
                 {bestStreakToday > 0 ? (
                   <StreakFlame
                     streak={bestStreakToday}
-                    size={18}
+                    size={16}
                     showCount={false}
                   />
                 ) : (
-                  <Flame className="size-4 text-faint" />
+                  <Flame className="size-3.5 text-faint" />
                 )}
                 {bestStreakToday} day streak
               </span>
             </div>
           </div>
+          {/* Quick link to Dashboard */}
+          <Link
+            href="/"
+            className="hidden shrink-0 items-center gap-1 rounded-lg border border-line px-2.5 py-1.5 text-[11px] font-medium text-muted transition-colors hover:bg-surface2 hover:text-ink sm:flex"
+          >
+            Dashboard <ChevronRight className="size-3" />
+          </Link>
         </div>
       </Card>
 
-      {/* Main content — fills remaining vertical space */}
-      <div className="flex-1 min-h-0 grid gap-4 lg:grid-cols-5">
-        {/* Left column — habits, fills all available space */}
-        <div className="lg:col-span-3 flex flex-col min-h-0 gap-3">
-          {/* Up next */}
-          {upcoming.length > 0 && (
-            <div className="shrink-0">
-              <h2 className="mb-2 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-muted">
-                <Clock className="size-4" /> Up next
-              </h2>
-              <Card className="divide-y divide-line overflow-hidden">
-                {upcoming.map((h) => (
-                  <div
-                    key={h.id}
-                    className="flex items-center gap-3 px-4 py-2.5"
-                  >
-                    <MarkButton
-                      status={data.marks[todayKey]?.[h.id]}
-                      onClick={() => mark(h.id, h.category)}
-                      size={24}
-                    />
-                    <span className="flex-1 text-sm">{h.name}</span>
-                    <span className="font-mono text-xs text-accent">
-                      {formatTime(h.timeOfDay!)}
-                    </span>
-                  </div>
-                ))}
-              </Card>
-            </div>
-          )}
+      {/* ── Scrollable content area ── */}
+      <div className="flex-1 min-h-0 overflow-y-auto">
+        <div className="grid gap-4 lg:grid-cols-5">
+          {/* ── LEFT COLUMN: Habits ── */}
+          <div className="lg:col-span-3 space-y-3 pb-4">
+            {/* Upcoming */}
+            {upcoming.length > 0 && (
+              <div>
+                <h2 className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted">
+                  <Clock className="size-3.5" /> Up next
+                </h2>
+                <Card className="divide-y divide-line overflow-hidden">
+                  {upcoming.map((h) => (
+                    <div
+                      key={h.id}
+                      className="flex items-center gap-3 px-4 py-2.5"
+                    >
+                      <MarkButton
+                        status={data.marks[todayKey]?.[h.id]}
+                        onClick={() => mark(h.id, h.category)}
+                        size={22}
+                      />
+                      <span className="flex-1 text-sm">{h.name}</span>
+                      <span className="font-mono text-[11px] text-accent">
+                        {formatTime(h.timeOfDay!)}
+                      </span>
+                    </div>
+                  ))}
+                </Card>
+              </div>
+            )}
 
-          {/* Category tabs — wrap so nothing gets clipped on the right edge */}
-          {todaysHabits.length > 0 && categoriesWithHabits.length > 1 && (
-            <div className="shrink-0 flex flex-wrap gap-1.5">
-              <button
-                onClick={() => setActiveCategory(null)}
-                aria-pressed={!activeCategory}
-                className={`rounded-full px-3 py-1.5 text-[11px] font-medium whitespace-nowrap transition-all ${
-                  !activeCategory
-                    ? "bg-accent text-white shadow-sm"
-                    : "bg-surface2/60 text-muted hover:bg-surface2 hover:text-ink"
-                }`}
-              >
-                All
-              </button>
-              {categoriesWithHabits.map((cat) => (
+            {/* Category filter — horizontal scroll on mobile */}
+            {todaysHabits.length > 0 && categoriesWithHabits.length > 1 && (
+              <div className="flex items-center gap-1.5 overflow-x-auto [-webkit-overflow-scrolling:touch] [&::-webkit-scrollbar]:hidden">
                 <button
-                  key={cat}
-                  onClick={() =>
-                    setActiveCategory(activeCategory === cat ? null : cat)
-                  }
-                  aria-pressed={activeCategory === cat}
-                  className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-medium whitespace-nowrap transition-all ${
-                    activeCategory === cat
+                  onClick={() => setSelectedCategory(null)}
+                  aria-pressed={!activeCategory}
+                  className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-medium whitespace-nowrap transition-all ${
+                    !activeCategory
                       ? "bg-accent text-white shadow-sm"
                       : "bg-surface2/60 text-muted hover:bg-surface2 hover:text-ink"
                   }`}
                 >
-                  <span
-                    className="size-1.5 rounded-full"
-                    style={{ backgroundColor: CATEGORY_COLORS[cat] }}
-                  />
-                  {cat}
+                  All
                 </button>
-              ))}
-            </div>
-          )}
+                {categoriesWithHabits.map((cat) => (
+                  <button
+                    key={cat}
+                    onClick={() =>
+                      setSelectedCategory(
+                        activeCategory === cat ? null : cat,
+                      )
+                    }
+                    aria-pressed={activeCategory === cat}
+                    className={`flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium whitespace-nowrap transition-all ${
+                      activeCategory === cat
+                        ? "bg-accent text-white shadow-sm"
+                        : "bg-surface2/60 text-muted hover:bg-surface2 hover:text-ink"
+                    }`}
+                  >
+                    <span
+                      className="size-2 rounded-full shrink-0"
+                      style={{
+                        backgroundColor: CATEGORY_COLORS[cat],
+                      }}
+                    />
+                    {cat}
+                  </button>
+                ))}
+              </div>
+            )}
 
-          {/* Habits header */}
-          <div className="shrink-0 flex items-center justify-between">
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-muted">
-              {activeCategory ? activeCategory : "Today's habits"}
-            </h2>
-            {todaysHabits.length > 0 && (
-              <Button variant="soft" size="sm" onClick={() => setShowAdd(true)}>
-                <Plus className="size-3.5" strokeWidth={2.5} /> Add
-              </Button>
+            {/* Habits header */}
+            <div className="flex items-center justify-between">
+              <h2 className="text-xs font-semibold uppercase tracking-wide text-muted">
+                {activeCategory ? activeCategory : "Today's habits"}
+              </h2>
+              {todaysHabits.length > 0 && (
+                <Button variant="soft" size="sm" onClick={() => setShowAdd(true)}>
+                  <Plus className="size-3.5" strokeWidth={2.5} /> Add
+                </Button>
+              )}
+            </div>
+
+            {/* Habits list or empty state */}
+            {todaysHabits.length === 0 ? (
+              <EmptyState
+                icon={ListChecks}
+                title="No habits for today"
+                hint="Add your first habit, or grab a ready-made routine from Templates."
+                illustration="today"
+                action={
+                  <Button onClick={() => setShowAdd(true)}>
+                    <Plus className="size-4" strokeWidth={2.5} /> Add habit
+                  </Button>
+                }
+              />
+            ) : (
+              <div className="space-y-4">
+                {filteredGroups.map((group) => (
+                  <div key={group.category}>
+                    <div className="mb-2 flex items-center gap-2 px-1">
+                      <span
+                        className="size-2.5 rounded-full shrink-0"
+                        style={{
+                          backgroundColor: CATEGORY_COLORS[group.category],
+                        }}
+                      />
+                      <h3 className="text-xs font-semibold uppercase tracking-wide text-muted">
+                        {group.category}
+                      </h3>
+                      <span className="font-mono text-[10px] text-faint">
+                        {group.habits.filter(
+                          (h) => data.marks[todayKey]?.[h.id] === "done",
+                        ).length}
+                        /{group.habits.length}
+                      </span>
+                    </div>
+                    <Card className="divide-y divide-line overflow-hidden">
+                      {group.habits.map((habit) => {
+                        const status = data.marks[todayKey]?.[habit.id];
+                        return (
+                          <div
+                            key={habit.id}
+                            className="flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-surface2/50"
+                          >
+                            <MarkButton
+                              status={status}
+                              onClick={() => mark(habit.id, habit.category)}
+                              size={24}
+                            />
+                            <span
+                              className={`flex-1 text-sm transition-colors ${
+                                status === "done"
+                                  ? "text-muted line-through"
+                                  : status === "missed"
+                                    ? "text-missed"
+                                    : "text-ink"
+                              }`}
+                            >
+                              {habit.name}
+                            </span>
+                            {habit.timeOfDay && (
+                              <span className="font-mono text-[11px] text-faint">
+                                {formatTime(habit.timeOfDay)}
+                              </span>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </Card>
+                  </div>
+                ))}
+              </div>
             )}
           </div>
 
-          {todaysHabits.length === 0 ? (
-            <EmptyState
-              icon={ListChecks}
-              title="No habits for today"
-              hint="Add your first habit, or grab a ready-made routine from Templates."
-              illustration="today"
-              action={
-                <Button onClick={() => setShowAdd(true)}>
-                  <Plus className="size-4" strokeWidth={2.5} /> Add habit
-                </Button>
-              }
-            />
-          ) : (
-            <div className="flex-1 min-h-0 overflow-y-auto pr-1 space-y-4">
-              {filteredGroups.map((group) => (
-                <div key={group.category}>
-                  <div className="mb-2 flex items-center gap-2 px-1">
-                    <span
-                      className="size-2.5 rounded-full"
-                      style={{
-                        backgroundColor: CATEGORY_COLORS[group.category],
-                      }}
-                    />
-                    <h3 className="text-xs font-semibold uppercase tracking-wide text-muted">
-                      {group.category}
-                    </h3>
-                  </div>
-                  <Card className="divide-y divide-line overflow-hidden">
-                    {group.habits.map((habit) => {
-                      const status = data.marks[todayKey]?.[habit.id];
-                      return (
-                        <div
-                          key={habit.id}
-                          className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-surface2/50"
-                        >
-                          <MarkButton
-                            status={status}
-                            onClick={() => mark(habit.id, habit.category)}
-                            size={26}
-                          />
-                          <span
-                            className={`flex-1 text-sm transition-colors ${
-                              status === "done"
-                                ? "text-muted line-through"
-                                : status === "missed"
-                                  ? "text-missed"
-                                  : "text-ink"
-                            }`}
-                          >
-                            {habit.name}
-                          </span>
-                          {habit.timeOfDay && (
-                            <span className="font-mono text-[11px] text-faint">
-                              {formatTime(habit.timeOfDay)}
-                            </span>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </Card>
+          {/* ── RIGHT COLUMN: Engagement (desktop: sidebar, mobile: below habits) ── */}
+          <div className="lg:col-span-2 space-y-4 pb-4">
+            {/* Daily Quest */}
+            <DailyQuestCard />
+
+            {/* Daily Spin */}
+            <Card className="p-4">
+              <div className="flex items-center gap-4">
+                <span className="grid size-12 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-amber-400/20 to-rose-400/20 text-2xl">
+                  {alreadySpun && spinResult?.isFreeze ? (
+                    "❄️"
+                  ) : alreadySpun ? (
+                    <Coins className="size-6 text-amber-500" aria-hidden />
+                  ) : (
+                    "🎰"
+                  )}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-semibold">Daily Spin</p>
+                  <p className="text-xs text-muted">
+                    {alreadySpun
+                      ? "Come back tomorrow for your next spin!"
+                      : "Spin the wheel for a chance to earn coins!"}
+                  </p>
+                  {alreadySpun && spinResult && (
+                    <div className="mt-1.5 flex flex-wrap items-center gap-2">
+                      <span className="inline-flex items-center gap-1 rounded-full bg-accent/10 px-2 py-0.5 text-[10px] font-semibold text-accent">
+                        {spinResult.isFreeze ? (
+                          <Snowflake className="size-3 text-sky-400" />
+                        ) : (
+                          <Coins className="size-3 text-amber-500" />
+                        )}
+                        {spinResult.label}
+                      </span>
+                      <span className="text-[10px] text-muted">
+                        <RotateCcw className="size-3 inline mr-0.5" />
+                        Resets at midnight
+                      </span>
+                    </div>
+                  )}
+                  {alreadySpun && !spinResult && (
+                    <div className="mt-1 flex items-center gap-2">
+                      <span className="inline-flex items-center gap-1 rounded-full bg-accent/10 px-2 py-0.5 text-[10px] font-semibold text-accent">
+                        <Coins className="size-3" /> Claimed
+                      </span>
+                      <span className="text-[10px] text-muted">
+                        <RotateCcw className="size-3 inline mr-0.5" />
+                        Resets at midnight
+                      </span>
+                    </div>
+                  )}
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Engagement sidebar — quest, spin, note */}
-        <div className="lg:col-span-2 flex flex-col gap-4 min-h-0">
-          {/* Daily Quest */}
-          <DailyQuestCard />
-
-          {/* Daily Spin — always visible, shows claimed state after use */}
-          <Card className="p-4 shrink-0">
-            <div className="flex items-center gap-4">
-              <span className="grid size-12 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-amber-400/20 to-rose-400/20 text-2xl">
-                {alreadySpun && spinResult?.isFreeze ? (
-                  "❄️"
-                ) : alreadySpun ? (
-                  <Coins className="size-6 text-amber-500" aria-hidden />
-                ) : (
-                  "🎰"
-                )}
-              </span>
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold">Daily Spin</p>
-                <p className="text-xs text-muted">
-                  {alreadySpun
-                    ? "Come back tomorrow for your next spin!"
-                    : "Spin the wheel for a chance to earn coins!"}
-                </p>
-                {alreadySpun && spinResult && (
-                  <div className="mt-1.5 flex flex-wrap items-center gap-2">
-                    <span className="inline-flex items-center gap-1 rounded-full bg-accent/10 px-2 py-0.5 text-[10px] font-semibold text-accent">
-                      {spinResult.isFreeze ? (
-                        <Snowflake className="size-3 text-sky-400" />
-                      ) : (
-                        <Coins className="size-3 text-amber-500" />
-                      )}
-                      {spinResult.label}
-                    </span>
-                    <span className="text-[10px] text-muted">
-                      <RotateCcw className="size-3 inline mr-0.5" />
-                      Resets at midnight
-                    </span>
-                  </div>
-                )}
-                {alreadySpun && !spinResult && (
-                  <div className="mt-1 flex items-center gap-2">
-                    <span className="inline-flex items-center gap-1 rounded-full bg-accent/10 px-2 py-0.5 text-[10px] font-semibold text-accent">
-                      <Coins className="size-3" /> Claimed
-                    </span>
-                    <span className="text-[10px] text-muted">
-                      <RotateCcw className="size-3 inline mr-0.5" />
-                      Resets at midnight
-                    </span>
-                  </div>
-                )}
+                <Button onClick={() => setShowSpin(true)} size="sm">
+                  <Sparkles className="size-3.5" aria-hidden />
+                  {alreadySpun ? "View" : "Spin"}
+                </Button>
               </div>
-              <Button onClick={() => setShowSpin(true)} size="sm">
-                <Sparkles className="size-3.5" aria-hidden />
-                {alreadySpun ? "View" : "Spin"}
-              </Button>
-            </div>
-          </Card>
-
-          {/* Note — expands to fill remaining space */}
-          <div className="flex-1 min-h-0 flex flex-col">
-            <h2 className="mb-2 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-muted shrink-0">
-              <NotebookPen className="size-4" /> Today&apos;s note
-            </h2>
-            <Card className="flex-1 min-h-0 p-1">
-              <textarea
-                value={dailyNote}
-                onChange={(e) => setDailyNote(todayKey, e.target.value)}
-                placeholder="How did today go? What got in the way?"
-                className="h-full min-h-[80px] w-full resize-none rounded-xl bg-transparent px-3.5 py-3 text-sm outline-none placeholder:text-faint"
-              />
             </Card>
+
+            {/* Daily note */}
+            <div className="flex flex-col">
+              <h2 className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted">
+                <NotebookPen className="size-3.5" /> Today&apos;s note
+              </h2>
+              <Card className="p-1">
+                <textarea
+                  value={dailyNote}
+                  onChange={(e) => setDailyNote(todayKey, e.target.value)}
+                  placeholder="How did today go? What got in the way?"
+                  className="h-full min-h-[100px] w-full resize-none rounded-xl bg-transparent px-3.5 py-3 text-sm outline-none placeholder:text-faint"
+                />
+              </Card>
+            </div>
           </div>
         </div>
       </div>

@@ -189,7 +189,7 @@ export default function CalendarPage() {
   if (!hydrated) return <PageSkeleton />;
 
   return (
-    <div className="animate-fade-in flex flex-col min-h-0 h-[calc(100dvh-110px)]">
+    <div className="animate-fade-in flex flex-col min-h-0 h-[calc(100dvh-8rem)] md:h-[calc(100dvh-5rem)]">
       <PageHeader
         title="Calendar"
         action={

@@ -59,9 +59,7 @@ function NoteCard({
         )}
 
         <p className="whitespace-pre-wrap text-sm leading-relaxed line-clamp-[12]">
-          {note.body || (
-            <span className="italic text-faint">Empty note</span>
-          )}
+          {note.body || <span className="italic text-faint">Empty note</span>}
         </p>
 
         {hasMeta && (
@@ -126,7 +124,9 @@ export default function NotesPage() {
             n.tags.some((t) => t.toLowerCase().includes(q))
           : true,
       )
-      .sort((a, b) => (a.updatedAt < b.updatedAt ? 1 : b.updatedAt < a.updatedAt ? -1 : 0));
+      .sort((a, b) =>
+        a.updatedAt < b.updatedAt ? 1 : b.updatedAt < a.updatedAt ? -1 : 0,
+      );
   }, [data.notes, query, tagFilter]);
 
   function save(draft: NoteDraft) {
