@@ -30,7 +30,7 @@ export interface NavGroup {
 export const NAV_GROUPS: NavGroup[] = [
   {
     items: [
-      { href: "/", label: "Dashboard", icon: LayoutDashboard },
+      { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
       { href: "/today", label: "Today", icon: CalendarDays },
     ],
   },
@@ -77,7 +77,9 @@ export const NAV_BOTTOM: NavItem[] = [
 ];
 
 export function isActive(pathname: string, href: string): boolean {
-  return href === "/"
-    ? pathname === "/"
-    : pathname === href || pathname.startsWith(`${href}/`);
+  // /dashboard is the app dashboard, / is the landing page
+  if (href === "/dashboard") {
+    return pathname === "/dashboard" || pathname === "/";
+  }
+  return pathname === href || pathname.startsWith(`${href}/`);
 }
