@@ -24,7 +24,7 @@ export function IconBtn({
         danger
           ? "hover:bg-missed/10 hover:text-missed"
           : "hover:bg-surface2 hover:text-ink"
-      } before:absolute before:inset-1/2 before:-translate-x-1/2 before:-translate-y-1/2 before:min-w-[44px] before:min-h-[44px] before:content-['']`}
+      } before:absolute before:inset-1/2 before:-translate-x-1/2 before:-translate-y-1/2 before:min-w-11 before:min-h-11 before:content-['']`}
     >
       <span className="inline-flex items-center justify-center group-hover:animate-icon-wiggle">
         {children}

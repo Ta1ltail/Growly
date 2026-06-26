@@ -3,6 +3,7 @@ import Script from "next/script";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeApplier } from "@/components/layout/ThemeApplier";
+import { RootSyncWrapper } from "@/components/sync/RootSyncWrapper";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({
@@ -61,7 +62,9 @@ export default function RootLayout({
           }}
         />
         <ThemeApplier />
-        {children}
+        <RootSyncWrapper>
+          {children}
+        </RootSyncWrapper>
       </body>
     </html>
   );

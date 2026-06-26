@@ -45,7 +45,7 @@ export function MarkButton({
       disabled={locked && !status}
       aria-label={`${locked ? `Locked${status ? `, marked ${status}` : ""}` : status ? `Marked ${status}` : "Not marked"}${frozen ? ", protected by a streak freeze" : ""}`}
       style={{ width: size, height: size }}
-      className={`relative flex shrink-0 items-center justify-center rounded-full border transition-all active:scale-90 before:absolute before:inset-1/2 before:-translate-x-1/2 before:-translate-y-1/2 before:min-w-[44px] before:min-h-[44px] before:content-[''] ${
+      className={`relative flex shrink-0 items-center justify-center rounded-full border transition-all active:scale-90 before:absolute before:inset-1/2 before:-translate-x-1/2 before:-translate-y-1/2 before:min-w-11 before:min-h-11 before:content-[''] ${
         status
           ? STYLES[status]
           : "border-line bg-surface2 hover:border-accent hover:scale-110"

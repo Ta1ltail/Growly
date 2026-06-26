@@ -12,6 +12,10 @@ import {
   ShoppingBag,
   Settings2,
   UserRound,
+  Users,
+  Lightbulb,
+  Medal,
+  Bell,
   type LucideIcon,
 } from "lucide-react";
 
@@ -56,6 +60,15 @@ export const NAV_GROUPS: NavGroup[] = [
       { href: "/stats", label: "Statistics", icon: ChartColumnIncreasing },
       { href: "/achievements", label: "Achievements", icon: Trophy },
       { href: "/shop", label: "Shop", icon: ShoppingBag },
+    ],
+  },
+  {
+    title: "Social",
+    items: [
+      { href: "/friends", label: "Friends", icon: Users },
+      { href: "/leaderboard", label: "Leaderboard", icon: Medal },
+      { href: "/notifications", label: "Notifications", icon: Bell },
+      { href: "/suggestions", label: "Suggestions", icon: Lightbulb },
     ],
   },
   {

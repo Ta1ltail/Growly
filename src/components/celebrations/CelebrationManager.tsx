@@ -86,12 +86,6 @@ export function CelebrationManager() {
             maxWidth: 360,
           }}
         >
-          {/* Accent bar */}
-          <div
-            className="mt-0.5 h-10 w-1 shrink-0 rounded-full"
-            style={{ background: ev.accent }}
-          />
-
           {/* Icon / badge — real achievement art when available, to match the
               center popup; emoji tile otherwise. */}
           {ev.badgeDef ? (

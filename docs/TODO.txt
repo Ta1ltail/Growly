@@ -2,11 +2,11 @@
 #                                                          #
 #   PROJECT 101 - TODO / PROGRESS CHECKLIST                #
 #   [x] = done   [ ] = not yet                            #
-#   Updated: 2026-06-22 (v4 - UI/UX polish + stability)     #
+#   Updated: 2026-06-26                                     #
 #                                                          #
 ############################################################
 
-  Current gates: tsc 0 errors, eslint 0, vitest 81/81, build clean.
+  Current gates: tsc 0 errors, vitest 81/81, build clean.
 
 
 ==========================================================
@@ -133,8 +133,8 @@
 ==========================================================
  PHASE 4-5   (in progress)
 ==========================================================
-  [x] Community challenges
-  [x] Friend leaderboards
+  [ ] Community challenges
+  [ ] Friend leaderboards
   [x] Supabase project setup
   [x] Supabase Auth (email/password)
   [x] Login / Register pages (professional redesign)
@@ -144,9 +144,27 @@
   [x] Landing page (/)
   [x] Dashboard moved to /dashboard
   [x] Hard redirect fix (window.location.href after login)
-  [ ] Drizzle ORM + database tables
+  [x] Route group removal ((app) and (auth) → flat structure)
+  [x] Registration data isolation (clearLocalAppData on sign-out + register)
+  [x] Remember Me default fix (now false, explicit opt-in)
+  [x] Sync error logging improved (stack traces + Supabase codes)
+  [x] NUL file deleted
+  [x] Sync optimization — RootSyncWrapper at root level
+  [x] Friends system — search, requests, accept/decline, list
+  [x] Public profile viewing — /profile/[username] with stats
+  [x] Suggestions/feedback page — form + history
+  [x] Drizzle ORM installed + schema definition
+  [x] Navigation updated — sidebar + bottom nav
+  [x] Migration SQL — friends, suggestions, user_stats_snapshots
+  [x] Stats snapshot writer — saveUserStatsSnapshot + refreshStatsSnapshot in sync
+  [x] Migration fixes — DELETE RLS policy, handle_new_user trigger seed
+  [x] Leaderboard page — /leaderboard with 4 sort tabs (level, streak, consistency, completions)
+  [x] Notifications system — notification bell in sidebar, /notifications page
+  [x] Notification polling — 30s auto-refresh + visibilitychange for live badge updates
+  [x] Notification creation utility — lib/notifications.ts
+  [x] Friend request notifications — wired on send (friends page + public profile) and on accept
   [ ] Move localStorage -> Supabase
-  [ ] Row Level Security (RLS)
+  [ ] Row Level Security (RLS) — full audit
   [ ] Zod input validation (full pipeline)
   [ ] Email (verify/reset) via Resend
   [ ] Free vs Pro subscription

@@ -32,6 +32,9 @@ import { ACCENTS, DEFAULT_THEME, type ThemeMode } from "./theme";
 
 export const STORAGE_KEY = "project101.data.v1";
 
+// Key used for the "Remember Me" feature on login
+const REMEMBER_ME_KEY = "project101.remember_me";
+
 // Current schema version. Bumped when the shape of stored data changes so
 // loadData() can migrate older saves forward.
 // v3: added `profile` + `unlocks` (gamification). Older saves default them.
@@ -566,6 +569,23 @@ export function saveData(data: AppData): void {
 }
 
 /* ---------------- date helpers ---------------- */
+
+/**
+ * Clear all locally persisted app data and auth preferences.
+ * Call this on sign-out and on registration to ensure a new user on the
+ * same device never inherits another user's habits, marks, unlocks, etc.
+ */
+export function clearLocalAppData(): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.removeItem(STORAGE_KEY);
+    window.localStorage.removeItem(REMEMBER_ME_KEY);
+    window.localStorage.removeItem("project101.saved_email");
+    window.localStorage.removeItem("project101.last_auth_user");
+  } catch {
+    // localStorage can be unavailable (private mode, quota). Safe to ignore.
+  }
+}
 
 // Local date as "YYYY-MM-DD" (not UTC, so "today" matches the user).
 export function dateKey(d: Date): string {

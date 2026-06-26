@@ -64,10 +64,9 @@ Comprehensive documentation of every feature in the habit tracking app.
 
 ### Dashboard (`/dashboard`)
 
-- **Progress widgets** — 6 reorderable cards (XP/Level, Badge Collection, Current Streak, Recent Achievements, Next Milestone, Weekly Trend)
+- **Progress widgets** — 6 fixed cards (XP/Level, Badge Collection, Current Streak, Recent Achievements, Next Milestone, Weekly Trend)
 - **Today summary** — completion ring, done/remaining counts, time-of-day indicator
 - **4 stat cards** — 14-day consistency, current/best streaks, active habits
-- **Drag-and-drop reordering** — widget positions persist across sessions
 - **Insights section** — same smart observations as stats page
 
 ---
@@ -190,24 +189,90 @@ Comprehensive documentation of every feature in the habit tracking app.
 
 ### Navigation
 
-- **Sidebar** — desktop icon+label nav with active highlighting, icon animations, and logout button
-- **Bottom nav** — mobile-optimized tab bar with 5 primary destinations
-- **Keyboard shortcuts** — `g+d` Dashboard, `g+t` Today, `g+h` Habits, `g+s` Stats, `g+c` Calendar, `g+a` Achievements, `g+p` Profile, `g+o` Shop, `g+e` Templates, `g+n` Notes, `g+l` Goals, `g+,` Settings, `?` help, `n` new habit, Ctrl+Z/Ctrl+Shift+Z undo/redo
+- **Sidebar** — desktop icon+label nav with active highlighting, icon animations, notification bell (unread count badge), and logout button
+- **Bottom nav** — mobile-optimized tab bar with 5 primary destinations + scrollable secondary chip bar with 10 extra destinations (Habits, Goals, Friends, Leaderboard, Notifications, Shop, Achievements, Notes, Templates, Suggestions)
+- **Keyboard shortcuts** — `g+d` Dashboard, `g+t` Today, `g+h` Habits, `g+r` Tracker, `g+s` Stats, `g+c` Calendar, `g+a` Achievements, `g+p` Profile, `g+o` Shop, `g+n` Notes, `g+g` Goals, `g+l` Settings, `?` help, `n` new habit, Ctrl+Z/Ctrl+Shift+Z undo/redo
 
 ---
 
-## 8. Authentication & Security
+## 8. Social Features
+
+### Friends (`/friends`)
+
+- **User search** — search by name or username with debounced results (ILike, 300ms debounce)
+- **Friend requests** — send, accept, and decline requests with loading states
+- **Friend list** — all accepted friends with links to their public profiles
+- **Request notifications** — pending requests shown prominently with count badge (rose-500)
+- **Notification wiring** — friend request notifications auto-created on send (to addressee) and on accept (to requester)
+- **RLS** — Insert by requester, Update by addressee, Delete by either party
+
+### Public Profiles (`/profile/[username]`)
+
+- **View other users** — see display name, username, bio, motto, rank avatar, banner
+- **Stats display** — level, current/best streaks, consistency %, total completions, achievements count, title name/rank icon
+- **Live stats** — stats come from `user_stats_snapshots` table (refreshed on every sync)
+- **Friend button** — add friend directly from profile page with notification
+- **Self-redirect** — visiting your own username redirects to your profile page
+
+### Leaderboard (`/leaderboard`)
+
+- **Rankings** — top 50 users sorted by selected metric
+- **4 sort tabs** — Level, Streak (current), Consistency (14-day), Completions (total)
+- **Podium** — 🥇🥈🥉 medals for top 3 positions
+- **Current user** — highlighted row with "You" badge and crown icon
+- **Data source** — `user_stats_snapshots` table with profile joins
+
+### Notifications System
+
+- **NotificationBell** — bell icon in sidebar header with live unread count badge (rose-500, 99+ overflow)
+- **Notifications page** (`/notifications`) — full history with read/unread styling, time ago timestamps
+- **Types** — friend_request (UserPlus icon), friend_accept (UserCheck), achievement (Trophy), system (Sparkles)
+- **Mark all read** — batch mark button for bulk operations
+- **Auto-refresh** — 30s polling + visibilitychange listener keeps badge current
+- **Create utility** — `lib/notifications.ts` for client-side notification creation
+
+### Suggestions (`/suggestions`)
+
+- **Categorized feedback** — General, Feature Request, Improvement, Bug Report, Other
+- **Submission form** — title, body, and category picker
+- **History** — all past suggestions with status tracking (New, Read, Acknowledged, Completed, Declined)
+- **Thank-you flow** — success confirmation after submission
+
+## 9. Authentication & Security
 
 ### Route Architecture
 
-| Route            | Access    | Description              |
-|------------------|-----------|--------------------------|
-| `/`              | Public    | Landing page, marketing  |
-| `/login`         | Public    | Sign in form             |
-| `/register`      | Public    | Create account           |
-| `/dashboard`     | Protected | Main dashboard (was `/`) |
-| `/today`         | Protected | Daily habit marking      |
-| All other pages  | Protected | Habits, tracker, etc.    |
+| Route                 | Access    | Description                  |
+|-----------------------|-----------|------------------------------|
+| `/`                   | Public    | Landing page                 |
+| `/login`              | Public    | Sign in form                 |
+| `/register`           | Public    | Create account               |
+| `/dashboard`          | Protected | Main dashboard               |
+| `/today`              | Protected | Daily habit marking          |
+| `/habits`             | Protected | Manage habits                |
+| `/tracker`            | Protected | Spreadsheet tracker grid     |
+| `/calendar`           | Protected | Month/week views             |
+| `/stats`              | Protected | Analytics and insights       |
+| `/goals`              | Protected | Goal tracking                |
+| `/notes`              | Protected | Journal entries              |
+| `/templates`          | Protected | Starter routines             |
+| `/achievements`       | Protected | Achievement gallery          |
+| `/shop`               | Protected | Cosmetics + streak-freeze    |
+| `/profile`            | Protected | Character page                |
+| `/friends`            | Protected | Friend search and requests   |
+| `/leaderboard`        | Protected | User rankings                |
+| `/notifications`      | Protected | Notification history         |
+| `/suggestions`        | Protected | Feedback submission          |
+| `/settings`           | Protected | Preferences and data tools   |
+| `/offline`            | Public    | PWA offline fallback         |
+
+### Layout Architecture
+
+- **Root layout** (`app/layout.tsx`): HTML setup, theme injection, service worker, `RootSyncWrapper`
+- **No route groups** — pages are at root level (flat directory structure)
+- **App pages** (dashboard, today, habits, etc.) wrap content in `<AppPageShell>` which provides `AppShell` (sidebar, bottom nav, decorations)
+- **SyncProvider** lives in `RootSyncWrapper` at the root layout level so it persists across page navigations (doesn't remount on route changes)
+- **Auth pages** (login, register) at root level with own full-page layout
 
 ### Auth Flow
 
@@ -222,8 +287,8 @@ Comprehensive documentation of every feature in the habit tracking app.
 
 ### Remember Me
 
-- **Checked (default)**: Session persists across browser restarts via localStorage flag + Supabase cookies
-- **Unchecked**: User is signed out on tab close — a `useAuth` hook monitors the flag on page load and signs out if missing
+- **Checked (opt-in)**: Session persists across browser restarts via localStorage flag + Supabase cookies. Email is saved and auto-filled on return visits.
+- **Unchecked (default)**: User is signed out on tab close — a `useAuth` hook monitors the flag on page load and signs out if missing. Local app data is cleared on sign-out to prevent data leakage between users.
 
 ### Session Handling
 
@@ -241,31 +306,34 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=<anon-key>
 
 ---
 
-## 9. Performance Optimizations
+## 10. Drizzle ORM (Server-Side Queries)
+
+- **drizzle-orm** + **drizzle-kit** installed for type-safe server queries
+- **Schema** (`src/lib/drizzle/schema.ts`) — full TypeScript definitions for all 15+ tables
+- **Cross-schema references** — `auth.users` referenced via `pgSchema("auth")`
+- **Config** (`drizzle.config.ts`) — configured for Supabase Postgres
+- Run `npx drizzle-kit generate` to produce migration SQL
+- Run `npx drizzle-kit push` to sync schema to Supabase (dev only)
+- Requires `DATABASE_URL` env var (Supabase connection string with pgBouncer)
+
+## 11. Performance Optimizations
 
 ### Rendering
 
-- **React.memo** — 7 leaf components: StatCard, ProgressBar, ProgressRing, CoinChip, EmptyState, Pagination, Segmented, CircularProgress (calendar)
-- **useMemo** — widgetContent, habit lists, streak calculations, insight generation
+- **React.memo** — 11 components: StatCard, ProgressBar, ProgressRing, CoinChip, EmptyState, Pagination, Segmented, StreakFlame, AchievementBadge, TrackerCell, CircularProgress
+- **useMemo** — heavily used across all pages for derived data
 - **useAppDataSelector** — granular subscriptions (StreakFlame only re-renders on equipped flame change)
-- **Stabilized callbacks** — useCallback on TrackerCell handlers, widget reorder handler
+- **Stabilized callbacks** — useCallback on handler functions
 
 ### Data
 
-- **Debounced saves** — high-frequency mark toggles batched with 100ms debounce; immediate saves for destructive actions (undo/redo)
-- **Lazy-loaded Confetti** — React.lazy() + Suspense, only loaded for legendary achievements
+- **Debounced saves** — high-frequency mark toggles batched with 100ms debounce; immediate saves for destructive actions
+- **Lazy-loaded Confetti** — React.lazy() + Suspense
 - **Zod validation** — importJSON validated with strict schema before data load
-- **Dead code removed** — inert AI config (60 lines, 4 files), 10 unused exports, duplicate utility file consolidated
-
-### Build
-
-- **Bundle analyzer available** — `ANALYZE=true npm run build` generates `client.html`, `nodejs.html`, `edge.html`
-- **Prettier** — 95 files auto-formatted for consistency
-- **knip** — dead code detection integrated
 
 ---
 
-## 10. PWA & Offline
+## 12. PWA & Offline
 
 - **Web app manifest** — standalone display, SVG icons (192×192, 512×512), theme color
 - **Service worker** — offline-first caching strategy (network-first for navigation, cache-first for assets)
@@ -274,7 +342,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=<anon-key>
 
 ---
 
-## 11. Developer Mode
+## 13. Developer Mode
 
 Hidden panel (Ctrl/Cmd+Shift+D) with:
 
@@ -287,7 +355,7 @@ Hidden panel (Ctrl/Cmd+Shift+D) with:
 
 ---
 
-## 12. Data Management
+## 14. Data Management
 
 ### Persistence
 
@@ -307,7 +375,7 @@ Hidden panel (Ctrl/Cmd+Shift+D) with:
 
 ---
 
-## 13. Accessibility
+## 15. Accessibility
 
 - **aria-current="page"** — on active navigation links
 - **aria-labels** — on all interactive elements (buttons, inputs, icon buttons)
@@ -319,7 +387,7 @@ Hidden panel (Ctrl/Cmd+Shift+D) with:
 
 ---
 
-## 14. Testing
+## 16. Testing
 
 - **81 unit tests** across 5 files:
   - `storage.test.ts` (18) — data load/save, migration, sanitization

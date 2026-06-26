@@ -12,16 +12,24 @@ import {
   Trophy,
   NotebookPen,
   LayoutTemplate,
+  Users,
+  Lightbulb,
+  Medal,
+  Bell,
 } from "lucide-react";
 import { NAV_BOTTOM, isActive } from "./navItems";
 
 const EXTRA_NAV = [
   { href: "/habits", label: "Habits", icon: ListTodo },
   { href: "/goals", label: "Goals", icon: Target },
+  { href: "/friends", label: "Friends", icon: Users },
+  { href: "/leaderboard", label: "Leaderboard", icon: Medal },
+  { href: "/notifications", label: "Notifications", icon: Bell },
   { href: "/shop", label: "Shop", icon: ShoppingBag },
   { href: "/achievements", label: "Achievements", icon: Trophy },
   { href: "/notes", label: "Notes", icon: NotebookPen },
   { href: "/templates", label: "Templates", icon: LayoutTemplate },
+  { href: "/suggestions", label: "Suggestions", icon: Lightbulb },
 ];
 
 export function BottomNav() {

@@ -19,6 +19,7 @@ import type {
   Profile,
 } from "./types";
 import type { ThemeSettings } from "./theme";
+import type { ChangedTables } from "./supabase/db";
 import {
   DEFAULT_GRACE_HOURS,
   STORAGE_KEY,
@@ -60,6 +61,31 @@ const listeners = new Set<() => void>();
 
 const MAX_AUDIT = 500;
 
+/* ────────────────────────────────────────────
+   Sync callback — wired by SyncProvider so the
+   store can notify the sync layer after mutations.
+   ──────────────────────────────────────────── */
+
+export type SyncCallback = (
+  data: AppData,
+  changed: ChangedTables,
+) => void;
+
+let _onMutation: SyncCallback | null = null;
+let _userId: string | null = null;
+
+export function setSyncCallback(
+  cb: SyncCallback | null,
+  userId?: string | null,
+) {
+  _onMutation = cb;
+  if (userId !== undefined) _userId = userId;
+}
+
+export function getSyncUserId(): string | null {
+  return _userId;
+}
+
 function getSnapshot(): AppData {
   if (cache === null) cache = loadData();
   return cache;
@@ -86,6 +112,25 @@ function scheduleSave(data: AppData): void {
   }, 100);
 }
 
+/* ────────────────────────────────────────────
+   Diff helper: compare two snapshots to determine
+   which tables changed (for incremental sync).
+   ──────────────────────────────────────────── */
+
+function computeChanged(prev: AppData, next: AppData): ChangedTables {
+  const changed: ChangedTables = {};
+  if (prev.habits !== next.habits) changed.habits = true;
+  if (prev.marks !== next.marks) changed.marks = true;
+  if (prev.notes !== next.notes) changed.notes = true;
+  if (prev.goals !== next.goals) changed.goals = true;
+  if (prev.settings !== next.settings) changed.settings = true;
+  if (prev.profile !== next.profile) changed.profile = true;
+  if (prev.unlocks !== next.unlocks) changed.unlocks = true;
+  if (prev.economy !== next.economy) changed.economy = true;
+  if (prev.progressSeen !== next.progressSeen) changed.progressSeen = true;
+  return changed;
+}
+
 function update(
   updater: (prev: AppData) => AppData,
   recordHistory = true,
@@ -95,6 +140,8 @@ function update(
     pushSnapshot(prev);
   }
   cache = updater(prev);
+  // Compute what changed for sync
+  const changed = computeChanged(prev, cache);
   // Immediate save for undo/redo and destructive actions, debounced for
   // high-frequency toggles (mark cycling, text input).
   if (!recordHistory) {
@@ -102,6 +149,10 @@ function update(
   } else {
     if (saveTimer) clearTimeout(saveTimer);
     saveData(cache);
+  }
+  // Notify sync layer (if user is logged in)
+  if (_onMutation && _userId) {
+    _onMutation(cache, changed);
   }
   for (const listener of listeners) listener();
 }
@@ -492,6 +543,13 @@ export function replaceData(next: AppData): void {
 // so the validated/migrated result flows back through the normal load path.
 function reloadData(): void {
   cache = loadData();
+  for (const listener of listeners) listener();
+}
+
+// Invalidate the in-memory cache so the next getSnapshot() re-reads from
+// localStorage. Used after the sync layer pulls data from Supabase.
+export function reloadCache(): void {
+  cache = null;
   for (const listener of listeners) listener();
 }
 

@@ -3,9 +3,8 @@
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { clearLocalAppData } from "@/lib/storage";
 import type { User } from "@supabase/supabase-js";
-
-const REMEMBER_ME_KEY = "project101.remember_me";
 
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
@@ -22,10 +21,11 @@ export function useAuth() {
 
       // If user is logged in but "Remember Me" is off, check the flag
       if (user) {
-        const rememberMe = localStorage.getItem(REMEMBER_ME_KEY);
+        const rememberMe = localStorage.getItem("project101.remember_me");
         if (rememberMe !== "true") {
-          // Remember Me was not set — sign out silently
+          // Remember Me was not set — sign out silently and clear local data
           supabase.auth.signOut();
+          clearLocalAppData();
           setUser(null);
         }
       }
@@ -38,6 +38,7 @@ export function useAuth() {
       setUser(session?.user ?? null);
       if (event === "SIGNED_OUT") {
         setUser(null);
+        clearLocalAppData();
         router.refresh();
       }
     });
@@ -48,7 +49,7 @@ export function useAuth() {
   const signOut = useCallback(async () => {
     const supabase = createClient();
     await supabase.auth.signOut();
-    localStorage.removeItem(REMEMBER_ME_KEY);
+    clearLocalAppData();
     setUser(null);
     // Force a hard navigation so the proxy runs and redirects to landing
     window.location.href = "/";
@@ -56,3 +57,4 @@ export function useAuth() {
 
   return { user, loading, signOut };
 }
+
