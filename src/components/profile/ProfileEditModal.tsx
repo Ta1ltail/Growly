@@ -6,9 +6,10 @@
 // updateProfile on save — nothing here is derived, these are user-owned fields.
 
 import { useState } from "react";
-import { Upload } from "lucide-react";
+import { Upload, AlertCircle } from "lucide-react";
 import type { AchievementDef, Profile } from "@/lib/types";
 import { updateProfile } from "@/lib/store";
+import { createClient } from "@/lib/supabase/client";
 import { AVATAR_PRESETS, BANNER_PRESETS, resolveAvatar } from "@/lib/cosmetics";
 import { RARITY_STYLE } from "@/lib/rarity";
 import { Modal } from "@/components/ui/Modal";
@@ -26,6 +27,8 @@ export function ProfileEditModal({
   unlockedDefs: AchievementDef[]; // candidates for the showcase badge
 }) {
   const [draft, setDraft] = useState<Profile>(profile);
+  const [usernameError, setUsernameError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
 
   // Re-seed the draft each time the modal opens so it reflects the latest save.
   // Render-phase adjustment (React's "adjusting state when a prop changes"
@@ -33,7 +36,10 @@ export function ProfileEditModal({
   const [wasOpen, setWasOpen] = useState(open);
   if (open !== wasOpen) {
     setWasOpen(open);
-    if (open) setDraft(profile);
+    if (open) {
+      setDraft(profile);
+      setUsernameError(null);
+    }
   }
 
   const set = <K extends keyof Profile>(key: K, value: Profile[K]) =>
@@ -47,16 +53,52 @@ export function ProfileEditModal({
     reader.readAsDataURL(file);
   }
 
-  function save() {
+  async function save() {
+    if (saving) return; // guard against double-click race
+    const newUsername = draft.username.trim().replace(/^@/, "").toLowerCase();
+    if (!newUsername) {
+      setUsernameError("Username is required.");
+      return;
+    }
+    if (newUsername.length < 2) {
+      setUsernameError("Username must be at least 2 characters.");
+      return;
+    }
+    if (!/^[a-z0-9_]+$/.test(newUsername)) {
+      setUsernameError("Username can only contain letters, numbers, and underscores.");
+      return;
+    }
+
+    // Check if the username is already taken
+    setSaving(true);
+    setUsernameError(null);
+
+    // Only check if username actually changed
+    if (newUsername !== profile.username) {
+      const supabase = createClient();
+      const { data: existing } = await supabase
+        .from("public_profiles")
+        .select("username")
+        .eq("username", newUsername)
+        .maybeSingle();
+
+      if (existing) {
+        setUsernameError("This username is already taken. Try another one.");
+        setSaving(false);
+        return;
+      }
+    }
+
     updateProfile({
       displayName: draft.displayName.trim() || "Anonymous",
-      username: draft.username.trim().replace(/^@/, "") || "user",
+      username: newUsername,
       bio: draft.bio?.trim() || undefined,
       motto: draft.motto?.trim() || undefined,
       avatar: draft.avatar,
       banner: draft.banner,
       showcaseBadgeId: draft.showcaseBadgeId,
     });
+    setSaving(false);
     onClose();
   }
 
@@ -74,7 +116,9 @@ export function ProfileEditModal({
           <Button variant="ghost" onClick={onClose}>
             Cancel
           </Button>
-          <Button onClick={save}>Save</Button>
+          <Button onClick={save} disabled={saving}>
+            {saving ? "Saving..." : "Save"}
+          </Button>
         </>
       }
     >
@@ -95,11 +139,19 @@ export function ProfileEditModal({
               </span>
               <input
                 value={draft.username}
-                onChange={(e) => set("username", e.target.value)}
+                onChange={(e) => {
+                  set("username", e.target.value);
+                  setUsernameError(null);
+                }}
                 maxLength={30}
                 className={`${INPUT} pl-7`}
               />
             </div>
+            {usernameError && (
+              <p className="mt-1.5 text-xs text-missed flex items-center gap-1">
+                <AlertCircle className="size-3" /> {usernameError}
+              </p>
+            )}
           </Field>
         </div>
 

@@ -17,7 +17,7 @@ export async function createNotification(input: {
   body?: string;
   fromUser?: string;
   link?: string;
-}): Promise<void> {
+}): Promise<{ error?: string }> {
   const supabase = createClient();
   const { error } = await supabase.from("notifications").insert({
     user_id: input.userId,
@@ -30,5 +30,8 @@ export async function createNotification(input: {
 
   if (error) {
     console.error("[notifications] Failed to create:", error.message);
+    return { error: error.message };
   }
+
+  return {};
 }
