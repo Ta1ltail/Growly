@@ -18,17 +18,6 @@ export function useAuth() {
     supabase.auth.getUser().then(({ data: { user } }) => {
       setUser(user);
       setLoading(false);
-
-      // If user is logged in but "Remember Me" is off, check the flag
-      if (user) {
-        const rememberMe = localStorage.getItem("project101.remember_me");
-        if (rememberMe !== "true") {
-          // Remember Me was not set — sign out silently and clear local data
-          supabase.auth.signOut();
-          clearLocalAppData();
-          setUser(null);
-        }
-      }
     });
 
     // Listen for auth state changes
