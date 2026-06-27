@@ -11,6 +11,8 @@
 -- restricted to the row owner.
 -- ============================================================================
 
+DROP POLICY IF EXISTS "Anyone can view profiles" ON user_profile;
+
 CREATE POLICY "Anyone can view profiles"
   ON user_profile FOR SELECT
   USING (true);

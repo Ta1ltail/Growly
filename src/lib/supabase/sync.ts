@@ -93,12 +93,33 @@ export async function pullAllUserData(userId: string): Promise<AppData | null> {
   setStatus("syncing");
 
   try {
+    // ── Push local data to Supabase FIRST ──
+    // This ensures any unsynced changes (onboarding, habits, etc.) are saved
+    // before we pull. If the push fails (permissions, offline), we keep local
+    // data rather than overwriting it with stale remote data.
+    const localData = loadData();
+    const hasLocalData =
+      localData.habits.length > 0 ||
+      Object.keys(localData.marks).length > 0;
+
+    if (hasLocalData) {
+      try {
+        await saveAllUserData(supabase, userId, localData);
+      } catch (pushErr) {
+        // Push failed — don't pull either, keep local data intact
+        console.warn("[sync] Initial push failed, keeping local data:", pushErr);
+        await refreshStatsSnapshot(userId);
+        setStatus("error", "Could not save local data to server");
+        return localData;
+      }
+    }
+
+    // ── Pull the latest remote data ──
     const remoteData = await loadAllUserData(supabase, userId);
 
     if (remoteData) {
       // Supabase has data — replace local storage
       // Preserve auditLog (local-only)
-      const localData = loadData();
       remoteData.auditLog = localData.auditLog;
       saveData(remoteData);
       await refreshStatsSnapshot(userId);
@@ -106,19 +127,8 @@ export async function pullAllUserData(userId: string): Promise<AppData | null> {
       return remoteData;
     }
 
-    // No remote data — push local data to Supabase
-    const localData = loadData();
-    const hasLocalData =
-      localData.habits.length > 0 ||
-      Object.keys(localData.marks).length > 0;
-
-    if (hasLocalData) {
-      await saveAllUserData(supabase, userId, localData);
-    }
-
-    // Refresh stats snapshot for public profile
+    // No remote data (shouldn't normally happen after a successful push)
     await refreshStatsSnapshot(userId);
-
     setStatus("idle");
     return localData;
   } catch (e) {
