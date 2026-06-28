@@ -245,15 +245,20 @@ export default function TrackerPage() {
                       {groupedHabits.map((group) => {
                         return (
                           <Fragment key={group.category}>
-                            {/* Category group header — sticks to the left (so the
-                              label stays visible while scrolling horizontally)
-                              AND docks just below the column header row while
-                              scrolling vertically, so it never floats away or
-                              gets buried under the header. */}
+                            {/* Category group header. A colSpan cell can't stick
+                              correctly on both axes at once — its content sits
+                              wherever the cell was laid out, not anchored to the
+                              viewport, so the label would scroll off-screen while
+                              the (invisible) cell background stayed pinned. Instead
+                              we use TWO cells: a sticky-left label cell (mirrors the
+                              Habit column) and a plain cell that spans the day
+                              columns, just carrying the matching background so the
+                              band looks continuous as you scroll right. Both cells
+                              also stick to `top: HEADER_ROW_H` so the whole band
+                              docks under the header while scrolling down. */}
                             <tr className="select-none border-t border-line/60">
                               <td
-                                colSpan={columns.length + 2}
-                                className="sticky left-0 z-20 bg-surface2/95 px-3 py-1.5 text-left backdrop-blur-sm"
+                                className="sticky left-0 z-20 min-w-36 bg-surface2/95 px-3 py-1.5 text-left backdrop-blur-sm"
                                 style={{ top: HEADER_ROW_H }}
                               >
                                 <div className="flex items-center gap-2">
@@ -269,6 +274,11 @@ export default function TrackerPage() {
                                   </span>
                                 </div>
                               </td>
+                              <td
+                                colSpan={columns.length + 1}
+                                className="sticky z-[15] bg-surface2/95 backdrop-blur-sm"
+                                style={{ top: HEADER_ROW_H }}
+                              />
                             </tr>
                             {group.habits.map((habit) => {
                               const { current } = habitStreaks(
