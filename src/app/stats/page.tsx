@@ -152,273 +152,293 @@ export default function StatsPage() {
   if (active.length === 0) {
     return (
       <AppPageShell>
-      <div className="animate-fade-in">
-        <PageHeader title="Statistics" subtitle="Your progress over time" />
-        <EmptyState
-          icon={ChartColumnIncreasing}
-          title="No data yet"
-          hint="Add and mark some habits to unlock your stats."
-          illustration="stats"
-        />
-      </div>
+        <div className="animate-fade-in">
+          <PageHeader title="Statistics" subtitle="Your progress over time" />
+          <EmptyState
+            icon={ChartColumnIncreasing}
+            title="No data yet"
+            hint="Add and mark some habits to unlock your stats."
+            illustration="stats"
+          />
+        </div>
       </AppPageShell>
     );
   }
 
   return (
     <AppPageShell>
-    <div className="animate-fade-in">
-      <PageHeader
-        title="Statistics"
-        subtitle="Your progress over time"
-        action={
-          <Segmented options={PERIODS} value={period} onChange={setPeriod} />
-        }
-      />
-
-      {/* Fixed-size stat cards */}
-      <StaggerContainer className="grid grid-cols-2 gap-3 sm:grid-cols-5">
-        <StatCard
-          icon={Target}
-          value={`${range.rate}%`}
-          label="Completion"
-          accent
+      <div className="animate-fade-in">
+        <PageHeader
+          title="Statistics"
+          subtitle="Your progress over time"
+          action={
+            <Segmented options={PERIODS} value={period} onChange={setPeriod} />
+          }
         />
-        <StatCard
-          icon={Activity}
-          value={`${consistency}%`}
-          label="Consistency"
-        />
-        <StatCard icon={CircleCheckBig} value={range.done} label="Done" />
-        <StatCard icon={Flame} value={streaks.best} label="Best streak" />
-        <StatCard
-          icon={TrendingUp}
-          value={streaks.current}
-          label="Current streak"
-        />
-      </StaggerContainer>
 
-      {insights.length > 0 && (
-        <div className="mt-6">
-          <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-muted">
-            <Sparkles className="size-4 icon-accent" /> Insights
-          </h2>
-          <StaggerContainer className="grid gap-3 sm:grid-cols-2">
-            {insights.map((ins, i) => (
-              <StaggerItem key={i}>
-                <div
-                  className={`rounded-2xl border px-4 py-3 text-sm ${TONE[ins.tone]}`}
-                >
-                  {ins.text}
-                </div>
-              </StaggerItem>
-            ))}
-          </StaggerContainer>
-        </div>
-      )}
+        {/* Fixed-size stat cards */}
+        <StaggerContainer className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+          <StatCard
+            icon={Target}
+            value={`${range.rate}%`}
+            label="Completion"
+            accent
+          />
+          <StatCard
+            icon={Activity}
+            value={`${consistency}%`}
+            label="Consistency"
+          />
+          <StatCard icon={CircleCheckBig} value={range.done} label="Done" />
+          <StatCard icon={Flame} value={streaks.best} label="Best streak" />
+          <StatCard
+            icon={TrendingUp}
+            value={streaks.current}
+            label="Current streak"
+          />
+        </StaggerContainer>
 
-      {/* Prediction — fixed-size cards */}
-      {active.length > 0 && (
-        <div className="mt-6">
-          <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-muted">
-            <Gauge className="size-4 icon-accent" /> Projection
-          </h2>
-          <div className="grid gap-4 sm:grid-cols-4">
-            <Card className="p-4 h-[100px] flex flex-col justify-center">
-              <p className="text-xs text-muted">Estimated completion</p>
-              <p className="mt-1 text-2xl font-bold">
-                {projection.estimatedCompletion}%
-              </p>
-              <div className="mt-1 flex items-center gap-1">
-                {projection.trend === "up" && (
-                  <ArrowUp className="size-3.5 text-done" />
-                )}
-                {projection.trend === "down" && (
-                  <ArrowDown className="size-3.5 text-missed" />
-                )}
-                {projection.trend === "stable" && (
-                  <Minus className="size-3.5 text-muted" />
-                )}
-                <span className="text-[11px] text-muted capitalize">
-                  {projection.trend}
-                </span>
-              </div>
-            </Card>
-            <Card className="p-4 h-[100px] flex flex-col justify-center">
-              <p className="text-xs text-muted">Projected streak</p>
-              <p className="mt-1 text-2xl font-bold">
-                {projection.estimatedStreak} days
-              </p>
-              <p className="mt-1 text-[11px] text-muted">In the next 7 days</p>
-            </Card>
-            <Card className="p-4 h-[100px] flex flex-col justify-center">
-              <p className="text-xs text-muted">XP per day</p>
-              <p className="mt-1 text-2xl font-bold">{xpPerDay}</p>
-              <p className="mt-1 text-[11px] text-muted">Average</p>
-            </Card>
-            <Card className="p-4 h-[100px] flex flex-col justify-center">
-              <p className="text-xs text-muted">Next level</p>
-              <p className="mt-1 text-2xl font-bold">
-                {projection.estimatedDaysToNextLevel != null
-                  ? `${projection.estimatedDaysToNextLevel}d`
-                  : "—"}
-              </p>
-              <p className="mt-1 text-[11px] text-muted">At current pace</p>
-            </Card>
-          </div>
-        </div>
-      )}
-
-      {/* Equal-height analytics cards — fixed height, internal scroll for overflow */}
-      <div className="mt-6 grid gap-6 sm:grid-cols-2">          {/* Recent trends — interactive line chart */}
-        <div className="min-h-60 lg:h-[280px]">
-          <h2 className="mb-3 shrink-0 text-sm font-semibold uppercase tracking-wide text-muted">
-            Recent trends
-          </h2>
-          <Card className="p-5 min-h-[calc(100%-28px)] flex flex-col">
-            <div className="flex-1 min-h-0">
-              <TrendLineChart points={chart} height={180} />
-            </div>
-          </Card>
-        </div>
-
-        {/* Last 7 Days — fixed with bar chart, proper sizing */}
-        <div className="min-h-60 lg:h-[280px]">
-          <h2 className="mb-3 shrink-0 text-sm font-semibold uppercase tracking-wide text-muted">
-            Last 7 days
-          </h2>
-          <Card className="p-5 min-h-[calc(100%-28px)] flex flex-col">
-            <div className="flex-1 flex items-end justify-between gap-2">
-              {week7.map(({ date, rate }) => (
-                <div
-                  key={date.toISOString()}
-                  className="flex flex-1 flex-col items-center gap-2 h-full justify-end"
-                >
-                  <div className="flex w-full flex-1 items-end justify-center">
-                    <div
-                      className="w-full max-w-9 rounded-t-lg transition-all duration-500 hover:opacity-80"
-                      style={{
-                        height: `${Math.max(rate, 4)}%`,
-                        background:
-                          rate >= 100 ? "var(--color-done)" : "var(--c-accent)",
-                        opacity: rate === 0 ? 0.25 : 1,
-                      }}
-                      title={`${rate}%`}
-                    />
+        {insights.length > 0 && (
+          <div className="mt-6">
+            <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-muted">
+              <Sparkles className="size-4 icon-accent" /> Insights
+            </h2>
+            <StaggerContainer className="grid gap-3 sm:grid-cols-2">
+              {insights.map((ins, i) => (
+                <StaggerItem key={i}>
+                  <div
+                    className={`rounded-2xl border px-4 py-3 text-sm ${TONE[ins.tone]}`}
+                  >
+                    {ins.text}
                   </div>
-                  <span className="font-mono text-[10px] font-medium text-muted shrink-0">
-                    {date.toLocaleDateString(undefined, { weekday: "narrow" })}
+                </StaggerItem>
+              ))}
+            </StaggerContainer>
+          </div>
+        )}
+
+        {/* Prediction — fixed-size cards */}
+        {active.length > 0 && (
+          <div className="mt-6">
+            <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-muted">
+              <Gauge className="size-4 icon-accent" /> Projection
+            </h2>
+            <div className="grid gap-4 sm:grid-cols-4">
+              <Card className="p-4 h-[100px] flex flex-col justify-center">
+                <p className="text-xs text-muted">Estimated completion</p>
+                <p className="mt-1 text-2xl font-bold">
+                  {projection.estimatedCompletion}%
+                </p>
+                <div className="mt-1 flex items-center gap-1">
+                  {projection.trend === "up" && (
+                    <ArrowUp className="size-3.5 text-done" />
+                  )}
+                  {projection.trend === "down" && (
+                    <ArrowDown className="size-3.5 text-missed" />
+                  )}
+                  {projection.trend === "stable" && (
+                    <Minus className="size-3.5 text-muted" />
+                  )}
+                  <span className="text-[11px] text-muted capitalize">
+                    {projection.trend}
                   </span>
                 </div>
-              ))}
+              </Card>
+              <Card className="p-4 h-[100px] flex flex-col justify-center">
+                <p className="text-xs text-muted">Projected streak</p>
+                <p className="mt-1 text-2xl font-bold">
+                  {projection.estimatedStreak} days
+                </p>
+                <p className="mt-1 text-[11px] text-muted">
+                  In the next 7 days
+                </p>
+              </Card>
+              <Card className="p-4 h-[100px] flex flex-col justify-center">
+                <p className="text-xs text-muted">XP per day</p>
+                <p className="mt-1 text-2xl font-bold">{xpPerDay}</p>
+                <p className="mt-1 text-[11px] text-muted">Average</p>
+              </Card>
+              <Card className="p-4 h-[100px] flex flex-col justify-center">
+                <p className="text-xs text-muted">Next level</p>
+                <p className="mt-1 text-2xl font-bold">
+                  {projection.estimatedDaysToNextLevel != null
+                    ? `${projection.estimatedDaysToNextLevel}d`
+                    : "—"}
+                </p>
+                <p className="mt-1 text-[11px] text-muted">At current pace</p>
+              </Card>
             </div>
-          </Card>
-        </div>
+          </div>
+        )}
 
-        {/* Top categories — fixed height, internal scroll */}
-        <div className="min-h-60 lg:h-[280px]">
-          <h2 className="mb-3 shrink-0 text-sm font-semibold uppercase tracking-wide text-muted">
-            Top categories
-          </h2>
-          <Card className="p-5 min-h-[calc(100%-28px)] flex flex-col">
-            <div className="flex-1 min-h-0 overflow-y-auto pr-1">
-              <div className="flex flex-col gap-3.5">
-                {topCategories.length === 0 ? (
-                  <p className="text-sm text-muted">
-                    Complete some habits to see category breakdowns.
-                  </p>
-                ) : (
-                  topCategories.map(({ category, rate }) => (
-                    <div key={category}>
-                      <div className="mb-1.5 flex items-center justify-between text-xs">
-                        <span className="flex items-center gap-1.5 font-medium">
-                          <span
-                            className="size-2 rounded-full"
-                            style={{
-                              backgroundColor: CATEGORY_COLORS[category],
-                            }}
-                          />
-                          {category}
-                        </span>
-                        <span className="font-mono text-muted">{rate}%</span>
-                      </div>
-                      <ProgressBar
-                        value={rate}
-                        color={CATEGORY_COLORS[category]}
+        {/*
+        Equal-height analytics cards.
+        IMPORTANT: each wrapper below uses a HARD height (h-[...]), not
+        min-height, on lg screens. Previously the Card inside used
+        `min-h-[calc(100%-28px)]`, which let the card grow TALLER than its
+        280px-tall grid cell whenever its content (e.g. a long Top Categories
+        list) didn't fit. Because the grid row itself doesn't grow to match an
+        overflowing child, that card would visually spill out of its cell and
+        overlap whatever section came next on the page (Habit Correlations).
+        Switching the Card to a matching hard height makes the chain
+        (fixed-height wrapper -> fixed-height Card -> flex-1 min-h-0 scroll
+        area) actually bounded, so any list longer than the box scrolls
+        INSIDE the card instead of pushing past it.
+      */}
+        <div className="mt-6 grid gap-6 sm:grid-cols-2">
+          {" "}
+          {/* Recent trends — interactive line chart */}
+          <div className="min-h-60 lg:h-[280px]">
+            <h2 className="mb-3 shrink-0 text-sm font-semibold uppercase tracking-wide text-muted">
+              Recent trends
+            </h2>
+            <Card className="p-5 h-[calc(100%-28px)] min-h-60 flex flex-col">
+              <div className="flex-1 min-h-0">
+                <TrendLineChart points={chart} height={180} />
+              </div>
+            </Card>
+          </div>
+          {/* Last 7 Days — fixed with bar chart, proper sizing */}
+          <div className="min-h-60 lg:h-[280px]">
+            <h2 className="mb-3 shrink-0 text-sm font-semibold uppercase tracking-wide text-muted">
+              Last 7 days
+            </h2>
+            <Card className="p-5 h-[calc(100%-28px)] min-h-60 flex flex-col">
+              <div className="flex-1 flex items-end justify-between gap-2">
+                {week7.map(({ date, rate }) => (
+                  <div
+                    key={date.toISOString()}
+                    className="flex flex-1 flex-col items-center gap-2 h-full justify-end"
+                  >
+                    <div className="flex w-full flex-1 items-end justify-center">
+                      <div
+                        className="w-full max-w-9 rounded-t-lg transition-all duration-500 hover:opacity-80"
+                        style={{
+                          height: `${Math.max(rate, 4)}%`,
+                          background:
+                            rate >= 100
+                              ? "var(--color-done)"
+                              : "var(--c-accent)",
+                          opacity: rate === 0 ? 0.25 : 1,
+                        }}
+                        title={`${rate}%`}
                       />
                     </div>
-                  ))
-                )}
-              </div>
-            </div>
-          </Card>
-        </div>
-
-        {/* By weekday — fixed height, internal scroll */}
-        <div className="min-h-60 lg:h-[280px]">
-          <h2 className="mb-3 shrink-0 text-sm font-semibold uppercase tracking-wide text-muted">
-            By weekday
-          </h2>
-          <Card className="p-5 min-h-[calc(100%-28px)] flex flex-col">
-            <div className="flex-1 min-h-0 overflow-y-auto pr-1">
-              <div className="flex flex-col gap-2.5">
-                {byWeekday.map(({ weekday, rate }) => (
-                  <div key={weekday} className="flex items-center gap-3">
-                    <span className="w-9 shrink-0 font-mono text-xs text-muted">
-                      {WEEKDAY_SHORT[weekday]}
-                    </span>
-                    <div className="flex-1">
-                      <ProgressBar value={rate} />
-                    </div>
-                    <span className="w-9 shrink-0 text-right font-mono text-xs text-muted">
-                      {rate}%
+                    <span className="font-mono text-[10px] font-medium text-muted shrink-0">
+                      {date.toLocaleDateString(undefined, {
+                        weekday: "narrow",
+                      })}
                     </span>
                   </div>
                 ))}
               </div>
-            </div>
-          </Card>
-        </div>
-      </div>
-
-      {/* Habit correlations */}
-      {correlations.length > 0 && (
-        <div className="mt-6">
-          <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-muted">
-            <Link2 className="size-4 icon-accent" /> Habit Correlations
-          </h2>
-          <Card className="p-5">
-            <p className="mb-3 text-xs text-muted">
-              Habits you tend to complete together. Higher strength means when
-              you do one, you almost always do the other.
-            </p>
-            <div className="grid gap-3 sm:grid-cols-2">
-              {correlations.slice(0, 6).map((pair) => (
-                <div
-                  key={`${pair.habitA.id}-${pair.habitB.id}`}
-                  className="flex items-center gap-3 rounded-xl bg-surface2/50 p-3"
-                >
-                  <div className="flex-1">
-                    <div className="flex items-center gap-1.5 text-sm font-medium">
-                      <span>{pair.habitA.name}</span>
-                      <span className="text-faint">+</span>
-                      <span>{pair.habitB.name}</span>
-                    </div>
-                    <p className="mt-0.5 text-[11px] text-muted">
-                      {pair.bothDone} of {pair.totalShared} days together
+            </Card>
+          </div>
+          {/* Top categories — fixed height, internal scroll */}
+          <div className="min-h-60 lg:h-[280px]">
+            <h2 className="mb-3 shrink-0 text-sm font-semibold uppercase tracking-wide text-muted">
+              Top categories
+            </h2>
+            <Card className="p-5 h-[calc(100%-28px)] min-h-60 flex flex-col">
+              <div className="flex-1 min-h-0 overflow-y-auto pr-1">
+                <div className="flex flex-col gap-3.5">
+                  {topCategories.length === 0 ? (
+                    <p className="text-sm text-muted">
+                      Complete some habits to see category breakdowns.
                     </p>
-                  </div>
-                  <div className="text-right">
-                    <span className="text-lg font-bold">{pair.strength}%</span>
-                    <p className="text-[10px] text-muted">strength</p>
-                  </div>
+                  ) : (
+                    topCategories.map(({ category, rate }) => (
+                      <div key={category}>
+                        <div className="mb-1.5 flex items-center justify-between text-xs">
+                          <span className="flex items-center gap-1.5 font-medium">
+                            <span
+                              className="size-2 rounded-full"
+                              style={{
+                                backgroundColor: CATEGORY_COLORS[category],
+                              }}
+                            />
+                            {category}
+                          </span>
+                          <span className="font-mono text-muted">{rate}%</span>
+                        </div>
+                        <ProgressBar
+                          value={rate}
+                          color={CATEGORY_COLORS[category]}
+                        />
+                      </div>
+                    ))
+                  )}
                 </div>
-              ))}
-            </div>
-          </Card>
+              </div>
+            </Card>
+          </div>
+          {/* By weekday — fixed height, internal scroll */}
+          <div className="min-h-60 lg:h-[280px]">
+            <h2 className="mb-3 shrink-0 text-sm font-semibold uppercase tracking-wide text-muted">
+              By weekday
+            </h2>
+            <Card className="p-5 h-[calc(100%-28px)] min-h-60 flex flex-col">
+              <div className="flex-1 min-h-0 overflow-y-auto pr-1">
+                <div className="flex flex-col gap-2.5">
+                  {byWeekday.map(({ weekday, rate }) => (
+                    <div key={weekday} className="flex items-center gap-3">
+                      <span className="w-9 shrink-0 font-mono text-xs text-muted">
+                        {WEEKDAY_SHORT[weekday]}
+                      </span>
+                      <div className="flex-1">
+                        <ProgressBar value={rate} />
+                      </div>
+                      <span className="w-9 shrink-0 text-right font-mono text-xs text-muted">
+                        {rate}%
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </Card>
+          </div>
         </div>
-      )}
-    </div>
+
+        {/* Habit correlations */}
+        {correlations.length > 0 && (
+          <div className="mt-6">
+            <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-muted">
+              <Link2 className="size-4 icon-accent" /> Habit Correlations
+            </h2>
+            <Card className="p-5">
+              <p className="mb-3 text-xs text-muted">
+                Habits you tend to complete together. Higher strength means when
+                you do one, you almost always do the other.
+              </p>
+              <div className="grid gap-3 sm:grid-cols-2">
+                {correlations.slice(0, 6).map((pair) => (
+                  <div
+                    key={`${pair.habitA.id}-${pair.habitB.id}`}
+                    className="flex items-center gap-3 rounded-xl bg-surface2/50 p-3"
+                  >
+                    <div className="flex-1">
+                      <div className="flex items-center gap-1.5 text-sm font-medium">
+                        <span>{pair.habitA.name}</span>
+                        <span className="text-faint">+</span>
+                        <span>{pair.habitB.name}</span>
+                      </div>
+                      <p className="mt-0.5 text-[11px] text-muted">
+                        {pair.bothDone} of {pair.totalShared} days together
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-lg font-bold">
+                        {pair.strength}%
+                      </span>
+                      <p className="text-[10px] text-muted">strength</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </Card>
+          </div>
+        )}
+      </div>
     </AppPageShell>
   );
 }
