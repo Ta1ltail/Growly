@@ -156,6 +156,19 @@ export default function TrackerPage() {
     return () => ro.disconnect();
   }, []);
 
+  // Fill leftover vertical space with blank rows instead of leaving empty
+  // void below the last category. We measure: the scrollable container's
+  // visible height, the table's actual content height, and one real data
+  // row's height — then derive how many blank rows fit in the remainder.
+  // This only ever ADDS rows up to the point the table would just touch the
+  // bottom of the container; it never pushes content past that point, so it
+  // can't introduce a scrollbar that wasn't already needed.
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const tableRef = useRef<HTMLTableElement>(null);
+  const sampleRowRef = useRef<HTMLTableRowElement>(null);
+  const [fillerRowCount, setFillerRowCount] = useState(0);
+  const [dataRowH, setDataRowH] = useState(36); // px fallback, ~py-2 + content
+
   const columns = useMemo(
     () =>
       Array.from({ length: daysShown }, (_, i) =>
@@ -194,6 +207,56 @@ export default function TrackerPage() {
       habits: map.get(c)!,
     }));
   }, [habits]);
+
+  // Recompute how many blank filler rows fit whenever the visible content
+  // changes shape: filtering, switching 14/30 day range, viewport resize, or
+  // habit list edits. Measured live (not estimated) so it stays correct
+  // across font/zoom/breakpoint differences.
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+    const table = tableRef.current;
+    const sampleRow = sampleRowRef.current;
+    if (!container || !table) return;
+
+    const measureAndSet = () => {
+      const rowH = sampleRow?.getBoundingClientRect().height || dataRowH;
+      if (sampleRow) setDataRowH(rowH);
+
+      // Height of everything currently rendered (header + category bands +
+      // real data rows), independent of filler rows already added — measure
+      // against the table's natural content height minus existing fillers.
+      const existingFillerH = fillerRowCount * rowH;
+      const contentH = table.getBoundingClientRect().height - existingFillerH;
+      const availableH = container.clientHeight;
+      const remainder = availableH - contentH;
+
+      const neededFillers = remainder > 0 ? Math.floor(remainder / rowH) : 0;
+      setFillerRowCount((prev) =>
+        prev === neededFillers ? prev : neededFillers,
+      );
+    };
+
+    measureAndSet();
+    const ro = new ResizeObserver(measureAndSet);
+    ro.observe(container);
+    ro.observe(table);
+    return () => ro.disconnect();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [groupedHabits, daysShown, headerRowH]);
+
+  // Distribute filler rows evenly across categories (round-robin, one at a
+  // time) so every group gets padded a little rather than one category
+  // absorbing one giant dangling block — keeps the look consistent across
+  // categories as requested, instead of uneven group heights.
+  const fillerPerCategory = useMemo(() => {
+    const n = groupedHabits.length;
+    const counts = new Array(n).fill(0);
+    if (n === 0) return counts;
+    for (let i = 0; i < fillerRowCount; i++) {
+      counts[i % n] += 1;
+    }
+    return counts;
+  }, [groupedHabits.length, fillerRowCount]);
 
   const usedCategories = useMemo(
     () =>
@@ -242,8 +305,14 @@ export default function TrackerPage() {
               vertical scroll position. */}
             <div className="h-[calc(100dvh-18rem)] min-h-[300px] md:h-[calc(100dvh-15rem)]">
               <Card className="overflow-hidden h-full">
-                <div className="h-full w-full overflow-auto">
-                  <table className="w-full border-collapse text-center font-mono text-xs">
+                <div
+                  ref={scrollContainerRef}
+                  className="h-full w-full overflow-auto"
+                >
+                  <table
+                    ref={tableRef}
+                    className="w-full border-collapse text-center font-mono text-xs"
+                  >
                     <thead>
                       <tr ref={headerRowRef}>
                         <th className="sticky left-0 top-0 z-40 min-w-36 border-r border-line bg-surface px-3 py-3 text-left font-semibold shadow-sm">
@@ -312,16 +381,22 @@ export default function TrackerPage() {
                                 style={{ top: headerRowH - 1 }}
                               />
                             </tr>
-                            {group.habits.map((habit) => {
+                            {group.habits.map((habit, habitIndex) => {
                               const { current } = habitStreaks(
                                 habit,
                                 data.marks,
                                 today,
                                 frozen,
                               );
+                              const isFirstSampleRow =
+                                groupedHabits[0]?.category === group.category &&
+                                habitIndex === 0;
                               return (
                                 <tr
                                   key={habit.id}
+                                  ref={
+                                    isFirstSampleRow ? sampleRowRef : undefined
+                                  }
                                   className="border-t border-line transition-colors hover:bg-surface2/30"
                                 >
                                   <td className="sticky left-0 z-10 min-w-36 border-r border-line bg-surface px-3 py-2 text-left">
@@ -380,6 +455,35 @@ export default function TrackerPage() {
                                 </tr>
                               );
                             })}
+                            {/* Blank filler rows — pad each category out so leftover
+                              vertical space in the container is filled rather than
+                              left empty below the last real habit. Distributed
+                              evenly across categories (see fillerPerCategory) so
+                              every group gets the same treatment, not just one. No
+                              interactive cells: purely visual continuation of the
+                              row grid. Never adds enough to overflow the
+                              container — count is derived from real measured
+                              leftover space, see the effect above. */}
+                            {Array.from({
+                              length:
+                                fillerPerCategory[
+                                  groupedHabits.findIndex(
+                                    (g) => g.category === group.category,
+                                  )
+                                ] ?? 0,
+                            }).map((_, i) => (
+                              <tr
+                                key={`filler-${group.category}-${i}`}
+                                aria-hidden
+                                className="border-t border-line/40"
+                              >
+                                <td className="sticky left-0 z-10 min-w-36 border-r border-line bg-surface px-3 py-2" />
+                                {columns.map((_, ci) => (
+                                  <td key={ci} className="p-0.5" />
+                                ))}
+                                <td className="px-2" />
+                              </tr>
+                            ))}
                           </Fragment>
                         );
                       })}
