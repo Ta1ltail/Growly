@@ -26,6 +26,7 @@ export function useNotifications() {
   const { user } = useAuth();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
+  const supabaseRef = useRef<ReturnType<typeof createClient> | null>(null);
   const channelRef = useRef<ReturnType<ReturnType<typeof createClient>["channel"]> | null>(null);
 
   const loadNotifications = useCallback(async () => {
@@ -68,18 +69,21 @@ export function useNotifications() {
 
   // Set up Supabase Realtime subscription + initial load
   useEffect(() => {
+    // Use a stable supabase client instance across this component's lifetime
+    if (!supabaseRef.current) supabaseRef.current = createClient();
+    const supabase = supabaseRef.current;
+
     loadNotifications();
 
     if (!user) {
       // Clean up any existing channel when user signs out
       if (channelRef.current) {
-        channelRef.current.unsubscribe();
+        supabase.removeChannel(channelRef.current);
         channelRef.current = null;
       }
       return;
     }
 
-    const supabase = createClient();
     const channel = supabase
       .channel(`notifications:${user.id}`)
       .on(
@@ -99,7 +103,7 @@ export function useNotifications() {
     channelRef.current = channel;
 
     return () => {
-      channel.unsubscribe();
+      supabase.removeChannel(channel);
       channelRef.current = null;
     };
   }, [user, loadNotifications, handleRealtimeChange]);
