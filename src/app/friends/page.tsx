@@ -11,7 +11,6 @@ import {
   Clock,
   Users,
   Loader2,
-  UserRound,
   Heart,
   Flame,
   Medal,
@@ -20,6 +19,7 @@ import { createNotification } from "@/lib/notifications";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useHydrated } from "@/hooks/useHydrated";
+import { AvatarDisplay } from "@/components/ui/AvatarDisplay";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Card } from "@/components/ui/Card";
 import { Pagination } from "@/components/ui/Pagination";
@@ -215,7 +215,7 @@ export default function FriendsPage() {
 
       const { data } = await supabase
         .from("public_profiles")
-        .select("user_id, display_name, username")
+        .select("user_id, display_name, username, avatar")
         .or(`username.ilike.%${q}%,display_name.ilike.%${q}%`)
         .neq("user_id", user.id)
         .limit(10);
@@ -328,9 +328,7 @@ export default function FriendsPage() {
                     key={profile.user_id}
                     className="flex items-center gap-3 px-3 py-2.5"
                   >
-                    <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-accent/10 text-accent">
-                      <UserRound className="size-4.5" />
-                    </div>
+                    <AvatarDisplay avatar={profile.avatar} size={36} />
                     <div className="min-w-0 flex-1">
                       <Link
                         href={`/profile/${profile.username}`}
@@ -388,9 +386,7 @@ export default function FriendsPage() {
                   key={req.friendId}
                   className="flex items-center gap-3 px-4 py-3"
                 >
-                  <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-accent/10 text-accent">
-                    <UserRound className="size-5" />
-                  </div>
+                  <AvatarDisplay avatar={req.avatar} size={40} />
                   <div className="min-w-0 flex-1">
                     <Link
                       href={`/profile/${req.username}`}
@@ -469,9 +465,7 @@ export default function FriendsPage() {
                   >
                     {/* User info */}
                     <div className="flex min-w-0 flex-1 items-center gap-3">
-                      <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-accent/10 text-accent">
-                        <UserRound className="size-4.5" />
-                      </div>
+                      <AvatarDisplay avatar={friend.avatar} size={36} />
                       <div className="min-w-0">
                         <p className="truncate text-sm font-semibold">
                           {friend.display_name}

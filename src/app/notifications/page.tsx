@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   Bell,
@@ -28,6 +29,7 @@ const TYPE_ICON: Record<string, React.ReactNode> = {
 };
 
 export default function NotificationsPage() {
+  const router = useRouter();
   const hydrated = useHydrated();
   const { notifications, loading, unreadCount, markAsRead, markAllAsRead } =
     useNotifications();
@@ -74,6 +76,7 @@ export default function NotificationsPage() {
                 key={n.id}
                 onClick={() => {
                   if (!n.is_read) markAsRead(n.id);
+                  if (n.link) router.push(n.link);
                 }}
                 className={cn(
                   "flex cursor-pointer items-start gap-3 rounded-xl px-4 py-3 transition-colors",
@@ -117,6 +120,7 @@ export default function NotificationsPage() {
                     {n.link && (
                       <Link
                         href={n.link}
+                        onClick={(e) => e.stopPropagation()}
                         className="inline-flex items-center gap-0.5 text-[10px] font-medium text-accent hover:underline"
                       >
                         View <ChevronRight className="size-3" />

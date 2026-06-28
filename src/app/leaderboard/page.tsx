@@ -10,13 +10,12 @@ import Link from "next/link";
 import {
   Medal,
   Loader2,
-  UserRound,
-  Crown,
   Users,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useHydrated } from "@/hooks/useHydrated";
+import { AvatarDisplay } from "@/components/ui/AvatarDisplay";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Card } from "@/components/ui/Card";
 import { Pagination } from "@/components/ui/Pagination";
@@ -29,6 +28,7 @@ interface LeaderEntry {
   user_id: string;
   display_name: string;
   username: string;
+  avatar: string | null;
   level: number;
   current_streak: number;
   best_streak: number;
@@ -70,7 +70,7 @@ const SNAPSHOT_COLS =
   "user_id, level, current_streak, best_streak, total_completions, consistency_14d, achievement_count, title_name, rank_icon";
 
 /** Columns we select from public_profiles. */
-const PROFILE_COLS = "user_id, display_name, username";
+const PROFILE_COLS = "user_id, display_name, username, avatar";
 
 function rankMedal(i: number): string {
   if (i === 0) return "🥇";
@@ -95,6 +95,7 @@ type DbProfile = {
   user_id: string;
   display_name: string;
   username: string;
+  avatar: string | null;
 };
 
 export default function LeaderboardPage() {
@@ -169,6 +170,7 @@ export default function LeaderboardPage() {
         user_id: s.user_id,
         display_name: p?.display_name ?? "Unknown",
         username: p?.username ?? "unknown",
+        avatar: p?.avatar ?? null,
         level: s.level ?? 0,
         current_streak: s.current_streak ?? 0,
         best_streak: s.best_streak ?? 0,
@@ -333,20 +335,7 @@ export default function LeaderboardPage() {
 
                     {/* User */}
                     <div className="flex min-w-0 flex-1 items-center gap-3">
-                      <div
-                        className={cn(
-                          "flex size-9 shrink-0 items-center justify-center rounded-full",
-                          isMe
-                            ? "bg-accent/15 text-accent"
-                            : "bg-surface2 text-muted",
-                        )}
-                      >
-                        {isMe ? (
-                          <Crown className="size-4" />
-                        ) : (
-                          <UserRound className="size-4" />
-                        )}
-                      </div>
+                      <AvatarDisplay avatar={entry.avatar} size={36} />
                       <div className="min-w-0">
                         <div className="flex items-center gap-1.5">
                           <span className="truncate text-sm font-semibold">
