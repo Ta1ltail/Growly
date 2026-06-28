@@ -65,11 +65,11 @@
     devmode/                  DevMode panel (7 sections)
 
   hooks/
-    useToday.ts               Stable Date for the session
+    useToday.ts               Stable Date for the session (midnight-refresh via setTimeout)
     useHydrated.ts            True after mount (gate client-only UI)
     useKeyboardShortcuts.ts   Global keyboard shortcuts
     useAuth.ts                Session state, Remember Me, signOut
-    useNotifications.ts       Query notifications (30s polling + visibilitychange)
+    useNotifications.ts       Query notifications (Supabase Realtime subscription + visibilitychange)
 
   lib/
     types.ts  categories.ts  util.ts  marks.ts  policy.ts
@@ -82,7 +82,7 @@
     devmode.ts  devSeed.ts   Dev mode + seed data
     notifications.ts         Notification creation utility
     supabase/
-      client.ts   proxy.ts   admin.ts   actions.ts
+      client.ts  proxy.ts  db.ts  sync.ts
 
     -- gamification engine (all PURE / derived from marks) --
     xp.ts           XP sources + level curve
@@ -170,11 +170,41 @@
  NOTIFICATIONS
 ==========================================================
   - Supabase `notifications` table with RLS
-  - useNotifications hook: 30s polling + visibilitychange refresh
+  - useNotifications hook: Supabase Realtime subscription (instant) +
+    visibilitychange refresh. Replaced 30s polling.
+  - notifications table added to supabase_realtime publication (migration 008)
   - NotificationBell in sidebar header (unread count badge)
   - /notifications page with read/unread styling, mark-all-read
   - lib/notifications.ts utility for client-side creation
   - Types: friend_request, friend_accept, achievement, system
+
+
+==========================================================
+ DATABASE PERFORMANCE
+==========================================================
+  Indexes (migrations 001-012):
+  - All user_id columns indexed on every table
+  - Composite: friends(requester,status), friends(addressee,status)
+  - Sort: notifications(created_at DESC), suggestions(created_at DESC)
+  - Lookup: user_profile(username) for public profile queries
+  - Leaderboard: 4 covering indexes on user_stats_snapshots
+    (level DESC, current_streak DESC, consistency_14d DESC,
+     total_completions DESC) each INCLUDE-ing all display columns
+    for index-only scans.
+
+  Server-side pagination:
+  - Leaderboard: .order().range() with count:'exact' (20 rows/page)
+  - Friends: pending/accepted split, .range() for accepted list
+
+  Daily cron (migration 010):
+  - refresh_stale_snapshots() PostgreSQL function recalculates stats
+  - Recursive CTE for current streak, gaps-and-islands for best streak
+  - Schedule: daily at 03:00 UTC via pg_cron
+
+  Monitoring (migration 012):
+  - pg_stat_statements extension enabled
+  - Query: SELECT query, calls, mean_exec_time, rows
+           FROM extensions.pg_stat_statements ORDER BY mean_exec_time DESC LIMIT 20
 
 
 ==========================================================
@@ -192,6 +222,7 @@
   - Auth is email/password only (sessions managed via Supabase cookies)
   - No social OAuth (Google, GitHub) — planned
   - Cloud sync is functional but localStorage-first (no conflict resolution)
+  - pg_cron extension required for daily stats refresh (enabled by default in Supabase)
 
 
 ############################################################

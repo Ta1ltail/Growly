@@ -22,7 +22,7 @@ const SIZES: Record<ButtonSize, string> = {
   icon: "size-9 p-0",
 };
 
-export function buttonClasses(
+function buttonClasses(
   variant: ButtonVariant = "primary",
   size: ButtonSize = "md",
   className = "",

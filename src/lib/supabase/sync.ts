@@ -185,7 +185,7 @@ export async function pushMutation(
    ────────────────────────────────────────────
    Used on initial sync or manual "sync now". */
 
-export async function pushAllUserData(
+async function pushAllUserData(
   userId: string,
   data: AppData,
 ): Promise<void> {

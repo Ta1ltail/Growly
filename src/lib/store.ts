@@ -82,7 +82,8 @@ export function setSyncCallback(
   if (userId !== undefined) _userId = userId;
 }
 
-export function getSyncUserId(): string | null {
+/** @internal used by sync layer */
+function getSyncUserId(): string | null {
   return _userId;
 }
 
@@ -522,7 +523,7 @@ export function clearAllData(): void {
       ...emptyData.economy,
       owned: prev.economy.owned,
       equipped: prev.economy.equipped,
-      freezes: prev.economy.freezes,
+      freezes: [], // don't preserve orphaned freeze entries (marks are wiped)
     },
     progressSeen: {
       ...emptyData.progressSeen,
@@ -587,13 +588,14 @@ export function updateProfile(patch: Partial<Profile>): void {
 // Only fills GAPS — anything already recorded keeps its existing seen flag.
 // Call once on app mount, before celebrations start watching.
 export function seedUnlocksSeen(): void {
-  update((prev) => {
-    const { unlocks, newlyUnlocked } = reconcileUnlocks(
-      prev,
-      new Date(),
-      new Date().toISOString(),
-    );
-    if (newlyUnlocked.length === 0) return prev;
+  const prev = getSnapshot();
+  const { unlocks, newlyUnlocked } = reconcileUnlocks(
+    prev,
+    new Date(),
+    new Date().toISOString(),
+  );
+  if (newlyUnlocked.length === 0) return; // nothing to seed, skip history
+  update(() => {
     const seeded = { ...unlocks };
     for (const id of newlyUnlocked) seeded[id] = { ...seeded[id], seen: true };
     return { ...prev, unlocks: seeded };

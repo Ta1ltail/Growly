@@ -2,7 +2,7 @@
 #                                                          #
 #   PROJECT 101 - TODO / PROGRESS CHECKLIST                #
 #   [x] = done   [ ] = not yet                            #
-#   Updated: 2026-06-26                                     #
+#   Updated: 2026-06-28                                     #
 #                                                          #
 ############################################################
 
@@ -26,143 +26,56 @@
 
 
 ==========================================================
- GAMIFICATION + UI REDESIGN   (COMPLETE)
+ GAMIFICATION + ECONOMY + UI   (COMPLETE)
 ==========================================================
-  [x] Part 1 - Engine: XP, 28 achievements, titles/ranks, progress facade
-  [x] Part 2 - Visual base: ambient background, motion tokens
-  [x] Part 3 - Streaks + micro-interactions: tiered flames, counters
-  [x] Part 4 - Achievements UX: celebrations, confetti, gallery
-  [x] Part 5 - Progression UI: XP bar, level, profile, showcase
-  [x] Part 6 - Layout/data viz: dashboard, stats redesign, pagination
-  [x] Part 7 - Final pass: a11y, 60fps, reduced-motion audit
+  [x] XP, 28 achievements, titles/ranks, coins (derived from history)
+  [x] Strengths, streaks, celebration popups, confetti, profile
+  [x] Shop with cosmetics + streak-freeze consumable
+  [x] Light/dark themes, animated nav, touch targets (44px)
+  [x] Keyboard shortcuts, undo/redo, onboarding wizard
+  [x] CSV/JSON export/import, prediction engine, habit correlations
+  [x] PWA + service worker + offline page
+  [x] 81 unit tests across 5 files
 
 
 ==========================================================
- COINS + SHOP ECONOMY   (COMPLETE)
+ AUTH & SOCIAL FEATURES   (COMPLETE)
 ==========================================================
-  [x] Engine - coinsEarned/coinBalance/coinBreakdown, shop catalog
-  [x] Schema v4 - economy state + validators + store actions
-  [x] Shop page + nav + coin chips
-  [x] Cosmetics applied (flame skin, confetti palette, accent themes)
-  [x] Streak-freeze (logged, max 1/7 days, snowflake badge)
-  [x] Coin breakdown card
-  [x] Tests (81 passing)
-
-
-==========================================================
- ENGAGEMENT FEATURES   (COMPLETE)
-==========================================================
-  [x] Phase 2 - Level-up unlockables
-  [x] Phase 3 - Streak milestone rewards
-  [x] Phase 4 - Daily check-in popup
-  [x] Phase 5 - Daily quests
-  [x] Phase 6 - Daily spin wheel
-
-
-==========================================================
- UI/UX OVERHAUL   (COMPLETE)
-==========================================================
-  [x] Light theme: warm cream tones
-  [x] Dark theme: deep purple-black
-  [x] Animated nav icons (bounce, wiggle)
-  [x] Card hover effects, GPU-composited animations
-  [x] Touch targets (44px on MarkButton + IconBtn)
-
-
-==========================================================
- FEATURE CATEGORIES   (COMPLETE)
-==========================================================
-  [x] Keyboard shortcuts (g-prefix + ? + n)
-  [x] Undo/redo (Ctrl+Z/Shift+Z)
-  [x] Onboarding wizard (5 steps)
-  [-] Dashboard reordering (drag-and-drop) -- REMOVED 2026-06-22 (unwanted)
-  [x] Prediction engine (completion, streak, level ETA)
-  [x] CSV/JSON export/import (Settings)
-  [x] Habit correlations (co-occurrence on /stats)
-  [x] Custom categories (Settings UI)
-  [x] Achievements next-achievable section
-  [x] PWA manifest + service worker + offline page
-  [x] a11y: aria-current on nav, focus-visible
-  [x] Memoization optimization
-
-
-==========================================================
- OPTIMIZATION PASS   (2026-06-20)
-==========================================================
-  [x] Installed: motion, sonner, clsx, tailwind-merge, zod, knip, prettier
-  [x] Removed: @dnd-kit/*, culori, date-fns (unused deps)
-  [x] 10 unused exports removed (inert AI config, dead code)
-  [x] AiSettingsSection.tsx + CelebrationToast.tsx deleted
-  [x] Debounced localStorage saves (100ms)
-  [x] React.memo on 8 leaf components
-  [x] Lazy-loaded Confetti (React.lazy + Suspense)
-  [x] Zod v4 validation for importJSON
-  [x] Page transitions (AnimatePresence + motion.div)
-  [x] Micro-interactions (Card whileHover, Button whileTap)
-  [x] StaggerContainer component for list animations
-  [x] TONE extracted to util.ts, IconBtn extracted to shared component
-  [x] CATEGORY_COLORS_MAP duplicate removed
-  [x] Shared Pagination in achievements page
-  [x] cn() consolidated into util.ts, duplicate utils.ts deleted
-  [x] Prettier formatted 95 files
-  [x] Bundle analyzer configured
-  [x] TOOLS_USED.md created
-  [x] SYSTEM_FEATURES.md created
-  [x] ARCHITECTURE.txt, PROGRESS.md, TODO.txt updated
-
-
-==========================================================
- UI/UX POLISH + STABILITY PASS   (2026-06-22)
-==========================================================
-  (full detail: docs/CHANGELOG_2026-06-22.txt)
-  [x] Dashboard: removed widget reordering (ReorderableGrid + setWidgetOrder)
-  [x] Dashboard: Recent widget fits more badges (auto-fit + "+N"), same size
-  [x] Today: Daily Quest persists in claimed state after collecting
-  [x] Today: category filter wraps (was clipping on the right)
-  [x] Tracker: removed collapse dropdown
-  [x] Tracker: sticky first column + corner header (both axes)
-  [x] Tracker: status icons in cells (done ✔ / missed ✖ / skipped –)
-  [x] Achievement popup: chip'd rewards (center + toast), real badge in toast
-  [x] Templates: fixed stacking layout break (natural-flow equal-height grid)
-  [x] Notes: redesigned as Keep-style responsive masonry board
-  [x] Responsive column counts (Dashboard / Templates / Notes)
-  [x] a11y: Modal focus trap, Segmented aria-pressed, search labels/rings
-  [x] Cleanup: removed dead equippedConfetti() helper
-
-
-==========================================================
- PHASE 4-5   (in progress)
-==========================================================
-  [ ] Community challenges
-  [ ] Friend leaderboards
-  [x] Supabase project setup
-  [x] Supabase Auth (email/password)
-  [x] Login / Register pages (professional redesign)
-  [x] Remember Me (session persistence toggle)
-  [x] Logout (sidebar button)
-  [x] Route protection (proxy.ts replacing middleware.ts)
-  [x] Landing page (/)
-  [x] Dashboard moved to /dashboard
-  [x] Hard redirect fix (window.location.href after login)
-  [x] Route group removal ((app) and (auth) → flat structure)
-  [x] Registration data isolation (clearLocalAppData on sign-out + register)
-  [x] Remember Me default fix (now false, explicit opt-in)
-  [x] Sync error logging improved (stack traces + Supabase codes)
-  [x] NUL file deleted
-  [x] Sync optimization — RootSyncWrapper at root level
+  [x] Supabase Auth (email/password) with @supabase/ssr
+  [x] Login/register pages, Remember Me toggle, proxy.ts route protection
+  [x] Sync layer: pushMutation, pullAllUserData, pushAllUserData
+  [x] Registration data isolation, hard redirect fix, flat routes
   [x] Friends system — search, requests, accept/decline, list
-  [x] Public profile viewing — /profile/[username] with stats
-  [x] Suggestions/feedback page — form + history
+  [x] Public profiles — /profile/[username] with stats
+  [x] Leaderboard — 4 sort tabs, medals, server-side paginated
+  [x] Notifications — Realtime subscription (replaced 30s polling)
+  [x] Suggestions — feedback form + history
   [x] Drizzle ORM installed + schema definition
-  [x] Navigation updated — sidebar + bottom nav
-  [x] Migration SQL — friends, suggestions, user_stats_snapshots
-  [x] Stats snapshot writer — saveUserStatsSnapshot + refreshStatsSnapshot in sync
-  [x] Migration fixes — DELETE RLS policy, handle_new_user trigger seed
-  [x] Leaderboard page — /leaderboard with 4 sort tabs (level, streak, consistency, completions)
-  [x] Notifications system — notification bell in sidebar, /notifications page
-  [x] Notification polling — 30s auto-refresh + visibilitychange for live badge updates
-  [x] Notification creation utility — lib/notifications.ts
-  [x] Friend request notifications — wired on send (friends page + public profile) and on accept
+
+
+==========================================================
+ PERFORMANCE OPTIMIZATION PASS   (2026-06-28)
+==========================================================
+  (full detail: docs/CHANGELOG_2026-06-28.txt)
+  [x] Migration 008: Query indexes + Realtime publication
+  [x] Migration 007: Made idempotent (IF NOT EXISTS)
+  [x] Migration 009: ANALYZE on optimized tables
+  [x] Migration 010: refresh_stale_snapshots() PostgreSQL function + pg_cron
+  [x] Migration 011: Covering indexes for leaderboard index-only scans
+  [x] Migration 012: pg_stat_statements query monitoring
+  [x] Leaderboard: server-side pagination (20 rows/page, .order().range())
+  [x] Friends: server-side pagination (pending/accepted split, .range())
+  [x] Search queries: select specific columns instead of * (5 files)
+  [x] Query optimizations: leaderboard, friends, profile, suggestions, notifications
+  [x] Fixed isFriend check in search (friendIdSet cache)
+  [x] Deleted empty docs/prompt.txt
+  [x] Removed unused exports (buttonClasses, getSyncUserId)
+  [x] Updated all docs to reflect current state
+
+
+==========================================================
+ STILL UNFINISHED
+==========================================================
   [ ] Move localStorage -> Supabase
   [ ] Row Level Security (RLS) — full audit
   [ ] Zod input validation (full pipeline)

@@ -86,7 +86,7 @@ export default function PublicProfilePage() {
       // Load public profile
       const { data: prof, error: profErr } = await supabase
         .from("public_profiles")
-        .select("*")
+        .select("user_id, display_name, username, bio, motto, avatar, banner, showcase_badge_id")
         .eq("username", username)
         .single();
 
@@ -108,7 +108,7 @@ export default function PublicProfilePage() {
       // Load stats snapshot
       const { data: snap } = await supabase
         .from("user_stats_snapshots")
-        .select("*")
+        .select("level, current_streak, best_streak, total_completions, consistency_14d, achievement_count, title_name, rank_icon, updated_at")
         .eq("user_id", profileData.user_id)
         .single();
 
@@ -134,7 +134,7 @@ export default function PublicProfilePage() {
       if (currentUser && profileData.user_id !== currentUser.id) {
         const { data: friendRows } = await supabase
           .from("friends")
-          .select("*")
+          .select("status")
           .or(
             `and(requester.eq.${currentUser.id},addressee.eq.${profileData.user_id}),and(requester.eq.${profileData.user_id},addressee.eq.${currentUser.id})`,
           );

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import {
   Search,
@@ -25,14 +25,6 @@ import { Card } from "@/components/ui/Card";
 import { Pagination } from "@/components/ui/Pagination";
 import { PageSkeleton } from "@/components/ui/PageSkeleton";
 import { AppPageShell } from "@/components/layout/AppPageShell";
-
-type FriendRow = {
-  id: string;
-  requester: string;
-  addressee: string;
-  status: "pending" | "accepted" | "blocked";
-  created_at: string;
-};
 
 type PublicProfile = {
   user_id: string;
@@ -63,10 +55,18 @@ interface FriendWithProfile extends PublicProfile {
 
 const FRIENDS_PAGE_SIZE = 10;
 
+/** Columns we select from public_profiles. */
+const PROFILE_COLS = "user_id, display_name, username, bio, avatar";
+
+/** Columns we select from user_stats_snapshots. */
+const SNAPSHOT_COLS =
+  "user_id, level, current_streak, best_streak, total_completions, consistency_14d, achievement_count, title_name, rank_icon";
+
 export default function FriendsPage() {
   const { user } = useAuth();
   const hydrated = useHydrated();
   const [friends, setFriends] = useState<FriendWithProfile[]>([]);
+  const [friendIdSet, setFriendIdSet] = useState<Set<string>>(new Set());
   const [pendingRequests, setPendingRequests] = useState<FriendWithProfile[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<PublicProfile[]>([]);
@@ -75,99 +75,133 @@ export default function FriendsPage() {
   const [sentRequests, setSentRequests] = useState<Set<string>>(new Set());
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [friendsPage, setFriendsPage] = useState(0);
+  const [totalFriends, setTotalFriends] = useState(0);
 
-  const loadFriends = useCallback(async () => {
-    if (!user) return;
-    const supabase = createClient();
+  // Load ALL friend user IDs (for search result matching, independent of pagination)
+  const friendIdCache = useRef<Set<string> | null>(null);
 
-    // Load all friend entries for this user
-    const { data: rows } = await supabase
-      .from("friends")
-      .select("*")
-      .or(`requester.eq.${user.id},addressee.eq.${user.id}`);
-
-    if (!rows) {
-      setLoading(false);
+  const loadFriendIdSet = useCallback(async () => {
+    if (!user) {
+      setFriendIdSet(new Set());
       return;
     }
+    // Cache hit — IDs rarely change mid-session
+    if (friendIdCache.current) {
+      setFriendIdSet(friendIdCache.current);
+      return;
+    }
+    const supabase = createClient();
+    const { data: rows } = await supabase
+      .from("friends")
+      .select("requester, addressee")
+      .or(`requester.eq.${user.id},addressee.eq.${user.id}`)
+      .eq("status", "accepted");
 
-    // Collect all friend user ids to fetch profiles
-    const friendIds = new Set<string>();
-    const pending: FriendWithProfile[] = [];
-    const accepted: FriendWithProfile[] = [];
-
-    for (const row of rows as FriendRow[]) {
-      const isRequester = row.requester === user.id;
-      const otherId = isRequester ? row.addressee : row.requester;
-      friendIds.add(otherId);
-
-      const base = {
-        user_id: otherId,
-        friendId: row.id,
-        status: row.status as "pending" | "accepted" | "blocked",
-        isRequester,
-        createdAt: row.created_at,
-      } as FriendWithProfile;
-
-      if (row.status === "pending" && !isRequester) {
-        pending.push(base);
-      } else if (row.status === "accepted") {
-        accepted.push(base);
+    const ids = new Set<string>();
+    if (rows) {
+      for (const row of rows as { requester: string; addressee: string }[]) {
+        ids.add(row.requester === user.id ? row.addressee : row.requester);
       }
     }
+    friendIdCache.current = ids;
+    setFriendIdSet(ids);
+  }, [user]);
 
-    // Fetch profiles + stats for all friends
-    if (friendIds.size > 0) {
-      const { data: profiles } = await supabase
-        .from("public_profiles")
-        .select("*")
-        .in("user_id", [...friendIds]);
+  // Load pending requests + a single page of accepted friends from the server
+  const loadFriends = useCallback(async (page: number) => {
+    if (!user) return;
+    const supabase = createClient();
+    setLoading(true);
 
-      const { data: snapshots } = await supabase
-        .from("user_stats_snapshots")
-        .select("*")
-        .in("user_id", [...friendIds]);
+    try {
+      // ── 1. Load pending requests (typically few — no pagination needed) ──
+      const { data: pendingRows } = await supabase
+        .from("friends")
+        .select("id, requester, addressee, created_at")
+        .eq("addressee", user.id)
+        .eq("status", "pending");
 
-      const profileMap = new Map(
-        (profiles ?? []).map((p: PublicProfile) => [p.user_id, p]),
-      );
-      const statsMap = new Map(
-        (snapshots ?? []).map((s: StatsSnapshot & { user_id: string }) => [
-          s.user_id,
-          s,
-        ]),
-      );
+      // ── 2. Count total accepted friends (for pagination) ──
+      const { count: acceptedCount } = await supabase
+        .from("friends")
+        .select("id", { count: "exact", head: true })
+        .or(`requester.eq.${user.id},addressee.eq.${user.id}`)
+        .eq("status", "accepted");
 
-      const enrich = (list: FriendWithProfile[]) =>
-        list.map((f) => ({
-          ...f,
-          ...(profileMap.get(f.user_id) ?? {
-            display_name: "Unknown",
-            username: "unknown",
-            bio: null,
-            avatar: null,
-          }),
-          stats: statsMap.get(f.user_id),
-        }));
+      const total = acceptedCount ?? 0;
+      setTotalFriends(total);
 
-      setPendingRequests(enrich(pending));
-      setFriends(enrich(accepted));
-    } else {
-      setPendingRequests([]);
-      setFriends([]);
+      // ── 3. Load one page of accepted friends ──
+      const start = page * FRIENDS_PAGE_SIZE;
+      const { data: acceptedRows } = await supabase
+        .from("friends")
+        .select("id, requester, addressee, created_at")
+        .or(`requester.eq.${user.id},addressee.eq.${user.id}`)
+        .eq("status", "accepted")
+        .order("created_at", { ascending: false })
+        .range(start, start + FRIENDS_PAGE_SIZE - 1);
+
+      // Collect all unique user IDs we need profiles + stats for
+      const userIds = new Set<string>();
+      for (const row of [...(pendingRows ?? []), ...(acceptedRows ?? [])] as { requester: string; addressee: string }[]) {
+        const otherId = row.requester === user.id ? row.addressee : row.requester;
+        userIds.add(otherId);
+      }
+
+      // ── 4. Fetch profiles + stats ──
+      const profileMap = new Map<string, PublicProfile>();
+      const statsMap = new Map<string, StatsSnapshot>();
+
+      if (userIds.size > 0) {
+        const ids = [...userIds];
+        const [profilesResult, snapshotsResult] = await Promise.all([
+          supabase.from("public_profiles").select(PROFILE_COLS).in("user_id", ids),
+          supabase.from("user_stats_snapshots").select(SNAPSHOT_COLS).in("user_id", ids),
+        ]);
+
+        for (const p of (profilesResult.data ?? []) as PublicProfile[]) {
+          profileMap.set(p.user_id, p);
+        }
+        for (const s of (snapshotsResult.data ?? []) as (StatsSnapshot & { user_id: string })[]) {
+          statsMap.set(s.user_id, s);
+        }
+      }
+
+      // ── 5. Build enriched lists ──
+      const enrich = (rows: { requester: string; addressee: string; id: string; created_at: string }[], status: "pending" | "accepted"): FriendWithProfile[] =>
+        rows.map((row) => {
+          const otherId = row.requester === user.id ? row.addressee : row.requester;
+          const profile = profileMap.get(otherId);
+          return {
+            user_id: otherId,
+            friendId: row.id,
+            status,
+            isRequester: row.requester === user.id,
+            createdAt: row.created_at,
+            display_name: profile?.display_name ?? "Unknown",
+            username: profile?.username ?? "unknown",
+            bio: profile?.bio ?? null,
+            avatar: profile?.avatar ?? null,
+            stats: statsMap.get(otherId),
+          };
+        });
+
+      setPendingRequests(enrich(pendingRows ?? [], "pending"));
+      setFriends(enrich(acceptedRows ?? [], "accepted"));
+    } catch (e) {
+      console.error("[friends] Failed to load:", e);
     }
 
     setLoading(false);
   }, [user]);
 
+  // Initial load + reload when user or page changes
   useEffect(() => {
-    loadFriends();
-  }, [loadFriends]);
+    loadFriendIdSet();
+    loadFriends(friendsPage);
+  }, [loadFriendIdSet, loadFriends, friendsPage]);
 
-  // Reset page when friends data changes
-  useEffect(() => { setFriendsPage(0); }, [friends.length]);
-
-  // Search for users
+  // Search for users (already server-limited to 10)
   useEffect(() => {
     if (!user || searchQuery.trim().length < 2) {
       setSearchResults([]);
@@ -181,7 +215,7 @@ export default function FriendsPage() {
 
       const { data } = await supabase
         .from("public_profiles")
-        .select("*")
+        .select("user_id, display_name, username")
         .or(`username.ilike.%${q}%,display_name.ilike.%${q}%`)
         .neq("user_id", user.id)
         .limit(10);
@@ -205,7 +239,6 @@ export default function FriendsPage() {
       console.error("[friends] Failed to send request:", error.message);
     } else {
       setSentRequests((prev) => new Set(prev).add(friendUserId));
-      // Notify the addressee
       await createNotification({
         userId: friendUserId,
         type: "friend_request",
@@ -247,16 +280,15 @@ export default function FriendsPage() {
       if (error) console.error("[friends] Failed to decline:", error.message);
     }
     setActionLoading(null);
-    loadFriends();
+    // Invalidate friend ID cache so the next search picks up the change
+    friendIdCache.current = null;
+    loadFriendIdSet();
+    loadFriends(friendsPage);
   };
 
-  // Paginate friends
-  const friendsPageCount = Math.max(1, Math.ceil(friends.length / FRIENDS_PAGE_SIZE));
-  const friendsSafePage = Math.min(friendsPage, friendsPageCount - 1);
-  const pagedFriends = friends.slice(
-    friendsSafePage * FRIENDS_PAGE_SIZE,
-    (friendsSafePage + 1) * FRIENDS_PAGE_SIZE,
-  );
+  // Pagination
+  const pageCount = Math.max(1, Math.ceil(totalFriends / FRIENDS_PAGE_SIZE));
+  const safePage = Math.min(friendsPage, pageCount - 1);
 
   if (!hydrated) return <PageSkeleton />;
 
@@ -285,9 +317,7 @@ export default function FriendsPage() {
           {searchResults.length > 0 && (
             <div className="mt-3 divide-y divide-line rounded-xl border border-line">
               {searchResults.map((profile) => {
-                const isFriend = friends.some(
-                  (f) => f.user_id === profile.user_id,
-                );
+                const isFriend = friendIdSet.has(profile.user_id);
                 const isPending = pendingRequests.some(
                   (f) => f.user_id === profile.user_id,
                 );
@@ -396,9 +426,9 @@ export default function FriendsPage() {
         <section>
           <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-muted">
             <Users className="size-4 icon-accent" /> Friends
-            {friends.length > 0 && (
+            {totalFriends > 0 && (
               <span className="ml-1 font-mono text-xs text-faint">
-                ({friends.length})
+                ({totalFriends})
               </span>
             )}
           </h2>
@@ -431,7 +461,7 @@ export default function FriendsPage() {
                   <span className="w-14 text-right">Badges</span>
                 </div>
 
-                {pagedFriends.map((friend) => (
+                {friends.map((friend) => (
                   <Link
                     key={friend.friendId}
                     href={`/profile/${friend.username}`}
@@ -487,9 +517,9 @@ export default function FriendsPage() {
 
               {/* Pagination */}
               <Pagination
-                page={friendsSafePage}
-                pageCount={friendsPageCount}
-                total={friends.length}
+                page={safePage}
+                pageCount={pageCount}
+                total={totalFriends}
                 pageSize={FRIENDS_PAGE_SIZE}
                 onChange={setFriendsPage}
               />

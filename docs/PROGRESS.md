@@ -1,6 +1,6 @@
 # project_101 — Progress
 
-**Last updated:** 2026-06-26
+**Last updated:** 2026-06-28
 
 ---
 
@@ -20,30 +20,31 @@
 - PWA + service worker + offline page
 - 81 unit tests across 5 files
 
-## ✅ Auth & Sync (2026-06-25)
+## ✅ Auth & Social Features
 
 - Supabase Auth (email/password) with `@supabase/ssr`
 - Login/register pages, Remember Me toggle, proxy.ts route protection
-- Sync layer: pushMutation (incremental), pullAllUserData (full), pushAllUserData
-- Registration data isolation, hard redirect fix, flat route structure
-- Improved sync error logging (stack traces + Supabase codes)
-- RootSyncWrapper — SyncProvider at root layout level (persists across navigations)
+- Sync layer: pushMutation, pullAllUserData
+- Friends system, public profiles, leaderboard
+- Notifications (Realtime subscription)
+- Suggestions/feedback
+- Drizzle ORM installed + schema definition
 
-## ✅ Social Features (2026-06-26)
+## ✅ Performance Optimization (2026-06-28)
 
-- **Friends** (`/friends`) — search users, send/accept/decline requests, friend list
-- **Public profiles** (`/profile/[username]`) — stats (level, streaks, consistency, completions), friend button
-- **Suggestions** (`/suggestions`) — categorized feedback form, submission history with status
-- **Leaderboard** (`/leaderboard`) — top 50 users, 4 sort tabs (level/streak/consistency/completions), medal icons
-- **Notifications** — bell icon in sidebar (30s polling + visibilitychange), `/notifications` page with read/unread, mark-all-read, friend request notifications wired on send and accept
-- **Stats snapshot writer** — `saveUserStatsSnapshot()` in db.ts, `refreshStatsSnapshot()` in sync.ts on all 3 push/pull paths
-- **Navigation** — sidebar "Social" group (Friends, Leaderboard, Notifications, Suggestions), bottom chip bar
-
-## ✅ Drizzle ORM (2026-06-26)
-
-- `drizzle-orm`, `drizzle-kit`, `postgres` installed
-- `drizzle.config.ts` for Supabase Postgres
-- `src/lib/drizzle/schema.ts` — schema for all 15+ tables with cross-schema `auth.users` reference
+- **Database indexes** — 12+ new indexes across all query-heavy tables
+  - user_profile(username) for profile lookup
+  - 4 covering indexes on user_stats_snapshots for leaderboard
+  - Composite friends(requester,status) + (addressee,status)
+  - Sort indexes on notifications + suggestions
+- **Server-side pagination** — leaderboard and friends pages now query
+  only PAGE_SIZE rows via `.order().range()`. No more full-table scans.
+- **Daily cron** — `refresh_stale_snapshots()` PostgreSQL function
+  recalculates stale stats via pg_cron at 03:00 UTC
+- **Query monitoring** — pg_stat_statements enabled
+- **Analytics** — ANALYZE on optimized tables
+- **Code cleanup** — removed unused exports, empty files, dead Edge Function
+- **All docs updated** — ARCHITECTURE, CHANGELOG, TODO, SUGGESTIONS, SYSTEM_FEATURES
 
 ## ❌ Still Unfinished
 

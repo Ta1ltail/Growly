@@ -10,6 +10,16 @@
 -- row owner via the existing "manage own" policy.
 -- ============================================================================
 
-CREATE POLICY "Anyone can view achievements"
-  ON unlocks FOR SELECT
-  USING (true);
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE tablename = 'unlocks'
+    AND policyname = 'Anyone can view achievements'
+  ) THEN
+    CREATE POLICY "Anyone can view achievements"
+      ON unlocks FOR SELECT
+      USING (true);
+  END IF;
+END
+$$;

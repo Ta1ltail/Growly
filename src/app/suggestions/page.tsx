@@ -65,7 +65,7 @@ export default function SuggestionsPage() {
     const supabase = createClient();
     const { data } = await supabase
       .from("suggestions")
-      .select("*")
+      .select("id, title, body, category, created_at, status")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false })
       .limit(20);

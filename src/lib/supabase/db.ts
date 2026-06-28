@@ -450,10 +450,10 @@ function progressSeenToRow(userId: string, ps: ProgressSeen): DbProgressSeen {
 }
 
 /* ────────────────────────────────────────────
-   Public API: LOAD functions
+   Public API: LOAD functions (used internally by loadAllUserData)
    ──────────────────────────────────────────── */
 
-export async function loadHabits(
+async function loadHabits(
   supabase: SupabaseClient,
   userId: string,
 ): Promise<Habit[]> {
@@ -467,7 +467,7 @@ export async function loadHabits(
   return (data ?? []).map(rowToHabit);
 }
 
-export async function loadMarks(
+async function loadMarks(
   supabase: SupabaseClient,
   userId: string,
 ): Promise<Marks> {
@@ -480,7 +480,7 @@ export async function loadMarks(
   return buildMarksFromRows((data ?? []) as unknown as DbMark[]);
 }
 
-export async function loadNotes(
+async function loadNotes(
   supabase: SupabaseClient,
   userId: string,
 ): Promise<Note[]> {
@@ -494,7 +494,7 @@ export async function loadNotes(
   return (data ?? []).map(rowToNote);
 }
 
-export async function loadGoals(
+async function loadGoals(
   supabase: SupabaseClient,
   userId: string,
 ): Promise<Goal[]> {
@@ -508,7 +508,7 @@ export async function loadGoals(
   return (data ?? []).map(rowToGoal);
 }
 
-export async function loadSettings(
+async function loadSettings(
   supabase: SupabaseClient,
   userId: string,
 ): Promise<AppData["settings"] | null> {
@@ -523,7 +523,7 @@ export async function loadSettings(
   return data ? rowToSettings(data) : null;
 }
 
-export async function loadProfile(
+async function loadProfile(
   supabase: SupabaseClient,
   userId: string,
 ): Promise<Profile | null> {
@@ -538,7 +538,7 @@ export async function loadProfile(
   return data ? rowToProfile(data) : null;
 }
 
-export async function loadUnlocks(
+async function loadUnlocks(
   supabase: SupabaseClient,
   userId: string,
 ): Promise<Unlocks> {
@@ -551,7 +551,7 @@ export async function loadUnlocks(
   return rowToUnlocks((data ?? []) as unknown as DbUnlock[]);
 }
 
-export async function loadEconomy(
+async function loadEconomy(
   supabase: SupabaseClient,
   userId: string,
 ): Promise<Economy | null> {
@@ -586,7 +586,7 @@ export async function loadEconomy(
   return state ? rowToEconomy(state, spent ?? [], freezes ?? []) : null;
 }
 
-export async function loadProgressSeen(
+async function loadProgressSeen(
   supabase: SupabaseClient,
   userId: string,
 ): Promise<ProgressSeen | null> {
@@ -602,7 +602,7 @@ export async function loadProgressSeen(
 }
 
 /* ────────────────────────────────────────────
-   Public API: SAVE functions (full replace)
+   SAVE functions (internal — called by saveAllUserData / saveChanged)
    ──────────────────────────────────────────── */
 
 async function replaceTable<T>(
@@ -631,7 +631,7 @@ async function replaceTable<T>(
   }
 }
 
-export async function saveHabits(
+async function saveHabits(
   supabase: SupabaseClient,
   userId: string,
   habits: Habit[],
@@ -641,7 +641,7 @@ export async function saveHabits(
   );
 }
 
-export async function saveMarks(
+async function saveMarks(
   supabase: SupabaseClient,
   userId: string,
   marks: Marks,
@@ -650,7 +650,7 @@ export async function saveMarks(
   await replaceTable(supabase, "marks", userId, rows, (r) => r as unknown as Record<string, unknown>);
 }
 
-export async function saveNotes(
+async function saveNotes(
   supabase: SupabaseClient,
   userId: string,
   notes: Note[],
@@ -660,7 +660,7 @@ export async function saveNotes(
   );
 }
 
-export async function saveGoals(
+async function saveGoals(
   supabase: SupabaseClient,
   userId: string,
   goals: Goal[],
@@ -670,7 +670,7 @@ export async function saveGoals(
   );
 }
 
-export async function saveSettings(
+async function saveSettings(
   supabase: SupabaseClient,
   userId: string,
   settings: AppData["settings"],
@@ -682,7 +682,7 @@ export async function saveSettings(
   if (error) throw error;
 }
 
-export async function saveProfile(
+async function saveProfile(
   supabase: SupabaseClient,
   userId: string,
   profile: Profile,
@@ -694,7 +694,7 @@ export async function saveProfile(
   if (error) throw error;
 }
 
-export async function saveUnlocks(
+async function saveUnlocks(
   supabase: SupabaseClient,
   userId: string,
   unlocks: Unlocks,
@@ -703,7 +703,7 @@ export async function saveUnlocks(
   await replaceTable(supabase, "unlocks", userId, rows, (r) => r as unknown as Record<string, unknown>);
 }
 
-export async function saveEconomy(
+async function saveEconomy(
   supabase: SupabaseClient,
   userId: string,
   economy: Economy,
@@ -724,7 +724,7 @@ export async function saveEconomy(
   await replaceTable(supabase, "economy_freezes", userId, freezeRows, (r) => r as unknown as Record<string, unknown>);
 }
 
-export async function saveProgressSeen(
+async function saveProgressSeen(
   supabase: SupabaseClient,
   userId: string,
   progressSeen: ProgressSeen,

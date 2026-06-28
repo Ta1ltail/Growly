@@ -3,10 +3,12 @@
 // React hook for the notification system — querying, creating (including
 // auto-wiring friend request notifications), and marking as read.
 // Notifications live in the `notifications` Supabase table.
+// Uses Supabase Realtime subscription instead of polling for instant updates.
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useAuth } from "./useAuth";
 import { createClient } from "@/lib/supabase/client";
+import type { RealtimePostgresChangesPayload } from "@supabase/supabase-js";
 
 export interface Notification {
   id: string;
@@ -20,13 +22,11 @@ export interface Notification {
   created_at: string;
 }
 
-const POLL_INTERVAL = 30_000; // 30s
-
 export function useNotifications() {
   const { user } = useAuth();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
-  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const channelRef = useRef<ReturnType<ReturnType<typeof createClient>["channel"]> | null>(null);
 
   const loadNotifications = useCallback(async () => {
     if (!user) {
@@ -38,7 +38,7 @@ export function useNotifications() {
     const supabase = createClient();
     const { data } = await supabase
       .from("notifications")
-      .select("*")
+      .select("id, user_id, type, title, body, from_user, link, is_read, created_at")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false })
       .limit(50);
@@ -47,21 +47,64 @@ export function useNotifications() {
     setLoading(false);
   }, [user]);
 
-  // Initial load
+  // Handle a realtime change from Supabase
+  const handleRealtimeChange = useCallback(
+    (payload: RealtimePostgresChangesPayload<Notification>) => {
+      if (payload.eventType === "INSERT") {
+        setNotifications((prev) => [payload.new as Notification, ...prev].slice(0, 50));
+      } else if (payload.eventType === "UPDATE") {
+        const updated = payload.new as Notification;
+        setNotifications((prev) =>
+          prev.map((n) => (n.id === updated.id ? updated : n)),
+        );
+      } else if (payload.eventType === "DELETE") {
+        setNotifications((prev) =>
+          prev.filter((n) => n.id !== (payload.old as Notification).id),
+        );
+      }
+    },
+    [],
+  );
+
+  // Set up Supabase Realtime subscription + initial load
   useEffect(() => {
     loadNotifications();
-  }, [loadNotifications]);
 
-  // Periodic polling so the bell badge stays current
-  useEffect(() => {
-    if (!user) return;
-    pollRef.current = setInterval(loadNotifications, POLL_INTERVAL);
+    if (!user) {
+      // Clean up any existing channel when user signs out
+      if (channelRef.current) {
+        channelRef.current.unsubscribe();
+        channelRef.current = null;
+      }
+      return;
+    }
+
+    const supabase = createClient();
+    const channel = supabase
+      .channel(`notifications:${user.id}`)
+      .on(
+        "postgres_changes" as never,
+        {
+          event: "*",
+          schema: "public",
+          table: "notifications",
+          filter: `user_id=eq.${user.id}`,
+        },
+        (payload: RealtimePostgresChangesPayload<Notification>) => {
+          handleRealtimeChange(payload);
+        },
+      )
+      .subscribe();
+
+    channelRef.current = channel;
+
     return () => {
-      if (pollRef.current) clearInterval(pollRef.current);
+      channel.unsubscribe();
+      channelRef.current = null;
     };
-  }, [user, loadNotifications]);
+  }, [user, loadNotifications, handleRealtimeChange]);
 
-  // Also refresh when the tab becomes visible again
+  // Also refresh when the tab becomes visible again (covers reconnection after sleep)
   useEffect(() => {
     const onVisible = () => {
       if (document.visibilityState === "visible") loadNotifications();

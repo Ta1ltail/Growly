@@ -43,6 +43,7 @@ import {
   StaggerItem,
 } from "@/components/ui/StaggerContainer";
 import { AppPageShell } from "@/components/layout/AppPageShell";
+import { routeIconColors } from "@/components/layout/navItems";
 
 export default function ProfilePage() {
   const data = useAppData();
@@ -390,12 +391,13 @@ function LinkRow({
   label: string;
   trailing?: string;
 }) {
+  const iconColor = routeIconColors[href] ?? "text-muted";
   return (
     <Link
       href={href}
       className="flex items-center gap-3 px-4 py-3.5 text-sm transition-colors hover:bg-surface2/50"
     >
-      <Icon className="size-[18px] text-muted" />
+      <Icon className={`size-[18px] ${iconColor}`} />
       <span className="flex-1">{label}</span>
       {trailing && (
         <span className="font-mono text-xs text-muted">{trailing}</span>
