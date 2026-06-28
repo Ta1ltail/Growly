@@ -201,7 +201,7 @@ export default function StatsPage() {
       {insights.length > 0 && (
         <div className="mt-6">
           <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-muted">
-            <Sparkles className="size-4" /> Insights
+            <Sparkles className="size-4 icon-accent" /> Insights
           </h2>
           <StaggerContainer className="grid gap-3 sm:grid-cols-2">
             {insights.map((ins, i) => (
@@ -221,7 +221,7 @@ export default function StatsPage() {
       {active.length > 0 && (
         <div className="mt-6">
           <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-muted">
-            <Gauge className="size-4" /> Projection
+            <Gauge className="size-4 icon-accent" /> Projection
           </h2>
           <div className="grid gap-4 sm:grid-cols-4">
             <Card className="p-4 h-[100px] flex flex-col justify-center">
@@ -385,7 +385,7 @@ export default function StatsPage() {
       {correlations.length > 0 && (
         <div className="mt-6">
           <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-muted">
-            <Link2 className="size-4" /> Habit Correlations
+            <Link2 className="size-4 icon-accent" /> Habit Correlations
           </h2>
           <Card className="p-5">
             <p className="mb-3 text-xs text-muted">

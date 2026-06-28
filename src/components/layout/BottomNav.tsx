@@ -17,7 +17,7 @@ import {
   Medal,
   Bell,
 } from "lucide-react";
-import { NAV_BOTTOM, isActive } from "./navItems";
+import { NAV_BOTTOM, isActive, routeIconColors } from "./navItems";
 
 const EXTRA_NAV = [
   { href: "/habits", label: "Habits", icon: ListTodo },
@@ -51,8 +51,7 @@ export function BottomNav() {
                     ? "bg-accent/15 text-accent ring-1 ring-accent/30"
                     : "bg-surface2/60 text-muted hover:bg-surface2 hover:text-ink"
                 }`}
-              >
-                <Icon className="size-3.5" />
+              >                  <Icon className={`size-3.5 ${routeIconColors[href] ?? "text-muted"}`} />
                 {label}
               </Link>
             );
@@ -79,7 +78,9 @@ export function BottomNav() {
                 >
                   <Icon
                     className={`size-5 transition-all duration-300 ${
-                      active ? "animate-icon-bounce stroke-[2.5]" : ""
+                      active
+                        ? "animate-icon-bounce stroke-[2.5] text-accent"
+                        : routeIconColors[href] ?? "text-muted"
                     }`}
                   />
                 </span>

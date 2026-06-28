@@ -442,7 +442,7 @@ export default function DashboardPage() {
       {insights.length > 0 && (
         <div className="mt-6">
           <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-muted">
-            <Sparkles className="size-4" /> Insights
+            <Sparkles className="size-4 icon-accent" /> Insights
           </h2>
           <StaggerContainer className="grid gap-3 sm:grid-cols-2">
             {insights.map((ins, i) => (

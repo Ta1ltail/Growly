@@ -7,25 +7,10 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Activity } from "lucide-react";
-import { NAV_GROUPS, isActive } from "./navItems";
+import { NAV_GROUPS, isActive, routeIconColors } from "./navItems";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 
-// Icon color map for navigation items — gives each section a distinct accent
-const ICON_COLORS: Record<string, string> = {
-  "/": "text-sky-500",
-  "/today": "text-emerald-500",
-  "/habits": "text-violet-500",
-  "/tracker": "text-cyan-500",
-  "/calendar": "text-rose-500",
-  "/goals": "text-amber-500",
-  "/templates": "text-orange-500",
-  "/notes": "text-pink-500",
-  "/stats": "text-blue-500",
-  "/achievements": "text-yellow-500",
-  "/shop": "text-emerald-500",
-  "/settings": "text-slate-400",
-  "/profile": "text-violet-400",
-};
+
 
 export function Sidebar() {
   const pathname = usePathname();
@@ -53,7 +38,7 @@ export function Sidebar() {
             )}
             {group.items.map(({ href, label, icon: Icon }) => {
               const active = isActive(pathname, href);
-              const colorClass = ICON_COLORS[href] ?? "text-muted";
+              const colorClass = routeIconColors[href] ?? "text-muted";
               return (
                 <Link
                   key={href}

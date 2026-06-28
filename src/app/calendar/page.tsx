@@ -397,7 +397,7 @@ export default function CalendarPage() {
             {dayNotes.length > 0 && (
               <Card className="p-4">
                 <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted">
-                  <NotebookPen className="size-3.5" /> Notes
+                  <NotebookPen className="size-3.5 icon-accent" /> Notes
                 </p>
                 {dayNotes.map((n) => (
                   <p key={n.id} className="text-sm italic text-muted">

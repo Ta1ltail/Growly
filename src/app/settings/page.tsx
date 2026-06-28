@@ -383,7 +383,7 @@ function Section({
   return (
     <section className="mt-6 first:mt-0">
       <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-muted">
-        <Icon className="size-4" /> {title}
+        <Icon className="size-4 icon-accent" /> {title}
       </h2>
       {children}
     </section>

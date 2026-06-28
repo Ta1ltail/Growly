@@ -89,6 +89,29 @@ export const NAV_BOTTOM: NavItem[] = [
   { href: "/profile", label: "Profile", icon: UserRound },
 ];
 
+// Route → Tailwind text-color class for nav icons, giving each section a
+// distinct accent while keeping the palette cohesive and not garish.
+export const routeIconColors: Record<string, string> = {
+  "/": "text-sky-500",
+  "/dashboard": "text-indigo-500",
+  "/today": "text-emerald-500",
+  "/habits": "text-violet-500",
+  "/tracker": "text-cyan-500",
+  "/calendar": "text-rose-500",
+  "/goals": "text-amber-500",
+  "/templates": "text-orange-500",
+  "/notes": "text-pink-500",
+  "/stats": "text-blue-500",
+  "/achievements": "text-yellow-500",
+  "/shop": "text-emerald-500",
+  "/friends": "text-teal-500",
+  "/leaderboard": "text-amber-400",
+  "/notifications": "text-red-400",
+  "/suggestions": "text-purple-400",
+  "/settings": "text-slate-400",
+  "/profile": "text-violet-400",
+};
+
 export function isActive(pathname: string, href: string): boolean {
   return pathname === href || pathname.startsWith(`${href}/`);
 }

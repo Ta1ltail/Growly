@@ -224,7 +224,7 @@ export default function TodayPage() {
           {upcoming.length > 0 && (
             <div>
               <h2 className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted">
-                <Clock className="size-3.5" /> Up next
+                <Clock className="size-3.5 icon-accent" /> Up next
               </h2>
               <Card className="divide-y divide-line overflow-hidden">
                 {upcoming.map((h) => (
@@ -427,7 +427,7 @@ export default function TodayPage() {
           {/* Daily note */}
           <div>
             <h2 className="mb-2.5 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted">
-              <NotebookPen className="size-3.5" /> Today&apos;s note
+              <NotebookPen className="size-3.5 icon-accent" /> Today&apos;s note
             </h2>
             <Card className="p-0.5">
               <textarea
