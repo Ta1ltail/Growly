@@ -1,26 +1,27 @@
 "use client";
 
 // Leaderboard — ranks users by various stats: level, streak, consistency, and
-// total completions. Each tab queries the user_stats_snapshots table and
-// shows a top-N ranking with the current user highlighted.
+// total completions. Two tabs: Friends (filtered to your friends) and World
+// (all users). Each tab queries the user_stats_snapshots table and shows a
+// paginated top-N ranking with the current user highlighted.
 
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import {
   Trophy,
   Flame,
-  Activity,
   Medal,
   Loader2,
   UserRound,
   Crown,
-  CalendarDays,
+  Users,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useHydrated } from "@/hooks/useHydrated";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Card } from "@/components/ui/Card";
+import { Pagination } from "@/components/ui/Pagination";
 import { PageSkeleton } from "@/components/ui/PageSkeleton";
 import { Segmented } from "@/components/ui/Segmented";
 import { AppPageShell } from "@/components/layout/AppPageShell";
@@ -42,12 +43,21 @@ interface LeaderEntry {
 
 type SortKey = "level" | "current_streak" | "consistency_14d" | "total_completions";
 
+type Scope = "world" | "friends";
+
 const TABS: { key: SortKey; label: string }[] = [
   { key: "level", label: "Level" },
   { key: "current_streak", label: "Streak" },
   { key: "consistency_14d", label: "Consistency" },
   { key: "total_completions", label: "Completions" },
 ];
+
+const SCOPE_TABS: { value: Scope; label: string }[] = [
+  { value: "friends", label: "Friends" },
+  { value: "world", label: "World" },
+];
+
+const PAGE_SIZE = 20;
 
 function rankMedal(i: number): string {
   if (i === 0) return "🥇";
@@ -60,8 +70,11 @@ export default function LeaderboardPage() {
   const { user } = useAuth();
   const hydrated = useHydrated();
   const [allUsers, setAllUsers] = useState<LeaderEntry[]>([]);
+  const [friendIds, setFriendIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [sortKey, setSortKey] = useState<SortKey>("level");
+  const [scope, setScope] = useState<Scope>("friends");
+  const [page, setPage] = useState(0);
 
   useEffect(() => {
     async function load() {
@@ -113,11 +126,29 @@ export default function LeaderboardPage() {
       );
 
       setAllUsers(entries);
+
+      // Load friends list
+      if (user) {
+        const { data: friendRows } = await supabase
+          .from("friends")
+          .select("*")
+          .or(`requester.eq.${user.id},addressee.eq.${user.id}`)
+          .eq("status", "accepted");
+
+        const ids = new Set<string>();
+        if (friendRows) {
+          for (const row of friendRows as { requester: string; addressee: string }[]) {
+            ids.add(row.requester === user.id ? row.addressee : row.requester);
+          }
+        }
+        setFriendIds(ids);
+      }
+
       setLoading(false);
     }
 
     load();
-  }, []);
+  }, [user]);
 
   const sorted = useMemo(
     () =>
@@ -125,13 +156,25 @@ export default function LeaderboardPage() {
         .sort((a, b) => {
           const aVal = a[sortKey];
           const bVal = b[sortKey];
-          // Secondary sort by the opposite dimension for ties
           if (bVal !== aVal) return bVal - aVal;
           return b.level - a.level;
-        })
-        .slice(0, 50),
+        }),
     [allUsers, sortKey],
   );
+
+  const filtered = useMemo(() => {
+    if (scope === "friends") {
+      return sorted.filter((e) => friendIds.has(e.user_id) || (user && e.user_id === user.id));
+    }
+    return sorted;
+  }, [sorted, scope, friendIds, user]);
+
+  const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const safePage = Math.min(page, pageCount - 1);
+  const paged = filtered.slice(safePage * PAGE_SIZE, (safePage + 1) * PAGE_SIZE);
+
+  // Reset page when scope or sort changes
+  useEffect(() => { setPage(0); }, [scope, sortKey]);
 
   if (!hydrated) return <PageSkeleton />;
 
@@ -142,6 +185,15 @@ export default function LeaderboardPage() {
           <PageHeader
             title="Leaderboard"
             subtitle="How you stack up against other habit-trackers"
+          />
+        </div>
+
+        {/* Scope tabs (Friends / World) */}
+        <div className="mb-4">
+          <Segmented
+            value={scope}
+            onChange={(v) => setScope(v as Scope)}
+            options={SCOPE_TABS}
           />
         </div>
 
@@ -158,105 +210,136 @@ export default function LeaderboardPage() {
           <Card className="flex items-center justify-center p-8">
             <Loader2 className="size-5 animate-spin text-faint" />
           </Card>
-        ) : sorted.length === 0 ? (
+        ) : filtered.length === 0 ? (
           <Card className="flex flex-col items-center gap-4 p-10 text-center">
-            <Medal className="size-12 text-faint" />
-            <div>
-              <p className="text-sm font-semibold text-muted">
-                No rankings yet
-              </p>
-              <p className="text-xs text-faint mt-1">
-                Stats appear after users start tracking habits and syncing their
-                data.
-              </p>
-            </div>
+            {scope === "friends" ? (
+              <>
+                <Users className="size-12 text-faint" />
+                <div>
+                  <p className="text-sm font-semibold text-muted">
+                    No friends yet
+                  </p>
+                  <p className="text-xs text-faint mt-1">
+                    Add friends to see how you compare. Search for users on the
+                    Friends page.
+                  </p>
+                </div>
+              </>
+            ) : (
+              <>
+                <Medal className="size-12 text-faint" />
+                <div>
+                  <p className="text-sm font-semibold text-muted">
+                    No rankings yet
+                  </p>
+                  <p className="text-xs text-faint mt-1">
+                    Stats appear after users start tracking habits and syncing
+                    their data.
+                  </p>
+                </div>
+              </>
+            )}
           </Card>
         ) : (
-          <Card className="divide-y divide-line overflow-hidden">
-            {/* Header */}
-            <div className="flex items-center gap-3 px-4 py-2.5 text-[10px] font-semibold uppercase tracking-wider text-faint">
-              <span className="w-8 text-center">#</span>
-              <span className="flex-1">User</span>
-              <span className="w-16 text-right">{sortLabel(sortKey)}</span>
-              <span className="w-12 text-right">Level</span>
-            </div>
+          <>
+            <Card className="divide-y divide-line overflow-hidden">
+              {/* Header */}
+              <div className="flex items-center gap-3 px-4 py-2.5 text-[10px] font-semibold uppercase tracking-wider text-faint">
+                <span className="w-8 text-center">#</span>
+                <span className="flex-1">User</span>
+                <span className="w-16 text-right">{sortLabel(sortKey)}</span>
+                <span className="w-12 text-right">Level</span>
+              </div>
 
-            {sorted.map((entry, i) => {
-              const isMe = user && entry.user_id === user.id;
-              const medal = rankMedal(i);
-              return (
-                <Link
-                  key={entry.user_id}
-                  href={`/profile/${entry.username}`}
-                  className={cn(
-                    "flex items-center gap-3 px-4 py-3 transition-colors hover:bg-surface2/50",
-                    isMe && "bg-accent/5",
-                  )}
-                >
-                  {/* Rank */}
-                  <div className="flex w-8 items-center justify-center text-center">
-                    {medal ? (
-                      <span className="text-base">{medal}</span>
-                    ) : (
-                      <span
+              {paged.map((entry, i) => {
+                const isMe = user && entry.user_id === user.id;
+                const globalRank = sorted.indexOf(entry) + 1;
+                const medal = rankMedal(globalRank - 1);
+                return (
+                  <Link
+                    key={entry.user_id}
+                    href={`/profile/${entry.username}`}
+                    className={cn(
+                      "flex items-center gap-3 px-4 py-3 transition-colors hover:bg-surface2/50",
+                      isMe && "bg-accent/5",
+                    )}
+                  >
+                    {/* Rank */}
+                    <div className="flex w-8 items-center justify-center text-center">
+                      {medal ? (
+                        <span className="text-base">{medal}</span>
+                      ) : (
+                        <span
+                          className={cn(
+                            "font-mono text-xs font-bold",
+                            isMe ? "text-accent" : "text-faint",
+                          )}
+                        >
+                          {safePage * PAGE_SIZE + i + 1}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* User */}
+                    <div className="flex min-w-0 flex-1 items-center gap-3">
+                      <div
                         className={cn(
-                          "font-mono text-xs font-bold",
-                          isMe ? "text-accent" : "text-faint",
+                          "flex size-9 shrink-0 items-center justify-center rounded-full",
+                          isMe
+                            ? "bg-accent/15 text-accent"
+                            : "bg-surface2 text-muted",
                         )}
                       >
-                        {i + 1}
-                      </span>
-                    )}
-                  </div>
-
-                  {/* User */}
-                  <div className="flex min-w-0 flex-1 items-center gap-3">
-                    <div
-                      className={cn(
-                        "flex size-9 shrink-0 items-center justify-center rounded-full",
-                        isMe ? "bg-accent/15 text-accent" : "bg-surface2 text-muted",
-                      )}
-                    >
-                      {isMe ? (
-                        <Crown className="size-4" />
-                      ) : (
-                        <UserRound className="size-4" />
-                      )}
-                    </div>
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-1.5">
-                        <span className="truncate text-sm font-semibold">
-                          {entry.display_name}
-                        </span>
-                        {isMe && (
-                          <span className="rounded-full bg-accent/15 px-1.5 py-0.5 text-[10px] font-bold text-accent">
-                            You
-                          </span>
+                        {isMe ? (
+                          <Crown className="size-4" />
+                        ) : (
+                          <UserRound className="size-4" />
                         )}
                       </div>
-                      <p className="truncate text-xs text-faint">
-                        {entry.title_name}
-                      </p>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          <span className="truncate text-sm font-semibold">
+                            {entry.display_name}
+                          </span>
+                          {isMe && (
+                            <span className="rounded-full bg-accent/15 px-1.5 py-0.5 text-[10px] font-bold text-accent">
+                              You
+                            </span>
+                          )}
+                        </div>
+                        <p className="truncate text-xs text-faint">
+                          {entry.title_name}
+                        </p>
+                      </div>
                     </div>
-                  </div>
 
-                  {/* Sort value */}
-                  <div className="w-16 text-right">
-                    <span className="font-mono text-sm font-bold">
-                      {formatSortValue(sortKey, entry[sortKey])}
-                    </span>
-                  </div>
+                    {/* Sort value */}
+                    <div className="w-16 text-right">
+                      <span className="font-mono text-sm font-bold">
+                        {formatSortValue(sortKey, entry[sortKey])}
+                      </span>
+                    </div>
 
-                  {/* Level */}
-                  <div className="w-12 text-right">
-                    <span className="font-mono text-xs font-semibold text-muted">
-                      Lv.{entry.level}
-                    </span>
-                  </div>
-                </Link>
-              );
-            })}
-          </Card>
+                    {/* Level */}
+                    <div className="w-12 text-right">
+                      <span className="font-mono text-xs font-semibold text-muted">
+                        Lv.{entry.level}
+                      </span>
+                    </div>
+                  </Link>
+                );
+              })}
+            </Card>
+
+            {/* Pagination */}
+            <Pagination
+              page={safePage}
+              pageCount={pageCount}
+              total={filtered.length}
+              pageSize={PAGE_SIZE}
+              onChange={setPage}
+            />
+          </>
         )}
 
         {/* Note about stats */}

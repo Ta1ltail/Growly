@@ -1,12 +1,12 @@
 "use client";
 
-// Desktop sidebar (hidden on mobile). Brand, grouped nav links, footer logout.
+// Desktop sidebar (hidden on mobile). Brand, grouped nav links.
 // Icons are colourized with idle animations for a premium feel.
+// Sign out is handled on the Profile page.
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Activity, LogOut } from "lucide-react";
-import { useAuth } from "@/hooks/useAuth";
+import { Activity } from "lucide-react";
 import { NAV_GROUPS, isActive } from "./navItems";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 
@@ -29,7 +29,6 @@ const ICON_COLORS: Record<string, string> = {
 
 export function Sidebar() {
   const pathname = usePathname();
-  const { signOut } = useAuth();
   return (
     <aside className="glass fixed inset-y-0 left-0 z-20 hidden w-60 flex-col border-r border-line px-3 py-5 md:flex">
       <div className="flex items-center gap-2 px-3 pb-5">
@@ -86,21 +85,6 @@ export function Sidebar() {
                 </Link>
               );
             })}
-            {/* Sign out button at the bottom of the "You" group */}
-            {group.title === "You" && (
-              <button
-                onClick={signOut}
-                className="group flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-muted transition-all duration-200 hover:bg-missed/10 hover:text-missed"
-              >
-                <span className="relative">
-                  <LogOut
-                    className="size-4.5 transition-all duration-300 group-hover:-translate-x-0.5"
-                    strokeWidth={2}
-                  />
-                </span>
-                Sign out
-              </button>
-            )}
           </div>
         ))}
       </nav>

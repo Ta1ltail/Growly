@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { Mail, Lock, LogIn, AlertCircle, Eye, EyeOff, Activity, Sparkles } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/Button";
+import { completeOnboarding } from "@/lib/store";
 
 const REMEMBER_ME_KEY = "project101.remember_me";
 
@@ -80,6 +81,13 @@ function LoginForm() {
     } = await supabase.auth.getUser();
 
     if (user) {
+      // Existing users logging in should not see the onboarding wizard.
+      // This flag is set here so that the OnboardingWizard component
+      // (which only shows when onboardingComplete is falsy) stays hidden.
+      // Newly registered users get the wizard because clearLocalAppData()
+      // in the register page resets the flag to false.
+      completeOnboarding();
+
       // Hard navigation ensures the proxy runs and session is recognized
       window.location.href = redirectTo;
     } else {

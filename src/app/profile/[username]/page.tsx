@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import {
@@ -13,19 +13,32 @@ import {
   CalendarDays,
   UserPlus,
   UserCheck,
-  Target,
-  Star,
   Clock,
   Award,
   TrendingUp,
+  Repeat,
+  Sparkles,
+  Gauge,
 } from "lucide-react";
 import { motion } from "motion/react";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { createNotification } from "@/lib/notifications";
+import { ACHIEVEMENTS, RARITY_ORDER, RARITY_LABEL } from "@/lib/achievements";
+import { RARITY_STYLE } from "@/lib/rarity";
+import { RANK_STYLE } from "@/lib/ranks";
+import type { AchievementDef, Rarity } from "@/lib/types";
+import { resolveBanner } from "@/lib/cosmetics";
 import { Card } from "@/components/ui/Card";
 import { StatCard } from "@/components/ui/StatCard";
 import { Button } from "@/components/ui/Button";
+import { ProgressBar } from "@/components/ui/ProgressBar";
+import { AchievementBadge } from "@/components/achievements/AchievementBadge";
+import { titleForLevel } from "@/lib/titles";
+import {
+  StaggerContainer,
+  StaggerItem,
+} from "@/components/ui/StaggerContainer";
 import { AppPageShell } from "@/components/layout/AppPageShell";
 
 type PublicProfile = {
@@ -37,6 +50,7 @@ type PublicProfile = {
   avatar: string | null;
   banner: string | null;
   showcase_badge_id: string | null;
+  avatar_url?: string | null;
 };
 
 type StatsSnapshot = {
@@ -51,11 +65,18 @@ type StatsSnapshot = {
   updated_at: string;
 };
 
+interface UnlockRecord {
+  achievement_id: string;
+  at: string;
+  seen: boolean;
+}
+
 export default function PublicProfilePage() {
   const params = useParams();
   const { user: currentUser } = useAuth();
   const [profile, setProfile] = useState<PublicProfile | null>(null);
   const [stats, setStats] = useState<StatsSnapshot | null>(null);
+  const [unlockedIds, setUnlockedIds] = useState<Set<string>>(new Set());
   const [isFriend, setIsFriend] = useState(false);
   const [hasPendingRequest, setHasPendingRequest] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -99,9 +120,20 @@ export default function PublicProfilePage() {
 
       if (snap) setStats(snap as StatsSnapshot);
 
+      // Load unlocked achievements
+      const { data: unlocks } = await supabase
+        .from("unlocks")
+        .select("achievement_id")
+        .eq("user_id", profileData.user_id);
+
+      if (unlocks) {
+        setUnlockedIds(
+          new Set((unlocks as { achievement_id: string }[]).map((u) => u.achievement_id)),
+        );
+      }
+
       // Check friend status
       if (currentUser && profileData.user_id !== currentUser.id) {
-        // Check if they're friends
         const { data: friendRows } = await supabase
           .from("friends")
           .select("*")
@@ -153,6 +185,29 @@ export default function PublicProfilePage() {
     setFriendLoading(false);
   };
 
+  // Compute unlocked achievements
+  const unlockedDefs = useMemo<AchievementDef[]>(() => {
+    return ACHIEVEMENTS.filter((a) => unlockedIds.has(a.id))
+      .sort((a, b) => RARITY_ORDER[b.rarity] - RARITY_ORDER[a.rarity]);
+  }, [unlockedIds]);
+
+  // Showcase badge
+  const showcaseBadge = useMemo(() => {
+    if (!profile?.showcase_badge_id) return null;
+    return unlockedDefs.find((d) => d.id === profile.showcase_badge_id) ?? null;
+  }, [profile?.showcase_badge_id, unlockedDefs]);
+
+  const bestAchievement = unlockedDefs[0] ?? null;
+
+  // Title info from stats
+  const titleInfo = useMemo(() => {
+    if (!stats) return null;
+    return titleForLevel(stats.level);
+  }, [stats]);
+
+  // Most-completed habit is not available for public profiles (no access to marks)
+  // We'll skip the "Most completed" showcase row
+
   if (loading) {
     return (
       <AppPageShell>
@@ -195,6 +250,8 @@ export default function PublicProfilePage() {
   }
 
   const isMe = currentUser && profile.user_id === currentUser.id;
+  const banner = resolveBanner(profile.banner ?? undefined);
+  const rank = stats ? RANK_STYLE[titleForLevel(stats.level).current.rank] : null;
 
   return (
     <AppPageShell>
@@ -212,7 +269,7 @@ export default function PublicProfilePage() {
           <ArrowLeft className="size-3.5" /> Back to friends
         </Link>
 
-        {/* ── Hero card ── */}
+        {/* ── Hero card (matches Profile page) ── */}
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
@@ -220,19 +277,11 @@ export default function PublicProfilePage() {
         >
           <Card className="overflow-hidden border-0 bg-gradient-to-b from-surface2/50 to-surface p-0">
             {/* Banner */}
-            <div className="relative h-28 sm:h-36 overflow-hidden">
-              <div
-                className="absolute inset-0"
-                style={{
-                  background: profile.banner
-                    ? `linear-gradient(135deg, ${profile.banner} 0%, color-mix(in srgb, var(--c-accent) 40%, ${profile.banner}) 100%)`
-                    : "linear-gradient(135deg, var(--c-accent) 0%, color-mix(in srgb, var(--c-accent) 60%, black) 100%)",
-                }}
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/10 to-transparent" />
+            <div className="relative h-28 sm:h-36 overflow-hidden" style={{ background: banner }}>
+              <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
 
               {/* Title badge on banner */}
-              {stats && (
+              {stats && stats.rank_icon && (
                 <div className="absolute bottom-3 right-4 flex items-center gap-2 rounded-full bg-black/40 px-3 py-1.5 text-xs text-white/90 backdrop-blur-sm">
                   <span className="text-base leading-none">{stats.rank_icon}</span>
                   <span className="font-medium">{stats.title_name}</span>
@@ -247,21 +296,26 @@ export default function PublicProfilePage() {
                   <UserRound className="size-10" />
                 </div>
                 <div className="mb-1 min-w-0 flex-1">
-                  <h1 className="text-xl font-bold tracking-tight">
-                    {profile.display_name}
-                  </h1>
+                  <div className="flex items-center gap-2">
+                    <h1 className="text-xl font-bold tracking-tight">
+                      {profile.display_name}
+                    </h1>
+                    {stats && (
+                      <span className="grid size-7 place-items-center rounded-lg bg-accent/15 font-mono text-sm font-bold text-accent">
+                        {stats.level}
+                      </span>
+                    )}
+                  </div>
                   <p className="text-sm text-muted">@{profile.username}</p>
 
-                  {stats && (
+                  {titleInfo && rank && (
                     <div className="mt-1 flex items-center gap-2 text-xs text-faint">
                       <span className="flex items-center gap-1">
-                        <Trophy className="size-3" /> Level {stats.level}
+                        <Trophy className="size-3" /> {titleInfo.current.name}
                       </span>
                       <span>·</span>
                       <span className="flex items-center gap-1">
-                        <Award className="size-3" />{" "}
-                        {stats.achievement_count} badge
-                        {stats.achievement_count !== 1 ? "s" : ""}
+                        <span aria-hidden>{rank.icon}</span> {titleInfo.current.rank}
                       </span>
                     </div>
                   )}
@@ -280,7 +334,7 @@ export default function PublicProfilePage() {
                 </p>
               )}
 
-              {/* Friend request button */}
+              {/* Friend request button (view-only for others) */}
               {currentUser && !isMe && (
                 <div className="mt-4">
                   {isFriend ? (
@@ -315,6 +369,43 @@ export default function PublicProfilePage() {
           </Card>
         </motion.div>
 
+        {/* ── XP Bar (view-only, derived from stats snapshot) ── */}
+        {stats && (
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.05 }}
+          >
+            <Card className="p-5">
+              <div className="mb-1.5 flex items-end justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <span className="grid size-9 place-items-center rounded-xl bg-accent/15 font-mono text-sm font-bold text-accent">
+                    {stats.level}
+                  </span>
+                  <span className="text-xs font-semibold uppercase tracking-wide text-muted">
+                    Level
+                  </span>
+                </div>
+                <span className="font-mono text-xs text-faint">
+                  {stats.total_completions.toLocaleString()} total completions
+                </span>
+              </div>
+              <ProgressBar value={stats.consistency_14d} />
+              <div className="mt-1.5 flex items-center justify-between gap-3 text-[11px] text-muted">
+                <span className="font-mono">
+                  {stats.achievement_count} badge{stats.achievement_count !== 1 ? "s" : ""}
+                </span>
+                {titleInfo?.next && (
+                  <span className="flex items-center gap-1">
+                    <Sparkles className="size-3 text-accent" />
+                    Next title: {titleInfo.next.name} (Lv.{titleInfo.next.minLevel})
+                  </span>
+                )}
+              </div>
+            </Card>
+          </motion.div>
+        )}
+
         {/* ── Stats grid ── */}
         {stats ? (
           <motion.div
@@ -322,13 +413,44 @@ export default function PublicProfilePage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, delay: 0.1 }}
           >
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-              <StatCard icon={Trophy} value={stats.level} label="Level" accent />
-              <StatCard icon={Flame} value={stats.current_streak} label="Current streak" />
-              <StatCard icon={Medal} value={stats.best_streak} label="Best streak" />
-              <StatCard icon={TrendingUp} value={`${stats.consistency_14d}%`} label="Consistency" />
-              <StatCard icon={Target} value={stats.total_completions} label="Completions" />
-            </div>
+            <StaggerContainer className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+              <StaggerItem>
+                <StatCard
+                  icon={Medal}
+                  value={`${stats.achievement_count}`}
+                  label="Badges"
+                  accent
+                />
+              </StaggerItem>
+              <StaggerItem>
+                <StatCard
+                  icon={Trophy}
+                  value={stats.achievement_count}
+                  label="Achievements"
+                />
+              </StaggerItem>
+              <StaggerItem>
+                <StatCard
+                  icon={Flame}
+                  value={stats.current_streak}
+                  label="Current streak"
+                />
+              </StaggerItem>
+              <StaggerItem>
+                <StatCard
+                  icon={Award}
+                  value={stats.best_streak}
+                  label="Longest streak"
+                />
+              </StaggerItem>
+              <StaggerItem>
+                <StatCard
+                  icon={TrendingUp}
+                  value={`${stats.consistency_14d}%`}
+                  label="Consistency"
+                />
+              </StaggerItem>
+            </StaggerContainer>
           </motion.div>
         ) : (
           <Card className="p-8 text-center">
@@ -341,28 +463,183 @@ export default function PublicProfilePage() {
           </Card>
         )}
 
-        {/* ── Achievement summary ── */}
-        {stats && stats.achievement_count > 0 && (
+        {/* ── Showcase ── */}
+        {stats && (
           <motion.div
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, delay: 0.2 }}
+            transition={{ duration: 0.4, delay: 0.15 }}
           >
-            <Card className="flex items-center gap-4 p-4">
-              <div className="flex size-12 items-center justify-center rounded-xl bg-accent/10 text-xl">
-                {stats.rank_icon}
+            <Card className="p-5">
+              <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted">
+                Showcase
+              </h2>
+              <div className="flex flex-col gap-3">
+                <ShowcaseRow label="Favorite badge">
+                  {showcaseBadge ? (
+                    <BadgeChip def={showcaseBadge} />
+                  ) : (
+                    <span className="text-xs text-faint">
+                      {unlockedDefs.length > 0 ? "None selected" : "No badges yet"}
+                    </span>
+                  )}
+                </ShowcaseRow>
+                <ShowcaseRow label="Best achievement">
+                  {bestAchievement ? (
+                    <BadgeChip def={bestAchievement} />
+                  ) : (
+                    <span className="text-xs text-faint">None yet</span>
+                  )}
+                </ShowcaseRow>
+                <ShowcaseRow label="Current title">
+                  {titleInfo && rank ? (
+                    <span
+                      className="flex items-center gap-1.5 text-sm font-semibold"
+                      style={{ color: rank.accent }}
+                    >
+                      <span aria-hidden>{rank.icon}</span> {titleInfo.current.name}
+                    </span>
+                  ) : (
+                    <span className="text-xs text-faint">—</span>
+                  )}
+                </ShowcaseRow>
+                <ShowcaseRow label="Longest streak">
+                  <span className="flex items-center gap-1.5 text-sm font-semibold">
+                    <Flame className="size-4 text-orange-500" />{" "}
+                    {stats.best_streak} days
+                  </span>
+                </ShowcaseRow>
+                <ShowcaseRow label="Total completions">
+                  <span className="flex items-center gap-1.5 text-sm font-semibold">
+                    <Repeat className="size-4 text-accent" />{" "}
+                    {stats.total_completions.toLocaleString()}
+                  </span>
+                </ShowcaseRow>
               </div>
-              <div className="flex-1">
-                <p className="text-sm font-semibold">{stats.title_name}</p>
-                <p className="text-xs text-muted">
-                  {stats.achievement_count} achievement
-                  {stats.achievement_count !== 1 ? "s" : ""} unlocked
-                </p>
+            </Card>
+          </motion.div>
+        )}
+
+        {/* ── Badge gallery (Achievements Unlocked) ── */}
+        <motion.section
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.2 }}
+        >
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-muted">
+              Badge collection
+            </h2>
+            <span className="text-xs font-semibold text-accent">
+              {unlockedDefs.length} of {ACHIEVEMENTS.length}
+            </span>
+          </div>
+          {unlockedDefs.length === 0 ? (
+            <Card className="p-8 text-center text-sm text-muted">
+              No badges unlocked yet.
+            </Card>
+          ) : (
+            <Card className="p-5">
+              <div className="flex flex-wrap gap-3">
+                {unlockedDefs.map((def) => (
+                  <div
+                    key={def.id}
+                    title={`${def.name} · ${RARITY_LABEL[def.rarity]}`}
+                  >
+                    <AchievementBadge
+                      def={def}
+                      size={56}
+                      shine={def.rarity === "legendary"}
+                    />
+                  </div>
+                ))}
               </div>
-              <div className="flex items-center gap-1.5 rounded-full bg-surface2 px-3 py-1.5">
-                <Star className="size-3.5 text-amber-500" />
-                <span className="text-xs font-semibold">Lv.{stats.level}</span>
+            </Card>
+          )}
+        </motion.section>
+
+        {/* ── Basic line chart (from stats data) ── */}
+        {stats && (
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.25 }}
+            className="grid gap-4 sm:grid-cols-2"
+          >
+            {/* Consistency overview */}
+            <Card className="p-5">
+              <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted">
+                Consistency
+              </h2>
+              <div className="flex flex-col gap-3">
+                <div>
+                  <div className="mb-1.5 flex items-center justify-between text-xs">
+                    <span className="text-muted">14-day consistency</span>
+                    <span className="font-mono font-bold">{stats.consistency_14d}%</span>
+                  </div>
+                  <ProgressBar value={stats.consistency_14d} color="var(--c-accent)" />
+                </div>
+                <div>
+                  <div className="mb-1.5 flex items-center justify-between text-xs">
+                    <span className="text-muted">Current streak</span>
+                    <span className="font-mono font-bold">{stats.current_streak}d</span>
+                  </div>
+                  <ProgressBar
+                    value={Math.min(100, (stats.current_streak / Math.max(stats.best_streak, 1)) * 100)}
+                    color="#f97316"
+                  />
+                </div>
+                <div className="flex items-center gap-2 rounded-xl bg-surface2/50 p-3">
+                  <Gauge className="size-5 text-accent shrink-0" />
+                  <div className="text-xs text-muted">
+                    <span className="font-semibold text-ink">{stats.title_name}</span>
+                    {" · "}Best streak: {stats.best_streak}d
+                  </div>
+                </div>
               </div>
+            </Card>
+
+            {/* Achievement breakdown */}
+            <Card className="p-5">
+              <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted">
+                Achievement Breakdown
+              </h2>
+              {(() => {
+                const rarities: Rarity[] = ["common", "rare", "epic", "legendary"];
+                const rarityCounts: Record<Rarity, { unlocked: number; total: number }> = {
+                  common: { unlocked: 0, total: 0 },
+                  rare: { unlocked: 0, total: 0 },
+                  epic: { unlocked: 0, total: 0 },
+                  legendary: { unlocked: 0, total: 0 },
+                };
+                for (const a of ACHIEVEMENTS) {
+                  rarityCounts[a.rarity].total += 1;
+                  if (unlockedIds.has(a.id)) rarityCounts[a.rarity].unlocked += 1;
+                }
+                return (
+                  <div className="flex flex-col gap-3">
+                    {rarities.map((rarity) => {
+                      const style = RARITY_STYLE[rarity];
+                      const c = rarityCounts[rarity];
+                      const pct = c.total > 0 ? Math.round((c.unlocked / c.total) * 100) : 0;
+                      return (
+                        <div key={rarity}>
+                          <div className="mb-1 flex items-center justify-between text-xs">
+                            <span className="flex items-center gap-1.5 font-medium">
+                              <span aria-hidden>{style.medal}</span>
+                              {RARITY_LABEL[rarity]}
+                            </span>
+                            <span className="font-mono text-muted">
+                              {c.unlocked}/{c.total}
+                            </span>
+                          </div>
+                          <ProgressBar value={pct} color={style.accent} />
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
             </Card>
           </motion.div>
         )}
@@ -385,5 +662,32 @@ export default function PublicProfilePage() {
         )}
       </motion.div>
     </AppPageShell>
+  );
+}
+
+function ShowcaseRow({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-3">
+      <span className="text-xs text-muted">{label}</span>
+      {children}
+    </div>
+  );
+}
+
+function BadgeChip({ def }: { def: AchievementDef }) {
+  const r = RARITY_STYLE[def.rarity];
+  return (
+    <span
+      className="flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold"
+      style={{ background: `${r.accent}1f`, color: r.accent }}
+    >
+      <span aria-hidden>{def.icon}</span> {def.name}
+    </span>
   );
 }

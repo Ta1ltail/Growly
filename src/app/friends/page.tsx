@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import Link from "next/link";
 import {
   Search,
@@ -10,10 +10,11 @@ import {
   Check,
   Clock,
   Users,
-  ChevronRight,
   Loader2,
   UserRound,
   Heart,
+  Flame,
+  Medal,
 } from "lucide-react";
 import { createNotification } from "@/lib/notifications";
 import { createClient } from "@/lib/supabase/client";
@@ -21,8 +22,10 @@ import { useAuth } from "@/hooks/useAuth";
 import { useHydrated } from "@/hooks/useHydrated";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Card } from "@/components/ui/Card";
+import { Pagination } from "@/components/ui/Pagination";
 import { PageSkeleton } from "@/components/ui/PageSkeleton";
 import { AppPageShell } from "@/components/layout/AppPageShell";
+import { cn } from "@/lib/util";
 
 type FriendRow = {
   id: string;
@@ -40,26 +43,39 @@ type PublicProfile = {
   avatar: string | null;
 };
 
+type StatsSnapshot = {
+  level: number;
+  current_streak: number;
+  best_streak: number;
+  total_completions: number;
+  consistency_14d: number;
+  achievement_count: number;
+  title_name: string;
+  rank_icon: string;
+};
+
 interface FriendWithProfile extends PublicProfile {
   friendId: string;
   status: "pending" | "accepted" | "blocked";
   isRequester: boolean;
   createdAt: string;
+  stats?: StatsSnapshot;
 }
+
+const FRIENDS_PAGE_SIZE = 10;
 
 export default function FriendsPage() {
   const { user } = useAuth();
   const hydrated = useHydrated();
   const [friends, setFriends] = useState<FriendWithProfile[]>([]);
-  const [pendingRequests, setPendingRequests] = useState<FriendWithProfile[]>(
-    [],
-  );
+  const [pendingRequests, setPendingRequests] = useState<FriendWithProfile[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<PublicProfile[]>([]);
   const [searching, setSearching] = useState(false);
   const [loading, setLoading] = useState(true);
   const [sentRequests, setSentRequests] = useState<Set<string>>(new Set());
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [friendsPage, setFriendsPage] = useState(0);
 
   const loadFriends = useCallback(async () => {
     if (!user) return;
@@ -101,15 +117,26 @@ export default function FriendsPage() {
       }
     }
 
-    // Fetch profiles for all friends
+    // Fetch profiles + stats for all friends
     if (friendIds.size > 0) {
       const { data: profiles } = await supabase
         .from("public_profiles")
         .select("*")
         .in("user_id", [...friendIds]);
 
+      const { data: snapshots } = await supabase
+        .from("user_stats_snapshots")
+        .select("*")
+        .in("user_id", [...friendIds]);
+
       const profileMap = new Map(
         (profiles ?? []).map((p: PublicProfile) => [p.user_id, p]),
+      );
+      const statsMap = new Map(
+        (snapshots ?? []).map((s: StatsSnapshot & { user_id: string }) => [
+          s.user_id,
+          s,
+        ]),
       );
 
       const enrich = (list: FriendWithProfile[]) =>
@@ -121,6 +148,7 @@ export default function FriendsPage() {
             bio: null,
             avatar: null,
           }),
+          stats: statsMap.get(f.user_id),
         }));
 
       setPendingRequests(enrich(pending));
@@ -136,6 +164,9 @@ export default function FriendsPage() {
   useEffect(() => {
     loadFriends();
   }, [loadFriends]);
+
+  // Reset page when friends data changes
+  useEffect(() => { setFriendsPage(0); }, [friends.length]);
 
   // Search for users
   useEffect(() => {
@@ -203,7 +234,6 @@ export default function FriendsPage() {
       if (error) {
         console.error("[friends] Failed to accept:", error.message);
       } else if (requesterUserId && user) {
-        // Notify the requester that their request was accepted
         await createNotification({
           userId: requesterUserId,
           type: "friend_accept",
@@ -220,6 +250,14 @@ export default function FriendsPage() {
     setActionLoading(null);
     loadFriends();
   };
+
+  // Paginate friends
+  const friendsPageCount = Math.max(1, Math.ceil(friends.length / FRIENDS_PAGE_SIZE));
+  const friendsSafePage = Math.min(friendsPage, friendsPageCount - 1);
+  const pagedFriends = friends.slice(
+    friendsSafePage * FRIENDS_PAGE_SIZE,
+    (friendsSafePage + 1) * FRIENDS_PAGE_SIZE,
+  );
 
   if (!hydrated) return <PageSkeleton />;
 
@@ -355,7 +393,7 @@ export default function FriendsPage() {
           </section>
         )}
 
-        {/* Friends list */}
+        {/* Friends list — leaderboard-style table */}
         <section>
           <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-muted">
             <Users className="size-4 icon-accent" /> Friends
@@ -383,26 +421,80 @@ export default function FriendsPage() {
               for new people.
             </Card>
           ) : (
-            <Card className="divide-y divide-line">
-              {friends.map((friend) => (
-                <Link
-                  key={friend.friendId}
-                  href={`/profile/${friend.username}`}
-                  className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-surface2/50"
-                >
-                  <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-accent/10 text-accent">
-                    <UserRound className="size-5" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-semibold">
-                      {friend.display_name}
-                    </p>
-                    <p className="text-xs text-faint">@{friend.username}</p>
-                  </div>
-                  <ChevronRight className="size-4 text-faint" />
-                </Link>
-              ))}
-            </Card>
+            <>
+              <Card className="divide-y divide-line overflow-hidden">
+                {/* Table header */}
+                <div className="flex items-center gap-3 px-4 py-2.5 text-[10px] font-semibold uppercase tracking-wider text-faint">
+                  <span className="flex-1">User</span>
+                  <span className="w-12 text-right">Level</span>
+                  <span className="w-12 text-right">Streak</span>
+                  <span className="w-12 text-right">7d</span>
+                  <span className="w-14 text-right">Badges</span>
+                </div>
+
+                {pagedFriends.map((friend) => (
+                  <Link
+                    key={friend.friendId}
+                    href={`/profile/${friend.username}`}
+                    className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-surface2/50"
+                  >
+                    {/* User info */}
+                    <div className="flex min-w-0 flex-1 items-center gap-3">
+                      <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-accent/10 text-accent">
+                        <UserRound className="size-4.5" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-semibold">
+                          {friend.display_name}
+                        </p>
+                        <p className="truncate text-xs text-faint">
+                          @{friend.username}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Level */}
+                    <div className="w-12 text-right">
+                      <span className="font-mono text-xs font-semibold text-muted">
+                        {friend.stats?.level ?? "-"}
+                      </span>
+                    </div>
+
+                    {/* Current Streak */}
+                    <div className="w-12 text-right">
+                      <span className="font-mono text-xs font-semibold text-muted flex items-center justify-end gap-1">
+                        <Flame className="size-3 text-orange-400" />
+                        {friend.stats?.current_streak ?? "-"}
+                      </span>
+                    </div>
+
+                    {/* Consistency (7d) */}
+                    <div className="w-12 text-right">
+                      <span className="font-mono text-xs font-semibold text-muted">
+                        {friend.stats ? `${friend.stats.consistency_14d}%` : "-"}
+                      </span>
+                    </div>
+
+                    {/* Badge count */}
+                    <div className="w-14 text-right">
+                      <span className="font-mono text-xs font-semibold text-muted flex items-center justify-end gap-1">
+                        <Medal className="size-3 text-faint" />
+                        {friend.stats?.achievement_count ?? "-"}
+                      </span>
+                    </div>
+                  </Link>
+                ))}
+              </Card>
+
+              {/* Pagination */}
+              <Pagination
+                page={friendsSafePage}
+                pageCount={friendsPageCount}
+                total={friends.length}
+                pageSize={FRIENDS_PAGE_SIZE}
+                onChange={setFriendsPage}
+              />
+            </>
           )}
         </section>
       </div>
