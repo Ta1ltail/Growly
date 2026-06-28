@@ -2,7 +2,15 @@
 // Tracker — habits as rows, recent days as columns. Tap a cell to cycle.
 // Habit lists scroll internally within a fixed container to prevent layout breaking.
 // Past days lock (only today + a short grace window are editable).
-import { memo, useCallback, useMemo, useState, Fragment } from "react";
+import {
+  memo,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  Fragment,
+} from "react";
 import {
   Flame,
   LayoutGrid,
@@ -34,7 +42,13 @@ const RANGES = [
 
 // Row metrics — used to compute the sticky offset for category header rows
 // so they dock directly beneath the column header row instead of behind it.
-const HEADER_ROW_H = 44; // px, matches th py-3 + content height
+// IMPORTANT: this must match the *actual rendered* height of the <thead> row
+// exactly. If it's even 1px off, the category band will show a sliver gap
+// (offset too small) or overlap the header (offset too large) until you've
+// scrolled past the mismatch. We measure it live via a ref instead of trusting
+// a guessed constant, since padding/line-height can shift with font loading,
+// browser zoom, or future style edits.
+const HEADER_ROW_H_FALLBACK = 44; // px, only used until the real height is measured
 
 // Color-coded cell fill — no text labels, just background color states.
 // Editable cells get a hover lift; locked cells are muted.
@@ -127,6 +141,21 @@ export default function TrackerPage() {
   const [range, setRange] = useState<"14" | "30">("14");
   const daysShown = Number(range);
 
+  // Measure the header row's real rendered height so the category band's
+  // sticky offset is always exact — no guessed pixel constant that can drift
+  // out of sync with padding/font changes and reopen this same gap bug.
+  const headerRowRef = useRef<HTMLTableRowElement>(null);
+  const [headerRowH, setHeaderRowH] = useState(HEADER_ROW_H_FALLBACK);
+  useEffect(() => {
+    const el = headerRowRef.current;
+    if (!el) return;
+    const measure = () => setHeaderRowH(el.getBoundingClientRect().height);
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
   const columns = useMemo(
     () =>
       Array.from({ length: daysShown }, (_, i) =>
@@ -216,7 +245,7 @@ export default function TrackerPage() {
                 <div className="h-full w-full overflow-auto">
                   <table className="w-full border-collapse text-center font-mono text-xs">
                     <thead>
-                      <tr>
+                      <tr ref={headerRowRef}>
                         <th className="sticky left-0 top-0 z-40 min-w-36 border-r border-line bg-surface px-3 py-3 text-left font-semibold shadow-sm">
                           Habit
                         </th>
@@ -254,12 +283,15 @@ export default function TrackerPage() {
                               Habit column) and a plain cell that spans the day
                               columns, just carrying the matching background so the
                               band looks continuous as you scroll right. Both cells
-                              also stick to `top: HEADER_ROW_H` so the whole band
-                              docks under the header while scrolling down. */}
+                              also stick to `top: headerRowH` (measured live from
+                              the actual <thead> row, with a 1px overlap to avoid a
+                              sub-pixel seam) so the whole band docks flush under
+                              the header while scrolling down — including the very
+                              first category, with no gap before it. */}
                             <tr className="select-none border-t border-line/60">
                               <td
                                 className="sticky left-0 z-20 min-w-36 bg-surface2/95 px-3 py-1.5 text-left backdrop-blur-sm"
-                                style={{ top: HEADER_ROW_H }}
+                                style={{ top: headerRowH - 1 }}
                               >
                                 <div className="flex items-center gap-2">
                                   <span
@@ -277,7 +309,7 @@ export default function TrackerPage() {
                               <td
                                 colSpan={columns.length + 1}
                                 className="sticky z-[15] bg-surface2/95 backdrop-blur-sm"
-                                style={{ top: HEADER_ROW_H }}
+                                style={{ top: headerRowH - 1 }}
                               />
                             </tr>
                             {group.habits.map((habit) => {
