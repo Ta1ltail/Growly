@@ -1,9 +1,7 @@
 "use client";
-
 // Tracker — habits as rows, recent days as columns. Tap a cell to cycle.
 // Habit lists scroll internally within a fixed container to prevent layout breaking.
 // Past days lock (only today + a short grace window are editable).
-
 import { memo, useCallback, useMemo, useState, Fragment } from "react";
 import {
   Flame,
@@ -33,6 +31,10 @@ const RANGES = [
   { value: "14" as const, label: "14 days" },
   { value: "30" as const, label: "30 days" },
 ];
+
+// Row metrics — used to compute the sticky offset for category header rows
+// so they dock directly beneath the column header row instead of behind it.
+const HEADER_ROW_H = 44; // px, matches th py-3 + content height
 
 // Color-coded cell fill — no text labels, just background color states.
 // Editable cells get a hover lift; locked cells are muted.
@@ -142,6 +144,7 @@ export default function TrackerPage() {
   );
 
   const frozen = useMemo(() => frozenSet(data.economy), [data.economy]);
+
   const handleCellMark = useCallback(
     (key: string, habitId: string, category: string) => {
       cycleMark(key, habitId, category);
@@ -170,6 +173,7 @@ export default function TrackerPage() {
       ),
     [data.habits],
   );
+
   const filterOptions = useMemo(
     () => [
       { value: "All" as const, label: "All" },
@@ -180,48 +184,40 @@ export default function TrackerPage() {
 
   return (
     <AppPageShell>
-    <div className="animate-fade-in">
-      <PageHeader
-        title="Tracker"
-        subtitle="Tap a cell to mark · past days lock automatically"
-      />
-
-      {habits.length === 0 ? (
-        <EmptyState
-          icon={LayoutGrid}
-          title="Nothing to track yet"
-          hint="Add habits and they'll show up here as a grid."
-          illustration="tracker"
+      <div className="animate-fade-in">
+        <PageHeader
+          title="Tracker"
+          subtitle="Tap a cell to mark · past days lock automatically"
         />
-      ) : (
-        <>
-          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-            <Segmented
-              options={filterOptions}
-              value={filter}
-              onChange={setFilter}
-            />
-            <Segmented options={RANGES} value={range} onChange={setRange} />
-          </div>
-
-          {/* Fixed-height container with internal scroll for long habit lists */}
-          <div className="h-[calc(100dvh-18rem)] min-h-[300px] md:h-[calc(100dvh-15rem)]">
-            <Card className="overflow-hidden h-full">
-              <div className="h-full overflow-y-auto">
-                <div
-                  className={
-                    daysShown === 30
-                      ? "overflow-x-scroll overflow-y-hidden"
-                      : "overflow-x-auto"
-                  }
-                  style={
-                    daysShown === 30 ? { paddingBottom: "8px" } : undefined
-                  }
-                >
+        {habits.length === 0 ? (
+          <EmptyState
+            icon={LayoutGrid}
+            title="Nothing to track yet"
+            hint="Add habits and they'll show up here as a grid."
+            illustration="tracker"
+          />
+        ) : (
+          <>
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+              <Segmented
+                options={filterOptions}
+                value={filter}
+                onChange={setFilter}
+              />
+              <Segmented options={RANGES} value={range} onChange={setRange} />
+            </div>
+            {/* Fixed-height container. A SINGLE overflow-auto element handles both
+              axes so sticky-top (header) and sticky-left (habit column) resolve
+              against the same scrolling ancestor, and the horizontal scrollbar
+              lives at the bottom of this box — always reachable, independent of
+              vertical scroll position. */}
+            <div className="h-[calc(100dvh-18rem)] min-h-[300px] md:h-[calc(100dvh-15rem)]">
+              <Card className="overflow-hidden h-full">
+                <div className="h-full w-full overflow-auto">
                   <table className="w-full border-collapse text-center font-mono text-xs">
                     <thead>
                       <tr>
-                        <th className="sticky left-0 top-0 z-30 min-w-36 border-r border-line bg-surface px-3 py-3 text-left font-semibold shadow-sm">
+                        <th className="sticky left-0 top-0 z-40 min-w-36 border-r border-line bg-surface px-3 py-3 text-left font-semibold shadow-sm">
                           Habit
                         </th>
                         {columns.map((d) => {
@@ -229,7 +225,7 @@ export default function TrackerPage() {
                           return (
                             <th
                               key={dateKey(d)}
-                              className={`sticky top-0 z-20 bg-surface px-1 py-2 font-medium shadow-sm ${isToday ? "text-accent" : "text-faint"}`}
+                              className={`sticky top-0 z-30 bg-surface px-1 py-2 font-medium shadow-sm ${isToday ? "text-accent" : "text-faint"}`}
                             >
                               <div className="text-[10px] uppercase">
                                 {d.toLocaleDateString(undefined, {
@@ -240,7 +236,7 @@ export default function TrackerPage() {
                             </th>
                           );
                         })}
-                        <th className="sticky top-0 z-20 bg-surface px-2 py-2 shadow-sm">
+                        <th className="sticky top-0 z-30 bg-surface px-2 py-2 shadow-sm">
                           <Flame className="mx-auto size-4 text-amber-500" />
                         </th>
                       </tr>
@@ -249,11 +245,16 @@ export default function TrackerPage() {
                       {groupedHabits.map((group) => {
                         return (
                           <Fragment key={group.category}>
-                            {/* Category group header — static label */}
+                            {/* Category group header — sticks to the left (so the
+                              label stays visible while scrolling horizontally)
+                              AND docks just below the column header row while
+                              scrolling vertically, so it never floats away or
+                              gets buried under the header. */}
                             <tr className="select-none border-t border-line/60">
                               <td
                                 colSpan={columns.length + 2}
-                                className="sticky left-0 bg-surface2/80 px-3 py-1.5 text-left backdrop-blur-sm"
+                                className="sticky left-0 z-20 bg-surface2/95 px-3 py-1.5 text-left backdrop-blur-sm"
+                                style={{ top: HEADER_ROW_H }}
                               >
                                 <div className="flex items-center gap-2">
                                   <span
@@ -343,24 +344,22 @@ export default function TrackerPage() {
                     </tbody>
                   </table>
                 </div>
-              </div>
-            </Card>
-          </div>
-
-          <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-xs text-muted">
-            <Legend className="bg-done" label="done" />
-            <Legend className="bg-missed" label="missed" />
-            <Legend className="bg-skipped" label="skipped" />
-            <span className="flex items-center gap-1.5">
-              <Lock className="size-3.5" /> locked (past)
-            </span>
-            <span className="flex items-center gap-1.5">
-              <Flame className="size-3.5 text-amber-500" /> current streak
-            </span>
-          </div>
-        </>
-      )}
-    </div>
+              </Card>
+            </div>
+            <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-xs text-muted">
+              <Legend className="bg-done" label="done" />
+              <Legend className="bg-missed" label="missed" />
+              <Legend className="bg-skipped" label="skipped" />
+              <span className="flex items-center gap-1.5">
+                <Lock className="size-3.5" /> locked (past)
+              </span>
+              <span className="flex items-center gap-1.5">
+                <Flame className="size-3.5 text-amber-500" /> current streak
+              </span>
+            </div>
+          </>
+        )}
+      </div>
     </AppPageShell>
   );
 }
