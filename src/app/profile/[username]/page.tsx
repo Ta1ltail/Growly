@@ -122,7 +122,11 @@ export default function PublicProfilePage() {
 
       if (unlocks && unlocks.length > 0) {
         setUnlockedIds(
-          new Set((unlocks as { achievement_id: string }[]).map((u) => u.achievement_id)),
+          new Set(
+            (unlocks as { achievement_id: string }[]).map(
+              (u) => u.achievement_id,
+            ),
+          ),
         );
       }
 
@@ -137,8 +141,12 @@ export default function PublicProfilePage() {
 
         if (friendRows && friendRows.length > 0) {
           type FriendRow = { status: string };
-          const accepted = (friendRows as FriendRow[]).some((r) => r.status === "accepted");
-          const pending = (friendRows as FriendRow[]).some((r) => r.status === "pending");
+          const accepted = (friendRows as FriendRow[]).some(
+            (r) => r.status === "accepted",
+          );
+          const pending = (friendRows as FriendRow[]).some(
+            (r) => r.status === "pending",
+          );
           setIsFriend(accepted);
           setHasPendingRequest(pending);
         }
@@ -182,14 +190,17 @@ export default function PublicProfilePage() {
 
   // Compute unlocked achievements
   const unlockedDefs = useMemo<AchievementDef[]>(() => {
-    return ACHIEVEMENTS.filter((a) => unlockedIds.has(a.id))
-      .sort((a, b) => RARITY_ORDER[b.rarity] - RARITY_ORDER[a.rarity]);
+    return ACHIEVEMENTS.filter((a) => unlockedIds.has(a.id)).sort(
+      (a, b) => RARITY_ORDER[b.rarity] - RARITY_ORDER[a.rarity],
+    );
   }, [unlockedIds]);
 
   // Showcase badge
   const showcaseBadge = useMemo(() => {
     if (!profile?.showcase_badge_id) return null;
-    return unlockedDefs.find((d) => d.id === profile!.showcase_badge_id) ?? null;
+    return (
+      unlockedDefs.find((d) => d.id === profile!.showcase_badge_id) ?? null
+    );
   }, [profile, unlockedDefs]);
 
   const bestAchievement = unlockedDefs[0] ?? null;
@@ -251,122 +262,106 @@ export default function PublicProfilePage() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.3 }}
-        className="space-y-5"
+        className="animate-fade-in"
       >
         {/* Back link */}
         <Link
           href="/friends"
-          className="inline-flex items-center gap-1.5 text-xs font-medium text-muted hover:text-ink transition-colors"
+          className="mb-4 inline-flex items-center gap-1.5 text-xs font-medium text-muted transition-colors hover:text-ink"
         >
           <ArrowLeft className="size-3.5" /> Back to friends
         </Link>
 
-        {/* ── Hero card ── */}
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4 }}
-        >
-          <Card className="overflow-hidden border-0 bg-gradient-to-b from-surface2/50 to-surface p-0">
-            {/* Banner */}
-            <div className="relative h-28 sm:h-36 overflow-hidden" style={{ background: banner }}>
-              <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+        {/* ---- Hero / banner ---- */}
+        {/* Mirrors the structure of /profile exactly: avatar overlapping the
+            banner on the left, level chip beside it, then a stacked name /
+            username / title / motto / bio block underneath. The friend
+            action lives in the same top-right banner slot the Edit button
+            uses on the own-profile page, instead of floating below the card. */}
+        <Card className="mb-6 overflow-hidden p-0">
+          <div className="relative h-28 sm:h-36" style={{ background: banner }}>
+            <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
 
-              {/* Title badge on banner */}
+            {currentUser && !isMe && (
+              <div className="absolute right-3 top-3">
+                {isFriend ? (
+                  <span className="flex items-center gap-1.5 rounded-xl bg-black/30 px-3 py-1.5 text-xs font-semibold text-white backdrop-blur-sm">
+                    <UserCheck className="size-3.5" /> Friends
+                  </span>
+                ) : hasPendingRequest ? (
+                  <span className="flex items-center gap-1.5 rounded-xl bg-black/30 px-3 py-1.5 text-xs font-semibold text-white backdrop-blur-sm">
+                    <Clock className="size-3.5" /> Request sent
+                  </span>
+                ) : (
+                  <Button
+                    variant="soft"
+                    size="sm"
+                    onClick={sendFriendRequest}
+                    disabled={friendLoading}
+                    className="bg-black/30 text-white backdrop-blur-sm hover:bg-black/45"
+                  >
+                    {friendLoading ? (
+                      <Loader2 className="size-3.5 animate-spin" />
+                    ) : (
+                      <UserPlus className="size-3.5" />
+                    )}
+                    Add friend
+                  </Button>
+                )}
+              </div>
+            )}
+          </div>
+
+          <div className="px-5 pb-5">
+            <div className="-mt-12 flex items-end gap-4">
+              {titleInfo ? (
+                <RankAvatar
+                  rank={titleInfo.current.rank}
+                  avatar={profile.avatar ?? undefined}
+                  size={88}
+                />
+              ) : (
+                <div className="flex size-[88px] shrink-0 items-center justify-center rounded-2xl border-[3px] border-surface bg-gradient-to-br from-accent/20 to-surface2 text-accent shadow-lg shadow-black/20">
+                  <Trophy className="size-10" />
+                </div>
+              )}
               {stats && (
-                <div className="absolute bottom-3 right-4 flex items-center gap-2 rounded-full bg-black/40 px-3 py-1.5 text-xs text-white/90 backdrop-blur-sm">
-                  <span className="text-base leading-none">{stats.rank_icon || "⬡"}</span>
-                  <span className="font-medium">{stats.title_name}</span>
+                <div className="mb-1 flex items-center gap-2 font-mono text-sm font-bold">
+                  <span className="grid size-7 place-items-center rounded-lg bg-accent/15 text-accent">
+                    {stats.level}
+                  </span>
+                  <span className="text-muted">LVL</span>
                 </div>
               )}
             </div>
 
-            {/* Profile info */}
-            <div className="relative px-5 pb-5">
-              <div className="-mt-12 flex items-end gap-4">
-                {rank && titleInfo ? (
-                  <RankAvatar
-                    rank={titleInfo.current.rank}
-                    avatar={profile.avatar ?? undefined}
-                    size={88}
-                  />
-                ) : (
-                  <div className="flex size-20 shrink-0 items-center justify-center rounded-2xl border-[3px] border-surface bg-gradient-to-br from-accent/20 to-surface2 text-accent shadow-lg shadow-black/20">
-                    <Trophy className="size-10" />
-                  </div>
-                )}
-                <div className="mb-1 min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
-                    <h1 className="text-xl font-bold tracking-tight">
-                      {profile.display_name}
-                    </h1>
-                    {stats && (
-                      <span className="grid size-7 place-items-center rounded-lg bg-accent/15 font-mono text-sm font-bold text-accent">
-                        {stats.level}
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-sm text-muted">@{profile.username}</p>
-
-                  {titleInfo && (
-                    <TitleDisplay title={titleInfo} size="sm" className="mt-2.5" />
-                  )}
-                </div>
-              </div>
-
+            <div className="mt-3">
+              <h1 className="text-2xl font-bold tracking-tight">
+                {profile.display_name}
+              </h1>
+              <p className="text-sm text-muted">@{profile.username}</p>
+              {titleInfo && (
+                <TitleDisplay title={titleInfo} size="md" className="mt-2.5" />
+              )}
               {profile.motto && (
-                <p className="mt-3 text-sm italic text-muted/80">
+                <p className="mt-2 text-sm italic text-muted">
                   &ldquo;{profile.motto}&rdquo;
                 </p>
               )}
-
               {profile.bio && (
-                <p className="mt-2 max-w-prose text-sm text-ink/80 leading-relaxed">
+                <p className="mt-2 max-w-prose text-sm text-ink/90">
                   {profile.bio}
                 </p>
               )}
 
-              {/* Friend request button */}
-              {currentUser && !isMe && (
-                <div className="mt-4">
-                  {isFriend ? (
-                    <span className="inline-flex items-center gap-1.5 rounded-xl bg-done/10 px-4 py-2 text-sm font-semibold text-done">
-                      <UserCheck className="size-4" /> Friends
-                    </span>
-                  ) : hasPendingRequest ? (
-                    <span className="inline-flex items-center gap-1.5 rounded-xl bg-amber-500/10 px-4 py-2 text-sm font-semibold text-amber-500">
-                      <Clock className="size-4" /> Request sent
-                    </span>
-                  ) : (
-                    <Button
-                      onClick={sendFriendRequest}
-                      disabled={friendLoading}
-                      size="md"
-                    >
-                      {friendLoading ? (
-                        <Loader2 className="size-4 animate-spin" />
-                      ) : (
-                        <UserPlus className="size-4" />
-                      )}
-                      Add friend
-                    </Button>
-                  )}
-                  {error && (
-                    <p className="mt-2 text-xs text-missed">{error}</p>
-                  )}
-                </div>
-              )}
+              {error && <p className="mt-2 text-xs text-missed">{error}</p>}
             </div>
-          </Card>
-        </motion.div>
+          </div>
+        </Card>
 
         {/* ── Stats grid ── */}
         {stats ? (
-          <motion.div
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, delay: 0.1 }}
-          >
+          <>
             <Card className="mb-6 p-5">
               <div className="mb-1.5 flex items-end justify-between gap-3">
                 <div className="flex items-center gap-2">
@@ -384,37 +379,60 @@ export default function PublicProfilePage() {
               <ProgressBar value={stats.consistency_14d} />
               <div className="mt-1.5 flex items-center justify-between gap-3 text-[11px] text-muted">
                 <span className="font-mono">
-                  {stats.achievement_count} badge{stats.achievement_count !== 1 ? "s" : ""}
+                  {stats.achievement_count} badge
+                  {stats.achievement_count !== 1 ? "s" : ""}
                 </span>
                 {titleInfo?.next && (
                   <span className="flex items-center gap-1">
                     <Sparkles className="size-3 text-accent" />
-                    Next title: {titleInfo.next.name} (Lv.{titleInfo.next.minLevel})
+                    Next title: {titleInfo.next.name} (Lv.
+                    {titleInfo.next.minLevel})
                   </span>
                 )}
               </div>
             </Card>
 
-            <StaggerContainer className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+            <StaggerContainer className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-5">
               <StaggerItem>
-                <StatCard icon={Medal} value={`${stats.achievement_count}`} label="Badges" accent />
+                <StatCard
+                  icon={Medal}
+                  value={`${stats.achievement_count}`}
+                  label="Badges"
+                  accent
+                />
               </StaggerItem>
               <StaggerItem>
-                <StatCard icon={Trophy} value={stats.achievement_count} label="Achievements" />
+                <StatCard
+                  icon={Trophy}
+                  value={stats.achievement_count}
+                  label="Achievements"
+                />
               </StaggerItem>
               <StaggerItem>
-                <StatCard icon={Flame} value={stats.current_streak} label="Current streak" />
+                <StatCard
+                  icon={Flame}
+                  value={stats.current_streak}
+                  label="Current streak"
+                />
               </StaggerItem>
               <StaggerItem>
-                <StatCard icon={Award} value={stats.best_streak} label="Longest streak" />
+                <StatCard
+                  icon={Award}
+                  value={stats.best_streak}
+                  label="Longest streak"
+                />
               </StaggerItem>
               <StaggerItem>
-                <StatCard icon={TrendingUp} value={`${stats.consistency_14d}%`} label="Consistency" />
+                <StatCard
+                  icon={TrendingUp}
+                  value={`${stats.consistency_14d}%`}
+                  label="Consistency"
+                />
               </StaggerItem>
             </StaggerContainer>
-          </motion.div>
+          </>
         ) : (
-          <Card className="p-8 text-center">
+          <Card className="mb-6 p-8 text-center">
             <div className="flex flex-col items-center gap-2">
               <Loader2 className="size-4 animate-spin text-faint" />
               <p className="text-sm text-muted">
@@ -426,70 +444,65 @@ export default function PublicProfilePage() {
 
         {/* ── Showcase ── */}
         {stats && (
-          <motion.div
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, delay: 0.15 }}
-          >
-            <Card className="p-5">
-              <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted">
-                Showcase
-              </h2>
-              <div className="flex flex-col gap-3">
-                <div className="flex items-center justify-between gap-3">
-                  <span className="text-xs text-muted">Favorite badge</span>
-                  {showcaseBadge ? (
-                    <BadgeChip def={showcaseBadge} />
-                  ) : (
-                    <span className="text-xs text-faint">
-                      {unlockedDefs.length > 0 ? "None selected" : "No badges yet"}
-                    </span>
-                  )}
-                </div>
-                <div className="flex items-center justify-between gap-3">
-                  <span className="text-xs text-muted">Best achievement</span>
-                  {bestAchievement ? (
-                    <BadgeChip def={bestAchievement} />
-                  ) : (
-                    <span className="text-xs text-faint">None yet</span>
-                  )}
-                </div>
-                <div className="flex items-center justify-between gap-3">
-                  <span className="text-xs text-muted">Current title</span>
-                  {titleInfo && rank ? (
-                    <span
-                      className="flex items-center gap-1.5 text-sm font-semibold"
-                      style={{ color: rank.accent }}
-                    >
-                      <span aria-hidden>{rank.icon}</span> {titleInfo.current.name}
-                    </span>
-                  ) : (
-                    <span className="text-xs text-faint">—</span>
-                  )}
-                </div>
-                <div className="flex items-center justify-between gap-3">
-                  <span className="text-xs text-muted">Longest streak</span>
-                  <span className="flex items-center gap-1.5 text-sm font-semibold">
-                    <Flame className="size-4 text-orange-500" /> {stats.best_streak} days
+          <Card className="mb-6 p-5">
+            <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted">
+              Showcase
+            </h2>
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-xs text-muted">Favorite badge</span>
+                {showcaseBadge ? (
+                  <BadgeChip def={showcaseBadge} />
+                ) : (
+                  <span className="text-xs text-faint">
+                    {unlockedDefs.length > 0
+                      ? "None selected"
+                      : "No badges yet"}
                   </span>
-                </div>
-                <div className="flex items-center justify-between gap-3">
-                  <span className="text-xs text-muted">Total completions</span>
-                  <span className="flex items-center gap-1.5 text-sm font-semibold">
-                    <Repeat className="size-4 text-accent" /> {stats.total_completions.toLocaleString()}
-                  </span>
-                </div>
+                )}
               </div>
-            </Card>
-          </motion.div>
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-xs text-muted">Best achievement</span>
+                {bestAchievement ? (
+                  <BadgeChip def={bestAchievement} />
+                ) : (
+                  <span className="text-xs text-faint">None yet</span>
+                )}
+              </div>
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-xs text-muted">Current title</span>
+                {titleInfo && rank ? (
+                  <span
+                    className="flex items-center gap-1.5 text-sm font-semibold"
+                    style={{ color: rank.accent }}
+                  >
+                    <span aria-hidden>{rank.icon}</span>{" "}
+                    {titleInfo.current.name}
+                  </span>
+                ) : (
+                  <span className="text-xs text-faint">—</span>
+                )}
+              </div>
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-xs text-muted">Longest streak</span>
+                <span className="flex items-center gap-1.5 text-sm font-semibold">
+                  <Flame className="size-4 text-orange-500" />{" "}
+                  {stats.best_streak} days
+                </span>
+              </div>
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-xs text-muted">Total completions</span>
+                <span className="flex items-center gap-1.5 text-sm font-semibold">
+                  <Repeat className="size-4 text-accent" />{" "}
+                  {stats.total_completions.toLocaleString()}
+                </span>
+              </div>
+            </div>
+          </Card>
         )}
 
         {/* ── Badge gallery ── */}
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: 0.2 }}
-        >
+        <section className="mb-6">
           <div className="mb-3 flex items-center justify-between">
             <h2 className="text-sm font-semibold uppercase tracking-wide text-muted">
               Badge collection
@@ -520,16 +533,11 @@ export default function PublicProfilePage() {
               </div>
             </Card>
           )}
-        </motion.div>
+        </section>
 
         {/* ── Stats panels ── */}
         {stats && (
-          <motion.div
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, delay: 0.25 }}
-            className="grid gap-4 sm:grid-cols-2"
-          >
+          <div className="mb-6 grid gap-4 sm:grid-cols-2">
             {/* Consistency overview */}
             <Card className="p-5">
               <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted">
@@ -539,24 +547,42 @@ export default function PublicProfilePage() {
                 <div>
                   <div className="mb-1.5 flex items-center justify-between text-xs">
                     <span className="text-muted">14-day consistency</span>
-                    <span className="font-mono font-bold">{stats.consistency_14d}%</span>
+                    <span className="font-mono font-bold">
+                      {stats.consistency_14d}%
+                    </span>
                   </div>
                   <ProgressBar value={stats.consistency_14d} />
                 </div>
                 <div>
                   <div className="mb-1.5 flex items-center justify-between text-xs">
                     <span className="text-muted">Current streak</span>
-                    <span className="font-mono font-bold">{stats.current_streak}d</span>
+                    <span className="font-mono font-bold">
+                      {stats.current_streak}d
+                    </span>
                   </div>
                   <ProgressBar
-                    value={stats.best_streak > 0 ? Math.min(100, Math.round((stats.current_streak / stats.best_streak) * 100)) : 0}
+                    value={
+                      stats.best_streak > 0
+                        ? Math.min(
+                            100,
+                            Math.round(
+                              (stats.current_streak / stats.best_streak) * 100,
+                            ),
+                          )
+                        : 0
+                    }
                     color="#f97316"
                   />
                 </div>
                 <div className="flex items-center gap-2 rounded-xl bg-surface2/50 p-3">
-                  <Gauge className="size-5 shrink-0" style={{ color: rank?.accent ?? "var(--c-accent)" }} />
+                  <Gauge
+                    className="size-5 shrink-0"
+                    style={{ color: rank?.accent ?? "var(--c-accent)" }}
+                  />
                   <div className="text-xs text-muted">
-                    <span className="font-semibold text-ink">{stats.title_name}</span>
+                    <span className="font-semibold text-ink">
+                      {stats.title_name}
+                    </span>
                     {" · "}Best streak: {stats.best_streak}d
                   </div>
                 </div>
@@ -569,44 +595,48 @@ export default function PublicProfilePage() {
                 Achievement Breakdown
               </h2>
               <div className="flex flex-col gap-3">
-                {(["common", "rare", "epic", "legendary"] as const).map((rarity) => {
-                  const style = RARITY_STYLE[rarity];
-                  const total = ACHIEVEMENTS.filter((a) => a.rarity === rarity).length;
-                  const unlocked = ACHIEVEMENTS.filter((a) => a.rarity === rarity && unlockedIds.has(a.id)).length;
-                  const pct = total > 0 ? Math.round((unlocked / total) * 100) : 0;
-                  return (
-                    <div key={rarity}>
-                      <div className="mb-1 flex items-center justify-between text-xs">
-                        <span className="flex items-center gap-1.5 font-medium">
-                          <span aria-hidden>{style.medal}</span>
-                          {RARITY_LABEL[rarity]}
-                        </span>
-                        <span className="font-mono text-muted">{unlocked}/{total}</span>
+                {(["common", "rare", "epic", "legendary"] as const).map(
+                  (rarity) => {
+                    const style = RARITY_STYLE[rarity];
+                    const total = ACHIEVEMENTS.filter(
+                      (a) => a.rarity === rarity,
+                    ).length;
+                    const unlocked = ACHIEVEMENTS.filter(
+                      (a) => a.rarity === rarity && unlockedIds.has(a.id),
+                    ).length;
+                    const pct =
+                      total > 0 ? Math.round((unlocked / total) * 100) : 0;
+                    return (
+                      <div key={rarity}>
+                        <div className="mb-1 flex items-center justify-between text-xs">
+                          <span className="flex items-center gap-1.5 font-medium">
+                            <span aria-hidden>{style.medal}</span>
+                            {RARITY_LABEL[rarity]}
+                          </span>
+                          <span className="font-mono text-muted">
+                            {unlocked}/{total}
+                          </span>
+                        </div>
+                        <ProgressBar value={pct} color={style.accent} />
                       </div>
-                      <ProgressBar value={pct} color={style.accent} />
-                    </div>
-                  );
-                })}
+                    );
+                  },
+                )}
               </div>
             </Card>
-          </motion.div>
+          </div>
         )}
 
         {/* Last active */}
         {stats && (
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.3 }}
-            className="text-center text-[10px] text-faint"
-          >
+          <p className="mt-2 text-center font-mono text-[10px] text-faint">
             <CalendarDays className="mr-1 inline size-3" />
             Stats updated{" "}
             {new Date(stats.updated_at).toLocaleDateString(undefined, {
               month: "short",
               day: "numeric",
             })}
-          </motion.p>
+          </p>
         )}
       </motion.div>
     </AppPageShell>
