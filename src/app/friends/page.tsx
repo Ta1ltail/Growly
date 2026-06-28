@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import {
   Search,
@@ -25,7 +25,6 @@ import { Card } from "@/components/ui/Card";
 import { Pagination } from "@/components/ui/Pagination";
 import { PageSkeleton } from "@/components/ui/PageSkeleton";
 import { AppPageShell } from "@/components/layout/AppPageShell";
-import { cn } from "@/lib/util";
 
 type FriendRow = {
   id: string;

@@ -8,8 +8,6 @@
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import {
-  Trophy,
-  Flame,
   Medal,
   Loader2,
   UserRound,
