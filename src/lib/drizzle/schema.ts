@@ -1,6 +1,22 @@
-// Drizzle ORM schema — mirrors the Supabase tables defined in migrations.
-// Import this file in server components and API routes for type-safe queries.
-// Run `npx drizzle-kit generate` to produce migration SQL from this schema.
+/**
+ * Drizzle ORM schema — mirrors the Supabase tables defined in migrations.
+ *
+ * This schema is the TypeScript-side definition of our database. Every table,
+ * index, and foreign key here corresponds 1:1 to a migration in
+ * `supabase/migrations/`.
+ *
+ * Usage:
+ *   - Import in server components and API routes for type-safe queries.
+ *   - Run `npx drizzle-kit generate` to produce migration SQL from changes.
+ *   - Run `npx drizzle-kit push` to apply schema changes to a local database.
+ *
+ * Key design decisions:
+ *   - All user-owned tables reference `auth.users` via the `authUsers` proxy
+ *     (defined first so every table can use it as a foreign key target).
+ *   - `onDelete: "cascade"` ensures cleanup when a user is deleted.
+ *   - Indexes are defined inline for query performance (user_id lookups,
+ *     unique constraints for upsert operations).
+ */
 
 import {
   pgTable,

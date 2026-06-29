@@ -105,7 +105,6 @@ export default function AchievementsPage() {
 
   return (
     <AppPageShell>
-    <div className="animate-fade-in">
       <PageHeader
         title="Achievements"
         subtitle={`${summary.unlockedCount} of ${summary.totalCount} unlocked`}
@@ -285,7 +284,6 @@ export default function AchievementsPage() {
           />
         </>
       )}
-    </div>
     </AppPageShell>
   );
 }

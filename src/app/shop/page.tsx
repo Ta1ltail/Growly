@@ -70,7 +70,6 @@ export default function ShopPage() {
 
   return (
     <AppPageShell>
-    <div className="animate-fade-in">
       <PageHeader
         title="Shop"
         subtitle="Spend coins earned from your habits"
@@ -115,7 +114,6 @@ export default function ShopPage() {
       })}
 
       <FreezeSection balance={balance} />
-    </div>
     </AppPageShell>
   );
 }

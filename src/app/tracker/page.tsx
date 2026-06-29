@@ -213,7 +213,6 @@ export default function TrackerPage() {
 
   return (
     <AppPageShell>
-      <div className="animate-fade-in">
         <PageHeader
           title="Tracker"
           subtitle="Tap a cell to mark · past days lock automatically"
@@ -401,7 +400,6 @@ export default function TrackerPage() {
             </div>
           </>
         )}
-      </div>
     </AppPageShell>
   );
 }

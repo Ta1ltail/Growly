@@ -294,7 +294,6 @@ export default function FriendsPage() {
 
   return (
     <AppPageShell>
-      <div className="animate-fade-in">
         <PageHeader title="Friends" subtitle="Connect with other habit-trackers" />
 
         {/* Search section */}
@@ -520,7 +519,6 @@ export default function FriendsPage() {
             </>
           )}
         </section>
-      </div>
     </AppPageShell>
   );
 }

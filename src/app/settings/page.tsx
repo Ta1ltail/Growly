@@ -120,7 +120,6 @@ export default function SettingsPage() {
 
   return (
     <AppPageShell>
-    <div className="animate-fade-in">
       <PageHeader
         title="Settings"
         subtitle="Appearance, tracking rules, and your data"
@@ -314,7 +313,6 @@ export default function SettingsPage() {
           cannot be undone.
         </p>
       </Modal>
-    </div>
     </AppPageShell>
   );
 }

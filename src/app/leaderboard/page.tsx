@@ -233,7 +233,6 @@ export default function LeaderboardPage() {
 
   return (
     <AppPageShell>
-      <div className="animate-fade-in">
         <div className="flex items-center gap-3">
           <PageHeader
             title="Leaderboard"
@@ -387,7 +386,6 @@ export default function LeaderboardPage() {
           Rankings update when you sync your habit data. Start tracking to appear
           on the board!
         </p>
-      </div>
     </AppPageShell>
   );
 }

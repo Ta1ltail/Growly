@@ -156,7 +156,7 @@ export default function TodayPage() {
 
   return (
     <AppPageShell>
-    <div className="animate-fade-in lg:flex lg:flex-col lg:h-[calc(100dvh-5rem)]">
+    <div className="lg:flex lg:flex-col lg:h-[calc(100dvh-5rem)]">
       <CheckInPopup />
 
       {/* ── Hero — compact, fixed at top ── */}

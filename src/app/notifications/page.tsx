@@ -38,7 +38,6 @@ export default function NotificationsPage() {
 
   return (
     <AppPageShell>
-      <div className="animate-fade-in">
         <div className="flex items-center justify-between">
           <PageHeader title="Notifications" subtitle="Stay in the loop" />
           {unreadCount > 0 && (
@@ -132,7 +131,6 @@ export default function NotificationsPage() {
             ))}
           </div>
         )}
-      </div>
     </AppPageShell>
   );
 }

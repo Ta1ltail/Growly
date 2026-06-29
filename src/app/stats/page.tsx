@@ -167,7 +167,6 @@ export default function StatsPage() {
 
   return (
     <AppPageShell>
-      <div className="animate-fade-in">
         <PageHeader
           title="Statistics"
           subtitle="Your progress over time"
@@ -438,7 +437,6 @@ export default function StatsPage() {
             </Card>
           </div>
         )}
-      </div>
     </AppPageShell>
   );
 }

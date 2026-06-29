@@ -117,7 +117,6 @@ export default function HabitsPage() {
 
   return (
     <AppPageShell>
-    <div className="animate-fade-in">
       <PageHeader
         title="Manage Habits"
         subtitle={`${data.habits.filter((h) => !h.archived).length} active`}
@@ -261,7 +260,6 @@ export default function HabitsPage() {
           undone.
         </p>
       </Modal>
-    </div>
     </AppPageShell>
   );
 }

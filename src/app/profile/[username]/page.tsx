@@ -262,7 +262,6 @@ export default function PublicProfilePage() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.3 }}
-        className="animate-fade-in"
       >
         {/* Back link */}
         <Link

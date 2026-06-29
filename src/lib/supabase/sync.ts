@@ -30,7 +30,7 @@ let _lastError: string | null = null;
 const _listeners = new Set<() => void>();
 
 function notify() {
-  for (const l of _listeners) _listeners.forEach((l) => l());
+  for (const l of _listeners) l();
 }
 
 export function getSyncStatus(): SyncStatus {

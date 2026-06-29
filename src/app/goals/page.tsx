@@ -55,7 +55,6 @@ export default function GoalsPage() {
 
   return (
     <AppPageShell>
-    <div className="animate-fade-in">
       <PageHeader
         title="Goals"
         subtitle="Bigger targets to work toward"
@@ -242,7 +241,6 @@ export default function GoalsPage() {
           removed. This cannot be undone.
         </p>
       </Modal>
-    </div>
     </AppPageShell>
   );
 }

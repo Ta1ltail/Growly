@@ -38,9 +38,8 @@ export function useAuth() {
   const signOut = useCallback(async () => {
     const supabase = createClient();
     await supabase.auth.signOut();
-    clearLocalAppData();
-    setUser(null);
-    // Force a hard navigation so the proxy runs and redirects to landing
+    // The onAuthStateChange listener handles clearLocalAppData + setUser(null).
+    // Hard navigation ensures the proxy runs and redirects to landing.
     window.location.href = "/";
   }, []);
 

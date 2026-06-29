@@ -215,7 +215,6 @@ export default function TemplatesPage() {
 
   return (
     <AppPageShell>
-    <div className="animate-fade-in">
       <PageHeader
         title="Templates"
         subtitle={`${data.habits.filter((h) => !h.archived).length} active habits`}
@@ -415,7 +414,6 @@ export default function TemplatesPage() {
           </div>
         )}
       </Modal>
-    </div>
     </AppPageShell>
   );
 }

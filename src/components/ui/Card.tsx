@@ -15,7 +15,6 @@ export function Card({
 }) {
   return (
     <motion.div
-      layout
       whileHover={
         interactive
           ? {

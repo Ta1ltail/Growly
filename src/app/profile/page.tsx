@@ -100,7 +100,6 @@ export default function ProfilePage() {
 
   return (
     <AppPageShell>
-    <div className="animate-fade-in">
       {/* ---- Hero / banner ---- */}
       <Card className="mb-6 overflow-hidden p-0">
         <div className="relative h-28 sm:h-36" style={{ background: banner }}>
@@ -348,7 +347,6 @@ export default function ProfilePage() {
         level={level.level}
         currentTitleName={title.current.name}
       />
-    </div>
     </AppPageShell>
   );
 }

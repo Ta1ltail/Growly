@@ -109,7 +109,6 @@ export default function SuggestionsPage() {
 
   return (
     <AppPageShell>
-      <div className="animate-fade-in">
         <PageHeader
           title="Suggestions"
           subtitle="Help us improve — share your ideas and feedback"
@@ -262,7 +261,6 @@ export default function SuggestionsPage() {
             </div>
           )}
         </section>
-      </div>
     </AppPageShell>
   );
 }

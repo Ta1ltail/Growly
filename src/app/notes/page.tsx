@@ -140,7 +140,6 @@ export default function NotesPage() {
 
   return (
     <AppPageShell>
-    <div className="animate-fade-in">
       <PageHeader
         title="Notes"
         subtitle={`${data.notes.length} note${data.notes.length === 1 ? "" : "s"}`}
@@ -245,7 +244,6 @@ export default function NotesPage() {
           }
         />
       </Modal>
-    </div>
     </AppPageShell>
   );
 }

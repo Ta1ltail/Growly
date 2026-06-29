@@ -310,7 +310,6 @@ export default function DashboardPage() {
 
   return (
     <AppPageShell>
-    <div className="animate-fade-in">
       <PageHeader
         title="Dashboard"
         subtitle="Your habits at a glance"
@@ -457,7 +456,6 @@ export default function DashboardPage() {
           </StaggerContainer>
         </div>
       )}
-    </div>
     </AppPageShell>
   );
 }
