@@ -19,6 +19,8 @@
 
 # production
 /build
+/docs
+
 
 # misc
 .DS_Store
@@ -39,3 +41,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+CLAUDE.md
+AGENTS.md

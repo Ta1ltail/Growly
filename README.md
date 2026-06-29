@@ -53,11 +53,3 @@ Run all four after any change:
 ```bash
 npx tsc --noEmit && npm run lint && npx vitest run && npm run build
 ```
-
-## Project docs
-
-- `docs/ARCHITECTURE.txt` — folder structure, gamification/economy/engagement model, data flow
-- `docs/FINAL_BUILD_PLAN.txt` — phases, tech stack, production checklist
-- `docs/TODO.txt` — progress checklist
-- `docs/PROGRESS.md` — detailed status + file inventory
-- `docs/script.txt` — the gamification/UI redesign spec (16 sections)
