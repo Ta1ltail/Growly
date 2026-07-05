@@ -38,18 +38,21 @@ export default function NotificationsPage() {
 
   return (
     <AppPageShell>
-        <div className="flex items-center justify-between">
-          <PageHeader title="Notifications" subtitle="Stay in the loop" />
-          {unreadCount > 0 && (
-            <button
-              onClick={markAllAsRead}
-              className="flex items-center gap-1.5 rounded-xl bg-surface2 px-3 py-2 text-xs font-semibold text-muted transition-all hover:bg-surface2/80 hover:text-ink active:scale-95"
-            >
-              <CheckCheck className="size-3.5" />
-              Mark all read
-            </button>
-          )}
-        </div>
+        <PageHeader
+          title="Notifications"
+          subtitle="Stay in the loop"
+          action={
+            unreadCount > 0 ? (
+              <button
+                onClick={markAllAsRead}
+                className="flex items-center gap-1.5 rounded-xl bg-surface2 px-3 py-2 text-xs font-semibold text-muted transition-all hover:bg-surface2/80 hover:text-ink active:scale-95"
+              >
+                <CheckCheck className="size-3.5" />
+                Mark all read
+              </button>
+            ) : undefined
+          }
+        />
 
         {loading ? (
           <Card className="flex items-center justify-center p-8">

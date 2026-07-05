@@ -160,7 +160,7 @@ export default function TodayPage() {
       <CheckInPopup />
 
       {/* ── Hero — compact, fixed at top ── */}
-      <Card className="mb-4 shrink-0 overflow-hidden">
+      <Card className="mb-6 shrink-0 overflow-hidden">
         <div className="relative p-4 sm:p-5">
           <div
             className="pointer-events-none absolute -right-12 -top-16 size-56 rounded-full opacity-15 blur-3xl"

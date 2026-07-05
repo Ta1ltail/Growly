@@ -233,12 +233,10 @@ export default function LeaderboardPage() {
 
   return (
     <AppPageShell>
-        <div className="flex items-center gap-3">
-          <PageHeader
-            title="Leaderboard"
-            subtitle="How you stack up against other habit-trackers"
-          />
-        </div>
+        <PageHeader
+          title="Leaderboard"
+          subtitle="How you stack up against other habit-trackers"
+        />
 
         {/* Scope tabs (Friends / World) */}
         <div className="mb-4">

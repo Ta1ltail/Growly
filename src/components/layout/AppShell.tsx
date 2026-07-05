@@ -31,7 +31,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <Sidebar />
       <BottomNav />
       <div className="md:pl-60">
-        <main className="mx-auto w-full max-w-5xl px-4 pb-20 pt-4 sm:px-6 md:pb-12 md:pt-8">
+        <main className="mx-auto w-full max-w-5xl px-4 pb-24 pt-4 sm:px-6 md:pb-12 md:pt-8">
           <div key={pathname} className="animate-fade-in">
             {children}
           </div>

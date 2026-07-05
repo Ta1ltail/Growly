@@ -191,7 +191,7 @@ export default function CalendarPage() {
 
   return (
     <AppPageShell>
-    <div className="flex flex-col min-h-0 h-[calc(100dvh-6rem)] md:h-[calc(100dvh-5rem)]">
+    <div className="flex flex-col min-h-0 h-[calc(100dvh-7rem)] md:h-[calc(100dvh-5rem)]">
       <PageHeader
         title="Calendar"
         action={
