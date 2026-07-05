@@ -14,9 +14,11 @@ export function useToday(): Date {
     const msToMidnight =
       new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1).getTime() -
       now.getTime();
+    // Guard against near-zero ms values — if midnight is < 1s away, add 1s
+    const safeMs = Math.max(msToMidnight, 1000);
     const timer = setTimeout(() => {
       setToday(new Date());
-    }, msToMidnight);
+    }, safeMs);
     return () => clearTimeout(timer);
   }, []);
 

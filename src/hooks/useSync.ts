@@ -4,7 +4,7 @@
 // Used by SyncProvider internally and can be consumed by pages/widgets
 // that want to show sync state or trigger manual sync.
 
-import { useSyncExternalStore, useCallback } from "react";
+import { useSyncExternalStore } from "react";
 import {
   getSyncStatus,
   getLastSyncError,

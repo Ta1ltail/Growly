@@ -180,27 +180,3 @@ export async function pushMutation(
   }
 }
 
-/* ────────────────────────────────────────────
-   Full push: send everything to Supabase
-   ────────────────────────────────────────────
-   Used on initial sync or manual "sync now". */
-
-async function pushAllUserData(
-  userId: string,
-  data: AppData,
-): Promise<void> {
-  setStatus("syncing");
-
-  try {
-    const supabase = createClient();
-    await saveAllUserData(supabase, userId, data);
-    // Refresh stats snapshot after full push
-    await refreshStatsSnapshot(userId);
-    setStatus("idle");
-  } catch (e) {
-    const msg = e instanceof Error ? e.message : "Sync failed";
-    const details = e instanceof Error ? e.stack ?? "" : "";
-    console.error("[sync] Full push failed:", msg, "\n", details);
-    setStatus("error", msg);
-  }
-}

@@ -3,7 +3,7 @@
 // Daily spin — a simple wheel-of-fortune that gives a random reward once per
 // day. The wheel spins with CSS animation and lands on a random segment.
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Sparkles, Coins, Snowflake, RotateCw, X } from "lucide-react";
 
 import { doDailySpin, useAppData } from "@/lib/store";
@@ -26,11 +26,24 @@ export function DailySpinModal({
   } | null>(null);
   const [rotation, setRotation] = useState(0);
   const wheelRef = useRef<HTMLDivElement>(null);
+  const spinTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const alreadySpunRef = useRef(data.economy.lastSpinDate === dateKey(new Date()));
 
-  const alreadySpun = data.economy.lastSpinDate === dateKey(new Date());
+  // Keep alreadySpunRef in sync with latest data
+  alreadySpunRef.current = data.economy.lastSpinDate === dateKey(new Date());
+
+  // Clean up spin timer on unmount
+  useEffect(() => {
+    return () => {
+      if (spinTimerRef.current) {
+        clearTimeout(spinTimerRef.current);
+        spinTimerRef.current = null;
+      }
+    };
+  }, []);
 
   function handleSpin() {
-    if (spinning || alreadySpun) return;
+    if (spinning || alreadySpunRef.current) return;
     setSpinning(true);
     setResult(null);
 
@@ -39,14 +52,14 @@ export function DailySpinModal({
     setRotation((prev) => prev + spinDeg);
 
     // Wait for spin animation to finish, then get result
-    const timer = setTimeout(() => {
+    spinTimerRef.current = setTimeout(() => {
       const reward = doDailySpin();
       if (reward) {
         setResult(reward);
       }
       setSpinning(false);
+      spinTimerRef.current = null;
     }, 2500);
-    return () => clearTimeout(timer);
   }
 
   if (!open) return null;
@@ -64,7 +77,7 @@ export function DailySpinModal({
 
         <h2 className="mb-1 text-center text-lg font-bold">Daily Spin</h2>
         <p className="mb-5 text-center text-sm text-muted">
-          {alreadySpun
+          {alreadySpunRef.current
             ? "You already spun today! Come back tomorrow."
             : "Spin the wheel for a chance to earn coins!"}
         </p>
@@ -115,7 +128,7 @@ export function DailySpinModal({
         </div>
 
         {/* Spin button */}
-        {!alreadySpun && !spinning && !result && (
+        {!alreadySpunRef.current && !spinning && !result && (
           <Button
             onClick={handleSpin}
             className="mx-auto block px-6 py-2.5 text-base"
@@ -149,7 +162,7 @@ export function DailySpinModal({
           </div>
         )}
 
-        {alreadySpun && !result && (
+        {alreadySpunRef.current && !result && (
           <Button onClick={onClose} variant="ghost" className="mx-auto block">
             Close
           </Button>

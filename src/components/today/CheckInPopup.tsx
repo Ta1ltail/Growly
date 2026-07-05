@@ -18,7 +18,12 @@ export function CheckInPopup() {
   useEffect(() => {
     const timer = setTimeout(() => {
       const { reward, streak } = claimDailyCheckIn();
-      setResult({ reward, streak });
+      // Don't show the popup if already claimed today (reward=0, streak=0)
+      if (reward > 0 || streak > 0) {
+        setResult({ reward, streak });
+      } else {
+        setDismissed(true);
+      }
     }, 600);
     return () => clearTimeout(timer);
   }, []);

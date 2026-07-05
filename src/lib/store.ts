@@ -82,11 +82,6 @@ export function setSyncCallback(
   if (userId !== undefined) _userId = userId;
 }
 
-/** @internal used by sync layer */
-function getSyncUserId(): string | null {
-  return _userId;
-}
-
 function getSnapshot(): AppData {
   if (cache === null) cache = loadData();
   return cache;

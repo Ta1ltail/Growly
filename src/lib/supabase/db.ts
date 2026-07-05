@@ -30,6 +30,7 @@ import {
 import { SCHEMA_VERSION, DEFAULT_GRACE_HOURS } from "../storage";
 import type { ThemeSettings } from "../theme";
 import { DEFAULT_THEME } from "../theme";
+import { uid } from "../util";
 
 /* ────────────────────────────────────────────
    Types matching the Supabase table shapes
@@ -202,7 +203,7 @@ function marksToRows(userId: string, marks: Marks): DbMark[] {
   for (const [dateKey, day] of Object.entries(marks)) {
     for (const [habitId, status] of Object.entries(day)) {
       rows.push({
-        id: crypto.randomUUID(),
+        id: uid(),
         user_id: userId,
         date_key: dateKey,
         habit_id: habitId,
@@ -325,7 +326,7 @@ function rowToUnlocks(rows: DbUnlock[]): Unlocks {
 
 function unlocksToRows(userId: string, unlocks: Unlocks): DbUnlock[] {
   return Object.entries(unlocks).map(([achievementId, rec]) => ({
-    id: crypto.randomUUID(),
+    id: uid(),
     user_id: userId,
     achievement_id: achievementId,
     at: rec.at,
