@@ -80,7 +80,7 @@ export default function GoalsPage() {
           }
         />
       ) : (
-        <StaggerContainer className="grid gap-3 sm:grid-cols-2 max-h-[calc(100dvh-18rem)] md:max-h-[calc(100dvh-15rem)] overflow-y-auto pr-1">
+        <StaggerContainer className="grid gap-3 sm:grid-cols-2 max-h-[calc(100dvh-16rem)] md:max-h-[calc(100dvh-13rem)] overflow-y-auto pr-1">
           {data.goals.map((goal) => {
             const pct = Math.round((goal.current / goal.target) * 100);
             const complete = goal.current >= goal.target;

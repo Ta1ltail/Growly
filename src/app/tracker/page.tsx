@@ -239,7 +239,7 @@ export default function TrackerPage() {
               against the same scrolling ancestor, and the horizontal scrollbar
               lives at the bottom of this box — always reachable, independent of
               vertical scroll position. */}
-            <div className="h-[calc(100dvh-18rem)] min-h-[300px] md:h-[calc(100dvh-15rem)]">
+            <div className="h-[calc(100dvh-16rem)] min-h-[300px] md:h-[calc(100dvh-13rem)]">
               <Card className="overflow-hidden h-full">
                 <div className="h-full w-full overflow-auto">
                   <table className="w-full border-collapse text-center font-mono text-xs">

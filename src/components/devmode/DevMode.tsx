@@ -47,7 +47,7 @@ export function DevMode() {
         onClick={() => setOpen((o) => !o)}
         aria-label="Open developer mode"
         title="Developer Mode (Ctrl/Cmd+Shift+D)"
-        className="fixed bottom-20 right-4 z-[65] grid size-12 place-items-center rounded-full bg-accent text-white shadow-lg ring-1 ring-white/20 transition-transform hover:scale-105 active:scale-95 md:bottom-6"
+        className="fixed bottom-24 right-4 z-[65] grid size-12 place-items-center rounded-full bg-accent text-white shadow-lg ring-1 ring-white/20 transition-transform hover:scale-105 active:scale-95 md:bottom-6"
       >
         <Bug className="size-5" />
       </button>
