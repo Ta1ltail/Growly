@@ -46,6 +46,21 @@ export default function AchievementsPage() {
 
   const summary = useMemo(() => summarizeProgress(data, today), [data, today]);
 
+  // An achievement counts as unlocked if the derived stats satisfy it OR it was
+  // force-recorded into the persisted unlock map (e.g. via Developer Tools).
+  // This keeps the grid, counts, and filters in sync with the unlock records.
+  const achievements = useMemo(
+    () =>
+      summary.achievements.map((a) =>
+        !a.unlocked && data.unlocks[a.def.id] ? { ...a, unlocked: true } : a,
+      ),
+    [summary.achievements, data.unlocks],
+  );
+  const unlockedCount = useMemo(
+    () => achievements.filter((a) => a.unlocked).length,
+    [achievements],
+  );
+
   const [category, setCategory] = useState<AchievementCategory | "all">("all");
   const [status, setStatus] = useState<"all" | "unlocked" | "locked">("all");
   const [query, setQuery] = useState("");
@@ -58,16 +73,16 @@ export default function AchievementsPage() {
       epic: { unlocked: 0, total: 0 },
       legendary: { unlocked: 0, total: 0 },
     };
-    for (const a of summary.achievements) {
+    for (const a of achievements) {
       counts[a.def.rarity].total += 1;
       if (a.unlocked) counts[a.def.rarity].unlocked += 1;
     }
     return counts;
-  }, [summary.achievements]);
+  }, [achievements]);
 
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return summary.achievements
+    return achievements
       .filter((a) => category === "all" || a.def.category === category)
       .filter(
         (a) =>
@@ -86,15 +101,15 @@ export default function AchievementsPage() {
         if (r !== 0) return r;
         return b.progressPct - a.progressPct;
       });
-  }, [summary.achievements, category, status, query]);
+  }, [achievements, category, status, query]);
 
   // Closest locked achievements — top 3 by progress percentage
   const nextAchievable = useMemo(() => {
-    return summary.achievements
+    return achievements
       .filter((a) => !a.unlocked && a.progressPct > 0)
       .sort((a, b) => b.progressPct - a.progressPct)
       .slice(0, 3);
-  }, [summary.achievements]);
+  }, [achievements]);
 
   // Pagination
   const pageCount = Math.max(1, Math.ceil(visible.length / PAGE_SIZE));
@@ -107,7 +122,7 @@ export default function AchievementsPage() {
     <AppPageShell>
       <PageHeader
         title="Achievements"
-        subtitle={`${summary.unlockedCount} of ${summary.totalCount} unlocked`}
+        subtitle={`${unlockedCount} of ${summary.totalCount} unlocked`}
       />
 
       {/* Next achievable — closest locked achievements */}

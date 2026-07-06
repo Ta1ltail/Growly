@@ -16,8 +16,15 @@ import {
   saveUserStatsSnapshot,
   type ChangedTables,
 } from "./db";
-import { DEFAULT_PROFILE, type AppData, type Profile } from "../types";
-import { loadData, saveData } from "../storage";
+import {
+  DEFAULT_PROFILE,
+  type AppData,
+  type Economy,
+  type Profile,
+  type ProgressSeen,
+} from "../types";
+import { DEFAULT_THEME } from "../theme";
+import { loadData, saveData, DEFAULT_GRACE_HOURS } from "../storage";
 import { summarizeProgress } from "../progress";
 import { titleForLevel } from "../titles";
 import { RANK_STYLE } from "../ranks";
@@ -272,6 +279,18 @@ export async function fullResync(
    ──────────────────────────────────────────── */
 
 function mergeAppData(local: AppData, remote: AppData): AppData {
+  // Fresh-login fast path: this branch only runs when REMOTE has real data.
+  // If LOCAL carries no habits and no marks, it's a just-cleared snapshot (the
+  // previous sign-out wiped localStorage) whose singleton state is nothing but
+  // hardcoded defaults — possibly already mutated by a mount-time celebration
+  // baseline. Adopt remote wholesale so we never clobber the user's real coins,
+  // cosmetics, settings, unlocks, or celebration markers with those defaults.
+  const localIsEmpty =
+    local.habits.length === 0 && Object.keys(local.marks).length === 0;
+  if (localIsEmpty) {
+    return { ...remote, auditLog: local.auditLog };
+  }
+
   // Merge habits by ID — union of both, local overwrites same IDs
   const mergedHabits = mergeById(
     remote.habits,
@@ -309,15 +328,66 @@ function mergeAppData(local: AppData, remote: AppData): AppData {
     marks: mergedMarks,
     notes: mergedNotes,
     goals: mergedGoals,
-    settings: local.settings ?? remote.settings,
+    // Singleton tables: local wins ONLY when it holds real data. On a fresh
+    // login (local was cleared on the previous sign-out) these locals are the
+    // hardcoded defaults — picking `local ?? remote` there silently wipes the
+    // user's coins, cosmetics, streaks, settings, and celebration markers and
+    // then pushes the defaults back to the server. Prefer remote unless local
+    // is genuinely customized/populated.
+    settings: isDefaultSettings(local.settings) ? remote.settings : local.settings,
     profile: mergeProfile(local.profile, remote.profile),
     unlocks:
       Object.keys(mergedUnlocks).length > 0
         ? mergedUnlocks
         : remote.unlocks,
-    economy: local.economy ?? remote.economy,
-    progressSeen: local.progressSeen ?? remote.progressSeen,
+    economy: isEmptyEconomy(local.economy) ? remote.economy : local.economy,
+    progressSeen: mergeProgressSeen(local.progressSeen, remote.progressSeen),
   };
+}
+
+/** True when the economy holds no real player state (fresh/default snapshot). */
+function isEmptyEconomy(e: Economy | undefined): boolean {
+  if (!e) return true;
+  return (
+    (e.owned?.length ?? 0) === 0 &&
+    (e.spent?.length ?? 0) === 0 &&
+    (e.freezes?.length ?? 0) === 0 &&
+    (e.bonusCoins ?? 0) === 0 &&
+    (e.checkInStreak ?? 0) === 0 &&
+    !e.lastCheckIn &&
+    !e.lastQuestDate &&
+    !e.currentQuest &&
+    !e.lastSpinDate &&
+    Object.keys(e.equipped ?? {}).length === 0
+  );
+}
+
+/** True when settings are the untouched defaults (no real user customization). */
+function isDefaultSettings(s: AppData["settings"] | undefined): boolean {
+  if (!s) return true;
+  return (
+    s.theme?.mode === DEFAULT_THEME.mode &&
+    s.theme?.accent === DEFAULT_THEME.accent &&
+    (s.graceHours ?? DEFAULT_GRACE_HOURS) === DEFAULT_GRACE_HOURS &&
+    (s.usedTemplateIds?.length ?? 0) === 0 &&
+    !s.widgetOrder &&
+    !s.onboardingComplete &&
+    (s.customCategories?.length ?? 0) === 0
+  );
+}
+
+/**
+ * Prefer whichever progressSeen has actually been baselined. A cleared local
+ * carries `seeded: false`; taking it over a `seeded: true` remote re-fires
+ * every past celebration (level-ups, achievements) on each login.
+ */
+function mergeProgressSeen(
+  local: ProgressSeen | undefined,
+  remote: ProgressSeen | undefined,
+): ProgressSeen {
+  if (local?.seeded) return local;
+  if (remote?.seeded) return remote;
+  return local ?? remote ?? { seeded: false, level: 1, title: "", shop: [], streaks: {}, tierUnlocks: [] };
 }
 
 /**

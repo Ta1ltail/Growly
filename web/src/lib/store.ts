@@ -535,6 +535,14 @@ export function replaceData(next: AppData): void {
   update(() => next);
 }
 
+// Functional counterpart to replaceData — applies `updater` against the LIVE
+// store state rather than a (possibly stale) React render snapshot. Dev tools
+// must use this for additive actions (add coins/XP, unlock-all) so repeated
+// clicks stack correctly and never clobber concurrent changes with stale data.
+export function mutateData(updater: (prev: AppData) => AppData): void {
+  update(updater);
+}
+
 // Re-read from localStorage into the cache and notify. Used after a raw write
 // so the validated/migrated result flows back through the normal load path.
 function reloadData(): void {

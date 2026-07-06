@@ -1,0 +1,971 @@
+ ▐▛███▜▌   Claude Code v2.1.201
+▝▜█████▛▘  Opus 4.8 · API Usage Billing
+  ▘▘ ▝▝    ~\dev\project_101
+
+
+ ⚠ Both apiKeyHelper and ANTHROPIC_API_KEY set · auth may not work as expected
+   · to use apiKeyHelper: Unset the ANTHROPIC_API_KEY environment variable, or claude /logout then say "No" to the API key approval before login.
+   · to use ANTHROPIC_API_KEY: Unset the apiKeyHelper setting.
+
+❯ hi                                                                            
+
+● OK
+
+✻ Baked for 9s
+
+❯ check CLAUDE.md and do it, fast, save token, and dont ask for permission      
+  ⎿  Interrupted · What should Claude do instead?
+
+❯ /effort                                                                       
+  ⎿  Set effort level to medium (saved as your default for new sessions):
+     Balanced approach with standard implementation and testing
+
+❯ check CLAUDE.md and do it, fast, save token, and dont ask for permission      
+
+  Listed 1 directory (ctrl+o to expand)
+
+● Bash(pwd && ls -la /Users/dev/workspace-bd6edc74)
+  ⎿  Error: Exit code 2
+     /c/Users/Justin/dev/project_101
+     ls: cannot access '/Users/dev/workspace-bd6edc74': No such file or 
+     directory
+
+● Bash(ls -la && echo "---GIT---" && git log --oneline -5 2>/dev/null)
+  ⎿  total 1268
+     drwxr-xr-x 1 Justin 197121      0 Jul  7 02:36 .
+     drwxr-xr-x 1 Justin 197121      0 Jun 15 21:21 ..
+     … +24 lines (ctrl+o to expand)
+
+  Listed 1 directory (ctrl+o to expand)
+
+● This is a substantial monorepo with 6 bug categories. Let me explore the
+  structure in depth before making changes.
+
+● Bash(cd web && find src -type f | head -100)
+  ⎿  src/app/achievements/page.tsx
+     src/app/calendar/page.tsx
+     src/app/dashboard/page.tsx
+     … +97 lines (ctrl+o to expand)
+
+● Bash(cd web && find src -type f | tail -80)
+  ⎿  Error: Exit code 1
+     /usr/bin/bash: line 1: cd: web: No such file or directory
+
+  Searched for 1 pattern (ctrl+o to expand)
+
+● This is a large codebase. Let me read the central state, sync, and the files
+  tied to each specific bug in parallel.
+
+  Read 1 file (ctrl+o to expand)
+
+● Now the sync layer, DB, celebrations, and dev tools.
+
+  Read 2 files (ctrl+o to expand)
+
+● Now the celebration manager, sync indicator, sync provider, today page, and
+  dev tools.
+
+  Read 2 files (ctrl+o to expand)
+
+● Bash(wc -l ../shared/src/lib/celebrations.ts && sed -n '1,120p'
+      ../shared/src/lib/celebrations.ts)
+  ⎿  331 ../shared/src/lib/celebrations.ts
+     // Unified celebration queue. Every progression event — achievement un
+     locked,
+     … +118 lines (ctrl+o to expand)
+
+● Bash(sed -n '120,331p' ../shared/src/lib/celebrations.ts)
+  ⎿    for (const [id, rec] of Object.entries(data.unlocks)) {
+         if (rec.seen) continue;
+         const def = BY_ID.get(id);
+     … +209 lines (ctrl+o to expand)
+  Searched for 1 pattern, read 2 files (ctrl+o to expand)
+
+● Now the Today page (scroll bug) and dev tools. Let me search broadly for the
+  "Sync Loading" text and read the today page + dev tool logic.
+
+  Searched for 1 pattern, read 2 files (ctrl+o to expand)
+
+● Let me find "Today's Tasks" specifically and check the dev tools + auth flow.
+
+  Searched for 3 patterns (ctrl+o to expand)
+
+● "Today's Tasks" = the Today page habits. MarkButton is a <button> with no type
+  (defaults to submit). Let me check the dev tools now — the biggest item.
+
+  Read 4 files (ctrl+o to expand)
+
+● Let me read the remaining core files: progress/reconcile, storage, and the
+  achievements + auth flow.
+
+  Read 1 file (ctrl+o to expand)
+
+● Let me read the reconcile/progress logic, achievements evaluation, and auth
+  flow — these are central to bugs 2, 4, 5.
+
+  Searched for 1 pattern, read 1 file (ctrl+o to expand)
+
+● Bash(sed -n '107,190p' ../shared/src/lib/progress.ts)
+  ⎿  export function reconcileUnlocks(
+       data: AppData,
+       today: Date,
+     … +21 lines (ctrl+o to expand)
+
+  Searched for 1 pattern (ctrl+o to expand)
+
+● Let me check the burst animation, any form ancestors, and the auth hook.
+
+● Bash(sed -n '176,200p' src/app/globals.css; echo "=== forms anywhere in
+      layout/shell ==="; grep -rn "<form\|onSubmit" src/components/layout/
+      src/app/layout.tsx; echo…)
+  ⎿  /* One-shot celebratory burst on habit completion. */
+     @keyframes burst {
+       0% {
+     … +70 lines (ctrl+o to expand)
+
+● Now the critical files for bugs 4 & 5: achievements page/logic, economy, and
+  the auth/register flow.
+
+● Bash(echo "=== achievements page ==="; sed -n '1,80p'
+      src/app/achievements/page.tsx; echo "=== evaluateAchievements + unlocks
+      usage in shared ==="; grep -rn "unlocks…)
+  ⎿  === achievements page ===
+     "use client";
+     … +84 lines (ctrl+o to expand)
+
+● Bash(sed -n '54,107p' ../shared/src/lib/progress.ts)
+  ⎿  export function summarizeProgress(data: AppData, today: Date): Progres
+     sSummary {
+       const frozen = frozenSet(data.economy);
+     … +51 lines (ctrl+o to expand)
+
+● I now have the full picture. Key root cause found: mergeAppData clobbers
+  remote economy/settings/progressSeen with default local values on login. Let
+  me verify the economy balance path, then implement all fixes.
+
+  Searched for 1 pattern (ctrl+o to expand)
+
+● Bash(sed -n '222,285p' ../shared/src/lib/types.ts)
+  ⎿  export const DEFAULT_ECONOMY: Economy = {
+       spent: [],
+       owned: [],
+     … +61 lines (ctrl+o to expand)
+● Everything's clear now. The critical root cause: mergeAppData picks default
+  local economy/settings/progressSeen over real remote data on login (local.X ??
+  remote.X where defaults are truthy), wiping player data every login and
+  pushing defaults back. Let me read the rest of the achievements page, then
+  implement all fixes.
+
+  Read 1 file (ctrl+o to expand)
+
+● Now implementing all fixes. Let me start with the store (add functional
+  mutator), the merge fix (core), and sync indicator removal.
+
+● Update(web\src\lib\store.ts)
+  ⎿  Added 8 lines
+      535    update(() => next);
+      536  }
+      537  
+      538 +// Functional counterpart to replaceData — applies `updater` a
+          +gainst the LIVE                                               
+      539 +// store state rather than a (possibly stale) React render sna
+          +pshot. Dev tools                                              
+      540 +// must use this for additive actions (add coins/XP, unlock-al
+          +l) so repeated                                                
+      541 +// clicks stack correctly and never clobber concurrent changes
+          + with stale data.                                             
+      542 +export function mutateData(updater: (prev: AppData) => AppData
+          +): void {                                                     
+      543 +  update(updater);                                            
+      544 +}                                                             
+      545 +                                                              
+      546  // Re-read from localStorage into the cache and notify. Used a
+           fter a raw write
+      547  // so the validated/migrated result flows back through the nor
+           mal load path.
+      548  function reloadData(): void {
+
+● Now the core merge fix in sync.ts:
+
+● Update(web\src\lib\supabase\sync.ts)
+  ⎿  Added 9 lines, removed 2 lines
+      16    saveUserStatsSnapshot,
+      17    type ChangedTables,
+      18  } from "./db";
+      19 -import { DEFAULT_PROFILE, type AppData, type Profile } from "..
+         -/types";                                                       
+      20 -import { loadData, saveData } from "../storage";               
+      19 +import {                                                       
+      20 +  DEFAULT_PROFILE,                                             
+      21 +  type AppData,                                                
+      22 +  type Economy,                                                
+      23 +  type Profile,                                                
+      24 +  type ProgressSeen,                                           
+      25 +} from "../types";                                             
+      26 +import { DEFAULT_THEME } from "../theme";                      
+      27 +import { loadData, saveData, DEFAULT_GRACE_HOURS } from "../sto
+         +rage";                                                         
+      28  import { summarizeProgress } from "../progress";
+      29  import { titleForLevel } from "../titles";
+      30  import { RANK_STYLE } from "../ranks";
+
+● Update(web\src\lib\supabase\sync.ts)
+  ⎿  Added 54 lines, removed 3 lines
+      316      marks: mergedMarks,
+      317      notes: mergedNotes,
+      318      goals: mergedGoals,
+      319 -    settings: local.settings ?? remote.settings,              
+      319 +    // Singleton tables: local wins ONLY when it holds real da
+          +ta. On a fresh                                                
+      320 +    // login (local was cleared on the previous sign-out) thes
+          +e locals are the                                              
+      321 +    // hardcoded defaults — picking `local ?? remote` there si
+          +lently wipes the                                              
+      322 +    // user's coins, cosmetics, streaks, settings, and celebra
+          +tion markers and                                              
+      323 +    // then pushes the defaults back to the server. Prefer rem
+          +ote unless local                                              
+      324 +    // is genuinely customized/populated.                     
+      325 +    settings: isDefaultSettings(local.settings) ? remote.setti
+          +ngs : local.settings,                                         
+      326      profile: mergeProfile(local.profile, remote.profile),
+      327      unlocks:
+      328        Object.keys(mergedUnlocks).length > 0
+      329          ? mergedUnlocks
+      330          : remote.unlocks,
+      325 -    economy: local.economy ?? remote.economy,                 
+      326 -    progressSeen: local.progressSeen ?? remote.progressSeen,  
+      331 +    economy: isEmptyEconomy(local.economy) ? remote.economy : 
+          +local.economy,                                                
+      332 +    progressSeen: mergeProgressSeen(local.progressSeen, remote
+          +.progressSeen),                                               
+      333    };
+      334  }
+      335  
+      336 +/** True when the economy holds no real player state (fresh/de
+          +fault snapshot). */                                           
+      337 +function isEmptyEconomy(e: Economy | undefined): boolean {    
+      338 +  if (!e) return true;                                        
+      339 +  return (                                                    
+      340 +    (e.owned?.length ?? 0) === 0 &&                           
+      341 +    (e.spent?.length ?? 0) === 0 &&                           
+      342 +    (e.freezes?.length ?? 0) === 0 &&                         
+      343 +    (e.bonusCoins ?? 0) === 0 &&                              
+      344 +    (e.checkInStreak ?? 0) === 0 &&                           
+      345 +    !e.lastCheckIn &&                                         
+      346 +    !e.lastQuestDate &&                                       
+      347 +    !e.currentQuest &&                                        
+      348 +    !e.lastSpinDate &&                                        
+      349 +    Object.keys(e.equipped ?? {}).length === 0                
+      350 +  );                                                          
+      351 +}                                                             
+      352 +                                                              
+      353 +/** True when settings are the untouched defaults (no real use
+          +r customization). */                                          
+      354 +function isDefaultSettings(s: AppData["settings"] | undefined)
+          +: boolean {                                                   
+      355 +  if (!s) return true;                                        
+      356 +  return (                                                    
+      357 +    s.theme?.mode === DEFAULT_THEME.mode &&                   
+      358 +    s.theme?.accent === DEFAULT_THEME.accent &&               
+      359 +    (s.graceHours ?? DEFAULT_GRACE_HOURS) === DEFAULT_GRACE_HO
+          +URS &&                                                        
+      360 +    (s.usedTemplateIds?.length ?? 0) === 0 &&                 
+      361 +    !s.widgetOrder &&                                         
+      362 +    !s.onboardingComplete &&                                  
+      363 +    (s.customCategories?.length ?? 0) === 0                   
+      364 +  );                                                          
+      365 +}                                                             
+      366 +                                                              
+      367  /**
+      368 + * Prefer whichever progressSeen has actually been baselined. 
+          +A cleared local                                               
+      369 + * carries `seeded: false`; taking it over a `seeded: true` re
+          +mote re-fires                                                 
+      370 + * every past celebration (level-ups, achievements) on each lo
+          +gin.                                                          
+      371 + */                                                           
+      372 +function mergeProgressSeen(                                   
+      373 +  local: ProgressSeen | undefined,                            
+      374 +  remote: ProgressSeen | undefined,                           
+      375 +): ProgressSeen {                                             
+      376 +  if (local?.seeded) return local;                            
+      377 +  if (remote?.seeded) return remote;                          
+      378 +  return local ?? remote ?? { seeded: false, level: 1, title: 
+          +"", shop: [], streaks: {}, tierUnlocks: [] };                 
+      379 +}                                                             
+      380 +                                                              
+      381 +/**                                                           
+      382   * Merge profile — prefer remote values when local has placeho
+           lder defaults.
+      383   * The local profile may be DEFAULT_PROFILE (from clearLocalAp
+           pData) while the
+      384   * remote profile was seeded by the SQL trigger with the user'
+           s registration
+
+● Now remove the Sync indicator (bug 3):
+
+● Update(web\src\components\sync\SyncProvider.tsx)
+  ⎿  Removed 1 line
+      19  import type { ChangedTables } from "@/lib/supabase/db";
+      20  import type { AppData } from "@/lib/types";
+      21  import { loadData } from "@/lib/storage";
+      22 -import { SyncIndicator } from "./SyncIndicator";               
+      22  
+      23  // Interval for periodic polling fallback (ms)
+      24  const POLL_INTERVAL_MS = 30_000;
+
+● Update(web\src\components\sync\SyncProvider.tsx)
+  ⎿  Added 3 lines, removed 6 lines
+      140      };
+      141    }, [user, loading]);
+      142  
+      143 -  return (                                                    
+      144 -    <>                                                        
+      145 -      {children}                                              
+      146 -      <SyncIndicator />                                       
+      147 -    </>                                                       
+      148 -  );                                                          
+      143 +  // The sync status pill is intentionally not rendered — sync
+          + runs silently in                                             
+      144 +  // the background and surfaces no persistent on-screen indic
+          +ator.                                                         
+      145 +  return <>{children}</>;                                     
+      146  }
+
+● Now bug 1 — MarkButton scroll (add type="button", and prevent mouse-click
+  focus scroll):
+
+● Update(web\src\components\habits\MarkButton.tsx)
+  ⎿  Added 6 lines
+      41  
+      42    return (
+      43      <button
+      44 +      type="button"                                            
+      45        onClick={onClick}
+      46 +      // Prevent the browser from scroll-jumping the page when 
+         +the button takes                                               
+      47 +      // focus on click (it lives inside independently-scrollin
+         +g panels). Focus                                               
+      48 +      // still works for keyboard users, who reach it via Tab r
+         +ather than                                                     
+      49 +      // pointerdown, so accessibility is unaffected.          
+      50 +      onMouseDown={(e) => e.preventDefault()}                  
+      51        disabled={locked && !status}
+      52        aria-label={`${locked ? `Locked${status ? `, marked ${sta
+          tus}` : ""}` : status ? `Marked ${status}` : "Not marked"}${fro
+          zen ? ", protected by a streak freeze" : ""}`}
+      53        style={{ width: size, height: size }}
+
+● Now the dev tools. Refactor DatabaseToolsSection to use functional updates
+  (fixes stacking + persistence):
+
+● Update(web\src\components\devmode\sections\DatabaseToolsSection.tsx)
+  ⎿  Added 1 line
+      16  import {
+      17    useAppData,
+      18    replaceData,
+      19 +  mutateData,                                                  
+      20    importRawData as storeImportRawData,
+      21    reloadCache,
+      22  } from "@/lib/store";
+
+● Update(web\src\components\devmode\sections\DatabaseToolsSection.tsx)
+  ⎿  Added 101 lines, removed 82 lines
+      103        )
+      104      )
+      105        return;
+      106 -    replaceData({ ...data, ...patch });                       
+      106 +    mutateData((prev) => ({ ...prev, ...patch }));            
+      107    }
+      108  
+      109 -  // Seeder: Add Gold                                         
+      109 +  // Seeder: Add Gold — additive, reads the LIVE balance so re
+          +peated clicks stack.                                          
+      110    function addGold() {
+      111 -    replaceData({                                             
+      112 -      ...data,                                                
+      111 +    mutateData((prev) => ({                                   
+      112 +      ...prev,                                                
+      113        economy: {
+      114 -        ...data.economy,                                      
+      115 -        bonusCoins: (data.economy.bonusCoins ?? 0) + 500,     
+      114 +        ...prev.economy,                                      
+      115 +        bonusCoins: (prev.economy.bonusCoins ?? 0) + 500,     
+      116        },
+      117 -    });                                                       
+      117 +    }));                                                      
+      118    }
+      119  
+      120    // Seeder: Remove Gold
+      121    function removeGold() {
+      122 -    const currentBonus = data.economy.bonusCoins ?? 0;        
+      123 -    if (currentBonus <= 0) {                                  
+      124 -      wipe("economy bonus coins", {                           
+      125 -        economy: { ...data.economy, bonusCoins: 0 },          
+      126 -      });                                                     
+      127 -      return;                                                 
+      128 -    }                                                         
+      129 -    replaceData({                                             
+      130 -      ...data,                                                
+      122 +    mutateData((prev) => ({                                   
+      123 +      ...prev,                                                
+      124        economy: {
+      132 -        ...data.economy,                                      
+      133 -        bonusCoins: Math.max(0, currentBonus - 500),          
+      125 +        ...prev.economy,                                      
+      126 +        bonusCoins: Math.max(0, (prev.economy.bonusCoins ?? 0)
+          + - 500),                                                      
+      127        },
+      135 -    });                                                       
+      128 +    }));                                                      
+      129    }
+      130  
+      131    // Seeder: Reset Progress (marks only)
+     ...
+      136        )
+      137      )
+      138        return;
+      146 -    replaceData({ ...data, marks: {}, unlocks: {}, economy: DE
+          -FAULT_ECONOMY });                                             
+      139 +    mutateData((prev) => ({                                   
+      140 +      ...prev,                                                
+      141 +      marks: {},                                              
+      142 +      unlocks: {},                                            
+      143 +      economy: DEFAULT_ECONOMY,                               
+      144 +    }));                                                      
+      145    }
+      146  
+      147    // Seeder: Reset Habits
+     ...
+      152        )
+      153      )
+      154        return;
+      157 -    replaceData({ ...data, habits: [], marks: {} });          
+      155 +    mutateData((prev) => ({ ...prev, habits: [], marks: {} }))
+          +;                                                             
+      156    }
+      157  
+      160 -  // Seeder: Unlock All Achievements                          
+      158 +  // Seeder: Unlock All Achievements — force every achievement
+          + into the unlock                                              
+      159 +  // map (seen:true so it doesn't flood the celebration queue 
+          +on next login).                                               
+      160    function unlockAllAchievements() {
+      161      const now = new Date().toISOString();
+      163 -    const unlocks: Record<string, { at: string; seen: boolean 
+          -}> = {                                                        
+      164 -      ...data.unlocks,                                        
+      165 -    };                                                        
+      166 -    for (const a of ACHIEVEMENTS) {                           
+      167 -      if (!unlocks[a.id]) {                                   
+      168 -        unlocks[a.id] = { at: now, seen: false };             
+      162 +    mutateData((prev) => {                                    
+      163 +      const unlocks = { ...prev.unlocks };                    
+      164 +      for (const a of ACHIEVEMENTS) {                         
+      165 +        unlocks[a.id] = { at: unlocks[a.id]?.at ?? now, seen: 
+          +true };                                                       
+      166        }
+      170 -    }                                                         
+      171 -    replaceData({ ...data, unlocks });                        
+      167 +      return { ...prev, unlocks };                            
+      168 +    });                                                       
+      169    }
+      170  
+      171    // Seeder: Lock All Achievements
+     ...
+      176        )
+      177      )
+      178        return;
+      182 -    replaceData({ ...data, unlocks: {} });                    
+      179 +    mutateData((prev) => ({ ...prev, unlocks: {} }));         
+      180    }
+      181  
+      182    // Seeder: Complete All Habits (today)
+      183    function completeAllHabits() {
+      184      const todayKey = dateKey(today);
+      188 -    const day = { ...(data.marks[todayKey] ?? {}) };          
+      189 -    for (const h of data.habits) {                            
+      190 -      if (!h.archived) day[h.id] = "done" as MarkStatus;      
+      191 -    }                                                         
+      192 -    replaceData({ ...data, marks: { ...data.marks, [todayKey]:
+          - day } });                                                    
+      185 +    mutateData((prev) => {                                    
+      186 +      const day = { ...(prev.marks[todayKey] ?? {}) };        
+      187 +      for (const h of prev.habits) {                          
+      188 +        if (!h.archived) day[h.id] = "done" as MarkStatus;    
+      189 +      }                                                       
+      190 +      return { ...prev, marks: { ...prev.marks, [todayKey]: da
+          +y } };                                                        
+      191 +    });                                                       
+      192    }
+      193  
+      195 -  // Seeder: Add XP                                           
+      194 +  // Seeder: Add XP — XP is derived from completion history, s
+          +o we grant it by                                              
+      195 +  // completing habits. Each press fills the next 10 not-yet-c
+          +omplete past days                                             
+      196 +  // (reading live state), so repeated presses genuinely stack
+          + more XP.                                                     
+      197    function addXp() {
+      197 -    // XP is derived from doneCount and other stats in history
+          -.                                                             
+      198 -    // Since XP is derived, we simulate completions by adding 
+          -done marks for 10 days                                        
+      199 -    const newMarks = { ...data.marks };                       
+      200 -    for (let i = 0; i < 10; i++) {                            
+      201 -      const d = addDays(today, -(i + 1));                     
+      202 -      const key = dateKey(d);                                 
+      203 -      const day = { ...(newMarks[key] ?? {}) };               
+      204 -      for (const h of data.habits) {                          
+      205 -        if (!h.archived && !day[h.id]) {                      
+      206 -          day[h.id] = "done" as MarkStatus;                   
+      198 +    mutateData((prev) => {                                    
+      199 +      const active = prev.habits.filter((h) => !h.archived);  
+      200 +      if (active.length === 0) return prev;                   
+      201 +      const newMarks = { ...prev.marks };                     
+      202 +      let filled = 0;                                         
+      203 +      let offset = 1;                                         
+      204 +      while (filled < 10 && offset < 400) {                   
+      205 +        const key = dateKey(addDays(today, -offset));         
+      206 +        const day = { ...(newMarks[key] ?? {}) };             
+      207 +        let changedDay = false;                               
+      208 +        for (const h of active) {                             
+      209 +          if (day[h.id] !== "done") {                         
+      210 +            day[h.id] = "done" as MarkStatus;                 
+      211 +            changedDay = true;                                
+      212 +          }                                                   
+      213          }
+      214 +        if (changedDay) {                                     
+      215 +          newMarks[key] = day;                                
+      216 +          filled++;                                           
+      217 +        }                                                     
+      218 +        offset++;                                             
+      219        }
+      209 -      newMarks[key] = day;                                    
+      210 -    }                                                         
+      211 -    replaceData({ ...data, marks: newMarks });                
+      220 +      return { ...prev, marks: newMarks };                    
+      221 +    });                                                       
+      222    }
+      223  
+      224    // Seeder: Remove XP
+      225    function removeXp() {
+      226      if (!window.confirm("Clear the last 10 days of marks? This
+            reduces XP."))
+      227        return;
+      218 -    const newMarks = { ...data.marks };                       
+      219 -    for (let i = 0; i < 10; i++) {                            
+      220 -      const d = addDays(today, -(i + 1));                     
+      221 -      const key = dateKey(d);                                 
+      222 -      delete newMarks[key];                                   
+      223 -    }                                                         
+      224 -    replaceData({ ...data, marks: newMarks });                
+      228 +    mutateData((prev) => {                                    
+      229 +      const newMarks = { ...prev.marks };                     
+      230 +      for (let i = 0; i < 10; i++) {                          
+      231 +        delete newMarks[dateKey(addDays(today, -(i + 1)))];   
+      232 +      }                                                       
+      233 +      return { ...prev, marks: newMarks };                    
+      234 +    });                                                       
+      235    }
+      236  
+      237    // Seeder: Set Streak
+      238    function setStreak() {
+      229 -    // Create a streak by marking the last N days as done for 
+          -the first habit                                               
+      239      const targetStreak = 7;
+      231 -    const firstHabit = data.habits.find((h) => !h.archived);  
+      232 -    if (!firstHabit) {                                        
+      233 -      alert("Create at least one habit first.");              
+      234 -      return;                                                 
+      235 -    }                                                         
+      236 -    const newMarks = { ...data.marks };                       
+      237 -    for (let i = 0; i < targetStreak; i++) {                  
+      238 -      const d = addDays(today, -(targetStreak - 1 - i));      
+      239 -      const key = dateKey(d);                                 
+      240 -      const day = { ...(newMarks[key] ?? {}) };               
+      241 -      day[firstHabit.id] = "done" as MarkStatus;              
+      242 -      newMarks[key] = day;                                    
+      243 -    }                                                         
+      244 -    replaceData({ ...data, marks: newMarks });                
+      240 +    mutateData((prev) => {                                    
+      241 +      const firstHabit = prev.habits.find((h) => !h.archived);
+      242 +      if (!firstHabit) {                                      
+      243 +        alert("Create at least one habit first.");            
+      244 +        return prev;                                          
+      245 +      }                                                       
+      246 +      const newMarks = { ...prev.marks };                     
+      247 +      for (let i = 0; i < targetStreak; i++) {                
+      248 +        const key = dateKey(addDays(today, -(targetStreak - 1 
+          +- i)));                                                       
+      249 +        newMarks[key] = {                                     
+      250 +          ...(newMarks[key] ?? {}),                           
+      251 +          [firstHabit.id]: "done" as MarkStatus,              
+      252 +        };                                                    
+      253 +      }                                                       
+      254 +      return { ...prev, marks: newMarks };                    
+      255 +    });                                                       
+      256    }
+      257  
+      258    // Seeder: Reset Streak
+      259    function resetStreak() {
+      249 -    // Mark yesterday as missed for the first habit to break s
+          -treaks                                                        
+      250 -    const firstHabit = data.habits.find((h) => !h.archived);  
+      251 -    if (!firstHabit) {                                        
+      252 -      alert("Create at least one habit first.");              
+      253 -      return;                                                 
+      254 -    }                                                         
+      255 -    const yesterday = dateKey(addDays(today, -1));            
+      256 -    const day = { ...(data.marks[yesterday] ?? {}) };         
+      257 -    day[firstHabit.id] = "missed" as MarkStatus;              
+      258 -    replaceData({ ...data, marks: { ...data.marks, [yesterday]
+          -: day } });                                                   
+      260 +    mutateData((prev) => {                                    
+      261 +      const firstHabit = prev.habits.find((h) => !h.archived);
+      262 +      if (!firstHabit) {                                      
+      263 +        alert("Create at least one habit first.");            
+      264 +        return prev;                                          
+      265 +      }                                                       
+      266 +      const yesterday = dateKey(addDays(today, -1));          
+      267 +      return {                                                
+      268 +        ...prev,                                              
+      269 +        marks: {                                              
+      270 +          ...prev.marks,                                      
+      271 +          [yesterday]: {                                      
+      272 +            ...(prev.marks[yesterday] ?? {}),                 
+      273 +            [firstHabit.id]: "missed" as MarkStatus,          
+      274 +          },                                                  
+      275 +        },                                                    
+      276 +      };                                                      
+      277 +    });                                                       
+      278    }
+      279  
+      280    // Seeder: Simulate Daily Progress
+
+● Now UserControlsSection (functional updates):
+
+● Update(web\src\components\devmode\sections\UserControlsSection.tsx)
+  ⎿  Added 1 line, removed 1 line
+       4    useAppData,
+       5    updateProfile,
+       6    setGraceHours,
+       7 -  replaceData,                                                 
+       7 +  mutateData,                                                  
+       8    markAchievementsSeen,
+       9  } from "@/lib/store";
+      10  import { ACHIEVEMENTS } from "@/lib/achievements";
+
+● Update(web\src\components\devmode\sections\UserControlsSection.tsx)
+  ⎿  Added 16 lines, removed 7 lines
+      24  
+      25    function unlockAll() {
+      26      const now = new Date().toISOString();
+      27 -    const unlocks: Unlocks = {};                               
+      28 -    for (const a of ACHIEVEMENTS) unlocks[a.id] = { at: now, se
+         -en: true };                                                    
+      29 -    replaceData({ ...data, unlocks });                         
+      27 +    mutateData((prev) => {                                     
+      28 +      const unlocks: Unlocks = { ...prev.unlocks };            
+      29 +      for (const a of ACHIEVEMENTS)                            
+      30 +        unlocks[a.id] = { at: unlocks[a.id]?.at ?? now, seen: t
+         +rue };                                                         
+      31 +      return { ...prev, unlocks };                             
+      32 +    });                                                        
+      33    }
+      34  
+      35    function setAllSeen(seen: boolean) {
+      33 -    const unlocks: Unlocks = {};                               
+      34 -    for (const [id, rec] of Object.entries(data.unlocks))      
+      35 -      unlocks[id] = { ...rec, seen };                          
+      36 -    replaceData({ ...data, unlocks });                         
+      36 +    mutateData((prev) => {                                     
+      37 +      const unlocks: Unlocks = {};                             
+      38 +      for (const [id, rec] of Object.entries(prev.unlocks))    
+      39 +        unlocks[id] = { ...rec, seen };                        
+      40 +      return { ...prev, unlocks };                             
+      41 +    });                                                        
+      42    }
+      43  
+      44 +  function relockAll() {                                       
+      45 +    mutateData((prev) => ({ ...prev, unlocks: {} }));          
+      46 +  }                                                            
+      47 +                                                               
+      48    return (
+      49      <>
+      50        <DevGroup title="Profile">
+
+● Update(web\src\components\devmode\sections\UserControlsSection.tsx)
+  ⎿  Added 1 line, removed 4 lines
+      118            query={query}
+      119            terms="reset relock"
+      120          >
+      121 -          <DevButton                                          
+      122 -            tone="danger"                                     
+      123 -            onClick={() => replaceData({ ...data, unlocks: {} 
+          -})}                                                           
+      124 -          >                                                   
+      121 +          <DevButton tone="danger" onClick={relockAll}>       
+      122              Re-lock
+      123            </DevButton>
+      124          </DevRow>
+
+● Now make the achievements page honor the unlocks map so "Unlock All" actually
+  reflects on the grid:
+
+● Update(web\src\app\achievements\page.tsx)
+  ⎿  Added 15 lines
+      46  
+      47    const summary = useMemo(() => summarizeProgress(data, today),
+           [data, today]);
+      48  
+      49 +  // An achievement counts as unlocked if the derived stats sat
+         +isfy it OR it was                                              
+      50 +  // force-recorded into the persisted unlock map (e.g. via Dev
+         +eloper Tools).                                                 
+      51 +  // This keeps the grid, counts, and filters in sync with the 
+         +unlock records.                                                
+      52 +  const achievements = useMemo(                                
+      53 +    () =>                                                      
+      54 +      summary.achievements.map((a) =>                          
+      55 +        !a.unlocked && data.unlocks[a.def.id] ? { ...a, unlocke
+         +d: true } : a,                                                 
+      56 +      ),                                                       
+      57 +    [summary.achievements, data.unlocks],                      
+      58 +  );                                                           
+      59 +  const unlockedCount = useMemo(                               
+      60 +    () => achievements.filter((a) => a.unlocked).length,       
+      61 +    [achievements],                                            
+      62 +  );                                                           
+      63 +                                                               
+      64    const [category, setCategory] = useState<AchievementCategory 
+          | "all">("all");
+      65    const [status, setStatus] = useState<"all" | "unlocked" | "lo
+          cked">("all");
+      66    const [query, setQuery] = useState("");
+
+● Now update the references to use the override (rarityCounts, visible,
+  nextAchievable, header):
+
+● Update(web\src\app\achievements\page.tsx)  ⎿  Added 2 lines, removed 2 lines
+      73        epic: { unlocked: 0, total: 0 },
+      74        legendary: { unlocked: 0, total: 0 },
+      75      };
+      76 -    for (const a of summary.achievements) {                    
+      76 +    for (const a of achievements) {                            
+      77        counts[a.def.rarity].total += 1;
+      78        if (a.unlocked) counts[a.def.rarity].unlocked += 1;
+      79      }
+      80      return counts;
+      81 -  }, [summary.achievements]);                                  
+      81 +  }, [achievements]);                                          
+      82  
+      83    const visible = useMemo(() => {
+      84      const q = query.trim().toLowerCase();
+
+● Update(web\src\app\achievements\page.tsx)
+  ⎿  Added 1 line, removed 1 line
+      82  
+      83    const visible = useMemo(() => {
+      84      const q = query.trim().toLowerCase();
+      85 -    return summary.achievements                                
+      85 +    return achievements                                        
+      86        .filter((a) => category === "all" || a.def.category === c
+          ategory)
+      87        .filter(
+      88          (a) =>
+
+● Update(web\src\app\achievements\page.tsx)
+  ⎿  Error editing file
+
+● Update(web\src\app\achievements\page.tsx)
+  ⎿  Added 3 lines, removed 3 lines
+      101          if (r !== 0) return r;
+      102          return b.progressPct - a.progressPct;
+      103        });
+      104 -  }, [summary.achievements, category, status, query]);        
+      104 +  }, [achievements, category, status, query]);                
+      105  
+      106    // Closest locked achievements — top 3 by progress percentag
+           e
+      107    const nextAchievable = useMemo(() => {
+      108 -    return summary.achievements                               
+      108 +    return achievements                                       
+      109        .filter((a) => !a.unlocked && a.progressPct > 0)
+      110        .sort((a, b) => b.progressPct - a.progressPct)
+      111        .slice(0, 3);
+      112 -  }, [summary.achievements]);                                 
+      112 +  }, [achievements]);                                         
+      113  
+      114    // Pagination
+      115    const pageCount = Math.max(1, Math.ceil(visible.length / PAG
+           E_SIZE));
+
+● Update(web\src\app\achievements\page.tsx)
+  ⎿  Added 1 line, removed 1 line
+      122      <AppPageShell>
+      123        <PageHeader
+      124          title="Achievements"
+      125 -        subtitle={`${summary.unlockedCount} of ${summary.total
+          -Count} unlocked`}                                             
+      125 +        subtitle={`${unlockedCount} of ${summary.totalCount} u
+          +nlocked`}                                                     
+      126        />
+      127  
+      128        {/* Next achievable — closest locked achievements */}
+
+● Let me typecheck both workspaces:
+
+● Bash(cd /c/Users/Justin/dev/project_101 && npm run typecheck 2>&1 | tail -40)
+  ⎿  > project_101-monorepo@1.0.0 typecheck
+     > npm run typecheck --workspace=shared && npm run typecheck --workspac
+     e=web
+     … +8 lines (ctrl+o to expand)
+
+● Typecheck passes. Now run the tests:
+
+● Bash(npm run test 2>&1 | tail -35)
+  ⎿  > project_101-monorepo@1.0.0 test
+     > npm run test --workspace=shared && npm run test --workspace=web
+     … +19 lines (ctrl+o to expand)
+
+● Shared has no tests (they live in web). Run web tests:
+
+● Bash(npm run test:web 2>&1 | tail -30)
+  ⎿  > project_101-monorepo@1.0.0 test:web
+     > npm run test --workspace=web
+     … +13 lines (ctrl+o to expand)
+
+● All 163 tests pass. Let me run lint to catch unused imports:
+
+● Bash(npm run lint 2>&1 | tail -30)
+  ⎿  Running in the background (↓ to manage)
+
+● Bash(sleep 30 && tail -40
+      /c/Users/Justin/AppData/Local/Temp/claude/C--Users-Justin-dev-project-101/
+      18f3c816-18a4-42fb-947d-bcd2d01bb790/tasks/b8hhwhrpk.output)
+  ⎿  Error: Exit code 1
+     tail: cannot open 
+     '/c/Users/Justin/AppData/Local/Temp/claude/C--Users-Justin-dev-project-101/
+     18f3c816-18a4-42fb-947d-bcd2d01bb790/tasks/b8hhwhrpk.output' for reading: 
+     No such file or directory
+
+● Background command "Lint web" completed (exit code 0)
+
+  Read 1 file (ctrl+o to expand)
+
+● Bash(npm run lint 2>&1 | tail -20)
+  ⎿  - C:\Users\Justin\dev\project_101\node_modules\eslint-config-next\dist
+     \parser.js
+     - C:\Users\Justin\dev\project_101\node_modules\eslint-config-next\dist
+     … +17 lines (ctrl+o to expand)
+
+● Lint fails on a pre-existing broken eslint-config-next module resolution
+  (environment issue, not my code) — typecheck already validates unused imports
+  and passed. Let me verify no stale summary.achievements references remain and
+  confirm the SyncIndicator file is fully unused:
+
+  Searched for 1 pattern (ctrl+o to expand)
+
+● Bash(cd /c/Users/Justin/dev/project_101/web && grep -n
+      "summary.achievements\|summary.unlockedCount"
+      src/app/achievements/page.tsx; echo "=== SyncIndicator external…)
+  ⎿  54:      summary.achievements.map((a) =>
+     57:    [summary.achievements, data.unlocks],
+     === SyncIndicator external refs ===
+     src/components/sync/SyncProvider.tsx:8:// 5. Shows the SyncIndicator
+
+● The remaining summary.achievements (lines 54-57) is the source array for the
+  override — correct. Let me clean up the now-stale SyncProvider header comment:
+
+● Update(web\src\components\sync\SyncProvider.tsx)
+  ⎿  Added 1 line, removed 1 line
+       5  // 2. Wires the store's sync callback to push mutations
+       6  // 3. Subscribes to Supabase Realtime for live changes from oth
+          er sessions
+       7  // 4. Periodically polls for changes as a fallback
+       8 -// 5. Shows the SyncIndicator                                  
+       8 +// Sync runs silently — no on-screen status indicator is render
+         +ed.                                                            
+       9  
+      10  import { useEffect, useRef } from "react";
+      11  import { useAuth } from "@/hooks/useAuth";
+● One race to close: React runs the deeper CelebrationManager seeding effect
+  before the SyncProvider resync effect, so on a fresh login the empty local's
+  progressSeen gets baselined to seeded:true before merge — which would then win
+  over real remote data. Let me make the merge prefer remote whenever local
+  carries no habits/marks:
+
+● Update(web\src\lib\supabase\sync.ts)
+  ⎿  Added 12 lines
+      279     ──────────────────────────────────────────── */
+      280  
+      281  function mergeAppData(local: AppData, remote: AppData): AppDat
+           a {
+      282 +  // Fresh-login fast path: this branch only runs when REMOTE 
+          +has real data.                                                
+      283 +  // If LOCAL carries no habits and no marks, it's a just-clea
+          +red snapshot (the                                             
+      284 +  // previous sign-out wiped localStorage) whose singleton sta
+          +te is nothing but                                             
+      285 +  // hardcoded defaults — possibly already mutated by a mount-
+          +time celebration                                              
+      286 +  // baseline. Adopt remote wholesale so we never clobber the 
+          +user's real coins,                                            
+      287 +  // cosmetics, settings, unlocks, or celebration markers with
+          + those defaults.                                              
+      288 +  const localIsEmpty =                                        
+      289 +    local.habits.length === 0 && Object.keys(local.marks).leng
+          +th === 0;                                                     
+      290 +  if (localIsEmpty) {                                         
+      291 +    return { ...remote, auditLog: local.auditLog };           
+      292 +  }                                                           
+      293 +                                                              
+      294    // Merge habits by ID — union of both, local overwrites same
+            IDs
+      295    const mergedHabits = mergeById(
+      296      remote.habits,
+
+● Bash(cd /c/Users/Justin/dev/project_101 && npm run typecheck 2>&1 | tail -15)
+  ⎿  > project_101-monorepo@1.0.0 typecheck
+     > npm run typecheck --workspace=shared && npm run typecheck --workspac
+     e=web
+     … +8 lines (ctrl+o to expand)
+
+● Typecheck clean. Re-run web tests after the sync.ts changes:
+
+● Bash(npm run test:web 2>&1 | tail -8)
+  ⎿   RUN  v4.1.9 C:/Users/Justin/dev/project_101/web
+     … +5 lines (ctrl+o to expand)
+  ⎿  Interrupted · What should Claude do instead?
+
+❯ /update-config                                                                
+
+❯ okay make a .md and save our conversastion and memories so we can continue    
+  tomorrow                                                                      
+
+● Understood — you typed a custom request (not the config skill), so I'll skip
+  config changes and instead write a handoff doc + save memories so we can
+  resume tomorrow.
+
+● Write(docs\bugfix-handoff-2026-07-07.md)
+  ⎿  Wrote 56 lines to ..\..\..\..\c\Users\Justin\dev\project_101\docs\bugf
+     ix-handoff-2026-07-07.md
+       2 # Bug-fix session handoff — 2026-07-07
+       3 Web codebase (`web/`). All changes below: **typecheck clean, 163
+       4 Not yet committed. `npm run lint` is broken in this environment 
+         (eslint-config-next
+         ges.le-resolution error) — pre-existing, unrelated to these chan
+       6 
+       8 ## Root cause that tied everything together
+       9 `web/src/lib/supabase/sync.ts` → `mergeAppData()` merged singlet
+      10 `local.X ?? remote.X`. Because the defaults (`DEFAULT_ECONOMY`, 
+         default settings,
+     … +91 lines (ctrl+o to expand)
+
+● API Error: 402 {"error":"Starter 5-hour usage limit reached. You have 
+  used the $10.00 included allowance for this window. Add balance or 
+  upgrade to continue."}
+
+✻ Crunched for 45s

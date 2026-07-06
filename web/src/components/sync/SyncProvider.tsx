@@ -5,7 +5,7 @@
 // 2. Wires the store's sync callback to push mutations
 // 3. Subscribes to Supabase Realtime for live changes from other sessions
 // 4. Periodically polls for changes as a fallback
-// 5. Shows the SyncIndicator
+// Sync runs silently — no on-screen status indicator is rendered.
 
 import { useEffect, useRef } from "react";
 import { useAuth } from "@/hooks/useAuth";
@@ -19,7 +19,6 @@ import { setSyncCallback, reloadCache } from "@/lib/store";
 import type { ChangedTables } from "@/lib/supabase/db";
 import type { AppData } from "@/lib/types";
 import { loadData } from "@/lib/storage";
-import { SyncIndicator } from "./SyncIndicator";
 
 // Interval for periodic polling fallback (ms)
 const POLL_INTERVAL_MS = 30_000;
@@ -141,10 +140,7 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
     };
   }, [user, loading]);
 
-  return (
-    <>
-      {children}
-      <SyncIndicator />
-    </>
-  );
+  // The sync status pill is intentionally not rendered — sync runs silently in
+  // the background and surfaces no persistent on-screen indicator.
+  return <>{children}</>;
 }

@@ -4,7 +4,7 @@ import {
   useAppData,
   updateProfile,
   setGraceHours,
-  replaceData,
+  mutateData,
   markAchievementsSeen,
 } from "@/lib/store";
 import { ACHIEVEMENTS } from "@/lib/achievements";
@@ -24,16 +24,25 @@ export function UserControlsSection({ query }: { query: string }) {
 
   function unlockAll() {
     const now = new Date().toISOString();
-    const unlocks: Unlocks = {};
-    for (const a of ACHIEVEMENTS) unlocks[a.id] = { at: now, seen: true };
-    replaceData({ ...data, unlocks });
+    mutateData((prev) => {
+      const unlocks: Unlocks = { ...prev.unlocks };
+      for (const a of ACHIEVEMENTS)
+        unlocks[a.id] = { at: unlocks[a.id]?.at ?? now, seen: true };
+      return { ...prev, unlocks };
+    });
   }
 
   function setAllSeen(seen: boolean) {
-    const unlocks: Unlocks = {};
-    for (const [id, rec] of Object.entries(data.unlocks))
-      unlocks[id] = { ...rec, seen };
-    replaceData({ ...data, unlocks });
+    mutateData((prev) => {
+      const unlocks: Unlocks = {};
+      for (const [id, rec] of Object.entries(prev.unlocks))
+        unlocks[id] = { ...rec, seen };
+      return { ...prev, unlocks };
+    });
+  }
+
+  function relockAll() {
+    mutateData((prev) => ({ ...prev, unlocks: {} }));
   }
 
   return (
@@ -109,10 +118,7 @@ export function UserControlsSection({ query }: { query: string }) {
           query={query}
           terms="reset relock"
         >
-          <DevButton
-            tone="danger"
-            onClick={() => replaceData({ ...data, unlocks: {} })}
-          >
+          <DevButton tone="danger" onClick={relockAll}>
             Re-lock
           </DevButton>
         </DevRow>

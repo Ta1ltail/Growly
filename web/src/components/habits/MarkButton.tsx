@@ -41,7 +41,13 @@ export function MarkButton({
 
   return (
     <button
+      type="button"
       onClick={onClick}
+      // Prevent the browser from scroll-jumping the page when the button takes
+      // focus on click (it lives inside independently-scrolling panels). Focus
+      // still works for keyboard users, who reach it via Tab rather than
+      // pointerdown, so accessibility is unaffected.
+      onMouseDown={(e) => e.preventDefault()}
       disabled={locked && !status}
       aria-label={`${locked ? `Locked${status ? `, marked ${status}` : ""}` : status ? `Marked ${status}` : "Not marked"}${frozen ? ", protected by a streak freeze" : ""}`}
       style={{ width: size, height: size }}
