@@ -1,9 +1,7 @@
 // Expo app config — reads environment variables from .env at build time.
 // Required for EAS Build to inject EXPO_PUBLIC_* variables into the bundle.
 
-import type { ExpoConfig } from "expo/config";
-
-const config: ExpoConfig = {
+const config = {
   name: "Project 101",
   slug: "project-101",
   version: "1.0.0",
