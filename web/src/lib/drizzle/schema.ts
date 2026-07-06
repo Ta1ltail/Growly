@@ -11,15 +11,19 @@
  *   - Run `npx drizzle-kit push` to apply schema changes to a local database.
  *
  * Key design decisions:
- *   - All user-owned tables reference `auth.users` via the `authUsers` proxy
- *     (defined first so every table can use it as a foreign key target).
+ *   - All user-owned tables reference `auth.users` via the `authUsers` proxy,
+ *     declared through `pgSchema("auth")` so Drizzle emits FKs against the
+ *     real `auth.users` table instead of creating a shadow `public.users`.
  *   - `onDelete: "cascade"` ensures cleanup when a user is deleted.
  *   - Indexes are defined inline for query performance (user_id lookups,
  *     unique constraints for upsert operations).
+ *   - CHECK constraints are declared with `check()` so `drizzle-kit push`
+ *     doesn't treat them as untracked, out-of-band DB objects.
  */
 
 import {
   pgTable,
+  pgSchema,
   uuid,
   text,
   integer,
@@ -29,19 +33,23 @@ import {
   jsonb,
   uniqueIndex,
   index,
-  primaryKey,
+  check,
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 
 // ── Reference to auth.users (for foreign keys) ──────
 // Defined FIRST so every table below can reference it via lazy callbacks.
 // auth.users is managed by Supabase Auth (auth schema), not by our migrations.
-// The `schema` callback tells Drizzle to prefix the table as "auth"."users".
-export const authUsers = pgTable(
-  "users",
-  { id: uuid("id").primaryKey() },
-  () => ({ schema: "auth" }),
-);
+// pgSchema() is the correct way to point Drizzle at a table living in a
+// non-default Postgres schema — passing `{ schema: "auth" }` as a pgTable()
+// config does NOT work, since pgTable's third argument is an extraConfig
+// callback that must return an array of indexes/constraints, not an options
+// object. Using pgSchema avoids silently creating a shadow "public.users".
+const authSchema = pgSchema("auth");
+
+export const authUsers = authSchema.table("users", {
+  id: uuid("id").primaryKey(),
+});
 
 // ── Habits ──────────────────────────────────────────
 export const habits = pgTable(
@@ -66,6 +74,7 @@ export const habits = pgTable(
   },
   (table) => [
     index("idx_habits_user_id").on(table.userId),
+    check("habits_priority_check", sql`${table.priority} IN ('low','med','high')`),
   ],
 );
 
@@ -161,6 +170,12 @@ export const userSettings = pgTable(
       .notNull()
       .default(sql`'{}'::text[]`),
   },
+  (table) => [
+    check(
+      "user_settings_grace_hours_check",
+      sql`${table.graceHours} >= 0 AND ${table.graceHours} <= 24`,
+    ),
+  ],
 );
 
 // ── User Profile (single row per user) ──────────────
@@ -178,6 +193,10 @@ export const userProfile = pgTable(
     banner: text("banner"),
     showcaseBadgeId: text("showcase_badge_id"),
   },
+  (table) => [
+    uniqueIndex("user_profile_username_key").on(table.username),
+    index("idx_user_profile_username").on(table.username),
+  ],
 );
 
 // ── Unlocks (achievement unlocks) ───────────────────
@@ -232,7 +251,10 @@ export const economySpent = pgTable(
     amount: integer("amount").notNull(),
     item: text("item").notNull(),
   },
-  (table) => [index("idx_economy_spent_user_id").on(table.userId)],
+  (table) => [
+    index("idx_economy_spent_user_id").on(table.userId),
+    check("economy_spent_amount_check", sql`${table.amount} > 0`),
+  ],
 );
 
 // ── Economy Freezes (streak-freeze log) ─────────────
@@ -298,6 +320,8 @@ export const friends = pgTable(
     uniqueIndex("friends_pair_key").on(table.requester, table.addressee),
     index("idx_friends_requester").on(table.requester),
     index("idx_friends_addressee").on(table.addressee),
+    index("idx_friends_requester_status").on(table.requester, table.status),
+    index("idx_friends_addressee_status").on(table.addressee, table.status),
   ],
 );
 
@@ -325,7 +349,10 @@ export const suggestions = pgTable(
       .notNull()
       .default("new"),
   },
-  (table) => [index("idx_suggestions_user_id").on(table.userId)],
+  (table) => [
+    index("idx_suggestions_user_id").on(table.userId),
+    index("idx_suggestions_created_at").on(table.createdAt),
+  ],
 );
 
 // ── User Stats Snapshots (for public profiles) ──────
@@ -347,6 +374,53 @@ export const userStatsSnapshots = pgTable(
       .notNull()
       .defaultNow(),
   },
+  (table) => [
+    // Simple descending indexes for leaderboard ORDER BY
+    index("idx_stats_level_desc").on(table.level.desc()),
+    index("idx_stats_streak_desc").on(table.currentStreak.desc()),
+    index("idx_stats_consistency_desc").on(table.consistency14d.desc()),
+    index("idx_stats_completions_desc").on(table.totalCompletions.desc()),
+
+    // NOTE: the SQL migration also defines 4 covering indexes
+    // (idx_stats_level_cover, idx_stats_streak_cover,
+    // idx_stats_consistency_cover, idx_stats_completions_cover) using
+    // Postgres' INCLUDE clause for index-only scans on the leaderboard
+    // queries. The installed drizzle-orm version's IndexBuilder doesn't
+    // expose `.include()`, so they can't be declared here without a type
+    // error. They still exist in the database (created by the migration)
+    // — this is just a gap in schema.ts's coverage, not a missing DB
+    // object. If you upgrade drizzle-orm to a version with covering-index
+    // support, add them back with `.on(table.level.desc()).include(...)`.
+  ],
 );
 
-
+// ── Notifications ───────────────────────────────────
+// NOTE: this table existed in the SQL migration but was missing from the
+// previous version of this schema.ts file — added here to restore 1:1 parity.
+export const notifications = pgTable(
+  "notifications",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => authUsers.id, { onDelete: "cascade" }),
+    type: text("type", {
+      enum: ["friend_request", "friend_accept", "achievement", "system"],
+    }).notNull(),
+    title: text("title").notNull(),
+    body: text("body").notNull().default(""),
+    fromUser: uuid("from_user").references(() => authUsers.id, {
+      onDelete: "set null",
+    }),
+    link: text("link").notNull().default(""),
+    isRead: boolean("is_read").notNull().default(false),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index("idx_notifications_user_id").on(table.userId),
+    index("idx_notifications_unread").on(table.userId, table.isRead),
+    index("idx_notifications_created_at").on(table.createdAt),
+  ],
+);

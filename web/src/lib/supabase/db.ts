@@ -198,6 +198,9 @@ function buildMarksFromRows(rows: DbMark[]): Marks {
   return marks;
 }
 
+// marks.id is UUID in the DB — keep using uid() for the id field.
+// The upsert conflict target is the composite key (user_id, date_key, habit_id)
+// so duplicate inserts resolve correctly regardless of what id value is used.
 function marksToRows(userId: string, marks: Marks): DbMark[] {
   const rows: DbMark[] = [];
   for (const [dateKey, day] of Object.entries(marks)) {
@@ -324,6 +327,8 @@ function rowToUnlocks(rows: DbUnlock[]): Unlocks {
   return unlocks;
 }
 
+// unlocks.id is UUID in the DB — keep using uid() for the id field.
+// The upsert conflict target is the composite key (user_id, achievement_id).
 function unlocksToRows(userId: string, unlocks: Unlocks): DbUnlock[] {
   return Object.entries(unlocks).map(([achievementId, rec]) => ({
     id: uid(),
@@ -346,7 +351,6 @@ function rowToEconomy(
     }
   }
 
-  // Parse current_quest JSONB
   let currentQuest: DailyQuest | null = null;
   if (state.current_quest && typeof state.current_quest === "object") {
     const q = state.current_quest as Record<string, unknown>;
@@ -360,7 +364,6 @@ function rowToEconomy(
     }
   }
 
-  // Parse last_spin_result JSONB
   let lastSpinResult: { label: string; amount: number; isFreeze: boolean } | null = null;
   if (state.last_spin_result && typeof state.last_spin_result === "object") {
     const r = state.last_spin_result as Record<string, unknown>;
@@ -451,60 +454,44 @@ function progressSeenToRow(userId: string, ps: ProgressSeen): DbProgressSeen {
 }
 
 /* ────────────────────────────────────────────
-   Public API: LOAD functions (used internally by loadAllUserData)
+   Public API: LOAD functions
    ──────────────────────────────────────────── */
 
-async function loadHabits(
-  supabase: SupabaseClient,
-  userId: string,
-): Promise<Habit[]> {
+async function loadHabits(supabase: SupabaseClient, userId: string): Promise<Habit[]> {
   const { data, error } = await supabase
     .from("habits")
     .select("*")
     .eq("user_id", userId)
     .order("created_at", { ascending: true });
-
   if (error) throw error;
   return (data ?? []).map(rowToHabit);
 }
 
-async function loadMarks(
-  supabase: SupabaseClient,
-  userId: string,
-): Promise<Marks> {
+async function loadMarks(supabase: SupabaseClient, userId: string): Promise<Marks> {
   const { data, error } = await supabase
     .from("marks")
     .select("date_key, habit_id, status")
     .eq("user_id", userId);
-
   if (error) throw error;
   return buildMarksFromRows((data ?? []) as unknown as DbMark[]);
 }
 
-async function loadNotes(
-  supabase: SupabaseClient,
-  userId: string,
-): Promise<Note[]> {
+async function loadNotes(supabase: SupabaseClient, userId: string): Promise<Note[]> {
   const { data, error } = await supabase
     .from("notes")
     .select("*")
     .eq("user_id", userId)
     .order("created_at", { ascending: false });
-
   if (error) throw error;
   return (data ?? []).map(rowToNote);
 }
 
-async function loadGoals(
-  supabase: SupabaseClient,
-  userId: string,
-): Promise<Goal[]> {
+async function loadGoals(supabase: SupabaseClient, userId: string): Promise<Goal[]> {
   const { data, error } = await supabase
     .from("goals")
     .select("*")
     .eq("user_id", userId)
     .order("created_at", { ascending: true });
-
   if (error) throw error;
   return (data ?? []).map(rowToGoal);
 }
@@ -518,8 +505,7 @@ async function loadSettings(
     .select("*")
     .eq("user_id", userId)
     .single();
-
-  if (error && error.code === "PGRST116") return null; // not found
+  if (error && error.code === "PGRST116") return null;
   if (error) throw error;
   return data ? rowToSettings(data) : null;
 }
@@ -533,21 +519,16 @@ async function loadProfile(
     .select("*")
     .eq("user_id", userId)
     .single();
-
   if (error && error.code === "PGRST116") return null;
   if (error) throw error;
   return data ? rowToProfile(data) : null;
 }
 
-async function loadUnlocks(
-  supabase: SupabaseClient,
-  userId: string,
-): Promise<Unlocks> {
+async function loadUnlocks(supabase: SupabaseClient, userId: string): Promise<Unlocks> {
   const { data, error } = await supabase
     .from("unlocks")
     .select("achievement_id, at, seen")
     .eq("user_id", userId);
-
   if (error) throw error;
   return rowToUnlocks((data ?? []) as unknown as DbUnlock[]);
 }
@@ -556,32 +537,26 @@ async function loadEconomy(
   supabase: SupabaseClient,
   userId: string,
 ): Promise<Economy | null> {
-  // Load state (single row)
   const { data: state, error: stateErr } = await supabase
     .from("economy_state")
     .select("*")
     .eq("user_id", userId)
     .single();
-
   if (stateErr && stateErr.code === "PGRST116") return null;
   if (stateErr) throw stateErr;
 
-  // Load spent ledger
   const { data: spent, error: spentErr } = await supabase
     .from("economy_spent")
     .select("*")
     .eq("user_id", userId)
     .order("at", { ascending: true });
-
   if (spentErr) throw spentErr;
 
-  // Load freezes
   const { data: freezes, error: freezeErr } = await supabase
     .from("economy_freezes")
     .select("*")
     .eq("user_id", userId)
     .order("at", { ascending: true });
-
   if (freezeErr) throw freezeErr;
 
   return state ? rowToEconomy(state, spent ?? [], freezes ?? []) : null;
@@ -596,39 +571,40 @@ async function loadProgressSeen(
     .select("*")
     .eq("user_id", userId)
     .single();
-
   if (error && error.code === "PGRST116") return null;
   if (error) throw error;
   return data ? rowToProgressSeen(data) : null;
 }
 
 /* ────────────────────────────────────────────
-   SAVE functions (internal — called by saveAllUserData / saveChanged)
+   SAVE helpers
    ──────────────────────────────────────────── */
 
+// replaceTable: delete all rows for this user, then upsert the current set.
+// Using upsert (not insert) prevents 23505 duplicate-key errors when two pushes
+// race (e.g. pullAllUserData pushes on login, then pushMutation fires shortly after).
+// onConflict must match a UNIQUE constraint on the table.
 async function replaceTable<T>(
   supabase: SupabaseClient,
   table: string,
   userId: string,
   rows: T[],
   rowToDb: (row: T) => Record<string, unknown>,
+  onConflict: string,
 ): Promise<void> {
-  // Delete all existing rows for this user
   const { error: delErr } = await supabase
     .from(table)
     .delete()
     .eq("user_id", userId);
-
   if (delErr) throw delErr;
 
   if (rows.length === 0) return;
 
-  // Batch insert
   const batchSize = 500;
   for (let i = 0; i < rows.length; i += batchSize) {
     const batch = rows.slice(i, i + batchSize).map(rowToDb);
-    const { error: insErr } = await supabase.from(table).insert(batch);
-    if (insErr) throw insErr;
+    const { error } = await supabase.from(table).upsert(batch, { onConflict });
+    if (error) throw error;
   }
 }
 
@@ -637,8 +613,10 @@ async function saveHabits(
   userId: string,
   habits: Habit[],
 ): Promise<void> {
-  await replaceTable(supabase, "habits", userId, habits, (h) =>
-    habitToRow(userId, h) as unknown as Record<string, unknown>,
+  await replaceTable(
+    supabase, "habits", userId, habits,
+    (h) => habitToRow(userId, h) as unknown as Record<string, unknown>,
+    "id",
   );
 }
 
@@ -648,7 +626,13 @@ async function saveMarks(
   marks: Marks,
 ): Promise<void> {
   const rows = marksToRows(userId, marks);
-  await replaceTable(supabase, "marks", userId, rows, (r) => r as unknown as Record<string, unknown>);
+  await replaceTable(
+    supabase, "marks", userId, rows,
+    (r) => r as unknown as Record<string, unknown>,
+    // Conflict on the composite unique key — not id — because id is a new
+    // random UUID on every marksToRows call.
+    "user_id,date_key,habit_id",
+  );
 }
 
 async function saveNotes(
@@ -656,8 +640,10 @@ async function saveNotes(
   userId: string,
   notes: Note[],
 ): Promise<void> {
-  await replaceTable(supabase, "notes", userId, notes, (n) =>
-    noteToRow(userId, n) as unknown as Record<string, unknown>,
+  await replaceTable(
+    supabase, "notes", userId, notes,
+    (n) => noteToRow(userId, n) as unknown as Record<string, unknown>,
+    "id",
   );
 }
 
@@ -666,8 +652,10 @@ async function saveGoals(
   userId: string,
   goals: Goal[],
 ): Promise<void> {
-  await replaceTable(supabase, "goals", userId, goals, (g) =>
-    goalToRow(userId, g) as unknown as Record<string, unknown>,
+  await replaceTable(
+    supabase, "goals", userId, goals,
+    (g) => goalToRow(userId, g) as unknown as Record<string, unknown>,
+    "id",
   );
 }
 
@@ -677,9 +665,9 @@ async function saveSettings(
   settings: AppData["settings"],
 ): Promise<void> {
   const row = settingsToRow(userId, settings);
-  const { error } = await supabase.from("user_settings").upsert(row, {
-    onConflict: "user_id",
-  });
+  const { error } = await supabase
+    .from("user_settings")
+    .upsert(row, { onConflict: "user_id" });
   if (error) throw error;
 }
 
@@ -689,9 +677,9 @@ async function saveProfile(
   profile: Profile,
 ): Promise<void> {
   const row = profileToRow(userId, profile);
-  const { error } = await supabase.from("user_profile").upsert(row, {
-    onConflict: "user_id",
-  });
+  const { error } = await supabase
+    .from("user_profile")
+    .upsert(row, { onConflict: "user_id" });
   if (error) throw error;
 }
 
@@ -701,7 +689,13 @@ async function saveUnlocks(
   unlocks: Unlocks,
 ): Promise<void> {
   const rows = unlocksToRows(userId, unlocks);
-  await replaceTable(supabase, "unlocks", userId, rows, (r) => r as unknown as Record<string, unknown>);
+  await replaceTable(
+    supabase, "unlocks", userId, rows,
+    (r) => r as unknown as Record<string, unknown>,
+    // Conflict on the composite unique key — not id — because id is a new
+    // random UUID on every unlocksToRows call.
+    "user_id,achievement_id",
+  );
 }
 
 async function saveEconomy(
@@ -709,20 +703,25 @@ async function saveEconomy(
   userId: string,
   economy: Economy,
 ): Promise<void> {
-  // Upsert state (single row)
   const stateRow = economyStateToRow(userId, economy);
   const { error: stateErr } = await supabase
     .from("economy_state")
     .upsert(stateRow, { onConflict: "user_id" });
   if (stateErr) throw stateErr;
 
-  // Replace spent ledger
   const spentRows = spentToRows(userId, economy.spent);
-  await replaceTable(supabase, "economy_spent", userId, spentRows, (r) => r as unknown as Record<string, unknown>);
+  await replaceTable(
+    supabase, "economy_spent", userId, spentRows,
+    (r) => r as unknown as Record<string, unknown>,
+    "id",
+  );
 
-  // Replace freezes
   const freezeRows = freezesToRows(userId, economy.freezes);
-  await replaceTable(supabase, "economy_freezes", userId, freezeRows, (r) => r as unknown as Record<string, unknown>);
+  await replaceTable(
+    supabase, "economy_freezes", userId, freezeRows,
+    (r) => r as unknown as Record<string, unknown>,
+    "id",
+  );
 }
 
 async function saveProgressSeen(
@@ -731,9 +730,9 @@ async function saveProgressSeen(
   progressSeen: ProgressSeen,
 ): Promise<void> {
   const row = progressSeenToRow(userId, progressSeen);
-  const { error } = await supabase.from("progress_seen").upsert(row, {
-    onConflict: "user_id",
-  });
+  const { error } = await supabase
+    .from("progress_seen")
+    .upsert(row, { onConflict: "user_id" });
   if (error) throw error;
 }
 
@@ -799,11 +798,8 @@ export async function loadAllUserData(
         loadProgressSeen(supabase, userId),
       ]);
 
-    // If no data at all (new user), return null so the caller knows to push local data
-    if (
-      habits.length === 0 &&
-      marks && Object.keys(marks).length === 0
-    ) {
+    // No data at all → new user; let the caller push local data instead
+    if (habits.length === 0 && Object.keys(marks).length === 0) {
       return null;
     }
 
@@ -835,9 +831,11 @@ export async function saveAllUserData(
   userId: string,
   data: AppData,
 ): Promise<void> {
-  // Run all saves. Errors are caught by the caller for retry logic.
+  // Phase 1: Save habits FIRST (marks & freezes have FK to habits)
+  await saveHabits(supabase, userId, data.habits);
+
+  // Phase 2: Everything else in parallel
   await Promise.all([
-    saveHabits(supabase, userId, data.habits),
     saveMarks(supabase, userId, data.marks),
     saveNotes(supabase, userId, data.notes),
     saveGoals(supabase, userId, data.goals),
@@ -853,7 +851,6 @@ export async function saveAllUserData(
    Incremental save (called after each mutation)
    ──────────────────────────────────────────── */
 
-// Which tables changed — used by sync on mutation to only push what changed.
 export type ChangedTables = {
   habits?: true;
   marks?: true;
@@ -866,23 +863,96 @@ export type ChangedTables = {
   progressSeen?: true;
 };
 
+// Mutex to prevent concurrent saveChanged calls from racing. replaceTable uses
+// DELETE+UPSERT, so if two calls run concurrently, one call's DELETE can wipe
+// out habits between another call's Phase 1 and Phase 2, causing FK violations
+// on dependent tables (marks, freezes). This serializes all saves.
+let _saveMutex: Promise<void> | null = null;
+
 export async function saveChanged(
   supabase: SupabaseClient,
   userId: string,
   data: AppData,
   changed: ChangedTables,
 ): Promise<void> {
+  // ══ Mutex: serialize saves to prevent race conditions ══
+  // replaceTable uses DELETE+UPSERT. If two calls run concurrently, one call's
+  // DELETE can wipe out habits between another call's Phase 1 and Phase 2,
+  // causing FK violations on marks & freezes which reference habits.id.
+  while (_saveMutex) {
+    try { await _saveMutex; } catch { /* ignore resolved errors */ }
+  }
+  let releaseMutex: () => void = () => {};
+  _saveMutex = new Promise((resolve) => { releaseMutex = resolve; });
+  try {
+    // ── Phase 1: Save habits FIRST (marks & freezes have FK to habits.id) ──
+  // Always re-save habits when marks or economy (which includes freezes) are
+  // changed, because the habit_ids in those tables must reference habits that
+  // actually exist in Supabase.
+  const saveHabitsToo =
+    changed.habits || changed.marks || changed.economy;
+  if (saveHabitsToo) {
+    await saveHabits(supabase, userId, data.habits);
+  }
+
+  // ── Phase 2: Everything else in parallel ──
+  const validHabitIds = new Set(data.habits.map((h) => h.id));
   const promises: Promise<unknown>[] = [];
 
-  if (changed.habits) promises.push(saveHabits(supabase, userId, data.habits));
-  if (changed.marks) promises.push(saveMarks(supabase, userId, data.marks));
-  if (changed.notes) promises.push(saveNotes(supabase, userId, data.notes));
-  if (changed.goals) promises.push(saveGoals(supabase, userId, data.goals));
-  if (changed.settings) promises.push(saveSettings(supabase, userId, data.settings));
-  if (changed.profile) promises.push(saveProfile(supabase, userId, data.profile));
-  if (changed.unlocks) promises.push(saveUnlocks(supabase, userId, data.unlocks));
-  if (changed.economy) promises.push(saveEconomy(supabase, userId, data.economy));
+  if (changed.marks) {
+    // Filter marks to only include habit_ids that exist in the current habits
+    // array. This prevents FK constraint violations from orphan marks — marks
+    // referencing habits that were deleted locally but never cleaned up.
+    const filteredMarks: Marks = {};
+    for (const [dateKey, day] of Object.entries(data.marks)) {
+      const filteredDay: Record<string, MarkStatus> = {};
+      for (const [habitId, status] of Object.entries(day)) {
+        if (validHabitIds.has(habitId)) {
+          filteredDay[habitId] = status;
+        }
+      }
+      if (Object.keys(filteredDay).length > 0) {
+        filteredMarks[dateKey] = filteredDay;
+      }
+    }
+    promises.push(saveMarks(supabase, userId, filteredMarks));
+  }
+  if (changed.notes)        promises.push(saveNotes(supabase, userId, data.notes));
+  if (changed.goals)        promises.push(saveGoals(supabase, userId, data.goals));
+  if (changed.settings)     promises.push(saveSettings(supabase, userId, data.settings));
+  if (changed.profile)      promises.push(saveProfile(supabase, userId, data.profile));
+  if (changed.unlocks)      promises.push(saveUnlocks(supabase, userId, data.unlocks));
+  if (changed.economy) {
+    // Freezes also have a FK to habits.id — filter out orphan freezes that
+    // reference deleted habits to prevent the same FK violation.
+    const eco = data.economy;
+    const filteredFreezes = eco.freezes.filter((f) => validHabitIds.has(f.habitId));
+    const filteredEconomy = filteredFreezes.length === eco.freezes.length
+      ? eco
+      : { ...eco, freezes: filteredFreezes };
+    promises.push(saveEconomy(supabase, userId, filteredEconomy));
+  }
   if (changed.progressSeen) promises.push(saveProgressSeen(supabase, userId, data.progressSeen));
 
-  await Promise.all(promises);
+  // Use allSettled so one table failure doesn't cascade to others.
+  // Partial failures are logged. If ALL saves fail, throw so the caller
+  // (sync.ts retry queue) knows to retry. If only some fail, it's a
+  // partial success — the successful saves are already committed.
+  const results = await Promise.allSettled(promises);
+  const errors = results
+    .filter((r): r is PromiseRejectedResult => r.status === "rejected")
+    .map((r) => r.reason);
+  if (errors.length === promises.length && errors.length > 0) {
+    // All saves failed — throw so the retry queue can re-attempt
+    console.error("[db] All saves failed:", errors);
+    throw errors[0];
+  } else if (errors.length > 0) {
+    // Partial success — log warnings but don't throw (successful saves committed)
+    console.warn("[db] Partial save failures (", errors.length, "/", promises.length, "):", errors);
+  }
+  } finally {
+    // Release the mutex so the next queued call can proceed
+    _saveMutex = null;
+    releaseMutex();
+  }
 }

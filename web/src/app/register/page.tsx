@@ -1,34 +1,83 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { Mail, Lock, UserPlus, User, AlertCircle, Eye, EyeOff, Sparkles, Activity } from "lucide-react";
+import { Mail, Lock, UserPlus, AtSign, AlertCircle, Eye, EyeOff, Sparkles, Activity, Loader2, Check, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { clearLocalAppData } from "@/lib/storage";
+import { STORAGE_KEY, SCHEMA_VERSION } from "@/lib/storage";
 import { Button } from "@/components/ui/Button";
 
 export default function RegisterPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [displayName, setDisplayName] = useState("");
+  const [username, setUsername] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(null);
+  const [checkingUsername, setCheckingUsername] = useState(false);
+
+  // Debounced username availability check
+  const checkTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    const raw = username.trim().toLowerCase().replace(/^@/, "");
+    if (raw.length < 2) {
+      setUsernameAvailable(null);
+      setCheckingUsername(false);
+      return;
+    }
+    if (!/^[a-z0-9_]+$/.test(raw)) {
+      setUsernameAvailable(null);
+      setCheckingUsername(false);
+      return;
+    }
+    setCheckingUsername(true);
+    if (checkTimerRef.current) clearTimeout(checkTimerRef.current);
+    checkTimerRef.current = setTimeout(async () => {
+      const supabase = createClient();
+      const { data } = await supabase
+        .from("public_profiles")
+        .select("username")
+        .eq("username", raw)
+        .maybeSingle();
+      setUsernameAvailable(!data);
+      setCheckingUsername(false);
+    }, 400);
+    return () => {
+      if (checkTimerRef.current) clearTimeout(checkTimerRef.current);
+    };
+  }, [username]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+
+    const cleanUsername = username.trim().toLowerCase().replace(/^@/, "");
+    if (!cleanUsername || cleanUsername.length < 2) {
+      setError("Username must be at least 2 characters.");
+      return;
+    }
+    if (!/^[a-z0-9_]+$/.test(cleanUsername)) {
+      setError("Username can only contain letters, numbers, and underscores.");
+      return;
+    }
+    if (usernameAvailable === false) {
+      setError('Username "' + cleanUsername + '" is already taken. Try another one.');
+      return;
+    }
+
     setLoading(true);
 
     const supabase = createClient();
 
-    // Sign up
+    // Sign up — pass both username and a display_name placeholder
     const { error: signUpError } = await supabase.auth.signUp({
       email,
       password,
       options: {
         data: {
-          display_name: displayName || email.split("@")[0],
+          username: cleanUsername,
+          display_name: cleanUsername, // start with username as display name
         },
       },
     });
@@ -58,11 +107,39 @@ export default function RegisterPage() {
 
     if (user) {
       // ── Fresh start for every new account ──
-      // Clear any stale data from a previous user that may still be in
-      // localStorage (e.g. if the previous user didn't sign out). This
-      // ensures a newly registered user never inherits someone else's habits,
-      // marks, unlocks, or profile.
-      clearLocalAppData();
+      // Clear any stale data from a previous user, then seed the local
+      // profile with the submitted username. This prevents the default
+      // profile (which has a hardcoded placeholder username) from being
+      // pushed to Supabase later, which would cause 23505 conflicts.
+      localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem("project101.saved_email");
+      localStorage.removeItem("project101.last_auth_user");
+      const seededData = {
+        version: SCHEMA_VERSION,
+        habits: [],
+        marks: {},
+        notes: [],
+        goals: [],
+        auditLog: [],
+        settings: {
+          theme: { mode: "dark" as const, accent: "blue" },
+          graceHours: 5,
+          usedTemplateIds: [],
+        },
+        profile: { displayName: cleanUsername, username: cleanUsername },
+        unlocks: {},
+        economy: {
+          spent: [], owned: [], equipped: {}, freezes: [],
+          bonusCoins: 0, lastCheckIn: null, checkInStreak: 0,
+          lastQuestDate: null, currentQuest: null,
+          lastSpinDate: null, lastSpinResult: null,
+        },
+        progressSeen: {
+          seeded: false, level: 1, title: "Habit Newbie",
+          shop: [], streaks: {}, tierUnlocks: [],
+        },
+      };
+      localStorage.setItem("project101.data.v1", JSON.stringify(seededData));
 
       // Save Remember Me preference
       localStorage.setItem("project101.remember_me", "true");
@@ -117,24 +194,38 @@ export default function RegisterPage() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label
-                htmlFor="displayName"
+                htmlFor="username"
                 className="mb-1.5 block text-xs font-medium text-muted"
               >
-                Display name <span className="text-faint">(optional)</span>
+                Username
               </label>
               <div className="relative">
-                <User className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-faint" />
+                <AtSign className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-faint" />
                 <input
-                  id="displayName"
+                  id="username"
                   type="text"
-                  value={displayName}
-                  onChange={(e) => setDisplayName(e.target.value)}
-                  placeholder="Your name"
-                  autoComplete="name"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value.replace(/[^a-zA-Z0-9_]/g, ""))}
+                  placeholder="yourname"
+                  autoComplete="username"
                   autoFocus
-                  className="w-full rounded-xl border border-line bg-surface2 py-2.5 pl-10 pr-3 text-sm outline-none placeholder:text-faint transition-colors focus:border-accent focus:ring-1 focus:ring-accent/30"
+                  maxLength={30}
+                  className="w-full rounded-xl border border-line bg-surface2 py-2.5 pl-10 pr-10 text-sm outline-none placeholder:text-faint transition-colors focus:border-accent focus:ring-1 focus:ring-accent/30"
                 />
+                {/* Availability indicator */}
+                <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                  {checkingUsername ? (
+                    <Loader2 className="size-4 animate-spin text-faint" />
+                  ) : usernameAvailable === true ? (
+                    <Check className="size-4 text-done" />
+                  ) : usernameAvailable === false ? (
+                    <X className="size-4 text-missed" />
+                  ) : null}
+                </div>
               </div>
+              <p className="mt-1.5 text-[11px] text-faint">
+                Letters, numbers, and underscores. Must be unique.
+              </p>
             </div>
 
             <div>
@@ -254,6 +345,9 @@ function mapAuthError(message: string): string {
   }
   if (lower.includes("already registered") || lower.includes("user already exists")) {
     return "An account with this email already exists. Try signing in instead.";
+  }
+  if (lower.includes("username") && (lower.includes("taken") || lower.includes("already exists"))) {
+    return "This username is already taken. Please choose another one.";
   }
   if (lower.includes("rate limit") || lower.includes("too many")) {
     return "Too many attempts. Please wait a moment and try again.";

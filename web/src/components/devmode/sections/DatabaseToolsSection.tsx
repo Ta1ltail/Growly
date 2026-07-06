@@ -9,27 +9,36 @@ import {
   Zap,
   RefreshCw,
   Dices,
+  Database,
+  Trash2,
+  Upload,
 } from "lucide-react";
 import {
   useAppData,
   replaceData,
   importRawData as storeImportRawData,
+  reloadCache,
 } from "@/lib/store";
 import { useToday } from "@/hooks/useToday";
-import { dateKey, addDays } from "@/lib/storage";
+import { dateKey, addDays, clearLocalAppData } from "@/lib/storage";
 import { DEFAULT_ECONOMY, DEFAULT_PROFILE, type MarkStatus } from "@/lib/types";
-import { makeDemoData, makeStressData } from "@/lib/devSeed";
+import { makeDemoData, makeStressData, makeComprehensiveSeedData } from "@/lib/devSeed";
 import { ACHIEVEMENTS } from "@/lib/achievements";
+import { useAuth } from "@/hooks/useAuth";
+import { fullResync } from "@/lib/supabase/sync";
+import { createClient } from "@/lib/supabase/client";
 import { DevGroup, DevRow, DevStack, DevButton, DEV_INPUT } from "../ui";
 
 export const DB_TERMS =
-  "database tools raw json edit export csv import backup seed demo wipe clear marks notes goals economy unlocks reset gold xp streak achievements habits progress simulate random stress";
+  "database tools raw json edit export csv import backup seed demo wipe clear marks notes goals economy unlocks reset gold xp streak achievements habits progress simulate random stress fresh";
 
 export function DatabaseToolsSection({ query }: { query: string }) {
   const data = useAppData();
   const today = useToday();
+  const { user } = useAuth();
   const [draft, setDraft] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [seeding, setSeeding] = useState(false);
 
   function download(content: string, filename: string, type: string) {
     const blob = new Blob([content], { type });
@@ -479,6 +488,173 @@ export function DatabaseToolsSection({ query }: { query: string }) {
         >
           <DevButton tone="danger" onClick={resetHabits}>
             Reset
+          </DevButton>
+        </DevRow>
+      </DevGroup>
+
+      <DevGroup title="Sync & Fresh Start">
+        <DevRow
+          label="Push to Supabase"
+          hint="Sync current local data to Supabase."
+          query={query}
+          terms="upload sync"
+        >
+          <DevButton
+            tone="accent"
+            onClick={async () => {
+              if (!user) {
+                alert("You must be logged in to push to Supabase.");
+                return;
+              }
+              setSeeding(true);
+              try {
+                await fullResync(user.id);
+                reloadCache();
+                alert("Data pushed to Supabase successfully!");
+              } catch (e) {
+                alert(`Failed to push: ${e}`);
+              } finally {
+                setSeeding(false);
+              }
+            }}
+            disabled={seeding || !user}
+          >
+            <Upload className="size-3.5" /> {seeding ? "Pushing..." : "Push"}
+          </DevButton>
+        </DevRow>
+        <DevRow
+          label="Seed Demo (6 habits)"
+          hint="Quick demo with 6 habits and 45 days of history."
+          query={query}
+          terms="seed demo quick"
+        >
+          <DevButton
+            tone="accent"
+            onClick={async () => {
+              if (!user) { alert("Must be logged in."); return; }
+              if (!window.confirm("Generate demo data and push?")) return;
+              setSeeding(true);
+              try {
+                const seeded = makeDemoData(data, today);
+                replaceData(seeded);
+                await fullResync(user.id);
+                reloadCache();
+                alert("Demo data pushed!");
+              } catch (e) { alert(`Failed: ${e}`); }
+              finally { setSeeding(false); }
+            }}
+            disabled={seeding || !user}
+          >
+            <RefreshCw className="size-3.5" /> {seeding ? "..." : "Seed (6)"}
+          </DevButton>
+        </DevRow>
+        <DevRow
+          label="Seed Comprehensive (55+ records/table)"
+          hint="Generate 55 habits, 50 notes, 30 goals, spend ledger, achievements — push to Supabase."
+          query={query}
+          terms="seed full comprehensive populate all tables"
+        >
+          <DevButton
+            tone="accent"
+            onClick={async () => {
+              if (!user) { alert("Must be logged in."); return; }
+              if (!window.confirm("Generate 55+ habits, 50 notes, 30 goals with 60 days of history and push to Supabase?")) return;
+              setSeeding(true);
+              try {
+                const seeded = makeComprehensiveSeedData(data, today);
+                replaceData(seeded);
+                await fullResync(user.id);
+                reloadCache();
+                alert("Comprehensive seed data pushed to Supabase!");
+              } catch (e) { alert(`Failed: ${e}`); }
+              finally { setSeeding(false); }
+            }}
+            disabled={seeding || !user}
+          >
+            <Database className="size-3.5" /> {seeding ? "..." : "Seed (55+)"}
+          </DevButton>
+        </DevRow>
+        <DevRow
+          label="Seed Suggestions (55) & Notifications (50)"
+          hint="Directly inserts seed data into suggestions and notifications tables via Supabase."
+          query={query}
+          terms="seed suggestions notifications feedback"
+        >
+          <DevButton
+            tone="accent"
+            onClick={async () => {
+              if (!user) { alert("Must be logged in."); return; }
+              if (!window.confirm("Insert 55 suggestions and 50 notifications into Supabase?")) return;
+              setSeeding(true);
+              try {
+                const supabase = createClient();
+                const now = new Date().toISOString();
+                // Suggestion seed data
+                const suggestionData = [
+                  { title: "Dark mode toggle", body: "Would love a dark mode option.", category: "feature" },
+                  { title: "Export to CSV", body: "Please add an export feature.", category: "feature" },
+                  { title: "Sync improvement", body: "Syncing should be more seamless.", category: "improvement" },
+                  { title: "Mobile app", body: "Would love a mobile app version.", category: "feature" },
+                  { title: "Habit templates", body: "Pre-built templates for common goals.", category: "feature" },
+                  { title: "More achievement types", body: "More achievements for consistency streaks.", category: "feature" },
+                  { title: "Calendar view", body: "A calendar heatmap would help.", category: "feature" },
+                  { title: "Reminders", body: "Desktop notifications would be great.", category: "feature" },
+                  { title: "Goal tracking", body: "Add milestone tracking within goals.", category: "feature" },
+                  { title: "API access", body: "Would like an API to integrate.", category: "feature" },
+                ];
+                const suggestions = Array.from({ length: 55 }, (_, i) => ({
+                  user_id: user.id,
+                  title: suggestionData[i % suggestionData.length].title,
+                  body: suggestionData[i % suggestionData.length].body,
+                  category: suggestionData[i % suggestionData.length].category,
+                  status: ["new", "read", "acknowledged", "completed", "declined"][i % 5],
+                  created_at: new Date(Date.now() - i * 3600000 * 4).toISOString(),
+                }));
+                const { error: sugErr } = await supabase.from("suggestions").insert(suggestions);
+                if (sugErr) throw sugErr;
+
+                // Notification seed data
+                const types = ["friend_request", "friend_accept", "achievement", "system"] as const;
+                const notifications = Array.from({ length: 50 }, (_, i) => ({
+                  user_id: user.id,
+                  type: types[i % types.length],
+                  title: ["New request", "Friend accepted", "Achievement!", "Welcome"][i % 4],
+                  body: ["Someone wants to connect", "Friend request accepted", "You earned an achievement", "Welcome to the app!"][i % 4],
+                  is_read: i % 3 !== 0,
+                  created_at: new Date(Date.now() - i * 3600000 * 3).toISOString(),
+                }));
+                const { error: notErr } = await supabase.from("notifications").insert(notifications);
+                if (notErr) throw notErr;
+
+                alert("Seeded 55 suggestions and 50 notifications!");
+              } catch (e) { alert(`Failed to seed: ${e}`); }
+              finally { setSeeding(false); }
+            }}
+            disabled={seeding || !user}
+          >
+            <Database className="size-3.5" /> Seed extras
+          </DevButton>
+        </DevRow>
+        <DevRow
+          label="Clear All Local Data"
+          hint="Wipe localStorage and start fresh. Your data on Supabase is preserved."
+          query={query}
+          terms="wipe reset fresh"
+        >
+          <DevButton
+            tone="danger"
+            onClick={() => {
+              if (
+                !window.confirm(
+                  "Clear ALL local data? This cannot be undone. Your data on Supabase will be preserved and re-synced on next login.",
+                )
+              )
+                return;
+              clearLocalAppData();
+              window.location.reload();
+            }}
+          >
+            <Trash2 className="size-3.5" /> Clear All
           </DevButton>
         </DevRow>
       </DevGroup>
