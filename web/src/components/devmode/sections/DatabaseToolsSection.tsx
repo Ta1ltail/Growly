@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import {
   Coins,
   Sparkles,
@@ -13,6 +13,7 @@ import {
   Trash2,
   Upload,
 } from "lucide-react";
+import { toast } from "sonner";
 import {
   useAppData,
   replaceData,
@@ -104,6 +105,7 @@ export function DatabaseToolsSection({ query }: { query: string }) {
     )
       return;
     mutateData((prev) => ({ ...prev, ...patch }));
+    toast.success(`${label} cleared`);
   }
 
   // Seeder: Add Gold — additive, reads the LIVE balance so repeated clicks stack.
@@ -240,7 +242,7 @@ export function DatabaseToolsSection({ query }: { query: string }) {
     mutateData((prev) => {
       const firstHabit = prev.habits.find((h) => !h.archived);
       if (!firstHabit) {
-        alert("Create at least one habit first.");
+        toast.error("Create at least one habit first.");
         return prev;
       }
       const newMarks = { ...prev.marks };
@@ -260,7 +262,7 @@ export function DatabaseToolsSection({ query }: { query: string }) {
     mutateData((prev) => {
       const firstHabit = prev.habits.find((h) => !h.archived);
       if (!firstHabit) {
-        alert("Create at least one habit first.");
+        toast.error("Create at least one habit first.");
         return prev;
       }
       const yesterday = dateKey(addDays(today, -1));
@@ -523,16 +525,16 @@ export function DatabaseToolsSection({ query }: { query: string }) {
             tone="accent"
             onClick={async () => {
               if (!user) {
-                alert("You must be logged in to push to Supabase.");
+                toast.error("You must be logged in to push to Supabase.");
                 return;
               }
               setSeeding(true);
               try {
                 await fullResync(user.id);
                 reloadCache();
-                alert("Data pushed to Supabase successfully!");
+                toast.success("Data pushed to Supabase successfully!");
               } catch (e) {
-                alert(`Failed to push: ${e}`);
+                toast.error(`Failed to push: ${e}`);
               } finally {
                 setSeeding(false);
               }
@@ -551,7 +553,7 @@ export function DatabaseToolsSection({ query }: { query: string }) {
           <DevButton
             tone="accent"
             onClick={async () => {
-              if (!user) { alert("Must be logged in."); return; }
+              if (!user) { toast.error("Must be logged in."); return; }
               if (!window.confirm("Generate demo data and push?")) return;
               setSeeding(true);
               try {
@@ -559,8 +561,8 @@ export function DatabaseToolsSection({ query }: { query: string }) {
                 replaceData(seeded);
                 await fullResync(user.id);
                 reloadCache();
-                alert("Demo data pushed!");
-              } catch (e) { alert(`Failed: ${e}`); }
+                toast.success("Demo data pushed to Supabase!");
+              } catch (e) { toast.error(`Failed: ${e}`); }
               finally { setSeeding(false); }
             }}
             disabled={seeding || !user}
@@ -577,7 +579,7 @@ export function DatabaseToolsSection({ query }: { query: string }) {
           <DevButton
             tone="accent"
             onClick={async () => {
-              if (!user) { alert("Must be logged in."); return; }
+              if (!user) { toast.error("Must be logged in."); return; }
               if (!window.confirm("Generate 55+ habits, 50 notes, 30 goals with 60 days of history and push to Supabase?")) return;
               setSeeding(true);
               try {
@@ -585,8 +587,8 @@ export function DatabaseToolsSection({ query }: { query: string }) {
                 replaceData(seeded);
                 await fullResync(user.id);
                 reloadCache();
-                alert("Comprehensive seed data pushed to Supabase!");
-              } catch (e) { alert(`Failed: ${e}`); }
+                toast.success("Comprehensive seed data pushed to Supabase!");
+              } catch (e) { toast.error(`Failed: ${e}`); }
               finally { setSeeding(false); }
             }}
             disabled={seeding || !user}
@@ -603,7 +605,7 @@ export function DatabaseToolsSection({ query }: { query: string }) {
           <DevButton
             tone="accent"
             onClick={async () => {
-              if (!user) { alert("Must be logged in."); return; }
+              if (!user) { toast.error("Must be logged in."); return; }
               if (!window.confirm("Insert 55 suggestions and 50 notifications into Supabase?")) return;
               setSeeding(true);
               try {
@@ -646,8 +648,8 @@ export function DatabaseToolsSection({ query }: { query: string }) {
                 const { error: notErr } = await supabase.from("notifications").insert(notifications);
                 if (notErr) throw notErr;
 
-                alert("Seeded 55 suggestions and 50 notifications!");
-              } catch (e) { alert(`Failed to seed: ${e}`); }
+                toast.success("Seeded 55 suggestions and 50 notifications!");
+              } catch (e) { toast.error(`Failed to seed: ${e}`); }
               finally { setSeeding(false); }
             }}
             disabled={seeding || !user}

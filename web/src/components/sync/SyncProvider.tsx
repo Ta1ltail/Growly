@@ -40,6 +40,7 @@ const SYNC_TABLES = [
 
 export function SyncProvider({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
+  const userId = user?.id ?? null;
   const initialized = useRef(false);
   const pollTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const realtimeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -47,7 +48,7 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (loading) return;
-    if (!user) {
+    if (!userId) {
       // User signed out — disconnect sync
       setSyncCallback(null);
       resetSyncState();
@@ -71,7 +72,6 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
     if (initialized.current) return;
     initialized.current = true;
 
-    const userId = user.id;
     const supabase = createClient();
     supabaseRef.current = supabase;
 
@@ -138,7 +138,11 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
       }
       supabase.channel("sync-realtime").unsubscribe();
     };
-  }, [user, loading]);
+    // Keyed on userId (a stable string) rather than the user object, whose
+    // reference changes on every token refresh / tab focus — using the object
+    // would tear down and (thanks to the initialized guard) never re-establish
+    // the realtime channel and poll timer after the first hourly refresh.
+  }, [userId, loading]);
 
   // The sync status pill is intentionally not rendered — sync runs silently in
   // the background and surfaces no persistent on-screen indicator.

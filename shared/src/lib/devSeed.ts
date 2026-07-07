@@ -305,7 +305,7 @@ export function makeComprehensiveSeedData(base: AppData, today: Date): AppData {
 
   // Unlock various achievements
   const unlocks: Record<string, { at: string; seen: boolean }> = {};
-  const now = new Date().toISOString();
+  // Unlock random achievements using real achievement IDs from ACHIEVEMENTS
   const unlockedAchievements = ACHIEVEMENTS.filter(() => Math.random() < 0.4);
   for (const a of unlockedAchievements) {
     const daysAgo = Math.floor(Math.random() * 30);
@@ -315,12 +315,20 @@ export function makeComprehensiveSeedData(base: AppData, today: Date): AppData {
     };
   }
 
-  // Economy with spend ledger
+  // Economy with spend ledger — using real shop item IDs
+  const REAL_ITEMS = [
+    "flame-azure", "flame-emerald", "flame-violet", "flame-gold",
+    "flame-ice", "flame-lava", "flame-rainbow", "flame-solar",
+    "confetti-mono", "confetti-neon", "confetti-fire", "confetti-pastel",
+    "confetti-gold", "confetti-ocean",
+    "accent-crimson", "accent-emerald", "accent-violet",
+    "accent-pink", "accent-ocean",
+  ];
   const spent: SpendEntry[] = Array.from({ length: 55 }, (_, i) => ({
     id: uid(),
     at: new Date(addDays(today, -Math.floor(Math.random() * 45))).toISOString(),
     amount: pick([50, 100, 150, 200, 250, 300, 500]),
-    item: pick(["flame-default", "confetti-default", "accent-default", "flame-custom", "confetti-sparkle"]),
+    item: pick(REAL_ITEMS),
   }));
 
   // Some freezes used
@@ -342,8 +350,8 @@ export function makeComprehensiveSeedData(base: AppData, today: Date): AppData {
       ...base.economy,
       spent,
       freezes,
-      owned: ["flame-default", "confetti-default", "accent-default", "flame-custom"],
-      equipped: { flame: "flame-custom", confetti: "confetti-default", accent: "accent-default" },
+      owned: REAL_ITEMS.slice(0, 4),
+      equipped: { flame: REAL_ITEMS[0], confetti: "confetti-default", accent: "accent-default" },
       bonusCoins: 250,
     },
     progressSeen: {

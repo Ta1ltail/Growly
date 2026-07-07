@@ -126,7 +126,6 @@ function processRetryQueue() {
         }
 
         await saveChanged(supabase, item.userId, item.data, item.changed);
-        console.log("[sync] Retry succeeded for:", item.changed);
         setStatus("idle");
       } catch {
         // Re-queue with incremented attempt count
@@ -154,6 +153,19 @@ function enqueueRetry(
    Stats snapshot helper — called after every
    successful sync to update public profile data.
    ──────────────────────────────────────────── */
+
+// Debounce the (fairly heavy) stats snapshot so a burst of mark toggles results
+// in a single recompute+upsert once the user pauses, instead of one per tap.
+const SNAPSHOT_DEBOUNCE_MS = 3000;
+let _snapshotTimer: ReturnType<typeof setTimeout> | null = null;
+
+function scheduleStatsSnapshot(userId: string): void {
+  if (_snapshotTimer) clearTimeout(_snapshotTimer);
+  _snapshotTimer = setTimeout(() => {
+    _snapshotTimer = null;
+    void refreshStatsSnapshot(userId);
+  }, SNAPSHOT_DEBOUNCE_MS);
+}
 
 async function refreshStatsSnapshot(userId: string): Promise<void> {
   try {
@@ -459,6 +471,17 @@ async function verifySessionReady(supabase: ReturnType<typeof createClient>): Pr
   return true;
 }
 
+// Lightweight, network-free session check for the hot per-mutation push path.
+// Unlike getUser() (a round-trip to the auth server on every mark toggle), this
+// reads the locally-cached session. The heavier verifySessionReady() is still
+// used on fresh registration where server-side propagation must be confirmed.
+async function hasLocalSession(
+  supabase: ReturnType<typeof createClient>,
+): Promise<boolean> {
+  const { data: { session } } = await supabase.auth.getSession();
+  return !!session;
+}
+
 /* ────────────────────────────────────────────
    Push: send mutation changes to Supabase
    ────────────────────────────────────────────
@@ -476,19 +499,19 @@ export async function pushMutation(
   try {
     const supabase = createClient();
 
-    // Verify the auth session is valid before pushing.
-    // On fresh registration the auth.users record may not have propagated yet,
-    // causing all FK constraints to fail. getUser() refreshes the session if
-    // needed and returns null if the user doesn't exist server-side.
-    if (!(await verifySessionReady(supabase))) {
+    // Fast, network-free session check on this hot path. If there's no cached
+    // session at all, queue for retry (verifySessionReady's server round-trip
+    // is reserved for the fresh-registration path in fullResync).
+    if (!(await hasLocalSession(supabase))) {
       enqueueRetry(userId, data, changed);
       setStatus("offline");
       return;
     }
 
     await saveChanged(supabase, userId, data, changed);
-    // Refresh stats snapshot after each mutation
-    await refreshStatsSnapshot(userId);
+    // Refresh the public stats snapshot — debounced so rapid mark toggles
+    // collapse into one recompute+upsert rather than one per tap.
+    scheduleStatsSnapshot(userId);
     setStatus("idle");
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Sync failed";

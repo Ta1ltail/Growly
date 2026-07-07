@@ -20,7 +20,9 @@ export function useToday(): Date {
       setToday(new Date());
     }, safeMs);
     return () => clearTimeout(timer);
-  }, []);
+    // Depend on `today` so each rollover reschedules the next midnight timer —
+    // otherwise a tab left open past two midnights would keep showing day 1.
+  }, [today]);
 
   return today;
 }

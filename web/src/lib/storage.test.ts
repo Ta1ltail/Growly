@@ -332,7 +332,7 @@ describe("loadData validation", () => {
   it("defaults profile and unlocks for pre-v3 saves", () => {
     write({ habits: [] });
     const { profile, unlocks } = loadData();
-    expect(profile.displayName).toBe("Justin");
+    expect(profile.displayName).toBe("User");
     expect(unlocks).toEqual({});
   });
 

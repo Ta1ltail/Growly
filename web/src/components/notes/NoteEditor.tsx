@@ -58,6 +58,7 @@ export function NoteEditor({
         onChange={(e) => setBody(e.target.value)}
         placeholder="Write a note… what happened, how you felt, what to change."
         rows={6}
+        aria-label="Note body"
         className="w-full resize-none rounded-xl border border-line bg-surface2 px-3.5 py-3 text-sm outline-none placeholder:text-faint focus:border-accent"
       />
 
@@ -69,6 +70,7 @@ export function NoteEditor({
           value={tags}
           onChange={(e) => setTags(e.target.value)}
           placeholder="comma, separated, tags"
+          aria-label="Tags"
           className="w-full rounded-xl border border-line bg-surface2 px-3.5 py-2.5 text-sm outline-none placeholder:text-faint focus:border-accent"
         />
       </div>

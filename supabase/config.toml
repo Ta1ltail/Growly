@@ -1,11 +1,6 @@
-
-[functions.refresh-stale-snapshots]
-enabled = true
-verify_jwt = false
-import_map = "./functions/refresh-stale-snapshots/deno.json"
-# Uncomment to specify a custom file path to the entrypoint.
-# Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
-entrypoint = "./functions/refresh-stale-snapshots/index.ts"
-# Specifies static files to be bundled with the function. Supports glob patterns.
-# For example, if you want to serve static HTML pages in your function:
-# static_files = [ "./functions/refresh-stale-snapshots/*.html" ]
+# Stale-snapshot refresh runs as a pg_cron job defined in
+# migrations/001_schema.sql (cron.schedule 'refresh-stale-snapshots'), not as an
+# edge function. The previous [functions.refresh-stale-snapshots] block pointed
+# at ./functions/refresh-stale-snapshots/index.ts, which does not exist and
+# broke `supabase start`; it was removed to keep the two mechanisms from
+# duplicating and to let local startup succeed.

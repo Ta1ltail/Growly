@@ -154,7 +154,8 @@ CREATE TABLE user_profile (
   CONSTRAINT user_profile_username_key UNIQUE (username)
 );
 
-CREATE INDEX idx_user_profile_username ON user_profile(username);
+-- Note: the user_profile_username_key UNIQUE constraint already creates an
+-- index on username, so no separate idx_user_profile_username is needed.
 
 ALTER TABLE user_profile ENABLE ROW LEVEL SECURITY;
 
@@ -255,6 +256,8 @@ CREATE TABLE economy_freezes (
 );
 
 CREATE INDEX idx_economy_freezes_user_id ON economy_freezes(user_id);
+-- Index the FK so deleting a habit doesn't seq-scan freezes for the cascade.
+CREATE INDEX idx_economy_freezes_habit_id ON economy_freezes(habit_id);
 
 ALTER TABLE economy_freezes ENABLE ROW LEVEL SECURITY;
 
@@ -314,9 +317,12 @@ CREATE POLICY "Users can send friend requests"
   ON friends FOR INSERT
   WITH CHECK (requester = auth.uid());
 
+-- Only the addressee may update (to accept/decline), and WITH CHECK keeps the
+-- row anchored to them afterward so they can't reassign requester/addressee.
 CREATE POLICY "Users can respond to friend requests"
   ON friends FOR UPDATE
-  USING (addressee = auth.uid());
+  USING (addressee = auth.uid())
+  WITH CHECK (addressee = auth.uid());
 
 CREATE POLICY "Users can delete their own friend entries"
   ON friends FOR DELETE
@@ -436,11 +442,17 @@ CREATE POLICY "Users can view their own notifications"
   ON notifications FOR SELECT
   USING (user_id = auth.uid());
 
--- Any authenticated user can insert a notification (needed to notify other users
--- e.g. friend request accepted). RLS on SELECT/UPDATE/DELETE still restricts access.
+-- A user may create a notification addressed to anyone (needed to notify other
+-- users, e.g. friend request / accept) but only when they stamp themselves as
+-- the sender, so `from_user` cannot be forged to impersonate someone else.
+-- Sender-less notifications (system / achievement / dev seed) are allowed only
+-- for the caller's own inbox. Prevents notification spoofing and spam to others.
 CREATE POLICY "Users can create notifications"
   ON notifications FOR INSERT
-  WITH CHECK (auth.role() = 'authenticated');
+  WITH CHECK (
+    from_user = auth.uid()
+    OR (from_user IS NULL AND user_id = auth.uid())
+  );
 
 CREATE POLICY "Users can mark their own notifications as read"
   ON notifications FOR UPDATE
@@ -469,9 +481,13 @@ $$;
 --  VIEWS
 -- ############################################################################
 
--- Public profiles view — inherits RLS from user_profile.
--- The "Anyone can view profiles" policy above allows all authenticated reads.
-CREATE VIEW public_profiles AS
+-- Public profiles view — runs with the querying user's privileges
+-- (security_invoker) so it enforces user_profile's RLS instead of bypassing it
+-- as the view owner. Only the authenticated role may read it; unauthenticated
+-- clients can no longer enumerate every profile's name/bio/avatar. Anon username
+-- availability during registration goes through username_exists() below instead.
+CREATE VIEW public_profiles
+WITH (security_invoker = true) AS
 SELECT
   user_id,
   display_name,
@@ -482,6 +498,23 @@ SELECT
   banner,
   showcase_badge_id
 FROM user_profile;
+
+-- Username availability check for the registration screen (runs before auth).
+-- SECURITY DEFINER so anon can call it without any table read grant, but it
+-- returns only a boolean — never any profile data — so it can't be used to
+-- enumerate profiles. Case-insensitive to match the app's lowercased usernames.
+CREATE OR REPLACE FUNCTION public.username_exists(p_username TEXT)
+RETURNS BOOLEAN
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.user_profile
+    WHERE lower(username) = lower(p_username)
+  );
+$$;
 
 
 -- ############################################################################
@@ -506,10 +539,15 @@ GRANT ALL ON TABLE notifications          TO authenticated;
 GRANT ALL ON TABLE suggestions            TO authenticated;
 GRANT ALL ON TABLE user_stats_snapshots   TO authenticated;
 
--- Views need their own grant — table grants don't carry over.
--- Also grant to anon so the frontend can check username availability during
--- registration (before the user is authenticated).
-GRANT SELECT ON public_profiles TO anon, authenticated;
+-- Views need their own grant — table grants don't carry over. Authenticated
+-- only: anon uses username_exists() for the one thing it needs pre-auth, so it
+-- has no way to read profile rows in bulk.
+GRANT SELECT ON public_profiles TO authenticated;
+
+-- Anon (and authenticated) may call the username availability check; it exposes
+-- only a boolean. PUBLIC's default EXECUTE is fine here since the function is
+-- deliberately non-enumerating.
+GRANT EXECUTE ON FUNCTION public.username_exists(TEXT) TO anon, authenticated;
 
 
 -- ############################################################################
@@ -715,6 +753,14 @@ BEGIN
   RETURN QUERY SELECT v_refreshed, v_total;
 END;
 $$;
+
+-- These are SECURITY DEFINER maintenance functions meant to run only from the
+-- pg_cron job (as the table owner). Postgres grants EXECUTE to PUBLIC by
+-- default, which would let any client force-refresh arbitrary users' snapshots
+-- or trigger the 500-row loop on demand — revoke that so only the owner/cron
+-- can invoke them.
+REVOKE ALL ON FUNCTION public.refresh_user_stats(UUID)     FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.refresh_stale_snapshots()    FROM PUBLIC, anon, authenticated;
 
 
 SELECT cron.schedule(

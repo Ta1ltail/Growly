@@ -29,7 +29,7 @@ import {
   X,
   type LucideIcon,
 } from "lucide-react";
-import { isActive } from "./navItems";
+import { isActive, routeIconColors } from "./navItems";
 
 /* ─────────────────────────────────────────
    Primary tabs (5 shown in the bar)
@@ -87,26 +87,6 @@ const DRAWER_GROUPS: DrawerGroup[] = [
     items: [{ href: "/settings", label: "Settings", icon: Settings2 }],
   },
 ];
-
-/* ─────────────────────────────────────────
-   Drawn on inner elements inside the sheet —
-   route-specific icon tints like the sidebar.
-   ───────────────────────────────────────── */
-
-const ROUTE_COLORS: Record<string, string> = {
-  "/dashboard": "text-indigo-500",
-  "/habits": "text-violet-500",
-  "/goals": "text-amber-500",
-  "/templates": "text-orange-500",
-  "/notes": "text-pink-500",
-  "/friends": "text-teal-500",
-  "/leaderboard": "text-amber-400",
-  "/notifications": "text-red-400",
-  "/suggestions": "text-purple-400",
-  "/achievements": "text-yellow-500",
-  "/shop": "text-emerald-500",
-  "/settings": "text-slate-400",
-};
 
 /* ─────────────────────────────────────────
    BottomNav component
@@ -255,7 +235,7 @@ export function BottomNav() {
                   </p>
                   {group.items.map(({ href, label, icon: Icon }) => {
                     const active = isActive(pathname, href);
-                    const colorClass = ROUTE_COLORS[href] ?? "text-muted";
+                    const colorClass = routeIconColors[href] ?? "text-muted";
                     return (
                       <Link
                         key={href}

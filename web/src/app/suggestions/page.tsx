@@ -164,6 +164,7 @@ export default function SuggestionsPage() {
                   placeholder="Brief title (optional)"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
+                  aria-label="Suggestion title"
                   className="w-full rounded-xl border border-line bg-bg px-4 py-2.5 text-sm text-ink placeholder:text-faint focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
                 />
               </div>
@@ -175,6 +176,7 @@ export default function SuggestionsPage() {
                   value={body}
                   onChange={(e) => setBody(e.target.value)}
                   rows={5}
+                  aria-label="Suggestion details"
                   className="w-full resize-none rounded-xl border border-line bg-bg px-4 py-2.5 text-sm text-ink placeholder:text-faint focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
                   required
                 />

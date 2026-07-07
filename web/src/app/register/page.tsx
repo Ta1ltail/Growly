@@ -35,12 +35,12 @@ export default function RegisterPage() {
     if (checkTimerRef.current) clearTimeout(checkTimerRef.current);
     checkTimerRef.current = setTimeout(async () => {
       const supabase = createClient();
-      const { data } = await supabase
-        .from("public_profiles")
-        .select("username")
-        .eq("username", raw)
-        .maybeSingle();
-      setUsernameAvailable(!data);
+      // username_exists() is a SECURITY DEFINER RPC that returns only a boolean,
+      // so anon can check availability without read access to profile rows.
+      const { data } = await supabase.rpc("username_exists", {
+        p_username: raw,
+      });
+      setUsernameAvailable(data === false);
       setCheckingUsername(false);
     }, 400);
     return () => {

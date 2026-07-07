@@ -359,6 +359,7 @@ function CustomCategoryEditor() {
           }}
           placeholder="New category name"
           maxLength={24}
+          aria-label="New category name"
           className="flex-1 rounded-xl border border-line bg-surface2 px-3 py-2 text-sm outline-none placeholder:text-faint focus:border-accent"
         />
         <Button onClick={handleAdd} disabled={!name.trim()} size="sm">

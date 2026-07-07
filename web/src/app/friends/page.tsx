@@ -211,7 +211,15 @@ export default function FriendsPage() {
     const timer = setTimeout(async () => {
       setSearching(true);
       const supabase = createClient();
-      const q = searchQuery.trim();
+      // Strip characters that are structural in a PostgREST .or() filter string
+      // (comma, parens, backslash) and the ilike wildcards so raw user input
+      // can't inject extra filter clauses or wildcard patterns.
+      const q = searchQuery.trim().replace(/[,()\\*%]/g, "");
+      if (q.length < 2) {
+        setSearchResults([]);
+        setSearching(false);
+        return;
+      }
 
       const { data } = await supabase
         .from("public_profiles")
@@ -305,6 +313,7 @@ export default function FriendsPage() {
               placeholder="Search by name or username…"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
+              aria-label="Search users"
               className="w-full rounded-xl border border-line bg-bg py-2.5 pl-10 pr-4 text-sm text-ink placeholder:text-faint focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
             />
             {searching && (

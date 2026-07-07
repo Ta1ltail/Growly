@@ -18,7 +18,7 @@ interface Shortcut {
 }
 
 const ROUTE_MAP: Record<string, string> = {
-  d: "/", // dashboard
+  d: "/dashboard", // dashboard
   t: "/today", // today
   h: "/habits", // habits
   r: "/tracker", // tracker (grid)

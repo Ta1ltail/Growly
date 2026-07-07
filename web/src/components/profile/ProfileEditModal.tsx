@@ -48,8 +48,32 @@ export function ProfileEditModal({
   function onPickImage(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
+    // Downscale + re-encode before storing. Avatars live in the profile blob
+    // that's written to localStorage and pushed on every sync, so an unbounded
+    // multi-MB data URL would blow the storage quota and bloat every payload.
     const reader = new FileReader();
-    reader.onload = () => set("avatar", String(reader.result));
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        const MAX = 256; // px, longest edge
+        const scale = Math.min(1, MAX / Math.max(img.width, img.height));
+        const w = Math.max(1, Math.round(img.width * scale));
+        const h = Math.max(1, Math.round(img.height * scale));
+        const canvas = document.createElement("canvas");
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) {
+          set("avatar", String(reader.result));
+          return;
+        }
+        ctx.drawImage(img, 0, 0, w, h);
+        set("avatar", canvas.toDataURL("image/jpeg", 0.85));
+      };
+      // If decoding fails, fall back to the original data URL.
+      img.onerror = () => set("avatar", String(reader.result));
+      img.src = String(reader.result);
+    };
     reader.readAsDataURL(file);
   }
 

@@ -99,6 +99,16 @@ BEGIN
   v_pw_hash := extensions.crypt('test123456', extensions.gen_salt('bf'));
 
   FOR i IN 1..50 LOOP
+    -- Idempotency guard: if this seed user already exists, skip the whole
+    -- iteration. Without this, re-running the migration fails on auth.users'
+    -- unique email index (and would otherwise insert duplicate child rows under
+    -- fresh random UUIDs). Makes the seed safe to re-run against an existing DB.
+    IF EXISTS (
+      SELECT 1 FROM auth.users WHERE email = 'user' || i || '@example.com'
+    ) THEN
+      CONTINUE;
+    END IF;
+
     v_user_id := gen_random_uuid();
 
     -- ── 1. auth.users ──
@@ -120,27 +130,32 @@ BEGIN
       '{"provider":"email"}',
       jsonb_build_object(
         'display_name',
-        CASE (i % 20)
-          WHEN 0 THEN 'Alice Johnson'
-          WHEN 1 THEN 'Bob Smith'
-          WHEN 2 THEN 'Charlie Brown'
-          WHEN 3 THEN 'Diana Ross'
-          WHEN 4 THEN 'Evan Williams'
-          WHEN 5 THEN 'Fiona Davis'
-          WHEN 6 THEN 'George Miller'
-          WHEN 7 THEN 'Hannah Wilson'
-          WHEN 8 THEN 'Ian Taylor'
-          WHEN 9 THEN 'Julia Anderson'
-          WHEN 10 THEN 'Kevin Thomas'
-          WHEN 11 THEN 'Laura Jackson'
-          WHEN 12 THEN 'Mike White'
-          WHEN 13 THEN 'Nina Harris'
-          WHEN 14 THEN 'Oscar Martin'
-          WHEN 15 THEN 'Patricia Lee'
-          WHEN 16 THEN 'Quinn Clark'
-          WHEN 17 THEN 'Rachel Lewis'
-          WHEN 18 THEN 'Sam Walker'
-          ELSE 'Tina Hall'
+        CASE (i % 50)
+          WHEN 0 THEN 'Alice Johnson'     WHEN 1 THEN 'Bob Smith'
+          WHEN 2 THEN 'Charlie Brown'     WHEN 3 THEN 'Diana Ross'
+          WHEN 4 THEN 'Evan Williams'     WHEN 5 THEN 'Fiona Davis'
+          WHEN 6 THEN 'George Miller'     WHEN 7 THEN 'Hannah Wilson'
+          WHEN 8 THEN 'Ian Taylor'        WHEN 9 THEN 'Julia Anderson'
+          WHEN 10 THEN 'Kevin Thomas'     WHEN 11 THEN 'Laura Jackson'
+          WHEN 12 THEN 'Mike White'       WHEN 13 THEN 'Nina Harris'
+          WHEN 14 THEN 'Oscar Martin'     WHEN 15 THEN 'Patricia Lee'
+          WHEN 16 THEN 'Quinn Clark'      WHEN 17 THEN 'Rachel Lewis'
+          WHEN 18 THEN 'Sam Walker'       WHEN 19 THEN 'Tina Hall'
+          WHEN 20 THEN 'Uma Patel'        WHEN 21 THEN 'Victor Cruz'
+          WHEN 22 THEN 'Wendy Chen'        WHEN 23 THEN 'Xander Reed'
+          WHEN 24 THEN 'Yara Ahmed'        WHEN 25 THEN 'Zack Brooks'
+          WHEN 26 THEN 'Amber Singh'       WHEN 27 THEN 'Blake Torres'
+          WHEN 28 THEN 'Chloe Kim'         WHEN 29 THEN 'Diego Rivera'
+          WHEN 30 THEN 'Elena Novak'       WHEN 31 THEN 'Felix Wong'
+          WHEN 32 THEN 'Grace Murphy'      WHEN 33 THEN 'Henry Park'
+          WHEN 34 THEN 'Ivy Cooper'        WHEN 35 THEN 'Jake Sullivan'
+          WHEN 36 THEN 'Kira Yamamoto'     WHEN 37 THEN 'Liam O''Brien'
+          WHEN 38 THEN 'Maya Patel'        WHEN 39 THEN 'Noah Kim'
+          WHEN 40 THEN 'Olga Petrov'       WHEN 41 THEN 'Paul Martin'
+          WHEN 42 THEN 'Quinn Hughes'      WHEN 43 THEN 'Rosa Silva'
+          WHEN 44 THEN 'Sean O''Connor'    WHEN 45 THEN 'Tara Singh'
+          WHEN 46 THEN 'Ugo Nwosu'         WHEN 47 THEN 'Vera Kosova'
+          WHEN 48 THEN 'Will Turner'       ELSE 'Zara Patel'
         END
       ),
       now() - interval '60 days',
@@ -173,28 +188,33 @@ BEGIN
       user_id, display_name, username, bio, motto, avatar
     ) VALUES (
       v_user_id,
-      CASE (i % 20)
-        WHEN 0 THEN 'Alice Johnson'
-        WHEN 1 THEN 'Bob Smith'
-        WHEN 2 THEN 'Charlie Brown'
-        WHEN 3 THEN 'Diana Ross'
-        WHEN 4 THEN 'Evan Williams'
-        WHEN 5 THEN 'Fiona Davis'
-        WHEN 6 THEN 'George Miller'
-        WHEN 7 THEN 'Hannah Wilson'
-        WHEN 8 THEN 'Ian Taylor'
-        WHEN 9 THEN 'Julia Anderson'
-        WHEN 10 THEN 'Kevin Thomas'
-        WHEN 11 THEN 'Laura Jackson'
-        WHEN 12 THEN 'Mike White'
-        WHEN 13 THEN 'Nina Harris'
-        WHEN 14 THEN 'Oscar Martin'
-        WHEN 15 THEN 'Patricia Lee'
-        WHEN 16 THEN 'Quinn Clark'
-        WHEN 17 THEN 'Rachel Lewis'
-        WHEN 18 THEN 'Sam Walker'
-        ELSE 'Tina Hall'
-      END,
+      CASE (i % 50)
+          WHEN 0 THEN 'Alice Johnson'     WHEN 1 THEN 'Bob Smith'
+          WHEN 2 THEN 'Charlie Brown'     WHEN 3 THEN 'Diana Ross'
+          WHEN 4 THEN 'Evan Williams'     WHEN 5 THEN 'Fiona Davis'
+          WHEN 6 THEN 'George Miller'     WHEN 7 THEN 'Hannah Wilson'
+          WHEN 8 THEN 'Ian Taylor'        WHEN 9 THEN 'Julia Anderson'
+          WHEN 10 THEN 'Kevin Thomas'     WHEN 11 THEN 'Laura Jackson'
+          WHEN 12 THEN 'Mike White'       WHEN 13 THEN 'Nina Harris'
+          WHEN 14 THEN 'Oscar Martin'     WHEN 15 THEN 'Patricia Lee'
+          WHEN 16 THEN 'Quinn Clark'      WHEN 17 THEN 'Rachel Lewis'
+          WHEN 18 THEN 'Sam Walker'       WHEN 19 THEN 'Tina Hall'
+          WHEN 20 THEN 'Uma Patel'        WHEN 21 THEN 'Victor Cruz'
+          WHEN 22 THEN 'Wendy Chen'        WHEN 23 THEN 'Xander Reed'
+          WHEN 24 THEN 'Yara Ahmed'        WHEN 25 THEN 'Zack Brooks'
+          WHEN 26 THEN 'Amber Singh'       WHEN 27 THEN 'Blake Torres'
+          WHEN 28 THEN 'Chloe Kim'         WHEN 29 THEN 'Diego Rivera'
+          WHEN 30 THEN 'Elena Novak'       WHEN 31 THEN 'Felix Wong'
+          WHEN 32 THEN 'Grace Murphy'      WHEN 33 THEN 'Henry Park'
+          WHEN 34 THEN 'Ivy Cooper'        WHEN 35 THEN 'Jake Sullivan'
+          WHEN 36 THEN 'Kira Yamamoto'     WHEN 37 THEN 'Liam O''Brien'
+          WHEN 38 THEN 'Maya Patel'        WHEN 39 THEN 'Noah Kim'
+          WHEN 40 THEN 'Olga Petrov'       WHEN 41 THEN 'Paul Martin'
+          WHEN 42 THEN 'Quinn Hughes'      WHEN 43 THEN 'Rosa Silva'
+          WHEN 44 THEN 'Sean O''Connor'    WHEN 45 THEN 'Tara Singh'
+          WHEN 46 THEN 'Ugo Nwosu'         WHEN 47 THEN 'Vera Kosova'
+          WHEN 48 THEN 'Will Turner'       ELSE 'Zara Patel'
+        END,
       'user' || i,
       CASE (i % 5)
         WHEN 0 THEN 'Habit enthusiast on a journey of self-improvement.'
@@ -218,17 +238,18 @@ BEGIN
       motto        = EXCLUDED.motto;
 
     -- ── 4. user_settings (single row, trigger may already have created it) ──
+    -- Accent colors match ACCENTS from shared/src/lib/theme.ts
     INSERT INTO user_settings (user_id, theme_mode, theme_accent, grace_hours, onboarding_complete)
     VALUES (
       v_user_id,
       CASE (i % 3) WHEN 0 THEN 'light' WHEN 1 THEN 'dark' ELSE 'system' END,
       CASE (i % 6)
         WHEN 0 THEN 'blue'
-        WHEN 1 THEN 'green'
-        WHEN 2 THEN 'purple'
-        WHEN 3 THEN 'orange'
-        WHEN 4 THEN 'pink'
-        ELSE 'teal'
+        WHEN 1 THEN 'violet'
+        WHEN 2 THEN 'cyan'
+        WHEN 3 THEN 'emerald'
+        WHEN 4 THEN 'rose'
+        ELSE 'amber'
       END,
       5,
       true
@@ -393,28 +414,41 @@ BEGIN
       );
     END LOOP;
 
-    -- ── 12. UNLOCKS (some achievements) ──
+    -- ── 12. UNLOCKS (some achievements) — IDs match ACHIEVEMENTS from shared/src/lib/achievements.ts ──
     IF random() < 0.6 THEN
       INSERT INTO unlocks (id, user_id, achievement_id, at, seen)
       VALUES (
         gen_random_uuid(),
         v_user_id,
-        CASE (i % 15)
-          WHEN 0 THEN 'first_habit'
-          WHEN 1 THEN 'three_day_streak'
-          WHEN 2 THEN 'week_streak'
-          WHEN 3 THEN 'perfect_week'
-          WHEN 4 THEN 'ten_habits'
-          WHEN 5 THEN 'first_goal'
-          WHEN 6 THEN 'early_bird'
-          WHEN 7 THEN 'night_owl'
-          WHEN 8 THEN 'category_workout'
-          WHEN 9 THEN 'category_health'
-          WHEN 10 THEN 'consistency_bronze'
-          WHEN 11 THEN 'first_completion'
-          WHEN 12 THEN 'weekend_warrior'
-          WHEN 13 THEN 'social_butterfly'
-          ELSE 'morning_person'
+        CASE (i % 28)
+          WHEN 0 THEN 'streak-1'
+          WHEN 1 THEN 'streak-3'
+          WHEN 2 THEN 'streak-7'
+          WHEN 3 THEN 'streak-14'
+          WHEN 4 THEN 'done-1'
+          WHEN 5 THEN 'done-10'
+          WHEN 6 THEN 'done-50'
+          WHEN 7 THEN 'perfect-week'
+          WHEN 8 THEN 'perfect-days-10'
+          WHEN 9 THEN 'habit-collector'
+          WHEN 10 THEN 'early-bird'
+          WHEN 11 THEN 'night-owl'
+          WHEN 12 THEN 'weekend-warrior'
+          WHEN 13 THEN 'comeback-king'
+          WHEN 14 THEN 'cat-workout'
+          WHEN 15 THEN 'cat-studies'
+          WHEN 16 THEN 'cat-work'
+          WHEN 17 THEN 'cat-health'
+          WHEN 18 THEN 'done-100'
+          WHEN 19 THEN 'streak-30'
+          WHEN 20 THEN 'perfect-days-50'
+          WHEN 21 THEN 'streak-50'
+          WHEN 22 THEN 'habit-master'
+          WHEN 23 THEN 'done-500'
+          WHEN 24 THEN 'perfect-month'
+          WHEN 25 THEN 'streak-100'
+          WHEN 26 THEN 'done-1000'
+          ELSE 'streak-365'
         END,
         now() - interval '15 days',
         random() < 0.7

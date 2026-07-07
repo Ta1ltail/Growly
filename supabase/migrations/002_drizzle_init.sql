@@ -47,7 +47,14 @@ DO $$ BEGIN
   END IF;
 END $$;
 
-CREATE UNIQUE INDEX IF NOT EXISTS marks_user_date_habit_key ON marks(user_id, date_key, habit_id);
+-- Only create the standalone unique index if 001's UNIQUE constraint (which
+-- already backs it with an index) isn't present — avoids a duplicate unique
+-- index on the hot marks table when running the canonical 001→005 sequence.
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'marks_user_id_date_key_habit_id_key') THEN
+    CREATE UNIQUE INDEX IF NOT EXISTS marks_user_date_habit_key ON marks(user_id, date_key, habit_id);
+  END IF;
+END $$;
 CREATE INDEX IF NOT EXISTS idx_marks_user_id ON marks(user_id);
 CREATE INDEX IF NOT EXISTS idx_marks_habit_id ON marks(habit_id);
 CREATE INDEX IF NOT EXISTS idx_marks_date_key ON marks(date_key);
@@ -136,7 +143,11 @@ CREATE TABLE IF NOT EXISTS unlocks (
   seen           BOOLEAN NOT NULL DEFAULT FALSE
 );
 
-CREATE UNIQUE INDEX IF NOT EXISTS unlocks_user_achievement_key ON unlocks(user_id, achievement_id);
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'unlocks_user_id_achievement_id_key') THEN
+    CREATE UNIQUE INDEX IF NOT EXISTS unlocks_user_achievement_key ON unlocks(user_id, achievement_id);
+  END IF;
+END $$;
 CREATE INDEX IF NOT EXISTS idx_unlocks_user_id ON unlocks(user_id);
 
 -- ############################################################################
@@ -218,7 +229,11 @@ DO $$ BEGIN
   END IF;
 END $$;
 
-CREATE UNIQUE INDEX IF NOT EXISTS friends_pair_key ON friends(requester, addressee);
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'friends_requester_addressee_key') THEN
+    CREATE UNIQUE INDEX IF NOT EXISTS friends_pair_key ON friends(requester, addressee);
+  END IF;
+END $$;
 CREATE INDEX IF NOT EXISTS idx_friends_requester ON friends(requester);
 CREATE INDEX IF NOT EXISTS idx_friends_addressee ON friends(addressee);
 CREATE INDEX IF NOT EXISTS idx_friends_requester_status ON friends(requester, status);

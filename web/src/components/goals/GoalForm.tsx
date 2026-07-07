@@ -76,6 +76,7 @@ export function GoalForm({
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder="e.g. Read 12 books this year"
+          aria-label="Goal title"
           className="w-full rounded-xl border border-line bg-surface2 px-3.5 py-2.5 text-sm outline-none placeholder:text-faint focus:border-accent"
         />
       </div>
@@ -91,6 +92,7 @@ export function GoalForm({
               const val = Number(e.target.value);
               if (!isNaN(val)) setTarget(val);
             }}
+            aria-label="Target number"
             className="w-full rounded-xl border border-line bg-surface2 px-3.5 py-2.5 text-sm outline-none focus:border-accent"
           />
         </div>
@@ -100,6 +102,7 @@ export function GoalForm({
             type="date"
             value={deadline}
             onChange={(e) => setDeadline(e.target.value)}
+            aria-label="Deadline"
             className="w-full rounded-xl border border-line bg-surface2 px-3 py-2.5 text-sm outline-none focus:border-accent"
           />
         </div>
@@ -205,6 +208,7 @@ export function GoalForm({
             value={msTitle}
             onChange={(e) => setMsTitle(e.target.value)}
             placeholder="Milestone title"
+            aria-label="Milestone title"
             className="flex-1 rounded-xl border border-line bg-surface2 px-3 py-2 text-sm outline-none placeholder:text-faint focus:border-accent"
           />
           <input
@@ -213,6 +217,7 @@ export function GoalForm({
             value={msAt || ""}
             onChange={(e) => setMsAt(Number(e.target.value))}
             placeholder="at"
+            aria-label="Milestone target count"
             className="w-16 rounded-xl border border-line bg-surface2 px-2 py-2 text-sm outline-none focus:border-accent"
           />
           <button

@@ -3,7 +3,7 @@
 // Daily check-in popup — appears once per day when the user opens the app.
 // Shows a streak counter and the reward earned. Can be dismissed immediately.
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Coins, Flame, X } from "lucide-react";
 import { claimDailyCheckIn } from "@/lib/store";
 import { AnimatedCounter } from "@/components/ui/AnimatedCounter";
@@ -14,8 +14,13 @@ export function CheckInPopup() {
     streak: number;
   } | null>(null);
   const [dismissed, setDismissed] = useState(false);
+  const claimedRef = useRef(false);
 
   useEffect(() => {
+    // Guard against double-claim in Strict Mode / re-renders
+    if (claimedRef.current) return;
+    claimedRef.current = true;
+
     const timer = setTimeout(() => {
       const { reward, streak } = claimDailyCheckIn();
       // Don't show the popup if already claimed today (reward=0, streak=0)

@@ -16,7 +16,6 @@ import { CATEGORIES, type Category } from "./categories";
 import type { Habit } from "./types";
 import { addDays, dateKey, startOfDay } from "./date";
 import {
-  dayCompletion,
   habitStreaks,
   habitStartDay,
   isScheduled,
@@ -88,12 +87,16 @@ export function buildGameStats(
   }
 
   // Streaks across every habit (archived included — history is history).
+  // Computed once here and reused by the comeback check below (was recomputed
+  // per habit there — a full second streak walk on the hot render path).
+  const streaksByHabit = new Map<string, { current: number; best: number }>();
   let maxBestStreak = 0;
   let maxCurrentStreak = 0;
   for (const h of habits) {
-    const { current, best } = habitStreaks(h, marks, today, frozen);
-    maxBestStreak = Math.max(maxBestStreak, best);
-    maxCurrentStreak = Math.max(maxCurrentStreak, current);
+    const s = habitStreaks(h, marks, today, frozen);
+    streaksByHabit.set(h.id, s);
+    maxBestStreak = Math.max(maxBestStreak, s.best);
+    maxCurrentStreak = Math.max(maxCurrentStreak, s.current);
   }
 
   // Perfect-day walk over all habits (archived included — their marks
@@ -115,7 +118,11 @@ export function buildGameStats(
     ) {
       const scheduled = habits.filter((h) => isScheduled(h, d));
       if (scheduled.length === 0) continue; // neutral day, doesn't break a run
-      if (dayCompletion(habits, marks, d) === 100) {
+      // A perfect day = every scheduled habit done. Reuse the `scheduled` list
+      // computed just above instead of calling dayCompletion (which re-runs
+      // isScheduled over all habits) — equivalent to its `=== 100` result.
+      const dKey = dateKey(d);
+      if (scheduled.every((h) => marks[dKey]?.[h.id] === "done")) {
         perfectDays += 1;
         run += 1;
         if (run > longestPerfectRun) longestPerfectRun = run;
@@ -144,7 +151,7 @@ export function buildGameStats(
     // 7+ streak after it, the user *recovered* from a miss.
     comebackAchieved: (() => {
       for (const h of habits) {
-        const { current } = habitStreaks(h, marks, today, frozen);
+        const { current } = streaksByHabit.get(h.id) ?? { current: 0, best: 0 };
         // We need the current streak AND a past miss *before* today's streak started.
         // Simplified heuristic: if current streak >= 7 and there's any mark
         // before the current streak began, check if that mark was a miss.

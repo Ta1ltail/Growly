@@ -4,6 +4,7 @@
 import { z } from "zod";
 import type { AppData } from "./types";
 import { dateKey } from "./date";
+import { isScheduled } from "./stats";
 
 // CSV header for habit marks export.
 const CSV_HEADERS = ["Date", "Habit", "Category", "Status", "Scheduled"];
@@ -38,9 +39,12 @@ const ImportSchema = z.strictObject({
     )
     .optional()
     .default({}),
-  notes: z.array(z.unknown()).optional(),
-  goals: z.array(z.unknown()).optional(),
-  auditLog: z.array(z.unknown()).optional(),
+  // Default the array fields so a valid-but-partial backup (e.g. only habits +
+  // marks) still yields concrete arrays. Consumers read imported.notes/.goals
+  // directly, so leaving these undefined would crash on import.
+  notes: z.array(z.unknown()).optional().default([]),
+  goals: z.array(z.unknown()).optional().default([]),
+  auditLog: z.array(z.unknown()).optional().default([]),
   settings: z.unknown().optional(),
   profile: z.unknown().optional(),
   unlocks: z.unknown().optional(),
@@ -65,7 +69,14 @@ export function exportMarksCSV(data: AppData, days = 90): string {
     for (const habit of active) {
       const status = dayMarks[habit.id];
       if (!status) continue;
-      rows.push([key, escapeCSV(habit.name), habit.category, status, "yes"]);
+      const scheduled = isScheduled(habit, d) ? "yes" : "no";
+      rows.push([
+        key,
+        escapeCSV(habit.name),
+        escapeCSV(habit.category),
+        status,
+        scheduled,
+      ]);
     }
   }
 
@@ -100,8 +111,13 @@ export function importJSON(text: string): {
 }
 
 function escapeCSV(val: string): string {
-  if (val.includes(",") || val.includes('"') || val.includes("\n")) {
-    return `"${val.replace(/"/g, '""')}"`;
+  // Guard against CSV formula injection: a leading =, +, -, @, tab or CR makes
+  // spreadsheet apps evaluate the cell as a formula. Prefix with a single quote
+  // to neutralize it, then apply standard quoting for delimiters/quotes.
+  let out = val;
+  if (/^[=+\-@\t\r]/.test(out)) out = `'${out}`;
+  if (out.includes(",") || out.includes('"') || out.includes("\n")) {
+    return `"${out.replace(/"/g, '""')}"`;
   }
-  return val;
+  return out;
 }

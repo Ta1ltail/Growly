@@ -272,8 +272,8 @@ export interface Profile {
 }
 
 export const DEFAULT_PROFILE: Profile = {
-  displayName: "Justin",
-  username: "justin",
+  displayName: "User",
+  username: "user",
   motto: "Small improvements every day lead to remarkable results.",
 };
 

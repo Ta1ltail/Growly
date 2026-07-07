@@ -100,6 +100,7 @@ export function HabitForm({
           onChange={(e) => setName(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && submit()}
           placeholder="e.g. Morning run"
+          aria-label="Habit name"
           className="w-full rounded-xl border border-line bg-surface2 px-3.5 py-2.5 text-sm outline-none transition-colors placeholder:text-faint focus:border-accent"
         />
       </div>
@@ -193,6 +194,7 @@ export function HabitForm({
             type="date"
             value={startDate}
             onChange={(e) => setStartDate(e.target.value)}
+            aria-label="Start date"
             className="w-full rounded-xl border border-line bg-surface2 px-3 py-2.5 text-sm outline-none focus:border-accent"
           />
         </div>
@@ -202,6 +204,7 @@ export function HabitForm({
             type="time"
             value={timeOfDay}
             onChange={(e) => setTimeOfDay(e.target.value)}
+            aria-label="Time of day"
             className="w-full rounded-xl border border-line bg-surface2 px-3 py-2.5 text-sm outline-none focus:border-accent"
           />
         </div>
@@ -244,6 +247,7 @@ export function HabitForm({
             type="time"
             value={reminderTime}
             onChange={(e) => setReminderTime(e.target.value)}
+            aria-label="Reminder time"
             className="rounded-lg border border-line bg-surface px-2.5 py-1.5 text-sm outline-none focus:border-accent"
           />
         )}

@@ -13,7 +13,7 @@ import {
   Eye,
   Sparkles,
 } from "lucide-react";
-import { CATEGORY_COLORS, type Category } from "@/lib/categories";
+import { CATEGORY_COLORS } from "@/lib/categories";
 import { TEMPLATES } from "@/lib/templates";
 import {
   addHabit,
@@ -31,145 +31,16 @@ import { Modal } from "@/components/ui/Modal";
 import { Pagination } from "@/components/ui/Pagination";
 import { AppPageShell } from "@/components/layout/AppPageShell";
 
-// Extended templates with more variety
-const EXTENDED_TEMPLATES: {
-  id: string;
-  name: string;
-  description: string;
-  benefits?: string;
-  difficulty?: "Beginner" | "Intermediate" | "Advanced";
-  habits: { name: string; category: Category; repeatDays: number[] }[];
-}[] = [
-  ...TEMPLATES.map((t) => ({
-    ...t,
-    benefits:
-      t.id === "gym"
-        ? "Build strength, improve recovery, and establish a consistent fitness routine."
-        : t.id === "student"
-          ? "Sharpen your focus, retain more information, and ace your studies."
-          : t.id === "morning"
-            ? "Start each day with purpose and set a positive tone for the hours ahead."
-            : t.id === "wellbeing"
-              ? "Reduce stress, increase mindfulness, and find calm in your daily life."
-              : undefined,
-    difficulty:
-      t.id === "gym"
-        ? ("Intermediate" as const)
-        : t.id === "student"
-          ? ("Intermediate" as const)
-          : t.id === "morning"
-            ? ("Beginner" as const)
-            : t.id === "wellbeing"
-              ? ("Beginner" as const)
-              : undefined,
-  })),
-  {
-    id: "evening-winddown",
-    name: "Evening Wind-Down",
-    description: "End your day with calm and reflection.",
-    benefits: "Improve sleep quality, process your day, and wake up refreshed.",
-    difficulty: "Beginner",
-    habits: [
-      {
-        name: "No screens 1hr before bed",
-        category: "Lifestyle",
-        repeatDays: [],
-      },
-      { name: "Journal 5 min", category: "Personal", repeatDays: [] },
-      { name: "Read fiction 20 min", category: "Hobbies", repeatDays: [] },
-      { name: "Stretch / light yoga", category: "Health", repeatDays: [] },
-      { name: "Plan tomorrow", category: "Personal", repeatDays: [] },
-    ],
-  },
-  {
-    id: "productivity-max",
-    name: "Productivity Max",
-    description: "Crush your work goals with laser focus.",
-    benefits:
-      "Eliminate distractions, maintain deep focus, and ship more work.",
-    difficulty: "Advanced",
-    habits: [
-      {
-        name: "Pomodoro 4x sessions",
-        category: "Work",
-        repeatDays: [1, 2, 3, 4, 5],
-      },
-      { name: "Inbox zero", category: "Work", repeatDays: [1, 2, 3, 4, 5] },
-      { name: "Top 3 priorities list", category: "Personal", repeatDays: [] },
-      {
-        name: "No social media until noon",
-        category: "Lifestyle",
-        repeatDays: [1, 2, 3, 4, 5],
-      },
-      { name: "Review weekly goals", category: "Work", repeatDays: [5] },
-    ],
-  },
-  {
-    id: "mindful-living",
-    name: "Mindful Living",
-    description: "Cultivate presence and gratitude every day.",
-    benefits:
-      "Reduce anxiety, increase happiness, and build emotional resilience.",
-    difficulty: "Beginner",
-    habits: [
-      { name: "Meditate 10 min", category: "Health", repeatDays: [] },
-      { name: "Gratitude journal", category: "Personal", repeatDays: [] },
-      { name: "Digital detox 1hr", category: "Lifestyle", repeatDays: [] },
-      { name: "Mindful meal (no phone)", category: "Health", repeatDays: [] },
-      { name: "Evening reflection", category: "Personal", repeatDays: [] },
-    ],
-  },
-  {
-    id: "health-optimizer",
-    name: "Health Optimizer",
-    description: "Transform your physical and mental well-being.",
-    benefits: "More energy, better sleep, stronger body, and sharper mind.",
-    difficulty: "Intermediate",
-    habits: [
-      { name: "Workout 45 min", category: "Workout", repeatDays: [1, 2, 4, 5] },
-      { name: "Drink 8 glasses water", category: "Health", repeatDays: [] },
-      { name: "Sleep 8 hours", category: "Health", repeatDays: [] },
-      {
-        name: "Meal prep / healthy eating",
-        category: "Health",
-        repeatDays: [0],
-      },
-      { name: "Walk 10k steps", category: "Workout", repeatDays: [] },
-      { name: "Take vitamins", category: "Health", repeatDays: [] },
-    ],
-  },
-  {
-    id: "creative-spark",
-    name: "Creative Spark",
-    description: "Nurture your creative side and explore new passions.",
-    benefits: "Unlock creativity, learn new skills, and find joy in creation.",
-    difficulty: "Beginner",
-    habits: [
-      {
-        name: "Create something (write/draw/build)",
-        category: "Hobbies",
-        repeatDays: [],
-      },
-      {
-        name: "Learn a new skill 30 min",
-        category: "Studies",
-        repeatDays: [1, 3, 5],
-      },
-      { name: "Read inspiring content", category: "Hobbies", repeatDays: [] },
-      { name: "Brain dump ideas", category: "Personal", repeatDays: [] },
-    ],
-  },
-];
 
 const TEMPLATES_PER_PAGE = 6; // 3x2 grid
 
 export default function TemplatesPage() {
   const data = useAppData();
   const used = new Set(data.settings.usedTemplateIds ?? []);
-  const available = EXTENDED_TEMPLATES.filter((t) => !used.has(t.id));
-  const usedTemplates = EXTENDED_TEMPLATES.filter((t) => used.has(t.id));
+  const available = TEMPLATES.filter((t) => !used.has(t.id));
+  const usedTemplates = TEMPLATES.filter((t) => used.has(t.id));
   const [preview, setPreview] = useState<
-    (typeof EXTENDED_TEMPLATES)[number] | null
+    (typeof TEMPLATES)[number] | null
   >(null);
   const [page, setPage] = useState(0);
 
@@ -179,7 +50,7 @@ export default function TemplatesPage() {
     (page + 1) * TEMPLATES_PER_PAGE,
   );
 
-  function applyTemplate(template: (typeof EXTENDED_TEMPLATES)[number]) {
+  function applyTemplate(template: (typeof TEMPLATES)[number]) {
     const stamp = new Date().toISOString();
     const start = dateKey(new Date());
     for (const h of template.habits) {
