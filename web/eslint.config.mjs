@@ -12,6 +12,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Prevent scanning outside web workspace:
+    "../mobile/**",
+    "../node_modules/**",
   ]),
 ]);
 

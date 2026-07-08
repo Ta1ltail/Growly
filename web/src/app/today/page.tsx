@@ -117,6 +117,7 @@ export default function TodayPage() {
       : today.getHours() < 18
         ? "Good afternoon"
         : "Good evening";
+  const firstName = data.profile.displayName?.split(" ")[0] || "there";
 
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const categoriesWithHabits = useMemo(
@@ -182,7 +183,7 @@ export default function TodayPage() {
                 </span>
               </div>
               <h1 className="mt-0.5 truncate text-lg font-bold tracking-tight sm:text-xl">
-                {greeting}, {data.profile.displayName.split(" ")[0]}
+                {greeting}, {firstName}
               </h1>
               <p className="text-sm text-muted">
                 {todayHeadline(doneCount, todaysHabits.length)}

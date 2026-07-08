@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState } from "react";
 import {
   Coins,
   Sparkles,
@@ -94,7 +94,11 @@ export function DatabaseToolsSection({ query }: { query: string }) {
 
   function applyDraft() {
     if (draft === null) return;
-    setError(importRawData(draft));
+    const err = importRawData(draft);
+    setError(err);
+    if (!err) {
+      setDraft(null);
+    }
   }
 
   function wipe(label: string, patch: Partial<typeof data>) {
@@ -105,7 +109,10 @@ export function DatabaseToolsSection({ query }: { query: string }) {
     )
       return;
     mutateData((prev) => ({ ...prev, ...patch }));
-    toast.success(`${label} cleared`);
+    // The pushMutation (triggered by _onMutation inside mutateData) handles
+    // syncing to Supabase asynchronously. Wipe actions are destructive but
+    // already persisted to localStorage — the async push will survive even
+    // if the user navigates away.
   }
 
   // Seeder: Add Gold — additive, reads the LIVE balance so repeated clicks stack.

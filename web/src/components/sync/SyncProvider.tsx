@@ -21,7 +21,11 @@ import type { AppData } from "@/lib/types";
 import { loadData } from "@/lib/storage";
 
 // Interval for periodic polling fallback (ms)
-const POLL_INTERVAL_MS = 30_000;
+// Reduced from 30s to 15s since cross-device sync was relying entirely on
+// polling (the realtime publication was missing all sync tables except
+// notifications). With the publication now fixed, realtime handles changes
+// within ~2s; the poll is a backup for WebSocket interruptions.
+const POLL_INTERVAL_MS = 15_000;
 
 // Tables we subscribe to for real-time changes
 const SYNC_TABLES = [

@@ -16,6 +16,7 @@ import { AccentThemeApplier } from "@/components/economy/AccentThemeApplier";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { KeyboardShortcutsModal } from "@/components/ui/KeyboardShortcutsModal";
 import { OnboardingWizard } from "@/components/ui/OnboardingWizard";
+import { SyncIndicator } from "@/components/sync/SyncIndicator";
 
 const DevModeLazy = lazy(() =>
   import("@/components/devmode/DevMode").then((m) => ({
@@ -56,6 +57,8 @@ export function AppShell({ children }: { children: ReactNode }) {
       <Suspense fallback={null}>
         <DevModeLazy />
       </Suspense>
+      {/* Floating sync status indicator — fixed position, no layout shift */}
+      <SyncIndicator />
     </div>
   );
 }

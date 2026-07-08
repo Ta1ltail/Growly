@@ -560,6 +560,8 @@ export function reloadCache(): void {
 // Write a raw JSON string straight to storage, then reload through loadData so
 // every validator/migration runs on it. Returns an error message or null on
 // success. Developer Mode only.
+// After writing, fires the sync callback so changes are pushed to Supabase
+// (previously only mutated localStorage, never triggering a push).
 export function importRawData(text: string): string | null {
   if (typeof window === "undefined") return "No storage available";
   try {
@@ -573,6 +575,23 @@ export function importRawData(text: string): string | null {
     }
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed));
     reloadData();
+    // Fire sync callback — importRawData bypasses the normal update() path
+    // which would have triggered _onMutation. Without this, imported JSON
+    // changes stay in localStorage but never get pushed to Supabase.
+    if (_onMutation && _userId && cache) {
+      const changed: ChangedTables = {
+        habits: true,
+        marks: true,
+        notes: true,
+        goals: true,
+        settings: true,
+        profile: true,
+        unlocks: true,
+        economy: true,
+        progressSeen: true,
+      };
+      _onMutation(cache, changed);
+    }
     return null;
   } catch (e) {
     return e instanceof Error ? e.message : "Invalid JSON";
