@@ -80,15 +80,6 @@ export const NAV_GROUPS: NavGroup[] = [
   },
 ];
 
-// Compact mobile bottom navigation (the five most-used screens).
-export const NAV_BOTTOM: NavItem[] = [
-  { href: "/today", label: "Today", icon: CalendarDays },
-  { href: "/tracker", label: "Tracker", icon: LayoutGrid },
-  { href: "/calendar", label: "Calendar", icon: CalendarRange },
-  { href: "/stats", label: "Stats", icon: ChartColumnIncreasing },
-  { href: "/profile", label: "Profile", icon: UserRound },
-];
-
 // Route → Tailwind text-color class for nav icons, giving each section a
 // distinct accent while keeping the palette cohesive and not garish.
 export const routeIconColors: Record<string, string> = {

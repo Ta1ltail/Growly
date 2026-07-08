@@ -826,27 +826,6 @@ export async function loadAllUserData(
   }
 }
 
-export async function saveAllUserData(
-  supabase: SupabaseClient,
-  userId: string,
-  data: AppData,
-): Promise<void> {
-  // Phase 1: Save habits FIRST (marks & freezes have FK to habits)
-  await saveHabits(supabase, userId, data.habits);
-
-  // Phase 2: Everything else in parallel
-  await Promise.all([
-    saveMarks(supabase, userId, data.marks),
-    saveNotes(supabase, userId, data.notes),
-    saveGoals(supabase, userId, data.goals),
-    saveSettings(supabase, userId, data.settings),
-    saveProfile(supabase, userId, data.profile),
-    saveUnlocks(supabase, userId, data.unlocks),
-    saveEconomy(supabase, userId, data.economy),
-    saveProgressSeen(supabase, userId, data.progressSeen),
-  ]);
-}
-
 /* ────────────────────────────────────────────
    Incremental save (called after each mutation)
    ──────────────────────────────────────────── */
