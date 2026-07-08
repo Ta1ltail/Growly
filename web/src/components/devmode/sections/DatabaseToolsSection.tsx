@@ -108,7 +108,7 @@ export function DatabaseToolsSection({ query }: { query: string }) {
       )
     )
       return;
-    mutateData((prev) => ({ ...prev, ...patch }));
+    mutateData((prev) => ({ ...prev, ...patch }), false);
     // The pushMutation (triggered by _onMutation inside mutateData) handles
     // syncing to Supabase asynchronously. Wipe actions are destructive but
     // already persisted to localStorage — the async push will survive even
@@ -117,24 +117,30 @@ export function DatabaseToolsSection({ query }: { query: string }) {
 
   // Seeder: Add Gold — additive, reads the LIVE balance so repeated clicks stack.
   function addGold() {
-    mutateData((prev) => ({
-      ...prev,
-      economy: {
-        ...prev.economy,
-        bonusCoins: (prev.economy.bonusCoins ?? 0) + 500,
-      },
-    }));
+    mutateData(
+      (prev) => ({
+        ...prev,
+        economy: {
+          ...prev.economy,
+          bonusCoins: (prev.economy.bonusCoins ?? 0) + 500,
+        },
+      }),
+      false,
+    );
   }
 
   // Seeder: Remove Gold
   function removeGold() {
-    mutateData((prev) => ({
-      ...prev,
-      economy: {
-        ...prev.economy,
-        bonusCoins: Math.max(0, (prev.economy.bonusCoins ?? 0) - 500),
-      },
-    }));
+    mutateData(
+      (prev) => ({
+        ...prev,
+        economy: {
+          ...prev.economy,
+          bonusCoins: Math.max(0, (prev.economy.bonusCoins ?? 0) - 500),
+        },
+      }),
+      false,
+    );
   }
 
   // Seeder: Reset Progress (marks only)
@@ -145,12 +151,15 @@ export function DatabaseToolsSection({ query }: { query: string }) {
       )
     )
       return;
-    mutateData((prev) => ({
-      ...prev,
-      marks: {},
-      unlocks: {},
-      economy: DEFAULT_ECONOMY,
-    }));
+    mutateData(
+      (prev) => ({
+        ...prev,
+        marks: {},
+        unlocks: {},
+        economy: DEFAULT_ECONOMY,
+      }),
+      false,
+    );
   }
 
   // Seeder: Reset Habits
@@ -161,20 +170,23 @@ export function DatabaseToolsSection({ query }: { query: string }) {
       )
     )
       return;
-    mutateData((prev) => ({ ...prev, habits: [], marks: {} }));
+    mutateData((prev) => ({ ...prev, habits: [], marks: {} }), false);
   }
 
   // Seeder: Unlock All Achievements — force every achievement into the unlock
   // map (seen:true so it doesn't flood the celebration queue on next login).
   function unlockAllAchievements() {
     const now = new Date().toISOString();
-    mutateData((prev) => {
-      const unlocks = { ...prev.unlocks };
-      for (const a of ACHIEVEMENTS) {
-        unlocks[a.id] = { at: unlocks[a.id]?.at ?? now, seen: true };
-      }
-      return { ...prev, unlocks };
-    });
+    mutateData(
+      (prev) => {
+        const unlocks = { ...prev.unlocks };
+        for (const a of ACHIEVEMENTS) {
+          unlocks[a.id] = { at: unlocks[a.id]?.at ?? now, seen: true };
+        }
+        return { ...prev, unlocks };
+      },
+      false,
+    );
   }
 
   // Seeder: Lock All Achievements
@@ -185,24 +197,29 @@ export function DatabaseToolsSection({ query }: { query: string }) {
       )
     )
       return;
-    mutateData((prev) => ({ ...prev, unlocks: {} }));
+    mutateData((prev) => ({ ...prev, unlocks: {} }), false);
   }
 
   // Seeder: Complete All Habits (today)
   function completeAllHabits() {
     const todayKey = dateKey(today);
-    mutateData((prev) => {
-      const day = { ...(prev.marks[todayKey] ?? {}) };
-      for (const h of prev.habits) {
-        if (!h.archived) day[h.id] = "done" as MarkStatus;
-      }
-      return { ...prev, marks: { ...prev.marks, [todayKey]: day } };
-    });
+    mutateData(
+      (prev) => {
+        const day = { ...(prev.marks[todayKey] ?? {}) };
+        for (const h of prev.habits) {
+          if (!h.archived) day[h.id] = "done" as MarkStatus;
+        }
+        return { ...prev, marks: { ...prev.marks, [todayKey]: day } };
+      },
+      false,
+    );
   }
 
   // Seeder: Add XP — XP is derived from completion history, so we grant it by
   // completing habits. Each press fills the next 10 not-yet-complete past days
   // (reading live state), so repeated presses genuinely stack more XP.
+  // Lookback is 3650 days (~10 years) so the button never silently exhausts
+  // its supply of unfilled days during normal testing.
   function addXp() {
     mutateData((prev) => {
       const active = prev.habits.filter((h) => !h.archived);
@@ -210,7 +227,7 @@ export function DatabaseToolsSection({ query }: { query: string }) {
       const newMarks = { ...prev.marks };
       let filled = 0;
       let offset = 1;
-      while (filled < 10 && offset < 400) {
+      while (filled < 10 && offset < 3650) {
         const key = dateKey(addDays(today, -offset));
         const day = { ...(newMarks[key] ?? {}) };
         let changedDay = false;
@@ -227,63 +244,72 @@ export function DatabaseToolsSection({ query }: { query: string }) {
         offset++;
       }
       return { ...prev, marks: newMarks };
-    });
+    }, false);
   }
 
   // Seeder: Remove XP
   function removeXp() {
     if (!window.confirm("Clear the last 10 days of marks? This reduces XP."))
       return;
-    mutateData((prev) => {
-      const newMarks = { ...prev.marks };
-      for (let i = 0; i < 10; i++) {
-        delete newMarks[dateKey(addDays(today, -(i + 1)))];
-      }
-      return { ...prev, marks: newMarks };
-    });
+    mutateData(
+      (prev) => {
+        const newMarks = { ...prev.marks };
+        for (let i = 0; i < 10; i++) {
+          delete newMarks[dateKey(addDays(today, -(i + 1)))];
+        }
+        return { ...prev, marks: newMarks };
+      },
+      false,
+    );
   }
 
   // Seeder: Set Streak
   function setStreak() {
     const targetStreak = 7;
-    mutateData((prev) => {
-      const firstHabit = prev.habits.find((h) => !h.archived);
-      if (!firstHabit) {
-        toast.error("Create at least one habit first.");
-        return prev;
-      }
-      const newMarks = { ...prev.marks };
-      for (let i = 0; i < targetStreak; i++) {
-        const key = dateKey(addDays(today, -(targetStreak - 1 - i)));
-        newMarks[key] = {
-          ...(newMarks[key] ?? {}),
-          [firstHabit.id]: "done" as MarkStatus,
-        };
-      }
-      return { ...prev, marks: newMarks };
-    });
+    mutateData(
+      (prev) => {
+        const firstHabit = prev.habits.find((h) => !h.archived);
+        if (!firstHabit) {
+          toast.error("Create at least one habit first.");
+          return prev;
+        }
+        const newMarks = { ...prev.marks };
+        for (let i = 0; i < targetStreak; i++) {
+          const key = dateKey(addDays(today, -(targetStreak - 1 - i)));
+          newMarks[key] = {
+            ...(newMarks[key] ?? {}),
+            [firstHabit.id]: "done" as MarkStatus,
+          };
+        }
+        return { ...prev, marks: newMarks };
+      },
+      false,
+    );
   }
 
   // Seeder: Reset Streak
   function resetStreak() {
-    mutateData((prev) => {
-      const firstHabit = prev.habits.find((h) => !h.archived);
-      if (!firstHabit) {
-        toast.error("Create at least one habit first.");
-        return prev;
-      }
-      const yesterday = dateKey(addDays(today, -1));
-      return {
-        ...prev,
-        marks: {
-          ...prev.marks,
-          [yesterday]: {
-            ...(prev.marks[yesterday] ?? {}),
-            [firstHabit.id]: "missed" as MarkStatus,
+    mutateData(
+      (prev) => {
+        const firstHabit = prev.habits.find((h) => !h.archived);
+        if (!firstHabit) {
+          toast.error("Create at least one habit first.");
+          return prev;
+        }
+        const yesterday = dateKey(addDays(today, -1));
+        return {
+          ...prev,
+          marks: {
+            ...prev.marks,
+            [yesterday]: {
+              ...(prev.marks[yesterday] ?? {}),
+              [firstHabit.id]: "missed" as MarkStatus,
+            },
           },
-        },
-      };
-    });
+        };
+      },
+      false,
+    );
   }
 
   // Seeder: Simulate Daily Progress

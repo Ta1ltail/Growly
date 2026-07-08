@@ -842,11 +842,40 @@ export type ChangedTables = {
   progressSeen?: true;
 };
 
-// Mutex to prevent concurrent saveChanged calls from racing. replaceTable uses
-// DELETE+UPSERT, so if two calls run concurrently, one call's DELETE can wipe
-// out habits between another call's Phase 1 and Phase 2, causing FK violations
-// on dependent tables (marks, freezes). This serializes all saves.
-let _saveMutex: Promise<void> | null = null;
+// Save queue — serializes all saveChanged calls so that only one runs at a
+// time. replaceTable uses DELETE+UPSERT, so concurrent calls can cause FK
+// violations (one DELETE can wipe out habits between another call's Phase 1
+// and Phase 2). Unlike a simple Promise-based mutex, this queue properly
+// handles multiple waiters: when the active task completes, exactly ONE
+// queued task runs next (not ALL waiters at once).
+let _saveQueue: (() => Promise<void>)[] = [];
+let _saving = false;
+
+async function _runNextSave(): Promise<void> {
+  if (_saving || _saveQueue.length === 0) return;
+  _saving = true;
+  const task = _saveQueue.shift()!;
+  try {
+    await task();
+  } finally {
+    _saving = false;
+    _runNextSave();
+  }
+}
+
+function _enqueueSave(task: () => Promise<void>): Promise<void> {
+  return new Promise((resolve, reject) => {
+    _saveQueue.push(async () => {
+      try {
+        await task();
+        resolve();
+      } catch (e) {
+        reject(e);
+      }
+    });
+    _runNextSave();
+  });
+}
 
 export async function saveChanged(
   supabase: SupabaseClient,
@@ -854,16 +883,12 @@ export async function saveChanged(
   data: AppData,
   changed: ChangedTables,
 ): Promise<void> {
-  // ══ Mutex: serialize saves to prevent race conditions ══
+  // ══ Queue: serialize saves to prevent race conditions ══
   // replaceTable uses DELETE+UPSERT. If two calls run concurrently, one call's
   // DELETE can wipe out habits between another call's Phase 1 and Phase 2,
   // causing FK violations on marks & freezes which reference habits.id.
-  while (_saveMutex) {
-    try { await _saveMutex; } catch { /* ignore resolved errors */ }
-  }
-  let releaseMutex: () => void = () => {};
-  _saveMutex = new Promise((resolve) => { releaseMutex = resolve; });
-  try {
+  // The queue ensures only one save runs at a time; subsequent calls wait.
+  await _enqueueSave(async () => {
     // ── Phase 1: Save habits FIRST (marks & freezes have FK to habits.id) ──
   // Always re-save habits when marks or economy (which includes freezes) are
   // changed, because the habit_ids in those tables must reference habits that
@@ -929,9 +954,5 @@ export async function saveChanged(
     // Partial success — log warnings but don't throw (successful saves committed)
     console.warn("[db] Partial save failures (", errors.length, "/", promises.length, "):", errors);
   }
-  } finally {
-    // Release the mutex so the next queued call can proceed
-    _saveMutex = null;
-    releaseMutex();
-  }
+  });
 }

@@ -539,8 +539,11 @@ export function replaceData(next: AppData): void {
 // store state rather than a (possibly stale) React render snapshot. Dev tools
 // must use this for additive actions (add coins/XP, unlock-all) so repeated
 // clicks stack correctly and never clobber concurrent changes with stale data.
-export function mutateData(updater: (prev: AppData) => AppData): void {
-  update(updater);
+export function mutateData(
+  updater: (prev: AppData) => AppData,
+  recordHistory = true,
+): void {
+  update(updater, recordHistory);
 }
 
 // Re-read from localStorage into the cache and notify. Used after a raw write
