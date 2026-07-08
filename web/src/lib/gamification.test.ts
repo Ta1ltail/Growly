@@ -55,14 +55,13 @@ describe("buildGameStats", () => {
     expect(s.longestPerfectRun).toBe(3);
   });
 
-  it("counts missed marks and flags anyMissed", () => {
+  it("counts missed marks", () => {
     const withMiss = buildGameStats(
       HABITS,
       marksFor("h1", { "2026-06-09": "missed" }),
       TODAY,
     );
     expect(withMiss.missedCount).toBe(1);
-    expect(withMiss.anyMissed).toBe(true);
   });
 });
 

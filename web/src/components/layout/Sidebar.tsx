@@ -10,8 +10,6 @@ import { Activity } from "lucide-react";
 import { NAV_GROUPS, isActive, routeIconColors } from "./navItems";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 
-
-
 export function Sidebar() {
   const pathname = usePathname();
   return (

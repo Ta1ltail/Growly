@@ -37,7 +37,6 @@ export interface GameStats {
   longestPerfectRun: number;
   weekendPerfectDays: number;
   habitsCreated: number;
-  anyMissed: boolean;
   // Track whether a miss was ever FOLLOWED by a 7+ streak (the "comeback"
   // achievement). We walk backward from today: if we find a miss and later
   // find a 7+ streak after it, this flag is set.
@@ -146,7 +145,6 @@ export function buildGameStats(
     longestPerfectRun,
     weekendPerfectDays,
     habitsCreated: habits.length,
-    anyMissed: missedCount > 0,
     // Walk per-habit history backward: if we find a miss and later find a
     // 7+ streak after it, the user *recovered* from a miss.
     comebackAchieved: (() => {

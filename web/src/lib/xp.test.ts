@@ -39,7 +39,6 @@ describe("totalXp", () => {
       longestPerfectRun: 0,
       weekendPerfectDays: 0,
       habitsCreated: 0,
-      anyMissed: false,
       comebackAchieved: false,
       ...over,
     };
