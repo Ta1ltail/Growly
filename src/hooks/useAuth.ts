@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { clearLocalAppData } from "@/lib/storage";
+
 import type { User } from "@supabase/supabase-js";
 
 export function useAuth() {
@@ -25,15 +25,18 @@ export function useAuth() {
       setLoading(false);
     });
 
-    // Listen for auth state changes
+    // Listen for auth state changes.
+    // Note: we do NOT clear localStorage here — local data is preserved across
+    // sign-out so that pending async sync operations (pushMutation, which is
+    // fire-and-forget) are not lost mid-flight. On next sign-in, SyncProvider
+    // detects if the user changed and clears stale local data at that point.
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
       setUser(session?.user ?? null);
       if (event === "SIGNED_OUT") {
         setUser(null);
-        clearLocalAppData();
-        router.refresh();
+        window.location.href = "/";
       }
     });
 

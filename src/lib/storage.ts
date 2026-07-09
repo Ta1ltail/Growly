@@ -32,6 +32,7 @@ export const STORAGE_KEY = "growly.data.v1";
 export const REMEMBER_ME_KEY = "growly.remember_me";
 export const SAVED_EMAIL_KEY = "growly.saved_email";
 const LAST_AUTH_USER_KEY = "growly.last_auth_user";
+export const LAST_USER_ID_KEY = "growly.last_user_id";
 
 // Current schema version. Bumped when the shape of stored data changes so
 // loadData() can migrate older saves forward.
@@ -580,8 +581,29 @@ export function clearLocalAppData(): void {
     window.localStorage.removeItem(REMEMBER_ME_KEY);
     window.localStorage.removeItem(SAVED_EMAIL_KEY);
     window.localStorage.removeItem(LAST_AUTH_USER_KEY);
+    window.localStorage.removeItem(LAST_USER_ID_KEY);
   } catch {
     // localStorage can be unavailable (private mode, quota). Safe to ignore.
+  }
+}
+
+/** Persist the last signed-in user's ID so we can detect account switches. */
+export function setLastUserId(userId: string): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(LAST_USER_ID_KEY, userId);
+  } catch {
+    // non-critical
+  }
+}
+
+/** Retrieve the last signed-in user's ID, or null if never set / mismatch. */
+export function getLastUserId(): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    return window.localStorage.getItem(LAST_USER_ID_KEY);
+  } catch {
+    return null;
   }
 }
 

@@ -18,7 +18,7 @@ import { createClient } from "@/lib/supabase/client";
 import { setSyncCallback, reloadCache } from "@/lib/store";
 import type { ChangedTables } from "@/lib/supabase/db";
 import type { AppData } from "@/lib/types";
-import { loadData } from "@/lib/storage";
+import { loadData, clearLocalAppData, getLastUserId, setLastUserId } from "@/lib/storage";
 
 // Interval for periodic polling fallback (ms)
 // Reduced from 30s to 15s since cross-device sync was relying entirely on
@@ -74,11 +74,23 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
+    // ── 0. Detect user switch — if the previous user was different, clear
+    // stale local data so the new user never inherits another account's
+    // habits, marks, or economy. Same-user logins preserve local data so
+    // pending async sync operations (pushMutation) are never lost.
+    const lastUserId = getLastUserId();
+    if (lastUserId && lastUserId !== userId) {
+      clearLocalAppData();
+    }
+
     if (initialized.current) return;
     initialized.current = true;
 
     const supabase = createClient();
     supabaseRef.current = supabase;
+
+    // Record this user for next time so we can detect switches
+    setLastUserId(userId);
 
     // ── 1. Wire the sync callback into the store ──
     setSyncCallback(
