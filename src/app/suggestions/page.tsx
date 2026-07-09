@@ -122,7 +122,7 @@ export default function SuggestionsPage() {
               <h3 className="text-lg font-bold">Thank you!</h3>
               <p className="max-w-sm text-sm text-muted">
                 Your feedback has been submitted. Every suggestion is read and
-                helps shape the future of project_101.
+                helps shape the future of Growly.
               </p>
               <button
                 onClick={() => setSubmitted(false)}

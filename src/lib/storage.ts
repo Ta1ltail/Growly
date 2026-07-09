@@ -26,12 +26,12 @@ import {
 import { CATEGORIES, type Category } from "./categories";
 import { ACCENTS, DEFAULT_THEME, type ThemeMode } from "./theme";
 
-export const STORAGE_KEY = "project101.data.v1";
+export const STORAGE_KEY = "growly.data.v1";
 
 // Key used for the "Remember Me" feature on login
-export const REMEMBER_ME_KEY = "project101.remember_me";
-export const SAVED_EMAIL_KEY = "project101.saved_email";
-const LAST_AUTH_USER_KEY = "project101.last_auth_user";
+export const REMEMBER_ME_KEY = "growly.remember_me";
+export const SAVED_EMAIL_KEY = "growly.saved_email";
+const LAST_AUTH_USER_KEY = "growly.last_auth_user";
 
 // Current schema version. Bumped when the shape of stored data changes so
 // loadData() can migrate older saves forward.

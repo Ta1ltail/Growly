@@ -8,7 +8,7 @@
 
 import { useSyncExternalStore } from "react";
 
-export const DEV_STORAGE_KEY = "project101.devmode.v1";
+export const DEV_STORAGE_KEY = "growly.devmode.v1";
 
 export interface DevSettings {
   enabled: boolean; // is dev mode unlocked (FAB visible)

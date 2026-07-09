@@ -1,5 +1,5 @@
 -- ============================================================================
--- project_101 — Drizzle ORM Schema Migration
+-- Growly — Drizzle ORM Schema Migration
 -- Idempotent: uses IF NOT EXISTS for tables, safe PL/pgSQL for constraints.
 -- Tables/constraints that already exist from 001_schema.sql are skipped.
 -- ============================================================================

@@ -22,7 +22,7 @@ export default function LandingPage() {
             <span className="flex size-7 items-center justify-center rounded-lg bg-accent text-white">
               <Activity className="size-3.5" strokeWidth={2.5} />
             </span>
-            project_101
+            Growly
           </span>
           <div className="flex items-center gap-3">
             <Link
@@ -62,15 +62,16 @@ export default function LandingPage() {
         <div className="relative mx-auto max-w-6xl px-4 pb-20 sm:px-6 sm:pb-32">
           <div className="mx-auto max-w-3xl text-center">
             <h1 className="text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl">
-              Build habits that
+              Make Today Count.
               <br />
               <span className="bg-gradient-to-r from-accent via-accent-glow to-accent bg-clip-text text-transparent">
-                actually stick
+                Build habits that stick
               </span>
             </h1>
             <p className="mx-auto mt-4 max-w-lg text-base text-muted sm:text-lg">
-              Track daily habits, earn achievements, and build streaks — all
-              with honest, local-first tracking designed to keep you going.
+              Track daily habits, earn achievements, build streaks, and grow
+              with friends — all with honest, local-first tracking designed to
+              keep you going.
             </p>
             <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
               <Link
@@ -181,7 +182,7 @@ export default function LandingPage() {
               <span className="flex size-6 items-center justify-center rounded-md bg-accent/20 text-accent">
                 <Activity className="size-3" strokeWidth={2.5} />
               </span>
-              project_101
+              Growly
             </span>
             <div className="flex items-center gap-4 text-xs text-muted">
               <Link href="/login" className="hover:text-ink transition-colors">

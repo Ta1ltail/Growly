@@ -1,7 +1,7 @@
 {
-  "name": "project_101",
-  "short_name": "p101",
-  "description": "A modern, spreadsheet-style habit & task tracker with gamification.",
+  "name": "Growly",
+  "short_name": "Growly",
+  "description": "Make today count — a habit tracker and personal growth platform with gamification.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0f0e17",

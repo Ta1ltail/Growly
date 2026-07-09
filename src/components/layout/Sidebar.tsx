@@ -19,7 +19,7 @@ export function Sidebar() {
           <Activity className="size-4" strokeWidth={2.5} />
         </span>
         <span className="font-mono text-sm font-semibold tracking-tight">
-          project_101
+          Growly
         </span>
         <span className="ml-auto">
           <NotificationBell size={16} />

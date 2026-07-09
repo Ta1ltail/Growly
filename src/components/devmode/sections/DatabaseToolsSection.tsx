@@ -56,7 +56,7 @@ export function DatabaseToolsSection({ query }: { query: string }) {
   function exportJson() {
     download(
       JSON.stringify(data, null, 2),
-      `project_101_backup_${dateKey(today)}.json`,
+      `growly_backup_${dateKey(today)}.json`,
       "application/json",
     );
   }
@@ -75,7 +75,7 @@ export function DatabaseToolsSection({ query }: { query: string }) {
     }
     download(
       rows.join("\n"),
-      `project_101_marks_${dateKey(today)}.csv`,
+      `growly_marks_${dateKey(today)}.csv`,
       "text/csv",
     );
   }

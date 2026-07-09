@@ -135,7 +135,7 @@ export function DevModePanel({ onClose }: { onClose: () => void }) {
                 Developer Mode
               </h2>
               <p className="font-mono text-[10px] text-faint">
-                project_101 · advanced
+                Growly · advanced
               </p>
             </div>
           </div>

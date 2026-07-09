@@ -122,7 +122,7 @@ export default function RegisterPage() {
       // pushed to Supabase later, which would cause 23505 conflicts.
       localStorage.removeItem(STORAGE_KEY);
       localStorage.removeItem(SAVED_EMAIL_KEY);
-      localStorage.removeItem("project101.last_auth_user");
+      localStorage.removeItem("growly.last_auth_user");
       const seededData = {
         version: SCHEMA_VERSION,
         habits: [],
@@ -148,7 +148,7 @@ export default function RegisterPage() {
           shop: [], streaks: {}, tierUnlocks: [],
         },
       };
-      localStorage.setItem("project101.data.v1", JSON.stringify(seededData));
+      localStorage.setItem("growly.data.v1", JSON.stringify(seededData));
 
       // Save Remember Me preference
       localStorage.setItem(REMEMBER_ME_KEY, "true");
@@ -182,7 +182,7 @@ export default function RegisterPage() {
             <Activity className="size-5" strokeWidth={2.5} />
           </span>
           <span className="font-mono text-base font-bold tracking-tight">
-            project_101
+            Growly
           </span>
         </Link>
       </div>

@@ -1,14 +1,37 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#1f1d2e"/>
+      <stop offset="0%" stop-color="#1a1828"/>
       <stop offset="100%" stop-color="#0f0e17"/>
     </linearGradient>
+    <linearGradient id="leafGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#4b8bf7"/>
+      <stop offset="100%" stop-color="#22c55e"/>
+    </linearGradient>
+    <linearGradient id="glow" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#4b8bf7" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#22c55e" stop-opacity="0.1"/>
+    </linearGradient>
   </defs>
-  <rect width="512" height="512" rx="64" fill="url(#bg)"/>
+  <!-- Background rounded rect -->
+  <rect width="512" height="512" rx="88" fill="url(#bg)"/>
+  <!-- Glow behind icon -->
+  <circle cx="256" cy="256" r="180" fill="url(#glow)" filter="url(#blur)"/>
+  <filter id="blur">
+    <feGaussianBlur stdDeviation="24"/>
+  </filter>
+  <!-- The "G" shape as a stylized sprouting leaf -->
   <g transform="translate(256,256)">
-    <circle cx="0" cy="0" r="128" fill="none" stroke="#4b8bf7" stroke-width="12"/>
-    <polyline points="-52,0 -18,36 60,-36" fill="none" stroke="#4b8bf7" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
-    <path d="M164,-94 Q208,-62 180,-20 Q166,0 148,-16 Q172,-54 154,-84Z" fill="#f43f5e" opacity="0.6"/>
+    <!-- Stem (the vertical stroke of G) -->
+    <path d="M0,110 Q0,0 0,-55 Q0,-130 76,-140" 
+          fill="none" stroke="#4b8bf7" stroke-width="18" stroke-linecap="round"/>
+    <!-- The curve of G -->
+    <path d="M76,-140 Q140,-140 140,-86 L140,-32 Q140,12 102,12" 
+          fill="none" stroke="#4b8bf7" stroke-width="18" stroke-linecap="round"/>
+    <!-- Small leaf sprouting from the top-right of the stem -->
+    <path d="M32,-128 Q64,-160 102,-140 Q76,-120 48,-124" 
+          fill="#22c55e" opacity="0.9"/>
+    <!-- Tiny dot accent -->
+    <circle cx="86" cy="-38" r="9" fill="#4b8bf7"/>
   </g>
 </svg>

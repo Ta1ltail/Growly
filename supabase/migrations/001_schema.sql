@@ -1,5 +1,5 @@
 -- ============================================================================
--- project_101 — Full Schema (consolidated)
+-- Growly — Full Schema (consolidated)
 -- Single file covering all tables, RLS, indexes, functions, and cron.
 -- Apply via Supabase Dashboard SQL editor or `supabase db reset`.
 -- ============================================================================

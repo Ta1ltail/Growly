@@ -119,7 +119,7 @@ function LoginForm() {
             <Activity className="size-5" strokeWidth={2.5} />
           </span>
           <span className="font-mono text-base font-bold tracking-tight">
-            project_101
+            Growly
           </span>
         </Link>
       </div>

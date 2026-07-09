@@ -76,7 +76,7 @@ export default function SettingsPage() {
   function exportCsv() {
     download(
       exportMarksCSV(data),
-      `project_101_export_${dateKey(today)}.csv`,
+      `growly_export_${dateKey(today)}.csv`,
       "text/csv",
     );
   }
@@ -84,7 +84,7 @@ export default function SettingsPage() {
   function exportJson() {
     download(
       exportJSON(data),
-      `project_101_backup_${dateKey(today)}.json`,
+      `growly_backup_${dateKey(today)}.json`,
       "application/json",
     );
   }

@@ -173,7 +173,7 @@ export function OnboardingWizard() {
               <div className="mx-auto mb-4 flex size-16 items-center justify-center rounded-2xl bg-accent/15">
                 <Sparkles className="size-8 text-accent" />
               </div>
-              <h2 className="text-xl font-bold">Welcome to project_101</h2>
+              <h2 className="text-xl font-bold">Welcome to Growly</h2>
               <p className="mt-2 text-sm text-muted">
                 A simple, honest habit tracker. Mark habits done each day, build
                 streaks, earn rewards, and watch your progress grow. No ads, no

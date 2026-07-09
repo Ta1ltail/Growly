@@ -7,7 +7,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Bug } from "lucide-react";
 import { useAppData } from "@/lib/store";
-import { useDevSettings, setDev } from "@/lib/devmode";
+import { useDevSettings, setDev, DEV_STORAGE_KEY } from "@/lib/devmode";
 import { DevModePanel } from "./DevModePanel";
 
 export function DevMode() {
@@ -62,7 +62,7 @@ export function DevMode() {
 function readPersistedEnabled(): boolean {
   if (typeof window === "undefined") return false;
   try {
-    const raw = window.localStorage.getItem("project101.devmode.v1");
+    const raw = window.localStorage.getItem(DEV_STORAGE_KEY);
     if (!raw) return false;
     const o = JSON.parse(raw) as { enabled?: unknown };
     return o.enabled === true;

@@ -17,7 +17,7 @@ export function GeneralSection({ query }: { query: string }) {
     <>
       <DevGroup title="Application">
         <DevRow label="App" query={query} terms="name title">
-          <DevStat label="" value="project_101" />
+          <DevStat label="" value="Growly" />
         </DevRow>
         <DevRow label="Schema version" query={query} terms="data migration v4">
           <span className="font-mono text-xs">v{SCHEMA_VERSION}</span>

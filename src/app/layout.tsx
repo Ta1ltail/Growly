@@ -13,14 +13,14 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "project_101 — habit tracker",
-  description: "A modern, spreadsheet-style habit & task tracker.",
+  title: "Growly — make every day count",
+  description: "A modern habit tracker and personal growth platform with gamification and social accountability.",
   manifest: "/manifest.json",
 };
 
 // Applies the saved theme before first paint so there is no light/dark flash.
 const noFlash = `(function(){try{
-var raw=localStorage.getItem('project101.data.v1');
+var raw=localStorage.getItem('growly.data.v1');
 var mode='dark',accent='blue';
 if(raw){var d=JSON.parse(raw),t=d&&d.settings&&d.settings.theme;if(t){mode=t.mode||'dark';accent=t.accent||'blue';}}
 var resolved=mode==='system'?(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'):mode;
@@ -48,6 +48,8 @@ export default function RootLayout({
           content="black-translucent"
         />
         <meta name="mobile-web-app-capable" content="yes" />
+        <link rel="icon" type="image/svg+xml" href="/icon-192.svg" />
+        <link rel="apple-touch-icon" href="/icon-192.svg" />
       </head>
       <body className="min-h-full">
         <Script
