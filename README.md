@@ -1,98 +1,125 @@
 <div align="center">
 
-  <h1>🏆 project_101</h1>
-  <p><strong>A modern, gamified habit tracker — spreadsheet-style, local-first, beautifully designed.</strong></p>
+# 🌱 Growly
 
-  <p>
-    <img src="https://img.shields.io/badge/Next.js-16-000?logo=next.js" alt="Next.js 16">
-    <img src="https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript" alt="TypeScript">
-    <img src="https://img.shields.io/badge/Tailwind-v4-06B6D4?logo=tailwindcss" alt="Tailwind CSS v4">
-    <img src="https://img.shields.io/badge/Supabase-FFCA28?logo=supabase" alt="Supabase">
-    <img src="https://img.shields.io/badge/tests-195-22C55E?logo=vitest" alt="195 tests">
-    <img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT">
-  </p>
+### Make Today Count.
 
-  <br>
+*A modern habit tracker and personal growth platform that helps you build better habits, stay consistent, and achieve your goals through productivity, gamification, and social accountability.*
 
-  <p><em>Tap a date cell. Mark it done. Watch your streak grow.</em></p>
+<p>
 
-  <p>
-    <a href="#-features">Features</a> •
-    <a href="#-getting-started">Getting Started</a> •
-    <a href="#-tech-stack">Tech Stack</a> •
-    <a href="#-architecture">Architecture</a> •
-    <a href="#-docs">Docs</a>
-  </p>
+<img src="https://img.shields.io/badge/Next.js-16-000?logo=next.js" alt="Next.js">
+<img src="https://img.shields.io/badge/TypeScript-Strict-3178C6?logo=typescript" alt="TypeScript">
+<img src="https://img.shields.io/badge/Tailwind-v4-06B6D4?logo=tailwindcss" alt="Tailwind CSS">
+<img src="https://img.shields.io/badge/License-MIT-blue" alt="MIT">
 
-  <br>
+</p>
+
+<p>
+
+<a href="#-features">Features</a> •
+<a href="#-getting-started">Getting Started</a> •
+<a href="#-tech-stack">Tech Stack</a> •
+<a href="#-roadmap">Roadmap</a> •
+<a href="#-documentation">Documentation</a>
+
+</p>
 
 </div>
 
 ---
 
-## ✨ Features
+# 📖 Overview
+
+Growly is an all-in-one habit tracker and personal growth platform designed to help you become more consistent every day.
+
+Whether you're building healthy habits, managing routines, organizing tasks, tracking goals, or competing with friends, Growly transforms daily progress into an engaging and rewarding experience through gamification, insightful analytics, and social accountability.
+
+---
+
+# ✨ Features
 
 <table>
 <tr>
 <td width="50%">
 
-### 📊 Smart Tracker
-- **Spreadsheet grid** — habits × dates, tap to cycle marks
-- **Rich scheduling** — daily, weekly, monthly, time-of-day
-- **Priority levels** — Low, Medium, High
-- **Archiving** — hide habits without losing history
-- **9 templates** — Gym, Student, Morning, and more
+### 📅 Habit & Routine
+
+- Habit Tracking
+- Daily Routines
+- Tasks & To-Do Lists
+- Goals & Milestones
+- Notes & Journals
+- Habit Templates
+- Categories & Tags
+- Calendar & History
 
 </td>
+
 <td width="50%">
 
 ### 🎮 Gamification
-- **99 levels** — XP from completions + perfect days
-- **28 achievements** — 5 categories × 4 rarity tiers
-- **20 titles** — 5 ranks (Beginner → Legendary)
-- **Streaks** — per-habit, scheduled-day-aware
-- **Engagement** — daily check-in, quests, spin wheel
+
+- XP & Leveling
+- Streak System
+- Achievements & Badges
+- Rewards
+- Daily Challenges
+- Dynamic Habit Evolution *(Coming Soon)*
+- Quests & Missions *(Coming Soon)*
 
 </td>
 </tr>
+
 <tr>
 <td width="50%">
 
-### 🪙 Economy & Shop
-- **21 cosmetics** — flame skins, confetti palettes, accent themes
-- **Coins derived** from history (never stored as a balance)
-- **Streak freezes** — protect a streak without rewriting history
-- **Level gating** — prestige items unlock at higher levels
+### 📊 Analytics
+
+- Statistics Dashboard
+- Progress Reports
+- Activity History
+- Performance Trends
+- Habit Completion Rate
+- Daily, Weekly & Monthly Reviews
 
 </td>
+
 <td width="50%">
 
-### 🛡️ Honest Tracking
-- **No cheat possible** — XP, coins, streaks are *derived*
-- **Past days lock** after a configurable grace window
-- **Immutable history** — your mark record is the source of truth
-- **Audit trail** — all habit changes logged
+### 👥 Social
+
+- Friends
+- Leaderboards
+- Friendly Competitions
+- Teams & Groups *(Coming Soon)*
+- Activity Feed *(Coming Soon)*
 
 </td>
 </tr>
+
 <tr>
 <td width="50%">
 
-### 🌐 Local-first + Cloud Sync
-- **Works fully offline** — all data in localStorage
-- **Optional Supabase sync** — cross-device backups
-- **PWA** — installable, service worker, offline fallback
-- **No account required** to start tracking
+### 🎨 Personalization
+
+- Dark & Light Mode
+- Themes & Customization
+- Smart Reminders
+- Dashboard Personalization
+- Widgets *(Coming Soon)*
 
 </td>
+
 <td width="50%">
 
-### 🎨 Beautiful UI
-- **Dark/Light/System** themes
-- **6 accent colors** — Blue, Violet, Cyan, Emerald, Rose, Amber
-- **Animations** — with reduced-motion support
-- **Celebrations** — toasts, popups, fullscreen confetti
-- **Developer mode** — hidden power-user panel (Ctrl+Shift+D)
+### 🚀 More
+
+- Responsive Design
+- Offline Support
+- Cross-Platform Experience
+- Developer Mode
+- Modern UI
 
 </td>
 </tr>
@@ -100,17 +127,14 @@
 
 ---
 
-## 🚀 Getting Started
+# 🚀 Getting Started
 
 ```bash
 # Install dependencies
 npm install
 
-# Start development server (Turbopack)
-npm run dev          # → http://localhost:3000
-
-# Run tests
-npm run test         # 195 tests, 12 suites
+# Start development server
+npm run dev
 
 # Build for production
 npm run build
@@ -119,127 +143,77 @@ npm run build
 npm start
 ```
 
-No Supabase account needed to get started. Everything works locally.
-
 ---
 
-## 🛠️ Tech Stack
+# 🛠️ Tech Stack
 
 | Category | Technology |
-|----------|-----------|
-| **Framework** | Next.js 16 (App Router, Turbopack) |
-| **Language** | TypeScript 5 (strict) |
-| **Styling** | Tailwind CSS v4 (CSS variable theming) |
-| **Animation** | motion (Framer Motion successor) |
-| **State** | localStorage + `useSyncExternalStore` |
-| **Database** | PostgreSQL via Supabase |
-| **ORM** | Drizzle ORM + Drizzle Kit |
-| **Auth** | Supabase Auth (SSR) |
-| **Testing** | Vitest 4 (195 tests) |
-| **Linting** | ESLint 9 + Knip |
-| **Icons** | Lucide React |
-| **Validation** | Zod |
-| **Toasts** | Sonner |
+|-----------|------------|
+| Framework | Next.js 16 |
+| Language | TypeScript |
+| Styling | Tailwind CSS v4 |
+| Database | PostgreSQL |
+| ORM | Drizzle ORM |
+| Backend | Supabase |
+| Authentication | Supabase Auth |
+| Validation | Zod |
+| Icons | Lucide React |
+| UI Components | shadcn/ui |
+| Notifications | Sonner |
 
 ---
 
-## 🏗️ Architecture
+# 🗺️ Roadmap
 
-```
-User Action  →  Component  →  Store (store.ts)
-                                  ↓
-                   localStorage (persist)  ←  Pure Functions
-                                  ↓
-                   Supabase Sync (optional)
-```
+### ✅ Current
 
-### Core Principles
+- Authentication
+- Habit Tracking
+- Daily Routines
+- Goals
+- Notes
+- Statistics
+- Calendar
+- XP System
+- Achievements
+- Streaks
+- Friends
+- Leaderboards
 
-1. **Local-first** — All data persisted to localStorage. Cloud sync is optional, never required.
-2. **Derived state** — XP, coins, streaks, and achievements are computed from immutable mark history by pure functions. Nothing is ever stored as a counter.
-3. **Anti-cheat** — Past days lock after a configurable grace window. Once locked, marks cannot be changed.
-4. **Incremental sync** — Only changed tables are pushed to Supabase after each mutation.
+### 🚧 Coming Soon
 
-### Project Structure
+- Dynamic Habit Evolution
+- Quests & Missions
+- Teams & Groups
+- Activity Feed
+- Widgets
+- Habit Heatmap
+- Seasonal Events
 
-```
-src/
-├── app/              # 21 Next.js App Router pages
-├── components/       # ~40 reusable UI components
-├── hooks/            # 5 custom React hooks
-└── lib/              # ~30 pure business logic modules
-    ├── store.ts      # Reactive state store
-    ├── storage.ts    # localStorage persistence (schema v6)
-    ├── achievement   # 28 achievements engine
-    ├── economy.ts    # Coin derivation & shop
-    ├── xp.ts         # XP & leveling
-    ├── stats.ts      # Scheduling & streaks
-    ├── progress.ts   # Progress summary facade
-    └── supabase/     # Client, session, sync
+### 🔮 Future
 
-docs/                 # Full project documentation
-├── ARCHITECTURE.md
-├── CHANGELOG.md
-├── CONTRIBUTING.md
-├── CODE_OF_CONDUCT.md
-├── FINAL_BUILD_PLAN.md
-├── SECURITY.md
-├── SYSTEM_FEATURES.md
-└── TOOLS_USED.md
-```
+- AI Habit Coach
+- Smart Habit Suggestions
+- Personalized Insights
+- Community Challenges
+- Public Profiles
+- Animated Habit Icons
+- Collectible Titles
 
 ---
 
-## 🧪 Testing
+# What is it?
 
-**195 unit tests** across 12 suites covering:
-
-| Suite | What's tested |
-|-------|---------------|
-| `basic.test.ts` | Core data transforms, scheduling logic |
-| `stats.test.ts` | Completion stats, consistency scores |
-| `storage.test.ts` | Schema migration, data persistence |
-| `economy.test.ts` | Coin derivation, shop, engagement |
-| `xp.test.ts` | XP calculation, level info, edge cases |
-| `gamification.test.ts` | Achievements, titles, ranks |
-| `policy.test.ts` | Anti-cheat `canEditMark()`, grace window |
-| `celebrations.test.ts` | Celebration queue, seen-markers |
-| `marks.test.ts` | Mark status cycle through all states |
-| `insights.test.ts` | `todayHeadline()`, `buildInsights()` |
-| `format.test.ts` | Schedule text, time formatting |
-| `util.test.ts` | `cn()` class merging, `uid()` generation |
-
-```bash
-npm run test          # Run all tests
-npm run test:watch    # Watch mode (TDD)
-```
-
----
-
-## ☁️ Supabase Cloud Sync
-
-Optional cloud features for cross-device use:
-
-```bash
-cp .env.example .env.local
-# Add your Supabase URL and anon key
-```
-
-- **Auth** — Email/password via Supabase Auth (SSR)
-- **Database** — 6 migration files, RLS-protected
-- **Sync** — Push/pull with conflict resolution
-
-All features work without Supabase. It's purely additive.
+Growly is built on the belief that lasting change comes from showing up every day. Every completed habit, every maintained streak, and every milestone achieved brings you one step closer to becoming the person you want to be.
 
 ---
 
 <div align="center">
-  <p>
-    <sub>Built with ❤️ using Next.js, TypeScript, and Tailwind CSS</sub>
-  </p>
-  <p>
-    <a href="https://codebuff.com">Codebuff</a> •
-    <a href="https://supabase.com">Supabase</a> •
-    <a href="https://vercel.com">Vercel</a>
-  </p>
+
+## 🌱 Growly
+
+### Make Today Count.
+
+**Build Better Habits • Stay Consistent • Grow Every Day**
+
 </div>
