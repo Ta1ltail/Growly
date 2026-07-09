@@ -92,19 +92,42 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
     // Record this user for next time so we can detect switches
     setLastUserId(userId);
 
-    // ── 1. Wire the sync callback into the store ──
-    setSyncCallback(
-      (data: AppData, changed: ChangedTables) => {
-        pushMutation(userId, data, changed);
-      },
-      userId,
-    );
-
-    // ── 2. Initial full re-sync (shows sync indicator) ──
+    // ── 1. Initial full re-sync FIRST (sync callback not yet wired) ──
+    // We defer wiring the sync callback until AFTER fullResync completes so
+    // that mount-time mutations (seedCelebrationsSeen, seedUnlocksSeen,
+    // refreshDailyQuest, etc.) NEVER push stale/empty data to Supabase.
+    //
+    // These mount-time mutations fire during child component effects, WHILE
+    // fullResync is still fetching remote data. If the callback were active,
+    // they would call pushMutation with empty localStorage data (habits: [],
+    // marks: {}, unlocks: {}), which would:
+    //   a) overwrite the user's real achievements in Supabase (unlocks)
+    //   b) overwrite progressSeen with a freshly-baselined empty snapshot
+    //   c) overwrite economy_state with default zeros
+    //
+    // By keeping the callback null during this critical window, mount-time
+    // mutations only touch localStorage (which fullResync overwrites with the
+    // correct merged data once it completes).
     fullResync(userId).then((result) => {
       if (result) reloadCache();
+
+      // ── 2. Wire the sync callback NOW — fullResync has restored data ──
+      setSyncCallback(
+        (data: AppData, changed: ChangedTables) => {
+          pushMutation(userId, data, changed);
+        },
+        userId,
+      );
     }).catch(() => {
-      // Initial sync failure is non-critical — local data remains available
+      // Initial sync failure — wire callback anyway so subsequent mutations
+      // sync. Data may be stale until next fullResync, but local changes
+      // should still be pushed so they're not lost.
+      setSyncCallback(
+        (data: AppData, changed: ChangedTables) => {
+          pushMutation(userId, data, changed);
+        },
+        userId,
+      );
     });
 
     // ── 3. Subscribe to real-time changes ──
