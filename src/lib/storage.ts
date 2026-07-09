@@ -18,6 +18,24 @@ import type {
   SpendEntry,
   Unlocks,
 } from "./types";
+
+/* ────────────────────────────────────────────
+   Public Stats Snapshot (stored in its own
+   localStorage key, loaded from Supabase by
+   fullResync — never recomputed automatically).
+   ──────────────────────────────────────────── */
+
+export interface StatsSnapshotData {
+  level: number;
+  currentStreak: number;
+  bestStreak: number;
+  totalCompletions: number;
+  consistency14d: number;
+  achievementCount: number;
+  titleName: string;
+  rankIcon: string;
+  updatedAt: string;
+}
 import {
   DEFAULT_ECONOMY,
   DEFAULT_PROFILE,
@@ -27,6 +45,7 @@ import { CATEGORIES, type Category } from "./categories";
 import { ACCENTS, DEFAULT_THEME, type ThemeMode } from "./theme";
 
 export const STORAGE_KEY = "growly.data.v1";
+export const STATS_SNAPSHOT_KEY = "growly.stats_snapshot.v1";
 
 // Key used for the "Remember Me" feature on login
 export const REMEMBER_ME_KEY = "growly.remember_me";
@@ -578,12 +597,35 @@ export function clearLocalAppData(): void {
   if (typeof window === "undefined") return;
   try {
     window.localStorage.removeItem(STORAGE_KEY);
+    window.localStorage.removeItem(STATS_SNAPSHOT_KEY);
     window.localStorage.removeItem(REMEMBER_ME_KEY);
     window.localStorage.removeItem(SAVED_EMAIL_KEY);
     window.localStorage.removeItem(LAST_AUTH_USER_KEY);
     window.localStorage.removeItem(LAST_USER_ID_KEY);
   } catch {
     // localStorage can be unavailable (private mode, quota). Safe to ignore.
+  }
+}
+
+/** Save the stats snapshot to localStorage (loaded from Supabase by fullResync). */
+export function saveStatsSnapshot(stats: StatsSnapshotData): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(STATS_SNAPSHOT_KEY, JSON.stringify(stats));
+  } catch {
+    // non-critical
+  }
+}
+
+/** Load the stats snapshot from localStorage (may be null on first visit / after clear). */
+export function loadStatsSnapshot(): StatsSnapshotData | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(STATS_SNAPSHOT_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw) as StatsSnapshotData;
+  } catch {
+    return null;
   }
 }
 

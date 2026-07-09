@@ -27,7 +27,11 @@ import {
   DEFAULT_ECONOMY,
   DEFAULT_PROGRESS_SEEN,
 } from "../types";
-import { SCHEMA_VERSION, DEFAULT_GRACE_HOURS } from "../storage";
+import {
+  SCHEMA_VERSION,
+  DEFAULT_GRACE_HOURS,
+  type StatsSnapshotData,
+} from "../storage";
 import type { ThemeSettings } from "../theme";
 import { DEFAULT_THEME } from "../theme";
 import { uid } from "../util";
@@ -740,15 +744,30 @@ async function saveProgressSeen(
    User Stats Snapshot (for public profiles)
    ──────────────────────────────────────────── */
 
-export interface StatsSnapshotData {
-  level: number;
-  currentStreak: number;
-  bestStreak: number;
-  totalCompletions: number;
-  consistency14d: number;
-  achievementCount: number;
-  titleName: string;
-  rankIcon: string;
+export async function loadUserStatsSnapshot(
+  supabase: SupabaseClient,
+  userId: string,
+): Promise<StatsSnapshotData | null> {
+  const { data, error } = await supabase
+    .from("user_stats_snapshots")
+    .select("*")
+    .eq("user_id", userId)
+    .single();
+  if (error && error.code === "PGRST116") return null;
+  if (error) throw error;
+  if (!data) return null;
+
+  return {
+    level: (data as Record<string, unknown>).level as number,
+    currentStreak: (data as Record<string, unknown>).current_streak as number,
+    bestStreak: (data as Record<string, unknown>).best_streak as number,
+    totalCompletions: (data as Record<string, unknown>).total_completions as number,
+    consistency14d: (data as Record<string, unknown>).consistency_14d as number,
+    achievementCount: (data as Record<string, unknown>).achievement_count as number,
+    titleName: (data as Record<string, unknown>).title_name as string,
+    rankIcon: (data as Record<string, unknown>).rank_icon as string,
+    updatedAt: (data as Record<string, unknown>).updated_at as string ?? new Date().toISOString(),
+  };
 }
 
 export async function saveUserStatsSnapshot(

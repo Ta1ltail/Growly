@@ -12,6 +12,7 @@
 import { createClient } from "./client";
 import {
   loadAllUserData,
+  loadUserStatsSnapshot,
   saveChanged,
   saveUserStatsSnapshot,
   type ChangedTables,
@@ -24,7 +25,12 @@ import {
   type ProgressSeen,
 } from "../types";
 import { DEFAULT_THEME } from "../theme";
-import { loadData, saveData, DEFAULT_GRACE_HOURS } from "../storage";
+import {
+  loadData,
+  saveData,
+  saveStatsSnapshot,
+  DEFAULT_GRACE_HOURS,
+} from "../storage";
 import { summarizeProgress } from "../progress";
 import { titleForLevel } from "../titles";
 import { RANK_STYLE } from "../ranks";
@@ -148,11 +154,17 @@ function enqueueRetry(
    successful sync to update public profile data.
    ──────────────────────────────────────────── */
 
-// Stats snapshots are updated by fullResync, not by per-mutation pushes.
-// See pushMutation() for why — debounced timers that read loadData() after
-// mount-time mutations have modified it can compute stale results.
-// Export refreshStatsSnapshot so the polling handler (in SyncProvider) can
-// call it directly when it detects changes from periodic fullResync.
+// Stats snapshots are NOT updated from within fullResync. Instead, fullResync
+// loads the existing remote stats snapshot from Supabase and caches it to
+// localStorage — same treatment as economy_state. This prevents a cleared
+// localStorage from triggering a stale recomputation (summarizeProgress on
+// potentially corrupted marks data) that would overwrite the correct Level 23
+// with a computed Level 11.
+//
+// refreshStatsSnapshot is available for explicit recalculation (e.g. the
+// "Recalculate Stats" button in Dev Mode) but must NOT be called
+// automatically during sync — it reads localStorage via loadData() and any
+// computation during the mount-time window computes stale results.
 export async function refreshStatsSnapshot(userId: string): Promise<void> {
   try {
     const data = loadData();
@@ -161,7 +173,7 @@ export async function refreshStatsSnapshot(userId: string): Promise<void> {
     const rankStyle = RANK_STYLE[title.current.rank];
 
     const supabase = createClient();
-    await saveUserStatsSnapshot(supabase, userId, {
+    const stats = {
       level: summary.level.level,
       currentStreak: summary.stats.maxCurrentStreak,
       bestStreak: summary.stats.maxBestStreak,
@@ -170,6 +182,14 @@ export async function refreshStatsSnapshot(userId: string): Promise<void> {
       achievementCount: summary.unlockedCount,
       titleName: title.current.name,
       rankIcon: rankStyle.icon,
+    };
+    await saveUserStatsSnapshot(supabase, userId, {
+      ...stats,
+      updatedAt: new Date().toISOString(),
+    });
+    saveStatsSnapshot({
+      ...stats,
+      updatedAt: new Date().toISOString(),
     });
   } catch (e) {
     // Non-critical — snapshot failures don't block the app
@@ -230,7 +250,16 @@ export async function fullResync(
       }
 
       if (!quiet) {
-        await refreshStatsSnapshot(userId);
+        // Load stats snapshot from Supabase (not computed from local data),
+        // then save to localStorage so it survives page reloads.
+        try {
+          const remoteStats = await loadUserStatsSnapshot(supabase, userId);
+          if (remoteStats) {
+            saveStatsSnapshot(remoteStats);
+          }
+        } catch {
+          // Non-critical — stats snapshot is derived data, app works without it
+        }
         setStatus("idle");
       }
       return merged;
@@ -257,7 +286,6 @@ export async function fullResync(
     }
 
     if (!quiet) {
-      await refreshStatsSnapshot(userId);
       setStatus("idle");
     }
     return localData;
