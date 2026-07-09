@@ -1,56 +1,66 @@
-# dependencies
+# Dependencies
 node_modules/
 .pnp
-.pnp.*
-.yarn/*
-!.yarn/patches
-!.yarn/plugins
-!.yarn/releases
-!.yarn/versions
+.pnp.js
 
-# testing
-coverage/
-
-# next.js
+# Next.js build output
 .next/
 out/
 
-# production
+# Production build
 build/
-docs/
-
-# Expo
-.expo/
 dist/
-*.jks
-*.p8
-*.p12
-*.key
-*.mobileprovision
-*.orig.*
-android/
-ios/
 
-# misc
-.DS_Store
-*.pem
+# Testing
+coverage/
 
-# debug
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-.pnpm-debug.log*
+# Environment files (secrets & credentials)
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.staging
 
-# env files
-.env*
-
-# vercel
-.vercel
-
-# typescript
+# TypeScript build info cache
 *.tsbuildinfo
 next-env.d.ts
 
-# project specific
+# IDE / Editor
+.vscode/settings.json
+.idea/
+*.swp
+*.swo
+*~
+.history/
+
+# OS metadata
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Debug & application logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# SSL / certs
+*.pem
+*.key
+*.crt
+
+# Supabase local
+supabase/.temp/
+
+# AI tooling config
+.claude/
 CLAUDE.md
 AGENTS.md
+
+# Vercel deployment
+.vercel
+
+# Documentation (internal only)
+docs/
+
