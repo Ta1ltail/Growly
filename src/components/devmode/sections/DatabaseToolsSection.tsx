@@ -118,12 +118,14 @@ export function DatabaseToolsSection({ query }: { query: string }) {
 
   // Seeder: Add Gold — additive, reads the LIVE balance so repeated clicks stack.
   function addGold() {
+    const added = 500;
+    toast.success(`Added ${added} bonus coins!`);
     mutateData(
       (prev) => ({
         ...prev,
         economy: {
           ...prev.economy,
-          bonusCoins: (prev.economy.bonusCoins ?? 0) + 500,
+          bonusCoins: (prev.economy.bonusCoins ?? 0) + added,
         },
       }),
       false,
@@ -132,6 +134,14 @@ export function DatabaseToolsSection({ query }: { query: string }) {
 
   // Seeder: Remove Gold
   function removeGold() {
+    // Read bonusCoins from live state for the toast message
+    const current = data.economy.bonusCoins ?? 0;
+    if (current <= 0) {
+      toast.error("No bonus coins to remove.");
+      return;
+    }
+    const removed = Math.min(current, 500);
+    toast.success(`Removed ${removed} bonus coins.`);
     mutateData(
       (prev) => ({
         ...prev,
