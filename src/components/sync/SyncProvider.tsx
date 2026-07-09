@@ -12,6 +12,7 @@ import { useAuth } from "@/hooks/useAuth";
 import {
   fullResync,
   pushMutation,
+  refreshStatsSnapshot,
   resetSyncState,
 } from "@/lib/supabase/sync";
 import { createClient } from "@/lib/supabase/client";
@@ -190,7 +191,10 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
         if (result) {
           const localData = loadData();
           if (JSON.stringify(localData) !== JSON.stringify(result)) {
+            // Data changed upstream — update local cache and refresh the
+            // public stats snapshot from the authoritative remote data.
             reloadCache();
+            void refreshStatsSnapshot(userId);
           }
         }
       }).catch(() => {

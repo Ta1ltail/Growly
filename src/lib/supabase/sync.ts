@@ -148,20 +148,12 @@ function enqueueRetry(
    successful sync to update public profile data.
    ──────────────────────────────────────────── */
 
-// Debounce the (fairly heavy) stats snapshot so a burst of mark toggles results
-// in a single recompute+upsert once the user pauses, instead of one per tap.
-const SNAPSHOT_DEBOUNCE_MS = 3000;
-let _snapshotTimer: ReturnType<typeof setTimeout> | null = null;
-
-function scheduleStatsSnapshot(userId: string): void {
-  if (_snapshotTimer) clearTimeout(_snapshotTimer);
-  _snapshotTimer = setTimeout(() => {
-    _snapshotTimer = null;
-    void refreshStatsSnapshot(userId);
-  }, SNAPSHOT_DEBOUNCE_MS);
-}
-
-async function refreshStatsSnapshot(userId: string): Promise<void> {
+// Stats snapshots are updated by fullResync, not by per-mutation pushes.
+// See pushMutation() for why — debounced timers that read loadData() after
+// mount-time mutations have modified it can compute stale results.
+// Export refreshStatsSnapshot so the polling handler (in SyncProvider) can
+// call it directly when it detects changes from periodic fullResync.
+export async function refreshStatsSnapshot(userId: string): Promise<void> {
   try {
     const data = loadData();
     const summary = summarizeProgress(data, new Date());
@@ -503,9 +495,12 @@ export async function pushMutation(
     }
 
     await saveChanged(supabase, userId, data, changed);
-    // Refresh the public stats snapshot — debounced so rapid mark toggles
-    // collapse into one recompute+upsert rather than one per tap.
-    scheduleStatsSnapshot(userId);
+    // Stats snapshots are updated only by fullResync (on initial load and
+    // periodic polling), not by per-mutation pushes. Computing stats from
+    // `loadData()` inside a debounced timer that fires after as-yet-unknown
+    // state changes can write stale Level-11 data over the user's real Level
+    // 23 — races we can't win. The 15-second polling fallback ensures stats
+    // stay current without this corruption risk.
     setStatus("idle");
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Sync failed";
