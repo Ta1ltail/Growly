@@ -49,7 +49,7 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
   const pollTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const realtimeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const supabaseRef = useRef<ReturnType<typeof createClient> | null>(null);
-  const channelRef = useRef<ReturnType<ReturnType<typeof createClient>["channel"]> | null>(null);
+  const channelsRef = useRef<ReturnType<ReturnType<typeof createClient>["channel"]>[]>([]);
 
   useEffect(() => {
     if (loading) return;
@@ -65,9 +65,12 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
         pollTimerRef.current = null;
       }
 
-      // Clean up realtime
+      // Clean up all realtime channels
       if (supabaseRef.current) {
-        supabaseRef.current.channel("sync-realtime").unsubscribe();
+        for (const ch of channelsRef.current) {
+          supabaseRef.current.removeChannel(ch);
+        }
+        channelsRef.current = [];
         supabaseRef.current = null;
       }
 
@@ -132,13 +135,22 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
 
     // ── 3. Subscribe to real-time changes ──
     // This catches changes made by the same user on other devices/sessions.
-    const channel = supabase.channel("sync-realtime");
-    channelRef.current = channel;
+    // Uses a channel per table so a single table misconfiguration doesn't
+    // block all subscriptions, and each .subscribe() call has its own status.
+    // Store all channels so cleanup can remove each one individually
+    const channels: ReturnType<ReturnType<typeof createClient>["channel"]>[] = [];
+    channelsRef.current = channels;
     for (const table of SYNC_TABLES) {
-      channel.on(
-        "postgres_changes" as never,
+      // Use null (anonymous) channel names to avoid name collisions with any
+      // leftover subscriptions from previous effect cycles.
+      // Use a unique channel name per table to avoid name collisions with any
+      // leftover subscriptions from previous effect cycles.
+      const ch = supabase.channel(`sync-${table}`);
+      channels.push(ch);
+      ch.on(
+        "postgres_changes",
         {
-          event: "*" as never,
+          event: "*",
           schema: "public",
           table,
           filter: `user_id=eq.${userId}`,
@@ -159,8 +171,18 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
           }, 2000);
         },
       );
+      ch.subscribe((status) => {
+        if (status === "SUBSCRIBED") {
+          // Connected successfully — no action needed
+        } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+          // Connection failed — polling fallback will handle updates
+          console.warn(
+            `[sync] Realtime subscription failed for ${table}: ${status}. ` +
+            "Falling back to periodic polling.",
+          );
+        }
+      });
     }
-    channel.subscribe();
 
     // ── 4. Periodic polling as fallback (quiet mode) ──
     pollTimerRef.current = setInterval(() => {
@@ -185,11 +207,11 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
         clearInterval(pollTimerRef.current);
         pollTimerRef.current = null;
       }
-      // Use the stored channel reference for cleanup, not a new channel
-      if (channelRef.current) {
-        supabase.removeChannel(channelRef.current);
-        channelRef.current = null;
+      // Remove all realtime channels
+      for (const ch of channelsRef.current) {
+        supabase.removeChannel(ch);
       }
+      channelsRef.current = [];
     };
     // Keyed on userId (a stable string) rather than the user object, whose
     // reference changes on every token refresh / tab focus — using the object
