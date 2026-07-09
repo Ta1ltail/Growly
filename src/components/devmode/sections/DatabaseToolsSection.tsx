@@ -116,10 +116,10 @@ export function DatabaseToolsSection({ query }: { query: string }) {
     // if the user navigates away.
   }
 
-  // Seeder: Add Gold — additive, reads the LIVE balance so repeated clicks stack.
+  // Seeder: Max Gold — grants 99,999 bonus coins. Repeated clicks stack.
   function addGold() {
-    const added = 500;
-    toast.success(`Added ${added} bonus coins!`);
+    const added = 99999;
+    toast.success(`Added ${added.toLocaleString()} bonus coins!`);
     mutateData(
       (prev) => ({
         ...prev,
@@ -232,6 +232,11 @@ export function DatabaseToolsSection({ query }: { query: string }) {
   // Lookback is 3650 days (~10 years) so the button never silently exhausts
   // its supply of unfilled days during normal testing.
   function addXp() {
+    const activeHabits = data.habits.filter((h) => !h.archived);
+    if (activeHabits.length === 0) {
+      toast.error("Create at least one active habit first.");
+      return;
+    }
     mutateData((prev) => {
       const active = prev.habits.filter((h) => !h.archived);
       if (active.length === 0) return prev;
@@ -256,6 +261,8 @@ export function DatabaseToolsSection({ query }: { query: string }) {
       }
       return { ...prev, marks: newMarks };
     }, false);
+    const xpEstimate = activeHabits.length * 10 * 10; // 10 days × habits × 10 XP
+    toast.success(`Added ~${xpEstimate.toLocaleString()} XP (10 days × ${activeHabits.length} habits)!`);
   }
 
   // Seeder: Remove XP
@@ -500,8 +507,8 @@ export function DatabaseToolsSection({ query }: { query: string }) {
       {/* Enhanced Seeders */}
       <DevGroup title="Economy">
         <DevRow
-          label="Add Gold (500)"
-          hint="Add bonus coins for testing."
+          label="Max Gold (99,999)"
+          hint="Add 99,999 bonus coins for testing."
           query={query}
           terms="coins money"
         >
