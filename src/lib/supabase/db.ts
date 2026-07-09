@@ -889,12 +889,18 @@ export async function saveChanged(
   // causing FK violations on marks & freezes which reference habits.id.
   // The queue ensures only one save runs at a time; subsequent calls wait.
   await _enqueueSave(async () => {
-    // ── Phase 1: Save habits FIRST (marks & freezes have FK to habits.id) ──
-  // Always re-save habits when marks or economy (which includes freezes) are
-  // changed, because the habit_ids in those tables must reference habits that
-  // actually exist in Supabase.
-  const saveHabitsToo =
-    changed.habits || changed.marks || changed.economy;
+    // ── Phase 1: Save habits FIRST (marks have FK to habits.id) ──
+  // Re-save habits only when habits or marks actually changed. An economy-only
+  // mutation (check-in, quest, spin, gold) must NEVER trigger a habit re-save
+  // via replaceTable (DELETE+UPSERT) because mount-time effects that run before
+  // fullResync completes carry empty/stale data — deleting and replacing habits
+  // with an empty array permanently destroys the user's Supabase data.
+  const saveHabitsToo = changed.habits || changed.marks;
+
+  // Freezes (inside economy) also have FK to habits.id, but the freezes are
+  // filtered by validHabitIds in Phase 2 below so only existing habit IDs are
+  // saved. When economy alone changes, existing habits are already in Supabase
+  // from the last successful push, so no re-save is needed.
   if (saveHabitsToo) {
     await saveHabits(supabase, userId, data.habits);
   }

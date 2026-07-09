@@ -241,9 +241,9 @@ const NOTE_TEMPLATES: string[] = [
 
 
 /**
- * Generate a comprehensive seed dataset with 50+ records for each multi-record table.
- * Returns an AppData object with habits, marks, notes, goals, economy, and unlocks
- * populated with realistic data covering 45 days of history.
+ * Generate comprehensive seed data: 55 habits, 50 notes, and 30 goals.
+ * Does NOT generate marks, economy, unlocks, or progressSeen — those are left
+ * at their current state so the seed is purely additive (no data loss).
  */
 export function makeComprehensiveSeedData(base: AppData, today: Date): AppData {
   const daysBack = 60;
@@ -263,9 +263,6 @@ export function makeComprehensiveSeedData(base: AppData, today: Date): AppData {
         ? { kind: "daily" }
         : { kind: "weekly", weekdays: h.repeatDays },
   }));
-
-  // Marks from 60 days of history for all habits
-  const marks = buildHistory(habits, today, daysBack);
 
   // 50 notes with diverse content
   const notes: Note[] = Array.from({ length: 50 }, (_, i) => {
@@ -303,73 +300,10 @@ export function makeComprehensiveSeedData(base: AppData, today: Date): AppData {
     };
   });
 
-  // Unlock various achievements
-  const unlocks: Record<string, { at: string; seen: boolean }> = {};
-  // Unlock random achievements using real achievement IDs from ACHIEVEMENTS
-  const unlockedAchievements = ACHIEVEMENTS.filter(() => Math.random() < 0.4);
-  for (const a of unlockedAchievements) {
-    const daysAgo = Math.floor(Math.random() * 30);
-    unlocks[a.id] = {
-      at: new Date(addDays(today, -daysAgo)).toISOString(),
-      seen: Math.random() < 0.7,
-    };
-  }
-
-  // Economy with spend ledger — using real shop item IDs.
-  // Total spend is kept proportional to the expected earnings (~2-3 coins per
-  // completion × ~1,100 completions from 60 days = ~2,200-3,300 earned coins).
-  // A realistic user would buy 3-6 items, spending roughly 500-1,200 coins,
-  // leaving a healthy positive balance so the seeded data is usable.
-  const REAL_ITEMS = [
-    "flame-azure", "flame-emerald", "flame-violet", "flame-gold",
-    "flame-ice", "flame-lava", "flame-rainbow", "flame-solar",
-    "confetti-mono", "confetti-neon", "confetti-fire", "confetti-pastel",
-    "confetti-gold", "confetti-ocean",
-    "accent-crimson", "accent-emerald", "accent-violet",
-    "accent-pink", "accent-ocean",
-  ];
-  const PURCHASED_ITEMS = REAL_ITEMS.slice(0, 4);
-  const spent: SpendEntry[] = [
-    { id: uid(), at: new Date(addDays(today, -40)).toISOString(), amount: 120, item: PURCHASED_ITEMS[0] },
-    { id: uid(), at: new Date(addDays(today, -33)).toISOString(), amount: 120, item: PURCHASED_ITEMS[1] },
-    { id: uid(), at: new Date(addDays(today, -25)).toISOString(), amount: 200, item: PURCHASED_ITEMS[2] },
-    { id: uid(), at: new Date(addDays(today, -18)).toISOString(), amount: 100, item: "confetti-mono" },
-    { id: uid(), at: new Date(addDays(today, -10)).toISOString(), amount: 150, item: PURCHASED_ITEMS[3] },
-  ];
-  // Some freezes used
-  const freezes: FreezeEntry[] = Array.from({ length: 2 }, () => ({
-    id: uid(),
-    at: new Date(addDays(today, -Math.floor(Math.random() * 15))).toISOString(),
-    date: dateKey(addDays(today, -Math.floor(Math.random() * 5) - 1)),
-    habitId: pick(habits).id,
-  }));
-
-  // bonusCoins should be enough to cover the spend and leave a surplus,
-  // keeping the final seed balance positive and usable for testing.
-  const bonusCoins = 450;
-
   return {
     ...base,
-    habits,
-    marks,
-    notes,
-    goals,
-    unlocks,
-    economy: {
-      ...base.economy,
-      spent,
-      freezes,
-      owned: PURCHASED_ITEMS,
-      equipped: { flame: PURCHASED_ITEMS[0], confetti: "confetti-default", accent: "accent-default" },
-      bonusCoins,
-    },
-    progressSeen: {
-      seeded: true,
-      level: 3,
-      title: "Habit Enthusiast",
-      shop: [],
-      streaks: {},
-      tierUnlocks: ["common"],
-    },
+    habits: [...base.habits, ...habits],
+    notes: [...base.notes, ...notes],
+    goals: [...base.goals, ...goals],
   };
 }

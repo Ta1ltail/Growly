@@ -4,11 +4,8 @@ import { useState } from "react";
 import {
   Coins,
   Sparkles,
-  Flame,
   Trophy,
   Zap,
-  RefreshCw,
-  Dices,
   Database,
   Trash2,
   Upload,
@@ -24,12 +21,11 @@ import {
 import { useToday } from "@/hooks/useToday";
 import { dateKey, addDays, clearLocalAppData } from "@/lib/storage";
 import { DEFAULT_ECONOMY, DEFAULT_PROFILE, type MarkStatus, type Unlocks, type ProgressSeen } from "@/lib/types";
-import { makeDemoData, makeStressData, makeComprehensiveSeedData } from "@/lib/devSeed";
+import { makeComprehensiveSeedData } from "@/lib/devSeed";
 import { ACHIEVEMENTS } from "@/lib/achievements";
 import { SHOP_ITEMS } from "@/lib/economy";
 import { useAuth } from "@/hooks/useAuth";
 import { fullResync } from "@/lib/supabase/sync";
-import { createClient } from "@/lib/supabase/client";
 import { DevGroup, DevRow, DevStack, DevButton, DEV_INPUT } from "../ui";
 
 export const DB_TERMS =
@@ -132,27 +128,7 @@ export function DatabaseToolsSection({ query }: { query: string }) {
     );
   }
 
-  // Seeder: Remove Gold
-  function removeGold() {
-    // Read bonusCoins from live state for the toast message
-    const current = data.economy.bonusCoins ?? 0;
-    if (current <= 0) {
-      toast.error("No bonus coins to remove.");
-      return;
-    }
-    const removed = Math.min(current, 500);
-    toast.success(`Removed ${removed} bonus coins.`);
-    mutateData(
-      (prev) => ({
-        ...prev,
-        economy: {
-          ...prev.economy,
-          bonusCoins: Math.max(0, (prev.economy.bonusCoins ?? 0) - 500),
-        },
-      }),
-      false,
-    );
-  }
+
 
   // Seeder: Reset Progress (marks only)
   function resetProgress() {
@@ -226,12 +202,10 @@ export function DatabaseToolsSection({ query }: { query: string }) {
     );
   }
 
-  // Seeder: Add XP — XP is derived from completion history, so we grant it by
-  // completing habits. Each press fills the next 10 not-yet-complete past days
-  // (reading live state), so repeated presses genuinely stack more XP.
-  // Lookback is 3650 days (~10 years) so the button never silently exhausts
-  // its supply of unfilled days during normal testing.
-  function addXp() {
+  // Seeder: Mark 50 Days as Done — fills the next 50 not-yet-complete past days
+  // for all active habits. Each press fills 50 fresh days, so repeated clicks
+  // stack more completions and thus more XP.
+  function mark50DaysDone() {
     const activeHabits = data.habits.filter((h) => !h.archived);
     if (activeHabits.length === 0) {
       toast.error("Create at least one active habit first.");
@@ -243,7 +217,7 @@ export function DatabaseToolsSection({ query }: { query: string }) {
       const newMarks = { ...prev.marks };
       let filled = 0;
       let offset = 1;
-      while (filled < 10 && offset < 3650) {
+      while (filled < 50 && offset < 3650) {
         const key = dateKey(addDays(today, -offset));
         const day = { ...(newMarks[key] ?? {}) };
         let changedDay = false;
@@ -261,90 +235,80 @@ export function DatabaseToolsSection({ query }: { query: string }) {
       }
       return { ...prev, marks: newMarks };
     }, false);
-    const xpEstimate = activeHabits.length * 10 * 10; // 10 days × habits × 10 XP
-    toast.success(`Added ~${xpEstimate.toLocaleString()} XP (10 days × ${activeHabits.length} habits)!`);
+    const xpGained = activeHabits.length * 50 * 10; // 50 days × habits × 10 XP
+    toast.success(`Marked 50 days as done (~${xpGained.toLocaleString()} XP, ${activeHabits.length} habits)!`);
   }
 
-  // Seeder: Remove XP
-  function removeXp() {
-    if (!window.confirm("Clear the last 10 days of marks? This reduces XP."))
+  // Seeder: Unmark 50 Days as Done — deletes the last 50 days of marks.
+  function unmark50DaysDone() {
+    if (!window.confirm("Clear the last 50 days of marks? This removes XP and cannot be undone."))
       return;
     mutateData(
       (prev) => {
         const newMarks = { ...prev.marks };
-        for (let i = 0; i < 10; i++) {
-          delete newMarks[dateKey(addDays(today, -(i + 1)))];
+        let removed = 0;
+        for (let i = 0; i < 50; i++) {
+          const key = dateKey(addDays(today, -(i + 1)));
+          if (newMarks[key]) {
+            delete newMarks[key];
+            removed++;
+          }
         }
         return { ...prev, marks: newMarks };
       },
       false,
     );
+    toast.success(`Cleared marks for the last 50 days.`);
   }
 
-  // Seeder: Set Streak
-  function setStreak() {
-    const targetStreak = 7;
-    mutateData(
-      (prev) => {
-        const firstHabit = prev.habits.find((h) => !h.archived);
-        if (!firstHabit) {
-          toast.error("Create at least one habit first.");
-          return prev;
-        }
-        const newMarks = { ...prev.marks };
-        for (let i = 0; i < targetStreak; i++) {
-          const key = dateKey(addDays(today, -(targetStreak - 1 - i)));
-          newMarks[key] = {
-            ...(newMarks[key] ?? {}),
-            [firstHabit.id]: "done" as MarkStatus,
-          };
-        }
-        return { ...prev, marks: newMarks };
-      },
-      false,
-    );
-  }
-
-  // Seeder: Reset Streak
-  function resetStreak() {
-    mutateData(
-      (prev) => {
-        const firstHabit = prev.habits.find((h) => !h.archived);
-        if (!firstHabit) {
-          toast.error("Create at least one habit first.");
-          return prev;
-        }
-        const yesterday = dateKey(addDays(today, -1));
-        return {
-          ...prev,
-          marks: {
-            ...prev.marks,
-            [yesterday]: {
-              ...(prev.marks[yesterday] ?? {}),
-              [firstHabit.id]: "missed" as MarkStatus,
-            },
-          },
-        };
-      },
-      false,
-    );
-  }
-
-  // Seeder: Simulate Daily Progress
-  function simulateDailyProgress() {
-    replaceData(makeDemoData(data, today));
-  }
-
-  // Seeder: Generate Random Data (stress test)
-  function generateRandomData() {
-    const count = 20;
+  function maxLevel() {
     if (
       !window.confirm(
-        `Generate ${count} stress test habits with 30 days of history?`,
+        "Fill 10 years of completion data and unlock all achievements to maximize " +
+        "your level? (This will NOT affect coins or shop items.)",
       )
     )
       return;
-    replaceData(makeStressData(data, today, count, 30));
+    const now = new Date().toISOString();
+    const today = new Date();
+    mutateData((prev) => {
+      const active = prev.habits.filter((h) => !h.archived);
+      const habitIds = active.map((h) => h.id);
+
+      // ── 1. Fill marks: 3650 days (~10 years) of completions for all habits ──
+      const newMarks = { ...prev.marks };
+      if (habitIds.length > 0) {
+        for (let i = 1; i <= 3650; i++) {
+          const key = dateKey(addDays(today, -i));
+          const day: Record<string, MarkStatus> = {};
+          for (const id of habitIds) {
+            day[id] = "done";
+          }
+          newMarks[key] = day;
+        }
+      }
+
+      // ── 2. Unlock all achievements (they contribute XP via RARITY_XP) ──
+      const unlocks: Unlocks = { ...prev.unlocks };
+      for (const a of ACHIEVEMENTS) {
+        unlocks[a.id] = { at: unlocks[a.id]?.at ?? now, seen: true };
+      }
+
+      // ── 3. Mark level as seen so celebrations don't re-fire ──
+      const progressSeen: ProgressSeen = {
+        ...prev.progressSeen,
+        level: 99,
+      };
+
+      return {
+        ...prev,
+        marks: newMarks,
+        unlocks,
+        progressSeen,
+      };
+    }, false);
+    const habitsCount = data.habits.filter((h) => !h.archived).length;
+    toast.success(`Max level achieved! (${habitsCount} habits × 3650 days of completions)`);
   }
 
   function maxEverything() {
@@ -422,6 +386,16 @@ export function DatabaseToolsSection({ query }: { query: string }) {
   return (
     <>
       <DevGroup title="🔥 Max Everything">
+        <DevRow
+          label="Max Level"
+          hint="Fill 10 years of completion data and unlock all achievements to reach max level. Does NOT affect coins or shop."
+          query={query}
+          terms="max level xp experience maxlevel"
+        >
+          <DevButton tone="accent" onClick={maxLevel}>
+            <Sparkles className="size-3.5" /> Max Level
+          </DevButton>
+        </DevRow>
         <DevRow
           label="Max Everything"
           hint="Fill 10 years of completions, unlock all achievements, buy all shop items, max coins, set progress markers to max. Persists locally + syncs to Supabase."
@@ -516,16 +490,6 @@ export function DatabaseToolsSection({ query }: { query: string }) {
             <Coins className="size-3.5" /> Add
           </DevButton>
         </DevRow>
-        <DevRow
-          label="Remove Gold (500)"
-          hint="Remove bonus coins."
-          query={query}
-          terms="coins money"
-        >
-          <DevButton tone="danger" onClick={removeGold}>
-            <Coins className="size-3.5" /> Remove
-          </DevButton>
-        </DevRow>
       </DevGroup>
 
       <DevGroup title="Progress">
@@ -540,26 +504,6 @@ export function DatabaseToolsSection({ query }: { query: string }) {
           </DevButton>
         </DevRow>
         <DevRow
-          label="Simulate Daily Progress"
-          hint="Generate 45 days of realistic history."
-          query={query}
-          terms="seed demo"
-        >
-          <DevButton tone="accent" onClick={simulateDailyProgress}>
-            <RefreshCw className="size-3.5" /> Simulate
-          </DevButton>
-        </DevRow>
-        <DevRow
-          label="Generate Random Data"
-          hint="Add 20 stress test habits with history."
-          query={query}
-          terms="stress test"
-        >
-          <DevButton onClick={generateRandomData}>
-            <Dices className="size-3.5" /> Generate
-          </DevButton>
-        </DevRow>
-        <DevRow
           label="Reset Progress"
           hint="Clear marks, unlocks, and economy."
           query={query}
@@ -571,45 +515,25 @@ export function DatabaseToolsSection({ query }: { query: string }) {
         </DevRow>
       </DevGroup>
 
-      <DevGroup title="XP & Streaks">
+      <DevGroup title="XP & Marks">
         <DevRow
-          label="Add XP"
-          hint="Mark 10 days as done to gain XP."
+          label="Mark 50 Days as Done"
+          hint="Fill 50 past days with completions to gain XP. Repeated clicks stack."
           query={query}
-          terms="experience level up"
+          terms="experience level up mark done"
         >
-          <DevButton tone="accent" onClick={addXp}>
-            <Sparkles className="size-3.5" /> Add
+          <DevButton tone="accent" onClick={mark50DaysDone}>
+            <Sparkles className="size-3.5" /> Mark 50
           </DevButton>
         </DevRow>
         <DevRow
-          label="Remove XP"
-          hint="Clear last 10 days of marks."
+          label="Unmark 50 Days as Done"
+          hint="Clear the last 50 days of marks to remove the corresponding XP."
           query={query}
-          terms="experience level down"
+          terms="experience level down remove clear"
         >
-          <DevButton tone="danger" onClick={removeXp}>
-            <Sparkles className="size-3.5" /> Remove
-          </DevButton>
-        </DevRow>
-        <DevRow
-          label="Set Streak (7 days)"
-          hint="Create a 7-day streak for the first habit."
-          query={query}
-          terms="flame chain"
-        >
-          <DevButton tone="accent" onClick={setStreak}>
-            <Flame className="size-3.5" /> Set
-          </DevButton>
-        </DevRow>
-        <DevRow
-          label="Reset Streak"
-          hint="Break current streak by marking yesterday as missed."
-          query={query}
-          terms="break chain"
-        >
-          <DevButton tone="danger" onClick={resetStreak}>
-            <Flame className="size-3.5" /> Break
+          <DevButton tone="danger" onClick={unmark50DaysDone}>
+            <Trash2 className="size-3.5" /> Unmark 50
           </DevButton>
         </DevRow>
       </DevGroup>
@@ -680,32 +604,7 @@ export function DatabaseToolsSection({ query }: { query: string }) {
             <Upload className="size-3.5" /> {seeding ? "Pushing..." : "Push"}
           </DevButton>
         </DevRow>
-        <DevRow
-          label="Seed Demo (6 habits)"
-          hint="Quick demo with 6 habits and 45 days of history."
-          query={query}
-          terms="seed demo quick"
-        >
-          <DevButton
-            tone="accent"
-            onClick={async () => {
-              if (!user) { toast.error("Must be logged in."); return; }
-              if (!window.confirm("Generate demo data and push?")) return;
-              setSeeding(true);
-              try {
-                const seeded = makeDemoData(data, today);
-                replaceData(seeded);
-                await fullResync(user.id);
-                reloadCache();
-                toast.success("Demo data pushed to Supabase!");
-              } catch (e) { toast.error(`Failed: ${e}`); }
-              finally { setSeeding(false); }
-            }}
-            disabled={seeding || !user}
-          >
-            <RefreshCw className="size-3.5" /> {seeding ? "..." : "Seed (6)"}
-          </DevButton>
-        </DevRow>
+
         <DevRow
           label="Seed Comprehensive (55+ records/table)"
           hint="Generate 55 habits, 50 notes, 30 goals, spend ledger, achievements — push to Supabase."
@@ -732,66 +631,7 @@ export function DatabaseToolsSection({ query }: { query: string }) {
             <Database className="size-3.5" /> {seeding ? "..." : "Seed (55+)"}
           </DevButton>
         </DevRow>
-        <DevRow
-          label="Seed Suggestions (55) & Notifications (50)"
-          hint="Directly inserts seed data into suggestions and notifications tables via Supabase."
-          query={query}
-          terms="seed suggestions notifications feedback"
-        >
-          <DevButton
-            tone="accent"
-            onClick={async () => {
-              if (!user) { toast.error("Must be logged in."); return; }
-              if (!window.confirm("Insert 55 suggestions and 50 notifications into Supabase?")) return;
-              setSeeding(true);
-              try {
-                const supabase = createClient();
-                // Suggestion seed data
-                const suggestionData = [
-                  { title: "Dark mode toggle", body: "Would love a dark mode option.", category: "feature" },
-                  { title: "Export to CSV", body: "Please add an export feature.", category: "feature" },
-                  { title: "Sync improvement", body: "Syncing should be more seamless.", category: "improvement" },
-                  { title: "Mobile app", body: "Would love a mobile app version.", category: "feature" },
-                  { title: "Habit templates", body: "Pre-built templates for common goals.", category: "feature" },
-                  { title: "More achievement types", body: "More achievements for consistency streaks.", category: "feature" },
-                  { title: "Calendar view", body: "A calendar heatmap would help.", category: "feature" },
-                  { title: "Reminders", body: "Desktop notifications would be great.", category: "feature" },
-                  { title: "Goal tracking", body: "Add milestone tracking within goals.", category: "feature" },
-                  { title: "API access", body: "Would like an API to integrate.", category: "feature" },
-                ];
-                const suggestions = Array.from({ length: 55 }, (_, i) => ({
-                  user_id: user.id,
-                  title: suggestionData[i % suggestionData.length].title,
-                  body: suggestionData[i % suggestionData.length].body,
-                  category: suggestionData[i % suggestionData.length].category,
-                  status: ["new", "read", "acknowledged", "completed", "declined"][i % 5],
-                  created_at: new Date(Date.now() - i * 3600000 * 4).toISOString(),
-                }));
-                const { error: sugErr } = await supabase.from("suggestions").insert(suggestions);
-                if (sugErr) throw sugErr;
 
-                // Notification seed data
-                const types = ["friend_request", "friend_accept", "achievement", "system"] as const;
-                const notifications = Array.from({ length: 50 }, (_, i) => ({
-                  user_id: user.id,
-                  type: types[i % types.length],
-                  title: ["New request", "Friend accepted", "Achievement!", "Welcome"][i % 4],
-                  body: ["Someone wants to connect", "Friend request accepted", "You earned an achievement", "Welcome to the app!"][i % 4],
-                  is_read: i % 3 !== 0,
-                  created_at: new Date(Date.now() - i * 3600000 * 3).toISOString(),
-                }));
-                const { error: notErr } = await supabase.from("notifications").insert(notifications);
-                if (notErr) throw notErr;
-
-                toast.success("Seeded 55 suggestions and 50 notifications!");
-              } catch (e) { toast.error(`Failed to seed: ${e}`); }
-              finally { setSeeding(false); }
-            }}
-            disabled={seeding || !user}
-          >
-            <Database className="size-3.5" /> Seed extras
-          </DevButton>
-        </DevRow>
         <DevRow
           label="Clear All Local Data"
           hint="Wipe localStorage and start fresh. Your data on Supabase is preserved."
