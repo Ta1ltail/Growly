@@ -25,7 +25,7 @@ import { makeComprehensiveSeedData } from "@/lib/devSeed";
 import { ACHIEVEMENTS } from "@/lib/achievements";
 import { SHOP_ITEMS } from "@/lib/economy";
 import { useAuth } from "@/hooks/useAuth";
-import { fullResync } from "@/lib/supabase/sync";
+import { fullResync, refreshStatsSnapshot } from "@/lib/supabase/sync";
 import { DevGroup, DevRow, DevStack, DevButton, DEV_INPUT } from "../ui";
 
 export const DB_TERMS =
@@ -629,6 +629,29 @@ export function DatabaseToolsSection({ query }: { query: string }) {
             disabled={seeding || !user}
           >
             <Database className="size-3.5" /> {seeding ? "..." : "Seed (55+)"}
+          </DevButton>
+        </DevRow>
+
+        <DevRow
+          label="Recalculate Stats"
+          hint="Force a recalculation of your public stats snapshot from current marks. Fixes stale Level 11 / Focus Seeker data from the old corruption bug."
+          query={query}
+          terms="recalculate recompute stats snapshot refresh user_stats_snapshots level xp achievements"
+        >
+          <DevButton
+            tone="accent"
+            onClick={async () => {
+              if (!user) { toast.error("Must be logged in."); return; }
+              setSeeding(true);
+              try {
+                await refreshStatsSnapshot(user.id);
+                toast.success("Stats recalculated from your current data!");
+              } catch (e) { toast.error(`Failed: ${e}`); }
+              finally { setSeeding(false); }
+            }}
+            disabled={seeding || !user}
+          >
+            <Zap className="size-3.5" /> {seeding ? "..." : "Recalculate"}
           </DevButton>
         </DevRow>
 
