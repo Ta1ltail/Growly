@@ -29,7 +29,9 @@ import { ACCENTS, DEFAULT_THEME, type ThemeMode } from "./theme";
 export const STORAGE_KEY = "project101.data.v1";
 
 // Key used for the "Remember Me" feature on login
-const REMEMBER_ME_KEY = "project101.remember_me";
+export const REMEMBER_ME_KEY = "project101.remember_me";
+export const SAVED_EMAIL_KEY = "project101.saved_email";
+const LAST_AUTH_USER_KEY = "project101.last_auth_user";
 
 // Current schema version. Bumped when the shape of stored data changes so
 // loadData() can migrate older saves forward.
@@ -576,8 +578,8 @@ export function clearLocalAppData(): void {
   try {
     window.localStorage.removeItem(STORAGE_KEY);
     window.localStorage.removeItem(REMEMBER_ME_KEY);
-    window.localStorage.removeItem("project101.saved_email");
-    window.localStorage.removeItem("project101.last_auth_user");
+    window.localStorage.removeItem(SAVED_EMAIL_KEY);
+    window.localStorage.removeItem(LAST_AUTH_USER_KEY);
   } catch {
     // localStorage can be unavailable (private mode, quota). Safe to ignore.
   }

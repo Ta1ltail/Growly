@@ -1,5 +1,6 @@
 -- Enable pgcrypto extension (needed for crypt() and gen_salt())
-CREATE EXTENSION IF NOT EXISTS pgcrypto;
+-- Explicit schema matches Supabase convention and the pattern in 001_schema.sql
+CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA extensions;
 
 -- ============================================================================
 -- Seed 50 test users with complete data for development & testing.
@@ -96,7 +97,7 @@ DECLARE
   ];
 BEGIN
   -- Generate bcrypt password hash once
-  v_pw_hash := extensions.crypt('test123456', extensions.gen_salt('bf'));
+  v_pw_hash := crypt('test123456', gen_salt('bf'));
 
   FOR i IN 1..50 LOOP
     -- Idempotency guard: if this seed user already exists, skip the whole
@@ -184,8 +185,10 @@ BEGIN
     );
 
     -- ── 3. user_profile (single row, trigger may already have created it) ──
+    -- Each user gets a random avatar and banner from the preset lists to give
+    -- every seed profile a distinct, colourful look from the start.
     INSERT INTO user_profile (
-      user_id, display_name, username, bio, motto, avatar
+      user_id, display_name, username, bio, motto, avatar, banner
     ) VALUES (
       v_user_id,
       CASE (i % 50)
@@ -216,26 +219,54 @@ BEGIN
           WHEN 48 THEN 'Will Turner'       ELSE 'Zara Patel'
         END,
       'user' || i,
-      CASE (i % 5)
+      -- Bio: pick from 9 varied descriptions
+      CASE (i % 9)
         WHEN 0 THEN 'Habit enthusiast on a journey of self-improvement.'
         WHEN 1 THEN 'Building better habits, one day at a time.'
-        WHEN 2 THEN 'Consistency over perfection.'
-        WHEN 3 THEN 'Small steps lead to big changes.'
-        ELSE 'Tracking progress and staying accountable.'
+        WHEN 2 THEN 'Consistency over perfection — showing up every day.'
+        WHEN 3 THEN 'Small steps lead to big changes over time.'
+        WHEN 4 THEN 'Tracking progress and staying accountable.'
+        WHEN 5 THEN 'Turning goals into routines, one habit at a time.'
+        WHEN 6 THEN 'Morning person, coffee addict, habit tracker.'
+        WHEN 7 THEN 'On a mission to build an unstoppable routine.'
+        ELSE 'Fitness | Learning | Growth — the full stack of life.'
       END,
-      CASE (i % 4)
+      -- Motto: pick from 10 inspirational phrases
+      CASE (i % 10)
         WHEN 0 THEN 'Be 1% better every day.'
         WHEN 1 THEN 'The best time to start is now.'
-        WHEN 2 THEN 'Discipline = Freedom'
-        ELSE 'Progress, not perfection.'
+        WHEN 2 THEN 'Discipline equals freedom.'
+        WHEN 3 THEN 'Progress, not perfection.'
+        WHEN 4 THEN 'The only bad workout is the one that didn''t happen.'
+        WHEN 5 THEN 'Success is the sum of small efforts repeated daily.'
+        WHEN 6 THEN 'You don''t have to be extreme, just consistent.'
+        WHEN 7 THEN 'Dream big. Start small. Act now.'
+        WHEN 8 THEN 'Your habits shape your future.'
+        ELSE 'Make today count.'
       END,
-      NULL
+      -- Avatar: 12 presets from AVATAR_PRESETS (cosmetics.ts)
+      CASE (i % 12)
+        WHEN 0 THEN 'rocket'  WHEN 1 THEN 'fox'
+        WHEN 2 THEN 'owl'     WHEN 3 THEN 'wolf'
+        WHEN 4 THEN 'fire'    WHEN 5 THEN 'bolt'
+        WHEN 6 THEN 'star'    WHEN 7 THEN 'brain'
+        WHEN 8 THEN 'ninja'   WHEN 9 THEN 'crown'
+        WHEN 10 THEN 'dragon' ELSE 'diamond'
+      END,
+      -- Banner: 6 presets from BANNER_PRESETS (cosmetics.ts)
+      CASE (i % 6)
+        WHEN 0 THEN 'aurora'   WHEN 1 THEN 'sunset'
+        WHEN 2 THEN 'forest'   WHEN 3 THEN 'ember'
+        WHEN 4 THEN 'midnight' ELSE 'candy'
+      END
     )
     ON CONFLICT (user_id) DO UPDATE SET
       display_name = EXCLUDED.display_name,
       username     = EXCLUDED.username,
       bio          = EXCLUDED.bio,
-      motto        = EXCLUDED.motto;
+      motto        = EXCLUDED.motto,
+      avatar       = EXCLUDED.avatar,
+      banner       = EXCLUDED.banner;
 
     -- ── 4. user_settings (single row, trigger may already have created it) ──
     -- Accent colors match ACCENTS from shared/src/lib/theme.ts

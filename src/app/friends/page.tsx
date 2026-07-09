@@ -198,40 +198,18 @@ export default function FriendsPage() {
   // Initial load + reload when user or page changes
   useEffect(() => {
     if (!user) return;
-    const currentUser = user;
-    // Inline the fetch logic instead of calling useCallback-wrapped functions
-    // to avoid react-hooks/set-state-in-effect with synchronous setState calls.
+    let cancelled = false;
     async function initialLoad() {
-      // Load friend ID set
-      if (friendIdCache.current) {
-        setFriendIdSet(friendIdCache.current);
-      } else {
-        const supabase = createClient();
-        const { data: rows } = await supabase
-          .from("friends")
-          .select("requester, addressee")
-          .or(`requester.eq.${currentUser.id},addressee.eq.${currentUser.id}`)
-          .eq("status", "accepted");
-        const ids = new Set<string>();
-        if (rows) {
-          for (const row of rows as { requester: string; addressee: string }[]) {
-            ids.add(row.requester === currentUser.id ? row.addressee : row.requester);
-          }
-        }
-        friendIdCache.current = ids;
-        setFriendIdSet(ids);
-      }
-
-      // Load friends
-      await loadFriends(friendsPage);
+      await loadFriendIdSet();
+      if (!cancelled) await loadFriends(friendsPage);
     }
     initialLoad();
-  }, [user, friendsPage, loadFriends]);
+    return () => { cancelled = true; };
+  }, [user, friendsPage, loadFriends, loadFriendIdSet]);
 
   // Search for users (already server-limited to 10)
   useEffect(() => {
     if (!user || searchQuery.trim().length < 2) {
-      // Set state asynchronously to avoid react-hooks/set-state-in-effect
       queueMicrotask(() => setSearchResults([]));
       return;
     }
@@ -249,14 +227,18 @@ export default function FriendsPage() {
         return;
       }
 
-      const { data } = await supabase
-        .from("public_profiles")
-        .select("user_id, display_name, username, avatar")
-        .or(`username.ilike.%${q}%,display_name.ilike.%${q}%`)
-        .neq("user_id", user.id)
-        .limit(10);
+      try {
+        const { data } = await supabase
+          .from("public_profiles")
+          .select("user_id, display_name, username, avatar")
+          .or(`username.ilike.%${q}%,display_name.ilike.%${q}%`)
+          .neq("user_id", user.id)
+          .limit(10);
 
-      setSearchResults((data ?? []) as PublicProfile[]);
+        setSearchResults((data ?? []) as PublicProfile[]);
+      } catch {
+        setSearchResults([]);
+      }
       setSearching(false);
     }, 300);
 

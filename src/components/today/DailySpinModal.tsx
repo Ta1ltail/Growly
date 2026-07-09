@@ -6,7 +6,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Sparkles, Coins, Snowflake, RotateCw, X } from "lucide-react";
 
-import { doDailySpin, useAppData } from "@/lib/store";
+import { doDailySpin, useAppDataSelector } from "@/lib/store";
 import { dateKey } from "@/lib/storage";
 import { Button } from "@/components/ui/Button";
 
@@ -17,7 +17,7 @@ export function DailySpinModal({
   open: boolean;
   onClose: () => void;
 }) {
-  const data = useAppData();
+  const lastSpinDate = useAppDataSelector((d) => d.economy.lastSpinDate);
   const [spinning, setSpinning] = useState(false);
   const [result, setResult] = useState<{
     label: string;
@@ -29,7 +29,7 @@ export function DailySpinModal({
   const spinTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Derive from reactive data so it updates properly
-  const alreadySpun = data.economy.lastSpinDate === dateKey(new Date());
+  const alreadySpun = lastSpinDate === dateKey(new Date());
 
   // Clean up spin timer on unmount
   useEffect(() => {

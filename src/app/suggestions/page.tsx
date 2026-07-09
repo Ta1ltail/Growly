@@ -75,23 +75,8 @@ export default function SuggestionsPage() {
   }, [user]);
 
   useEffect(() => {
-    if (!user) return;
-    const currentUser = user;
-    // Inline the fetch logic instead of calling the useCallback to
-    // avoid react-hooks/set-state-in-effect.
-    async function fetchSuggestions() {
-      const supabase = createClient();
-      const { data } = await supabase
-        .from("suggestions")
-        .select("id, title, body, category, created_at, status")
-        .eq("user_id", currentUser.id)
-        .order("created_at", { ascending: false })
-        .limit(20);
-      setSuggestions((data ?? []) as SuggestionRow[]);
-      setLoading(false);
-    }
-    fetchSuggestions();
-  }, [user]);
+    queueMicrotask(() => loadSuggestions());
+  }, [loadSuggestions]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

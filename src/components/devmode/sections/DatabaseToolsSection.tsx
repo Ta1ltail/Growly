@@ -23,9 +23,10 @@ import {
 } from "@/lib/store";
 import { useToday } from "@/hooks/useToday";
 import { dateKey, addDays, clearLocalAppData } from "@/lib/storage";
-import { DEFAULT_ECONOMY, DEFAULT_PROFILE, type MarkStatus } from "@/lib/types";
+import { DEFAULT_ECONOMY, DEFAULT_PROFILE, type MarkStatus, type Unlocks, type ProgressSeen } from "@/lib/types";
 import { makeDemoData, makeStressData, makeComprehensiveSeedData } from "@/lib/devSeed";
 import { ACHIEVEMENTS } from "@/lib/achievements";
+import { SHOP_ITEMS } from "@/lib/economy";
 import { useAuth } from "@/hooks/useAuth";
 import { fullResync } from "@/lib/supabase/sync";
 import { createClient } from "@/lib/supabase/client";
@@ -329,8 +330,93 @@ export function DatabaseToolsSection({ query }: { query: string }) {
     replaceData(makeStressData(data, today, count, 30));
   }
 
+  function maxEverything() {
+    if (
+      !window.confirm(
+        "This will fill 10 years of completion data, " +
+        "unlock all achievements, buy all shop items, give max coins, and set your " +
+        "progress markers to maximum. Continue?",
+      )
+    )
+      return;
+    const now = new Date().toISOString();
+    const today = new Date();
+    mutateData((prev) => {
+      const active = prev.habits.filter((h) => !h.archived);
+      const habitIds = active.map((h) => h.id);
+
+      // ── 1. Fill marks: 3650 days (~10 years) of completions for all habits ──
+      const newMarks = { ...prev.marks };
+      if (habitIds.length > 0) {
+        for (let i = 1; i <= 3650; i++) {
+          const key = dateKey(addDays(today, -i));
+          const day: Record<string, MarkStatus> = {};
+          for (const id of habitIds) {
+            day[id] = "done";
+          }
+          newMarks[key] = day;
+        }
+      }
+
+      // ── 2. Unlock all achievements (seen=true so no celebration flood) ──
+      const unlocks: Unlocks = { ...prev.unlocks };
+      for (const a of ACHIEVEMENTS) {
+        unlocks[a.id] = { at: unlocks[a.id]?.at ?? now, seen: true };
+      }
+
+      // ── 3. Own all shop items, equip the best per slot ──
+      const allItemIds = SHOP_ITEMS.map((i) => i.id);
+      const owned = [...new Set([...prev.economy.owned, ...allItemIds])];
+      const equipped = {
+        ...prev.economy.equipped,
+        flame: "flame-rainbow",
+        confetti: "confetti-gold",
+        accent: "accent-ocean",
+      };
+
+      // ── 4. Give max coins ──
+      const bonusCoins = (prev.economy.bonusCoins ?? 0) + 99999;
+
+      // ── 5. Set progressSeen to maximum so celebrations never re-fire ──
+      const progressSeen: ProgressSeen = {
+        seeded: true,
+        level: 99,
+        title: "Legendary Achiever",
+        shop: allItemIds,
+        streaks: Object.fromEntries(habitIds.map((id) => [id, 365])),
+        tierUnlocks: ["common", "rare", "epic", "legendary"],
+      };
+
+      return {
+        ...prev,
+        marks: newMarks,
+        unlocks,
+        economy: {
+          ...prev.economy,
+          owned,
+          equipped,
+          bonusCoins,
+        },
+        progressSeen,
+      };
+    }, false);
+  }
+
   return (
     <>
+      <DevGroup title="🔥 Max Everything">
+        <DevRow
+          label="Max Everything"
+          hint="Fill 10 years of completions, unlock all achievements, buy all shop items, max coins, set progress markers to max. Persists locally + syncs to Supabase."
+          query={query}
+          terms="max maxout full complete all achievements shop coins level progress maxlevel maximum everything"
+        >
+          <DevButton tone="accent" onClick={maxEverything}>
+            <Zap className="size-3.5" /> Max Everything
+          </DevButton>
+        </DevRow>
+      </DevGroup>
+
       <DevGroup title="Raw store">
         <DevStack
           label="localStorage JSON"

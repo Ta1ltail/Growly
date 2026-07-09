@@ -5,7 +5,7 @@
 // (all users). Uses server-side pagination via Supabase .order().range() so
 // only PAGE_SIZE rows are transferred at a time.
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import {
   Medal,
@@ -113,103 +113,35 @@ export default function LeaderboardPage() {
   const setScope = (v: Scope) => { setScope_(v); setPage(0); };
   const setSortKey = (v: SortKey) => { setSortKey_(v); setPage(0); };
 
-  // Event handler for manual refresh (used by dev tools)
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const _loadPage = useCallback(async () => {
-    setLoading(true);
-    const supabase = createClient();
-
-    // Build base query on user_stats_snapshots
-    let query = supabase
-      .from("user_stats_snapshots")
-      .select(SNAPSHOT_COLS, { count: "exact" });
-
-    // For friends scope, filter by known friend IDs
-    if (scope === "friends") {
-      const ids = [...friendIds];
-      if (user) ids.push(user.id);
-      if (ids.length === 0) {
-        setEntries([]);
-        setTotalCount(0);
-        setLoading(false);
-        return;
-      }
-      query = query.in("user_id", ids);
-    }
-
-    const start = page * PAGE_SIZE;
-    const { data: snapshots, count, error } = await query
-      .order(SORT_COL[sortKey], { ascending: false })
-      .range(start, start + PAGE_SIZE - 1);
-
-    if (error || !snapshots) {
-      console.error("[leaderboard] Query failed:", error?.message);
-      setEntries([]);
-      setTotalCount(0);
-      setLoading(false);
-      return;
-    }
-
-    setTotalCount(count ?? 0);
-
-    // Load profiles for paged user IDs
-    const userIds = snapshots.map((s: { user_id: string }) => s.user_id);
-    const { data: profiles } = userIds.length > 0
-      ? await supabase
-          .from("public_profiles")
-          .select(PROFILE_COLS)
-          .in("user_id", userIds)
-      : { data: [] };
-
-    const profileMap = new Map<string, DbProfile>(
-      (profiles ?? []).map((p: DbProfile) => [p.user_id, p]),
-    );
-
-    const enriched: LeaderEntry[] = snapshots.map((s: DbSnapshot) => {
-      const p = profileMap.get(s.user_id);
-      return {
-        user_id: s.user_id,
-        display_name: p?.display_name ?? "Unknown",
-        username: p?.username ?? "unknown",
-        avatar: p?.avatar ?? null,
-        level: s.level ?? 0,
-        current_streak: s.current_streak ?? 0,
-        best_streak: s.best_streak ?? 0,
-        total_completions: s.total_completions ?? 0,
-        consistency_14d: s.consistency_14d ?? 0,
-        achievement_count: s.achievement_count ?? 0,
-        title_name: s.title_name ?? "Habit Newbie",
-        rank_icon: s.rank_icon ?? "⬡",
-      };
-    });
-
-    setEntries(enriched);
-    setLoading(false);
-  }, [user, page, sortKey, scope, friendIds]);
-
   // Load friend IDs once (they rarely change)
   useEffect(() => {
+    let cancelled = false;
     async function loadFriends() {
       if (!user) {
-        setFriendIds(new Set());
+        if (!cancelled) setFriendIds(new Set());
         return;
       }
       const supabase = createClient();
-      const { data: rows } = await supabase
-        .from("friends")
-        .select("requester, addressee")
-        .or(`requester.eq.${user.id},addressee.eq.${user.id}`)
-        .eq("status", "accepted");
+      try {
+        const { data: rows } = await supabase
+          .from("friends")
+          .select("requester, addressee")
+          .or(`requester.eq.${user.id},addressee.eq.${user.id}`)
+          .eq("status", "accepted");
 
-      const ids = new Set<string>();
-      if (rows) {
-        for (const row of rows as { requester: string; addressee: string }[]) {
-          ids.add(row.requester === user.id ? row.addressee : row.requester);
+        const ids = new Set<string>();
+        if (rows) {
+          for (const row of rows as { requester: string; addressee: string }[]) {
+            ids.add(row.requester === user.id ? row.addressee : row.requester);
+          }
         }
+        if (!cancelled) setFriendIds(ids);
+      } catch {
+        // Non-critical — falls back to empty set
       }
-      setFriendIds(ids);
     }
     loadFriends();
+    return () => { cancelled = true; };
   }, [user]);
 
   // Reload when page/scope/sort changes or friend IDs load

@@ -49,6 +49,7 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
   const pollTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const realtimeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const supabaseRef = useRef<ReturnType<typeof createClient> | null>(null);
+  const channelRef = useRef<ReturnType<ReturnType<typeof createClient>["channel"]> | null>(null);
 
   useEffect(() => {
     if (loading) return;
@@ -90,11 +91,14 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
     // ── 2. Initial full re-sync (shows sync indicator) ──
     fullResync(userId).then((result) => {
       if (result) reloadCache();
+    }).catch(() => {
+      // Initial sync failure is non-critical — local data remains available
     });
 
     // ── 3. Subscribe to real-time changes ──
     // This catches changes made by the same user on other devices/sessions.
     const channel = supabase.channel("sync-realtime");
+    channelRef.current = channel;
     for (const table of SYNC_TABLES) {
       channel.on(
         "postgres_changes" as never,
@@ -111,8 +115,12 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
             clearTimeout(realtimeTimerRef.current);
           }
           realtimeTimerRef.current = setTimeout(async () => {
-            const result = await fullResync(userId, true);
-            if (result) reloadCache();
+            try {
+              const result = await fullResync(userId, true);
+              if (result) reloadCache();
+            } catch {
+              // Silent fallback — polling covers missed updates
+            }
           }, 2000);
         },
       );
@@ -128,6 +136,8 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
             reloadCache();
           }
         }
+      }).catch(() => {
+        // Silent — polling is a best-effort fallback
       });
     }, POLL_INTERVAL_MS);
 
@@ -140,7 +150,11 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
         clearInterval(pollTimerRef.current);
         pollTimerRef.current = null;
       }
-      supabase.channel("sync-realtime").unsubscribe();
+      // Use the stored channel reference for cleanup, not a new channel
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
     };
     // Keyed on userId (a stable string) rather than the user object, whose
     // reference changes on every token refresh / tab focus — using the object

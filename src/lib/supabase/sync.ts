@@ -393,7 +393,7 @@ function mergeProgressSeen(
 ): ProgressSeen {
   if (local?.seeded) return local;
   if (remote?.seeded) return remote;
-  return local ?? remote ?? { seeded: false, level: 1, title: "", shop: [], streaks: {}, tierUnlocks: [] };
+  return local ?? remote ?? { seeded: false, level: 1, title: "Habit Newbie", shop: [], streaks: {}, tierUnlocks: [] };
 }
 
 /**

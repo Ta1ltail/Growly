@@ -1,14 +1,13 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Mail, Lock, LogIn, AlertCircle, Eye, EyeOff, Activity, Sparkles } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/Button";
 import { completeOnboarding } from "@/lib/store";
-
-const REMEMBER_ME_KEY = "project101.remember_me";
+import { REMEMBER_ME_KEY, SAVED_EMAIL_KEY } from "@/lib/storage";
 
 /** Wrapper required because useSearchParams() needs a Suspense boundary in Next.js 16. */
 export default function LoginPage() {
@@ -29,21 +28,20 @@ export default function LoginPage() {
 }
 
 function LoginForm() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [rememberMe, setRememberMe] = useState(false);
-
-  // Read saved email from localStorage after hydration (SSR-safe).
-  // One-time init on mount — not a cascading-render bug, safe to suppress.
-  useEffect(() => {
+  const [email, setEmail] = useState(() => {
+    // SSR-safe: read from localStorage on first render (client only)
+    if (typeof window === "undefined") return "";
     const saved = localStorage.getItem(REMEMBER_ME_KEY);
-    if (saved === "true") {
-      /* eslint-disable react-hooks/set-state-in-effect */
-      setEmail(localStorage.getItem("project101.saved_email") ?? "");
-      setRememberMe(true);
-      /* eslint-enable react-hooks/set-state-in-effect */
-    }
-  }, []);
+    return saved === "true"
+      ? localStorage.getItem(SAVED_EMAIL_KEY) ?? ""
+      : "";
+  });
+  const [password, setPassword] = useState("");
+  const [rememberMe, setRememberMe] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return localStorage.getItem(REMEMBER_ME_KEY) === "true";
+  });
+
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -71,10 +69,10 @@ function LoginForm() {
     // Save Remember Me preference
     if (rememberMe) {
       localStorage.setItem(REMEMBER_ME_KEY, "true");
-      localStorage.setItem("project101.saved_email", email);
+      localStorage.setItem(SAVED_EMAIL_KEY, email);
     } else {
       localStorage.setItem(REMEMBER_ME_KEY, "false");
-      localStorage.removeItem("project101.saved_email");
+      localStorage.removeItem(SAVED_EMAIL_KEY);
     }
 
     // Verify session is valid before redirecting

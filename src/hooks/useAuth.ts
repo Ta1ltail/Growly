@@ -13,10 +13,15 @@ export function useAuth() {
 
   useEffect(() => {
     const supabase = createClient();
+    let cancelled = false;
 
     // Get initial session
     supabase.auth.getUser().then(({ data: { user } }) => {
+      if (cancelled) return;
       setUser(user);
+      setLoading(false);
+    }).catch(() => {
+      if (cancelled) return;
       setLoading(false);
     });
 
@@ -32,7 +37,10 @@ export function useAuth() {
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      cancelled = true;
+      subscription.unsubscribe();
+    };
   }, [router]);
 
   const signOut = useCallback(async () => {

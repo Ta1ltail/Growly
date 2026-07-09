@@ -205,7 +205,7 @@ export function coinsEarned(
 
 // Coins already committed via the spend ledger.
 export function coinsSpent(economy: Economy): number {
-  return economy.spent.reduce((sum, e) => sum + Math.max(0, e.amount), 0);
+  return economy.spent.reduce((sum, e) => sum + Math.max(0, Number.isFinite(e.amount) ? e.amount : 0), 0);
 }
 
 // Spendable balance — clamped at 0 so a corrupted ledger can never go negative.

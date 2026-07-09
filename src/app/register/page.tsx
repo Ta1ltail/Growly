@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { Mail, Lock, UserPlus, AtSign, AlertCircle, Eye, EyeOff, Sparkles, Activity, Loader2, Check, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { STORAGE_KEY, SCHEMA_VERSION } from "@/lib/storage";
+import { STORAGE_KEY, SCHEMA_VERSION, SAVED_EMAIL_KEY, REMEMBER_ME_KEY } from "@/lib/storage";
 import { Button } from "@/components/ui/Button";
 
 export default function RegisterPage() {
@@ -121,7 +121,7 @@ export default function RegisterPage() {
       // profile (which has a hardcoded placeholder username) from being
       // pushed to Supabase later, which would cause 23505 conflicts.
       localStorage.removeItem(STORAGE_KEY);
-      localStorage.removeItem("project101.saved_email");
+      localStorage.removeItem(SAVED_EMAIL_KEY);
       localStorage.removeItem("project101.last_auth_user");
       const seededData = {
         version: SCHEMA_VERSION,
@@ -151,7 +151,7 @@ export default function RegisterPage() {
       localStorage.setItem("project101.data.v1", JSON.stringify(seededData));
 
       // Save Remember Me preference
-      localStorage.setItem("project101.remember_me", "true");
+      localStorage.setItem(REMEMBER_ME_KEY, "true");
       // Hard navigation ensures the proxy runs
       window.location.href = "/dashboard";
     } else {

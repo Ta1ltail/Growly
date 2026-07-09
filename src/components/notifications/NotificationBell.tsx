@@ -25,8 +25,6 @@ export function NotificationBell({ className, size = 18 }: Props) {
 
   useEffect(() => {
     if (!user) {
-      // Use queueMicrotask to set state outside the effect body
-      // to avoid react-hooks/set-state-in-effect.
       queueMicrotask(() => setUnreadCount(0));
       return;
     }

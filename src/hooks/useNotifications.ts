@@ -29,7 +29,7 @@ export function useNotifications() {
   const supabaseRef = useRef<ReturnType<typeof createClient> | null>(null);
   const channelRef = useRef<ReturnType<ReturnType<typeof createClient>["channel"]> | null>(null);
 
-  const loadNotifications = useCallback(async () => {
+  const fetchNotificationsFn = useCallback(async () => {
     if (!user) {
       setNotifications([]);
       setLoading(false);
@@ -37,15 +37,21 @@ export function useNotifications() {
     }
 
     const supabase = createClient();
-    const { data } = await supabase
-      .from("notifications")
-      .select("id, user_id, type, title, body, from_user, link, is_read, created_at")
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: false })
-      .limit(50);
+    try {
+      const { data } = await supabase
+        .from("notifications")
+        .select("id, user_id, type, title, body, from_user, link, is_read, created_at")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(50);
 
-    setNotifications((data ?? []) as Notification[]);
-    setLoading(false);
+      setNotifications((data ?? []) as Notification[]);
+    } catch {
+      // Silently handle — notifications are non-critical UI
+      setNotifications([]);
+    } finally {
+      setLoading(false);
+    }
   }, [user]);
 
   // Handle a realtime change from Supabase
@@ -73,25 +79,7 @@ export function useNotifications() {
     if (!supabaseRef.current) supabaseRef.current = createClient();
     const supabase = supabaseRef.current;
 
-    // Inline the load logic to avoid react-hooks/set-state-in-effect
-    async function fetchNotifications() {
-      if (!user) {
-        setNotifications([]);
-        setLoading(false);
-        return;
-      }
-
-      const { data } = await supabase
-        .from("notifications")
-        .select("id, user_id, type, title, body, from_user, link, is_read, created_at")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false })
-        .limit(50);
-
-      setNotifications((data ?? []) as Notification[]);
-      setLoading(false);
-    }
-    fetchNotifications();
+    queueMicrotask(() => fetchNotificationsFn());
 
     if (!user) {
       // Clean up any existing channel when user signs out
@@ -124,26 +112,30 @@ export function useNotifications() {
       supabase.removeChannel(channel);
       channelRef.current = null;
     };
-  }, [user, handleRealtimeChange]);
+  }, [user, handleRealtimeChange, fetchNotificationsFn]);
 
   // Also refresh when the tab becomes visible again (covers reconnection after sleep)
   useEffect(() => {
     const onVisible = () => {
-      if (document.visibilityState === "visible") loadNotifications();
+      if (document.visibilityState === "visible") fetchNotificationsFn();
     };
     document.addEventListener("visibilitychange", onVisible);
     return () => document.removeEventListener("visibilitychange", onVisible);
-  }, [loadNotifications]);
+  }, [fetchNotificationsFn]);
 
   const unreadCount = notifications.filter((n) => !n.is_read).length;
 
   const markAsRead = useCallback(
     async (id: string) => {
       const supabase = createClient();
-      await supabase
-        .from("notifications")
-        .update({ is_read: true })
-        .eq("id", id);
+      try {
+        await supabase
+          .from("notifications")
+          .update({ is_read: true })
+          .eq("id", id);
+      } catch {
+        // Silently handle — optimistic update below keeps UI responsive
+      }
 
       setNotifications((prev) =>
         prev.map((n) => (n.id === id ? { ...n, is_read: true } : n)),
@@ -155,11 +147,15 @@ export function useNotifications() {
   const markAllAsRead = useCallback(async () => {
     if (!user) return;
     const supabase = createClient();
-    await supabase
-      .from("notifications")
-      .update({ is_read: true })
-      .eq("user_id", user.id)
-      .eq("is_read", false);
+    try {
+      await supabase
+        .from("notifications")
+        .update({ is_read: true })
+        .eq("user_id", user.id)
+        .eq("is_read", false);
+    } catch {
+      // Silently handle — non-critical
+    }
 
     setNotifications((prev) =>
       prev.map((n) => ({ ...n, is_read: true })),
@@ -172,6 +168,6 @@ export function useNotifications() {
     unreadCount,
     markAsRead,
     markAllAsRead,
-    refreshNotifications: loadNotifications,
+    refreshNotifications: fetchNotificationsFn,
   };
 }

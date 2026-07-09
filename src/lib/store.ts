@@ -871,11 +871,8 @@ export function claimDailyCheckIn(): { reward: number; streak: number } {
 export function refreshDailyQuest(): void {
   update((prev) => {
     const todayKey = dateKey(new Date());
-    // If quest was already claimed today (lastQuestDate=today, currentQuest=null), don't regenerate
-    if (prev.economy.lastQuestDate === todayKey && !prev.economy.currentQuest)
-      return prev;
-    if (prev.economy.lastQuestDate === todayKey && prev.economy.currentQuest)
-      return prev;
+    // If today's quest already exists (claimed or unclaimed), don't regenerate
+    if (prev.economy.lastQuestDate === todayKey) return prev;
     const quest = generateDailyQuest(prev.habits);
     return {
       ...prev,
