@@ -14,6 +14,7 @@ import {
   loadAllUserData,
   loadUserStatsSnapshot,
   saveChanged,
+  saveUserStatsSnapshot,
   type ChangedTables,
 } from "./db";
 import {
@@ -29,7 +30,12 @@ import {
   saveData,
   saveStatsSnapshot,
   DEFAULT_GRACE_HOURS,
+  type StatsSnapshotData,
 } from "../storage";
+import { summarizeProgress } from "../progress";
+import { titleForLevel } from "../titles";
+import { RANK_STYLE } from "../ranks";
+import { consistencyScore } from "../stats";
 // All 9 tables — used when pushing a full snapshot (login, merge, etc.)
 const ALL_TABLES: ChangedTables = {
   habits: true,
@@ -234,6 +240,41 @@ export async function fullResync(
           }
         } catch {
           // Non-critical — stats snapshot is derived data, app works without it
+        }
+      }
+
+      if (!quiet) {
+        // ══ Recompute stats snapshot from merged data ══
+        // The stats snapshot in Supabase may have been set by a one-time seed
+        // or the now-removed refreshStatsSnapshot function. Since marks may
+        // have changed during the merge, we must recompute stats from the
+        // merged data to keep the snapshot authoritative. Without this, the
+        // DB-level stats (level, streaks, completions) diverge permanently
+        // from what the UI computes from marks.
+        try {
+          const now = new Date();
+          const summary = summarizeProgress(merged, now);
+          const title = titleForLevel(summary.level.level);
+          const rankStyle = RANK_STYLE[title.current.rank];
+          const stats: StatsSnapshotData = {
+            level: summary.level.level,
+            currentStreak: summary.stats.maxCurrentStreak,
+            bestStreak: summary.stats.maxBestStreak,
+            totalCompletions: summary.stats.doneCount,
+            consistency14d: consistencyScore(merged.habits, merged.marks, now, 14),
+            achievementCount: summary.unlockedCount,
+            titleName: title.current.name,
+            rankIcon: rankStyle.icon,
+            updatedAt: new Date().toISOString(),
+          };
+          // Save to localStorage so the UI can read it even when offline
+          saveStatsSnapshot(stats);
+          // Push to Supabase so the public profile / leaderboard stays current
+          await saveUserStatsSnapshot(supabase, userId, stats);
+        } catch (statsErr) {
+          // Non-critical — the merged data IS saved to localStorage and Supabase
+          // via the push above. The stats snapshot is derived data that can lag.
+          console.warn("[sync] Stats snapshot recompute failed:", statsErr);
         }
       }
 

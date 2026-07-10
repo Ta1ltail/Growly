@@ -30,8 +30,21 @@ self.addEventListener("activate", (event) => {
   event.waitUntil(self.clients.claim());
 });
 
+// Build a minimal HTML fallback page for when the network is unavailable
+// AND the offline page isn't cached yet (e.g. first install before precache
+// completes, or after a cache eviction).
+const FALLBACK_HTML = \`<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Offline</title><style>body{display:grid;place-items:center;min-height:100dvh;margin:0;background:#0f0f13;color:#e4e4e7;font-family:system-ui,sans-serif;text-align:center;padding:1rem}div{max-width:360px}h1{font-size:1.5rem;margin:0 0 .5rem}p{color:#a1a1aa;margin:0}</style></head><body><div><span style="font-size:3rem">🌱</span><h1>You&#39;re offline</h1><p>Please check your connection and try again.</p></div></body></html>\`;
+
+const FALLBACK_RESPONSE = new Response(FALLBACK_HTML, {
+  status: 200,
+  statusText: "OK",
+  headers: { "Content-Type": "text/html; charset=utf-8" },
+});
+
 // Network-first with cache fallback for HTML/navigation requests.
 // Cache-first with stale-while-revalidate for static assets.
+// Every catch() chain MUST return a valid Response to avoid
+// "Failed to convert value to 'Response'" TypeError.
 self.addEventListener("fetch", (event) => {
   const { request } = event;
   const url = new URL(request.url);
@@ -50,7 +63,11 @@ self.addEventListener("fetch", (event) => {
           }
           return response;
         })
-        .catch(() => caches.match(request).then((cached) => cached || caches.match("/offline"))),
+        .catch(() =>
+          caches.match(request).then(
+            (cached) => cached || caches.match("/offline"),
+          ).then((cached) => cached || FALLBACK_RESPONSE),
+        ),
     );
     return;
   }
@@ -74,7 +91,7 @@ self.addEventListener("fetch", (event) => {
           })
           .catch(() => cached);
         return cached || fetchPromise;
-      }),
+      }).then((response) => response || FALLBACK_RESPONSE),
     );
     return;
   }
@@ -89,7 +106,12 @@ self.addEventListener("fetch", (event) => {
         }
         return response;
       })
-      .catch(() => caches.match(request)),
+      .catch(() =>
+        caches.match(request).then((cached) => cached || new Response(
+          JSON.stringify({ error: "offline" }),
+          { status: 503, headers: { "Content-Type": "application/json" } },
+        )),
+      ),
   );
 });
 `;
