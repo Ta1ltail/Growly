@@ -271,7 +271,14 @@ export const economyFreezes = pgTable(
       .notNull()
       .references(() => habits.id, { onDelete: "cascade" }),
   },
-  (table) => [index("idx_economy_freezes_user_id").on(table.userId)],
+  (table) => [
+    index("idx_economy_freezes_user_id").on(table.userId),
+    uniqueIndex("economy_freezes_user_date_habit_key").on(
+      table.userId,
+      table.date,
+      table.habitId,
+    ),
+  ],
 );
 
 // ── Progress Seen (celebration markers, single row) ─

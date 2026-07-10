@@ -17,7 +17,7 @@ import {
 import { CATEGORY_COLORS } from "@/lib/categories";
 import type { Goal } from "@/lib/types";
 import { addGoal, deleteGoal, updateGoal, useAppData } from "@/lib/store";
-import { parseDateKey } from "@/lib/storage";
+import { parseDateKey } from "@/lib/date";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Card } from "@/components/ui/Card";
 import { ProgressBar } from "@/components/ui/ProgressBar";

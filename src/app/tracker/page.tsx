@@ -22,7 +22,8 @@ import {
 } from "lucide-react";
 import { StreakFlame } from "@/components/habits/StreakFlame";
 import { CATEGORIES, CATEGORY_COLORS, type Category } from "@/lib/categories";
-import { addDays, dateKey, DEFAULT_GRACE_HOURS } from "@/lib/storage";
+import { addDays, dateKey } from "@/lib/date";
+import { DEFAULT_GRACE_HOURS } from "@/lib/storage";
 import { cycleMark, useAppData } from "@/lib/store";
 import { habitStreaks, isScheduled } from "@/lib/stats";
 import { frozenSet, isFrozen } from "@/lib/economy";

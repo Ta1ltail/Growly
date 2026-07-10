@@ -39,15 +39,6 @@ interface SeedShape {
   repeatDays: number[];
 }
 
-const DEMO_HABITS: SeedShape[] = [
-  { name: "Morning run", category: "Workout", repeatDays: [1, 3, 5] },
-  { name: "Read 30 min", category: "Hobbies", repeatDays: [] },
-  { name: "Study session", category: "Studies", repeatDays: [1, 2, 3, 4, 5] },
-  { name: "Drink water", category: "Health", repeatDays: [] },
-  { name: "Meditate", category: "Health", repeatDays: [] },
-  { name: "Inbox zero", category: "Work", repeatDays: [1, 2, 3, 4, 5] },
-];
-
 function buildHistory(habits: Habit[], today: Date, days: number): Marks {
   const marks: Marks = {};
   for (let i = days; i >= 1; i--) {
@@ -64,26 +55,6 @@ function buildHistory(habits: Habit[], today: Date, days: number): Marks {
     if (Object.keys(day).length > 0) marks[key] = day;
   }
   return marks;
-}
-
-// Replace habits + marks with a realistic ~45-day demo history. Keeps the rest
-// of AppData (settings, profile, economy, etc.) intact.
-export function makeDemoData(base: AppData, today: Date): AppData {
-  const start = dateKey(addDays(today, -45));
-  const habits: Habit[] = DEMO_HABITS.map((h) => ({
-    id: uid(),
-    name: h.name,
-    category: h.category,
-    repeatDays: h.repeatDays,
-    createdAt: new Date(addDays(today, -45)).toISOString(),
-    startDate: start,
-    priority: "med",
-    recurrence:
-      h.repeatDays.length === 0
-        ? { kind: "daily" }
-        : { kind: "weekly", weekdays: h.repeatDays },
-  }));
-  return { ...base, habits, marks: buildHistory(habits, today, 45) };
 }
 
 // Generate a large dataset to profile render/storage performance.

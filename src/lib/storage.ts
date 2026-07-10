@@ -45,13 +45,13 @@ import { CATEGORIES, type Category } from "./categories";
 import { ACCENTS, DEFAULT_THEME, type ThemeMode } from "./theme";
 
 export const STORAGE_KEY = "growly.data.v1";
-export const STATS_SNAPSHOT_KEY = "growly.stats_snapshot.v1";
+const STATS_SNAPSHOT_KEY = "growly.stats_snapshot.v1";
 
 // Key used for the "Remember Me" feature on login
 export const REMEMBER_ME_KEY = "growly.remember_me";
 export const SAVED_EMAIL_KEY = "growly.saved_email";
 const LAST_AUTH_USER_KEY = "growly.last_auth_user";
-export const LAST_USER_ID_KEY = "growly.last_user_id";
+const LAST_USER_ID_KEY = "growly.last_user_id";
 
 // Current schema version. Bumped when the shape of stored data changes so
 // loadData() can migrate older saves forward.
@@ -617,18 +617,6 @@ export function saveStatsSnapshot(stats: StatsSnapshotData): void {
   }
 }
 
-/** Load the stats snapshot from localStorage (may be null on first visit / after clear). */
-export function loadStatsSnapshot(): StatsSnapshotData | null {
-  if (typeof window === "undefined") return null;
-  try {
-    const raw = window.localStorage.getItem(STATS_SNAPSHOT_KEY);
-    if (!raw) return null;
-    return JSON.parse(raw) as StatsSnapshotData;
-  } catch {
-    return null;
-  }
-}
-
 /** Persist the last signed-in user's ID so we can detect account switches. */
 export function setLastUserId(userId: string): void {
   if (typeof window === "undefined") return;
@@ -650,4 +638,5 @@ export function getLastUserId(): string | null {
 }
 
 // Date helpers — canonical implementations live in ./date.
-export { dateKey, parseDateKey, prettyDate, addDays } from "./date";
+// Keep dateKey and addDays here since some components still import from storage.
+export { dateKey, addDays } from "./date";

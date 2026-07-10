@@ -19,7 +19,7 @@ import {
 import { useAppData } from "@/lib/store";
 import { useToday } from "@/hooks/useToday";
 import { useHydrated } from "@/hooks/useHydrated";
-import { dateKey } from "@/lib/storage";
+import { dateKey } from "@/lib/date";
 import {
   consistencyScore,
   dayCompletion,

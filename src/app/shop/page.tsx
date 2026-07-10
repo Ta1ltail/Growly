@@ -24,7 +24,7 @@ import {
   equippedOrDefault,
   type ShopItem,
 } from "@/lib/economy";
-import { prettyDate, parseDateKey } from "@/lib/storage";
+import { prettyDate, parseDateKey } from "@/lib/date";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { PageSkeleton } from "@/components/ui/PageSkeleton";
 import { Card } from "@/components/ui/Card";

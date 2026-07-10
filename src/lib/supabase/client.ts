@@ -20,11 +20,10 @@ const SUPABASE_URL = RAW_URL.trim();
 const SUPABASE_ANON_KEY = RAW_KEY.trim();
 
 export function createClient() {
-  return createBrowserClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-    realtime: {
-      // Use a Web Worker to keep the Realtime heartbeat alive when the
-      // browser tab is backgrounded or throttled by the OS.
-      worker: true,
-    },
-  });
+  // Note: the `realtime: { worker: true }` option was removed because it kept
+  // the Realtime WebSocket heartbeat alive in backgrounded tabs, inflating
+  // message usage even when the user wasn't actively using the app. The
+  // notification Realtime subscription (useNotifications.ts) already handles
+  // reconnection via a visibility change listener when the tab becomes active.
+  return createBrowserClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 }

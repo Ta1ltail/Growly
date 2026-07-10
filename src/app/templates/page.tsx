@@ -21,7 +21,7 @@ import {
   resetTemplateUsage,
   useAppData,
 } from "@/lib/store";
-import { dateKey } from "@/lib/storage";
+import { dateKey } from "@/lib/date";
 import { uid } from "@/lib/util";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Card } from "@/components/ui/Card";

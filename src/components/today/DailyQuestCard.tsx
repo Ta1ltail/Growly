@@ -15,7 +15,11 @@ export function DailyQuestCard() {
   const data = useAppData();
   const quest = data.economy.currentQuest;
 
-  // Refresh quest if needed on mount
+  // Refresh quest if needed on mount — safe to call even without syncReady
+  // because refreshDailyQuest is idempotent: it only generates a new quest
+  // if today's quest hasn't been generated yet. If called before the initial
+  // sync completes, the quest will be generated on empty data and then
+  // re-generated on the next call when real data is available.
   useEffect(() => {
     refreshDailyQuest();
   }, []);

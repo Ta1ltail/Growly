@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "economy_freezes_user_date_habit_key" ON "economy_freezes" USING btree ("user_id","date","habit_id");

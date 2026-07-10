@@ -14,6 +14,9 @@ dist/
 # Testing
 coverage/
 
+# Playwright E2E test output
+test-results/
+playwright-report/
 # Environment files (secrets & credentials)
 .env
 .env.local

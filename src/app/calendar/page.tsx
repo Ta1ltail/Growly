@@ -18,12 +18,8 @@ import {
   Snowflake,
 } from "lucide-react";
 import { CATEGORY_COLORS } from "@/lib/categories";
-import {
-  addDays,
-  dateKey,
-  prettyDate,
-  DEFAULT_GRACE_HOURS,
-} from "@/lib/storage";
+import { addDays, dateKey, prettyDate } from "@/lib/date";
+import { DEFAULT_GRACE_HOURS } from "@/lib/storage";
 import { cycleMark, useAppData } from "@/lib/store";
 import { dayCompletion, isScheduled } from "@/lib/stats";
 import { frozenSet, isFrozen } from "@/lib/economy";

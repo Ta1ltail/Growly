@@ -31,7 +31,7 @@ import { StreakFlame } from "@/components/habits/StreakFlame";
 import { AnimatedCounter } from "@/components/ui/AnimatedCounter";
 import { CATEGORIES, CATEGORY_COLORS, type Category } from "@/lib/categories";
 import type { Habit } from "@/lib/types";
-import { dateKey } from "@/lib/storage";
+import { dateKey } from "@/lib/date";
 import { addHabit, cycleMark, setDailyNote, useAppData } from "@/lib/store";
 import { makeHabit } from "@/lib/habits";
 import { habitStreaks, isScheduled } from "@/lib/stats";

@@ -21,7 +21,8 @@ import {
   X,
 } from "lucide-react";
 import { toast } from "sonner";
-import { dateKey, DEFAULT_GRACE_HOURS } from "@/lib/storage";
+import { dateKey } from "@/lib/date";
+import { DEFAULT_GRACE_HOURS } from "@/lib/storage";
 import {
   clearAllData,
   setGraceHours,

@@ -3,11 +3,16 @@
 // SyncProvider — wraps the authenticated app and:
 // 1. On mount (user logged in): full re-sync with Supabase
 // 2. Wires the store's sync callback to push mutations
-// 3. Subscribes to Supabase Realtime for live changes from other sessions
-// 4. Periodically polls for changes as a fallback (local cache only, never pushes)
-// Sync runs silently — no on-screen status indicator is rendered.
+// 3. Periodically polls for remote changes (quiet mode, never pushes)
+//
+// Realtime subscriptions are NOT used for sync — the 15-second polling
+// interval catches changes from other devices with acceptable latency
+// for a habit tracker, without consuming Supabase Realtime message quota.
+// The notifications page has its own dedicated Realtime subscription
+// (see useNotifications.ts) since instant notification delivery is
+// genuinely valuable.
 
-import { createContext, useContext, useEffect, useRef, useState } from "react";
+import { createContext, useEffect, useRef, useState, startTransition } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import {
   fullResync,
@@ -16,29 +21,13 @@ import {
   setSyncReady,
 } from "@/lib/supabase/sync";
 import { LoadingScreen } from "@/components/ui/LoadingScreen";
-import { createClient } from "@/lib/supabase/client";
 import { setSyncCallback, reloadCache } from "@/lib/store";
 import type { ChangedTables } from "@/lib/supabase/db";
 import type { AppData } from "@/lib/types";
 import { loadData, clearLocalAppData, getLastUserId, setLastUserId } from "@/lib/storage";
 
-// Interval for periodic polling fallback (ms)
+// Interval for periodic polling (ms)
 const POLL_INTERVAL_MS = 15_000;
-
-// Tables we subscribe to for real-time changes
-const SYNC_TABLES = [
-  "habits",
-  "marks",
-  "notes",
-  "goals",
-  "user_settings",
-  "user_profile",
-  "unlocks",
-  "economy_state",
-  "economy_spent",
-  "economy_freezes",
-  "progress_seen",
-] as const;
 
 // ── Sync-ready context ──
 // Child components can check this to know if the initial sync has completed.
@@ -50,19 +39,12 @@ interface SyncContextValue {
 
 const SyncContext = createContext<SyncContextValue>({ syncReady: false });
 
-export function useSyncReady(): boolean {
-  return useContext(SyncContext).syncReady;
-}
-
 export function SyncProvider({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
   const userId = user?.id ?? null;
   const initialized = useRef(false);
   const [syncReady, setSyncReadyState] = useState(false);
   const pollTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const realtimeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const supabaseRef = useRef<ReturnType<typeof createClient> | null>(null);
-  const channelsRef = useRef<ReturnType<ReturnType<typeof createClient>["channel"]>[]>([]);
   const syncTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [timedOut, setTimedOut] = useState(false);
 
@@ -74,23 +56,14 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
       setSyncReady(false);
       resetSyncState();
       initialized.current = false;
-      setSyncReadyState(false);
+      startTransition(() => {
+        setSyncReadyState(false);
+      });
 
-      // Clean up polling
       if (pollTimerRef.current) {
         clearInterval(pollTimerRef.current);
         pollTimerRef.current = null;
       }
-
-      // Clean up all realtime channels
-      if (supabaseRef.current) {
-        for (const ch of channelsRef.current) {
-          supabaseRef.current.removeChannel(ch);
-        }
-        channelsRef.current = [];
-        supabaseRef.current = null;
-      }
-
       return;
     }
 
@@ -105,9 +78,6 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
 
     if (initialized.current) return;
     initialized.current = true;
-
-    const supabase = createClient();
-    supabaseRef.current = supabase;
 
     // Record this user for next time so we can detect switches
     setLastUserId(userId);
@@ -157,63 +127,28 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
       console.warn("[sync] Initial fullResync failed, sync gate remains closed.");
     });
 
-    // ── 3. Subscribe to real-time changes ──
-    // This catches changes made by the same user on other devices/sessions.
-    // Uses a channel per table so a single table misconfiguration doesn't
-    // block all subscriptions.
-    const channels: ReturnType<ReturnType<typeof createClient>["channel"]>[] = [];
-    channelsRef.current = channels;
-    for (const table of SYNC_TABLES) {
-      const ch = supabase.channel(`sync-${table}`);
-      channels.push(ch);
-      ch.on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table,
-          filter: `user_id=eq.${userId}`,
-        },
-        () => {
-          // Debounced quiet re-sync: batches rapid changes from other
-          // devices into a single sync, without flashing the indicator.
-          if (realtimeTimerRef.current) {
-            clearTimeout(realtimeTimerRef.current);
-          }
-          realtimeTimerRef.current = setTimeout(async () => {
-            try {
-              const result = await fullResync(userId, true);
-              if (result) reloadCache();
-            } catch {
-              // Silent fallback — polling covers missed updates
-            }
-          }, 2000);
-        },
-      );
-      ch.subscribe((status) => {
-        if (status === "SUBSCRIBED") {
-          // Connected successfully — no action needed
-        } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
-          console.warn(
-            `[sync] Realtime subscription failed for ${table}: ${status}. ` +
-            "Falling back to periodic polling.",
-          );
-        }
-      });
-    }
-
-    // ── 4. Periodic polling as fallback (quiet mode — never pushes) ──
+    // ── 3. Periodic polling (quiet mode — never pushes) ──
     // Quiet-mode fullResync only updates localStorage. It NEVER calls
     // saveChanged, so it can't race with user mutations going through the
     // save queue. This eliminates the root cause of polling-related data loss.
+    // Polling is the primary mechanism for catching remote changes (the old
+    // Realtime subscriptions were removed — they consumed 2.4M messages with
+    // no functional benefit over a 15s poll for a habit tracker).
     pollTimerRef.current = setInterval(() => {
       fullResync(userId, true).then((result) => {
         if (result) {
           // Only reload cache if the merged data differs from local, to avoid
-          // unnecessary re-renders every 15 seconds.
+          // unnecessary re-renders every 15 seconds. Use a quick structural
+          // comparison (lengths + object key counts) instead of full-object
+          // JSON.stringify which is O(n) on the entire AppData.
           const localData = loadData();
-          if (JSON.stringify({ ...localData, auditLog: [] }) !==
-              JSON.stringify({ ...result, auditLog: [] })) {
+          // Count total mark entries across all days (detects additions within
+          // existing day objects unlike day-only Object.keys length).
+          const totalMarks = (d: typeof result) =>
+            Object.values(d.marks).reduce((s, day) => s + Object.keys(day).length, 0);
+          const quickHash = (d: typeof result) =>
+            `${d.habits.length}|${totalMarks(d)}|${d.notes.length}|${d.goals.length}|${d.economy.bonusCoins}`;
+          if (quickHash(localData) !== quickHash(result)) {
             reloadCache();
           }
         }
@@ -223,10 +158,6 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
     }, POLL_INTERVAL_MS);
 
     return () => {
-      if (realtimeTimerRef.current) {
-        clearTimeout(realtimeTimerRef.current);
-        realtimeTimerRef.current = null;
-      }
       if (pollTimerRef.current) {
         clearInterval(pollTimerRef.current);
         pollTimerRef.current = null;
@@ -235,11 +166,6 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
         clearTimeout(syncTimeoutRef.current);
         syncTimeoutRef.current = null;
       }
-      // Remove all realtime channels
-      for (const ch of channelsRef.current) {
-        supabase.removeChannel(ch);
-      }
-      channelsRef.current = [];
     };
   }, [userId, loading]);
 

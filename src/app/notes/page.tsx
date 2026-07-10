@@ -17,7 +17,7 @@ import {
 import { toast } from "sonner";
 import type { Note } from "@/lib/types";
 import { addNote, updateNote, deleteNote, useAppData } from "@/lib/store";
-import { parseDateKey } from "@/lib/storage";
+import { parseDateKey } from "@/lib/date";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";

@@ -23,7 +23,7 @@ import {
 import { CATEGORY_COLORS } from "@/lib/categories";
 import { useAppData } from "@/lib/store";
 import { useToday } from "@/hooks/useToday";
-import { addDays } from "@/lib/storage";
+import { addDays } from "@/lib/date";
 import {
   categoryCompletion,
   completionByWeekday,
