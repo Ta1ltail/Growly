@@ -14,7 +14,6 @@ import {
   loadAllUserData,
   loadUserStatsSnapshot,
   saveChanged,
-  saveUserStatsSnapshot,
   type ChangedTables,
 } from "./db";
 import {
@@ -31,11 +30,6 @@ import {
   saveStatsSnapshot,
   DEFAULT_GRACE_HOURS,
 } from "../storage";
-import { summarizeProgress } from "../progress";
-import { titleForLevel } from "../titles";
-import { RANK_STYLE } from "../ranks";
-import { consistencyScore } from "../stats";
-
 // All 9 tables — used when pushing a full snapshot (login, merge, etc.)
 const ALL_TABLES: ChangedTables = {
   habits: true,
@@ -75,6 +69,25 @@ function setStatus(s: SyncStatus, _error?: string) {
   _status = s;
   void _error;
   notify();
+}
+
+/* ────────────────────────────────────────────
+   Sync-ready gate — prevents mount-time
+   mutations from ever reaching Supabase.
+   ────────────────────────────────────────────
+   _syncReady starts as false on every page load.
+   It's set to true ONLY after the initial
+   fullResync completes successfully. Until then,
+   pushMutation silently drops all writes — data
+   is safely cached in localStorage and will be
+   pushed once the gate opens.
+   This is the single most important guard against
+   cleared-localStorage corrupting cloud data. */
+
+let _syncReady = false;
+
+export function setSyncReady(ready: boolean): void {
+  _syncReady = ready;
 }
 
 /* ────────────────────────────────────────────
@@ -149,11 +162,6 @@ function enqueueRetry(
   processRetryQueue();
 }
 
-/* ────────────────────────────────────────────
-   Stats snapshot helper — called after every
-   successful sync to update public profile data.
-   ──────────────────────────────────────────── */
-
 // Stats snapshots are NOT updated from within fullResync. Instead, fullResync
 // loads the existing remote stats snapshot from Supabase and caches it to
 // localStorage — same treatment as economy_state. This prevents a cleared
@@ -161,42 +169,6 @@ function enqueueRetry(
 // potentially corrupted marks data) that would overwrite the correct Level 23
 // with a computed Level 11.
 //
-// refreshStatsSnapshot is available for explicit recalculation (e.g. the
-// "Recalculate Stats" button in Dev Mode) but must NOT be called
-// automatically during sync — it reads localStorage via loadData() and any
-// computation during the mount-time window computes stale results.
-export async function refreshStatsSnapshot(userId: string): Promise<void> {
-  try {
-    const data = loadData();
-    const summary = summarizeProgress(data, new Date());
-    const title = titleForLevel(summary.level.level);
-    const rankStyle = RANK_STYLE[title.current.rank];
-
-    const supabase = createClient();
-    const stats = {
-      level: summary.level.level,
-      currentStreak: summary.stats.maxCurrentStreak,
-      bestStreak: summary.stats.maxBestStreak,
-      totalCompletions: summary.stats.doneCount,
-      consistency14d: consistencyScore(data.habits, data.marks, new Date(), 14),
-      achievementCount: summary.unlockedCount,
-      titleName: title.current.name,
-      rankIcon: rankStyle.icon,
-    };
-    await saveUserStatsSnapshot(supabase, userId, {
-      ...stats,
-      updatedAt: new Date().toISOString(),
-    });
-    saveStatsSnapshot({
-      ...stats,
-      updatedAt: new Date().toISOString(),
-    });
-  } catch (e) {
-    // Non-critical — snapshot failures don't block the app
-    console.warn("[sync] Stats snapshot refresh failed:", e);
-  }
-}
-
 /* ────────────────────────────────────────────
    Full re-sync: pull all remote data and merge
    with local. Called on login and periodically.
@@ -238,8 +210,11 @@ export async function fullResync(
       // Save merged result to localStorage
       saveData(merged);
 
-      // ── Step 3: Only push back if merged data differs from remote ──
-      if (hasChanges(merged, remoteData)) {
+      // ── Step 3: Only push back during non-quiet sync (initial login) ──
+      // Quiet mode (polling, realtime) must NEVER push to Supabase — it only
+      // updates the local cache. This eliminates the race between polling
+      // fullResync and user mutations going through the save queue.
+      if (!quiet && hasChanges(merged, remoteData)) {
         try {
           await saveChanged(supabase, userId, merged, ALL_TABLES);
         } catch (pushErr) {
@@ -260,8 +235,15 @@ export async function fullResync(
         } catch {
           // Non-critical — stats snapshot is derived data, app works without it
         }
+      }
+
+      if (!quiet) {
+        // ══ Open the sync-ready gate ══
+        // After a successful pull+merge, mount-time mutations can safely push.
+        setSyncReady(true);
         setStatus("idle");
       }
+
       return merged;
     }
 
@@ -286,6 +268,11 @@ export async function fullResync(
     }
 
     if (!quiet) {
+      // ══ Open the sync-ready gate for new users too ══
+      // If the user has local data, mount-time mutations after this point
+      // should push to Supabase. Without this gate, newly registered users'
+      // mutations would be silently dropped forever (only polling pushes).
+      setSyncReady(true);
       setStatus("idle");
     }
     return localData;
@@ -501,13 +488,26 @@ async function hasLocalSession(
    ────────────────────────────────────────────
    Called after every store mutation when the user is logged in.
    Uses incremental save (only changed tables). On failure, enqueues
-   the mutation for retry. */
+   the mutation for retry.
+
+   ══ Sync-ready gate ══
+   pushMutation silently returns if _syncReady is false. This prevents
+   mount-time mutations (seedCelebrationsSeen, refreshDailyQuest,
+   claimDailyCheckIn, etc.) from EVER pushing empty/default data to
+   Supabase during the window before fullResync completes.
+   Mutation data is safely cached in localStorage and will be pushed
+   once the sync-ready gate opens. */
 
 export async function pushMutation(
   userId: string,
   data: AppData,
   changed: ChangedTables,
 ): Promise<void> {
+  // ══ Sync-ready gate: silently drop if initial sync hasn't completed ══
+  if (!_syncReady) {
+    return;
+  }
+
   setStatus("syncing");
 
   try {
@@ -527,8 +527,8 @@ export async function pushMutation(
     // periodic polling), not by per-mutation pushes. Computing stats from
     // `loadData()` inside a debounced timer that fires after as-yet-unknown
     // state changes can write stale Level-11 data over the user's real Level
-    // 23 — races we can't win. The 15-second polling fallback ensures stats
-    // stay current without this corruption risk.
+    // 23 — races we can't win. The polling fallback ensures stats stay
+    // current without this corruption risk.
     setStatus("idle");
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Sync failed";

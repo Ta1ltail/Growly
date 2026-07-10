@@ -48,9 +48,8 @@ import {
   shopItem,
   streakMilestoneReward,
 } from "./economy";
-import { buildGameStats, evaluateAchievements } from "./achievements";
+import { buildGameStats, evaluateAchievements, RARITY_ORDER } from "./achievements";
 import { baselineProgressSeen, type CelebrationEvent } from "./celebrations";
-import { RARITY_ORDER } from "./achievements";
 import {
   pushSnapshot,
   undo as undoHistory,

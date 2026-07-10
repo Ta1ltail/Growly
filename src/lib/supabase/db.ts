@@ -584,24 +584,19 @@ async function loadProgressSeen(
    SAVE helpers
    ──────────────────────────────────────────── */
 
-// replaceTable: delete all rows for this user, then upsert the current set.
-// Using upsert (not insert) prevents 23505 duplicate-key errors when two pushes
-// race (e.g. pullAllUserData pushes on login, then pushMutation fires shortly after).
+// upsertTable: upsert rows without prior DELETE.
+// This is SAFE — it never destroys data. If the rows array is empty, it's a
+// no-op. Compare to the old replaceTable which did DELETE+UPSERT: if the rows
+// array was empty (due to a race condition or cleared localStorage), it would
+// DELETE all rows and never re-insert them, causing permanent data loss.
 // onConflict must match a UNIQUE constraint on the table.
-async function replaceTable<T>(
+async function upsertTable<T>(
   supabase: SupabaseClient,
   table: string,
-  userId: string,
   rows: T[],
   rowToDb: (row: T) => Record<string, unknown>,
   onConflict: string,
 ): Promise<void> {
-  const { error: delErr } = await supabase
-    .from(table)
-    .delete()
-    .eq("user_id", userId);
-  if (delErr) throw delErr;
-
   if (rows.length === 0) return;
 
   const batchSize = 500;
@@ -617,8 +612,8 @@ async function saveHabits(
   userId: string,
   habits: Habit[],
 ): Promise<void> {
-  await replaceTable(
-    supabase, "habits", userId, habits,
+  await upsertTable(
+    supabase, "habits", habits,
     (h) => habitToRow(userId, h) as unknown as Record<string, unknown>,
     "id",
   );
@@ -630,8 +625,8 @@ async function saveMarks(
   marks: Marks,
 ): Promise<void> {
   const rows = marksToRows(userId, marks);
-  await replaceTable(
-    supabase, "marks", userId, rows,
+  await upsertTable(
+    supabase, "marks", rows,
     (r) => r as unknown as Record<string, unknown>,
     // Conflict on the composite unique key — not id — because id is a new
     // random UUID on every marksToRows call.
@@ -644,8 +639,8 @@ async function saveNotes(
   userId: string,
   notes: Note[],
 ): Promise<void> {
-  await replaceTable(
-    supabase, "notes", userId, notes,
+  await upsertTable(
+    supabase, "notes", notes,
     (n) => noteToRow(userId, n) as unknown as Record<string, unknown>,
     "id",
   );
@@ -656,8 +651,8 @@ async function saveGoals(
   userId: string,
   goals: Goal[],
 ): Promise<void> {
-  await replaceTable(
-    supabase, "goals", userId, goals,
+  await upsertTable(
+    supabase, "goals", goals,
     (g) => goalToRow(userId, g) as unknown as Record<string, unknown>,
     "id",
   );
@@ -693,8 +688,8 @@ async function saveUnlocks(
   unlocks: Unlocks,
 ): Promise<void> {
   const rows = unlocksToRows(userId, unlocks);
-  await replaceTable(
-    supabase, "unlocks", userId, rows,
+  await upsertTable(
+    supabase, "unlocks", rows,
     (r) => r as unknown as Record<string, unknown>,
     // Conflict on the composite unique key — not id — because id is a new
     // random UUID on every unlocksToRows call.
@@ -714,15 +709,15 @@ async function saveEconomy(
   if (stateErr) throw stateErr;
 
   const spentRows = spentToRows(userId, economy.spent);
-  await replaceTable(
-    supabase, "economy_spent", userId, spentRows,
+  await upsertTable(
+    supabase, "economy_spent", spentRows,
     (r) => r as unknown as Record<string, unknown>,
     "id",
   );
 
   const freezeRows = freezesToRows(userId, economy.freezes);
-  await replaceTable(
-    supabase, "economy_freezes", userId, freezeRows,
+  await upsertTable(
+    supabase, "economy_freezes", freezeRows,
     (r) => r as unknown as Record<string, unknown>,
     "id",
   );
@@ -803,46 +798,69 @@ export async function loadAllUserData(
   supabase: SupabaseClient,
   userId: string,
 ): Promise<AppData | null> {
-  try {
-    const [habits, marks, notes, goals, settings, profile, unlocks, economy, progressSeen] =
-      await Promise.all([
-        loadHabits(supabase, userId),
-        loadMarks(supabase, userId),
-        loadNotes(supabase, userId),
-        loadGoals(supabase, userId),
-        loadSettings(supabase, userId),
-        loadProfile(supabase, userId),
-        loadUnlocks(supabase, userId),
-        loadEconomy(supabase, userId),
-        loadProgressSeen(supabase, userId),
-      ]);
+  // Retry up to 2 times with 2s delay on transient errors (network blip,
+  // Supabase timeout, JWT refresh race). If ALL retries fail, throw so the
+  // caller (fullResync) can signal the error instead of silently returning
+  // null and treating the user as brand-new.
+  const MAX_ATTEMPTS = 2;
+  const RETRY_DELAY_MS = 2000;
 
-    // No data at all → new user; let the caller push local data instead
-    if (habits.length === 0 && Object.keys(marks).length === 0) {
-      return null;
+  for (let attempt = 0; attempt <= MAX_ATTEMPTS; attempt++) {
+    try {
+      const [habits, marks, notes, goals, settings, profile, unlocks, economy, progressSeen] =
+        await Promise.all([
+          loadHabits(supabase, userId),
+          loadMarks(supabase, userId),
+          loadNotes(supabase, userId),
+          loadGoals(supabase, userId),
+          loadSettings(supabase, userId),
+          loadProfile(supabase, userId),
+          loadUnlocks(supabase, userId),
+          loadEconomy(supabase, userId),
+          loadProgressSeen(supabase, userId),
+        ]);
+
+      // No data at all → new user; let the caller push local data instead
+      if (habits.length === 0 && Object.keys(marks).length === 0) {
+        return null;
+      }
+
+      return {
+        version: SCHEMA_VERSION,
+        habits,
+        marks,
+        notes,
+        goals,
+        auditLog: [], // audit log stays local only
+        settings: settings ?? {
+          theme: DEFAULT_THEME,
+          graceHours: DEFAULT_GRACE_HOURS,
+          usedTemplateIds: [],
+        },
+        profile: profile ?? DEFAULT_PROFILE,
+        unlocks,
+        economy: economy ?? DEFAULT_ECONOMY,
+        progressSeen: progressSeen ?? DEFAULT_PROGRESS_SEEN,
+      };
+    } catch (e) {
+      if (attempt < MAX_ATTEMPTS) {
+        console.warn(
+          `[db] loadAllUserData attempt ${attempt + 1}/${MAX_ATTEMPTS + 1} failed, retrying in ${RETRY_DELAY_MS}ms:`,
+          e,
+        );
+        await new Promise((r) => setTimeout(r, RETRY_DELAY_MS));
+      } else {
+        // All retries exhausted — throw so the caller can signal the error
+        console.error(
+          `[db] loadAllUserData failed after ${MAX_ATTEMPTS + 1} attempts:`,
+          e,
+        );
+        throw e;
+      }
     }
-
-    return {
-      version: SCHEMA_VERSION,
-      habits,
-      marks,
-      notes,
-      goals,
-      auditLog: [], // audit log stays local only
-      settings: settings ?? {
-        theme: DEFAULT_THEME,
-        graceHours: DEFAULT_GRACE_HOURS,
-        usedTemplateIds: [],
-      },
-      profile: profile ?? DEFAULT_PROFILE,
-      unlocks,
-      economy: economy ?? DEFAULT_ECONOMY,
-      progressSeen: progressSeen ?? DEFAULT_PROGRESS_SEEN,
-    };
-  } catch (e) {
-    console.error("[db] Failed to load user data:", e);
-    return null;
   }
+
+  return null; // Unreachable, but TypeScript needs it
 }
 
 /* ────────────────────────────────────────────
@@ -862,11 +880,11 @@ export type ChangedTables = {
 };
 
 // Save queue — serializes all saveChanged calls so that only one runs at a
-// time. replaceTable uses DELETE+UPSERT, so concurrent calls can cause FK
-// violations (one DELETE can wipe out habits between another call's Phase 1
-// and Phase 2). Unlike a simple Promise-based mutex, this queue properly
-// handles multiple waiters: when the active task completes, exactly ONE
-// queued task runs next (not ALL waiters at once).
+// time. The queue prevents FK constraint violations: marks have FK to habits.id
+// and freezes have FK to habits.id, so they must be saved in the correct order.
+// Unlike a simple Promise-based mutex, this queue properly handles multiple
+// waiters: when the active task completes, exactly ONE queued task runs next
+// (not ALL waiters at once).
 const _saveQueue: (() => Promise<void>)[] = [];
 let _saving = false;
 
@@ -902,18 +920,14 @@ export async function saveChanged(
   data: AppData,
   changed: ChangedTables,
 ): Promise<void> {
-  // ══ Queue: serialize saves to prevent race conditions ══
-  // replaceTable uses DELETE+UPSERT. If two calls run concurrently, one call's
-  // DELETE can wipe out habits between another call's Phase 1 and Phase 2,
-  // causing FK violations on marks & freezes which reference habits.id.
-  // The queue ensures only one save runs at a time; subsequent calls wait.
+  // ══ Queue: serialize saves to prevent FK constraint violations ══
+  // habits are saved FIRST because marks and freezes reference habits.id.
   await _enqueueSave(async () => {
     // ── Phase 1: Save habits FIRST (marks have FK to habits.id) ──
   // Re-save habits only when habits or marks actually changed. An economy-only
   // mutation (check-in, quest, spin, gold) must NEVER trigger a habit re-save
-  // via replaceTable (DELETE+UPSERT) because mount-time effects that run before
-  // fullResync completes carry empty/stale data — deleting and replacing habits
-  // with an empty array permanently destroys the user's Supabase data.
+  // because mount-time effects that run before fullResync completes carry
+  // empty/stale data that could overwrite the user's real habits.
   const saveHabitsToo = changed.habits || changed.marks;
 
   // Freezes (inside economy) also have FK to habits.id, but the freezes are

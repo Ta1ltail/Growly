@@ -9,6 +9,10 @@ import {
   Database,
   Trash2,
   Upload,
+  Ban,
+  Gauge,
+  Target,
+  ListChecks,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -20,16 +24,25 @@ import {
 } from "@/lib/store";
 import { useToday } from "@/hooks/useToday";
 import { dateKey, addDays, clearLocalAppData } from "@/lib/storage";
-import { DEFAULT_ECONOMY, DEFAULT_PROFILE, type MarkStatus, type Unlocks, type ProgressSeen } from "@/lib/types";
+import {
+  DEFAULT_ECONOMY,
+  DEFAULT_PROFILE,
+  type MarkStatus,
+  type Unlocks,
+  type ProgressSeen,
+} from "@/lib/types";
 import { makeComprehensiveSeedData } from "@/lib/devSeed";
 import { ACHIEVEMENTS } from "@/lib/achievements";
 import { SHOP_ITEMS } from "@/lib/economy";
+import { xpToAdvance, totalXp } from "@/lib/xp";
+import { buildGameStats, evaluateAchievements } from "@/lib/achievements";
+import { frozenSet } from "@/lib/economy";
 import { useAuth } from "@/hooks/useAuth";
-import { fullResync, refreshStatsSnapshot } from "@/lib/supabase/sync";
+import { fullResync } from "@/lib/supabase/sync";
 import { DevGroup, DevRow, DevStack, DevButton, DEV_INPUT } from "../ui";
 
 export const DB_TERMS =
-  "database tools raw json edit export csv import backup seed demo wipe clear marks notes goals economy unlocks reset gold xp streak achievements habits progress simulate random stress fresh";
+  "database tools raw json edit export csv import backup seed demo wipe clear marks notes goals economy unlocks reset gold xp level streak achievements habits progress simulate random stress fresh";
 
 export function DatabaseToolsSection({ query }: { query: string }) {
   const data = useAppData();
@@ -106,13 +119,10 @@ export function DatabaseToolsSection({ query }: { query: string }) {
     )
       return;
     mutateData((prev) => ({ ...prev, ...patch }), false);
-    // The pushMutation (triggered by _onMutation inside mutateData) handles
-    // syncing to Supabase asynchronously. Wipe actions are destructive but
-    // already persisted to localStorage — the async push will survive even
-    // if the user navigates away.
   }
 
-  // Seeder: Max Gold — grants 99,999 bonus coins. Repeated clicks stack.
+  // ── Economy ──────────────────────────────────────────────
+
   function addGold() {
     const added = 99999;
     toast.success(`Added ${added.toLocaleString()} bonus coins!`);
@@ -128,9 +138,198 @@ export function DatabaseToolsSection({ query }: { query: string }) {
     );
   }
 
+  function removeAllGold() {
+    if (
+      !window.confirm(
+        "Remove ALL bonus coins? This sets your bonus coin balance to 0. Other economy data (owned items, spend ledger) is preserved.",
+      )
+    )
+      return;
+    mutateData(
+      (prev) => ({
+        ...prev,
+        economy: {
+          ...prev.economy,
+          bonusCoins: 0,
+        },
+      }),
+      false,
+    );
+    toast.success("All bonus coins removed.");
+  }
 
+  // ── Habits ──────────────────────────────────────────────
 
-  // Seeder: Reset Progress (marks only)
+  // Mark ALL active habits as done for the last 55 consecutive days.
+  // Every day gets a full "done" record for every active habit, producing
+  // correct current streaks (55), best streaks (55), total completions,
+  // XP, and achievement progress.
+  function markAllHabitsCompleted() {
+    const DAYS = 55;
+    const activeHabits = data.habits.filter((h) => !h.archived);
+    if (activeHabits.length === 0) {
+      toast.error("Create at least one active habit first.");
+      return;
+    }
+    mutateData(
+      (prev) => {
+        const active = prev.habits.filter((h) => !h.archived);
+        if (active.length === 0) return prev;
+        const newMarks: Record<string, Record<string, MarkStatus>> = {
+          ...prev.marks,
+        };
+        for (let i = 1; i <= DAYS; i++) {
+          const key = dateKey(addDays(today, -i));
+          const day: Record<string, MarkStatus> = {};
+          for (const h of active) {
+            day[h.id] = "done" as MarkStatus;
+          }
+          newMarks[key] = day;
+        }
+        return { ...prev, marks: newMarks };
+      },
+      false,
+    );
+    const habitsCount = activeHabits.length;
+    const totalCompletions = habitsCount * DAYS;
+    toast.success(
+      `Marked all ${habitsCount} habits as done for ${DAYS} days (${totalCompletions.toLocaleString()} completions)!`,
+    );
+  }
+
+  function resetHabits() {
+    if (
+      !window.confirm(
+        "Delete ALL habits? This also removes all associated marks.",
+      )
+    )
+      return;
+    mutateData((prev) => ({ ...prev, habits: [], marks: {} }), false);
+  }
+
+  // ── XP & Level ──────────────────────────────────────────
+
+  // Calculate total XP required to reach a given level (1-99)
+  function xpForLevel(targetLevel: number): number {
+    let total = 0;
+    for (let l = 1; l < targetLevel; l++) {
+      total += xpToAdvance(l);
+    }
+    return total;
+  }
+
+  // Calculate current XP from existing completion marks + achievements.
+  function currentXp(): number {
+    const frozen = frozenSet(data.economy);
+    const stats = buildGameStats(data.habits, data.marks, today, frozen);
+    const unlocked = evaluateAchievements(stats)
+      .filter((a) => a.unlocked)
+      .map((a) => a.def);
+    return totalXp(stats, unlocked);
+  }
+
+  // Fill enough completion marks to reach the specified level.
+  function fillXpToLevel(targetLevel: number) {
+    if (targetLevel < 1 || targetLevel > 99) {
+      toast.error("Level must be between 1 and 99.");
+      return;
+    }
+    if (targetLevel === 1) {
+      toast.info("Already at level 1.");
+      return;
+    }
+
+    const xpNeeded = xpForLevel(targetLevel);
+    const currentXpValue = currentXp();
+    const xpGap = Math.max(0, xpNeeded - currentXpValue);
+
+    if (xpGap === 0) {
+      toast.info(`Already at or above level ${targetLevel}!`);
+      return;
+    }
+
+    // Each completion gives 10 XP. Perfect-day bonuses will push the final
+    // level slightly higher than the target, which is acceptable.
+    const completionsNeeded = Math.ceil(xpGap / 10);
+
+    const activeHabits = data.habits.filter((h) => !h.archived);
+    if (activeHabits.length === 0) {
+      toast.error("Create at least one active habit first.");
+      return;
+    }
+
+    const completionsPerDay = activeHabits.length;
+    // Add a 20% safety margin on days to account for perfect-day bonuses
+    const daysNeeded = Math.ceil(completionsNeeded / completionsPerDay);
+
+    mutateData(
+      (prev) => {
+        const active = prev.habits.filter((h) => !h.archived);
+        if (active.length === 0) return prev;
+        const newMarks: Record<string, Record<string, MarkStatus>> = {
+          ...prev.marks,
+        };
+        let completions = 0;
+        let day = 1;
+        // Cap at 10 years to prevent infinite loop
+        const maxDays = Math.min(daysNeeded + 10, 3650);
+        while (completions < completionsNeeded && day <= maxDays) {
+          const key = dateKey(addDays(today, -day));
+          const dayRecord: Record<string, MarkStatus> =
+            newMarks[key] ?? ({} as Record<string, MarkStatus>);
+          let dayChanged = false;
+          for (const h of active) {
+            if (dayRecord[h.id] !== "done" && completions < completionsNeeded) {
+              dayRecord[h.id] = "done" as MarkStatus;
+              completions++;
+              dayChanged = true;
+            }
+          }
+          if (dayChanged) {
+            newMarks[key] = dayRecord;
+          }
+          day++;
+        }
+        return { ...prev, marks: newMarks };
+      },
+      false,
+    );
+
+    const habitsCount = activeHabits.length;
+    toast.success(
+      `Set to level ${targetLevel} (~${completionsNeeded.toLocaleString()} completions, ${habitsCount} habits, ~${daysNeeded} days)!`,
+    );
+  }
+
+  function setLevelMax() {
+    if (
+      !window.confirm(
+        "Fill enough completion marks to reach level 99 for all active habits? This adds a large number of completion records.",
+      )
+    )
+      return;
+    fillXpToLevel(99);
+  }
+
+  function setLevelPrompt() {
+    const input = window.prompt("Enter target level (1–99):", "10");
+    if (input === null) return; // cancelled
+    const level = parseInt(input, 10);
+    if (isNaN(level) || level < 1 || level > 99) {
+      toast.error("Please enter a valid level between 1 and 99.");
+      return;
+    }
+    if (
+      !window.confirm(
+        `Fill completion marks to reach level ${level}? This will generate completion records for past days.`,
+      )
+    )
+      return;
+    fillXpToLevel(level);
+  }
+
+  // ── Progress (reset) ────────────────────────────────────
+
   function resetProgress() {
     if (
       !window.confirm(
@@ -149,19 +348,8 @@ export function DatabaseToolsSection({ query }: { query: string }) {
     );
   }
 
-  // Seeder: Reset Habits
-  function resetHabits() {
-    if (
-      !window.confirm(
-        "Delete ALL habits? This also removes all associated marks.",
-      )
-    )
-      return;
-    mutateData((prev) => ({ ...prev, habits: [], marks: {} }), false);
-  }
+  // ── Achievements ────────────────────────────────────────
 
-  // Seeder: Unlock All Achievements — force every achievement into the unlock
-  // map (seen:true so it doesn't flood the celebration queue on next login).
   function unlockAllAchievements() {
     const now = new Date().toISOString();
     mutateData(
@@ -176,7 +364,6 @@ export function DatabaseToolsSection({ query }: { query: string }) {
     );
   }
 
-  // Seeder: Lock All Achievements
   function lockAllAchievements() {
     if (
       !window.confirm(
@@ -187,99 +374,28 @@ export function DatabaseToolsSection({ query }: { query: string }) {
     mutateData((prev) => ({ ...prev, unlocks: {} }), false);
   }
 
-  // Seeder: Complete All Habits (today)
-  function completeAllHabits() {
-    const todayKey = dateKey(today);
-    mutateData(
-      (prev) => {
-        const day = { ...(prev.marks[todayKey] ?? {}) };
-        for (const h of prev.habits) {
-          if (!h.archived) day[h.id] = "done" as MarkStatus;
-        }
-        return { ...prev, marks: { ...prev.marks, [todayKey]: day } };
-      },
-      false,
-    );
-  }
-
-  // Seeder: Mark 50 Days as Done — fills the next 50 not-yet-complete past days
-  // for all active habits. Each press fills 50 fresh days, so repeated clicks
-  // stack more completions and thus more XP.
-  function mark50DaysDone() {
-    const activeHabits = data.habits.filter((h) => !h.archived);
-    if (activeHabits.length === 0) {
-      toast.error("Create at least one active habit first.");
-      return;
-    }
-    mutateData((prev) => {
-      const active = prev.habits.filter((h) => !h.archived);
-      if (active.length === 0) return prev;
-      const newMarks = { ...prev.marks };
-      let filled = 0;
-      let offset = 1;
-      while (filled < 50 && offset < 3650) {
-        const key = dateKey(addDays(today, -offset));
-        const day = { ...(newMarks[key] ?? {}) };
-        let changedDay = false;
-        for (const h of active) {
-          if (day[h.id] !== "done") {
-            day[h.id] = "done" as MarkStatus;
-            changedDay = true;
-          }
-        }
-        if (changedDay) {
-          newMarks[key] = day;
-          filled++;
-        }
-        offset++;
-      }
-      return { ...prev, marks: newMarks };
-    }, false);
-    const xpGained = activeHabits.length * 50 * 10; // 50 days × habits × 10 XP
-    toast.success(`Marked 50 days as done (~${xpGained.toLocaleString()} XP, ${activeHabits.length} habits)!`);
-  }
-
-  // Seeder: Unmark 50 Days as Done — deletes the last 50 days of marks.
-  function unmark50DaysDone() {
-    if (!window.confirm("Clear the last 50 days of marks? This removes XP and cannot be undone."))
-      return;
-    mutateData(
-      (prev) => {
-        const newMarks = { ...prev.marks };
-        let removed = 0;
-        for (let i = 0; i < 50; i++) {
-          const key = dateKey(addDays(today, -(i + 1)));
-          if (newMarks[key]) {
-            delete newMarks[key];
-            removed++;
-          }
-        }
-        return { ...prev, marks: newMarks };
-      },
-      false,
-    );
-    toast.success(`Cleared marks for the last 50 days.`);
-  }
+  // ── Max Everything ──────────────────────────────────────
 
   function maxLevel() {
     if (
       !window.confirm(
         "Fill 10 years of completion data and unlock all achievements to maximize " +
-        "your level? (This will NOT affect coins or shop items.)",
+          "your level? (This will NOT affect coins or shop items.)",
       )
     )
       return;
     const now = new Date().toISOString();
-    const today = new Date();
+    const d = new Date();
     mutateData((prev) => {
       const active = prev.habits.filter((h) => !h.archived);
       const habitIds = active.map((h) => h.id);
 
-      // ── 1. Fill marks: 3650 days (~10 years) of completions for all habits ──
-      const newMarks = { ...prev.marks };
+      const newMarks: Record<string, Record<string, MarkStatus>> = {
+        ...prev.marks,
+      };
       if (habitIds.length > 0) {
         for (let i = 1; i <= 3650; i++) {
-          const key = dateKey(addDays(today, -i));
+          const key = dateKey(addDays(d, -i));
           const day: Record<string, MarkStatus> = {};
           for (const id of habitIds) {
             day[id] = "done";
@@ -288,13 +404,11 @@ export function DatabaseToolsSection({ query }: { query: string }) {
         }
       }
 
-      // ── 2. Unlock all achievements (they contribute XP via RARITY_XP) ──
       const unlocks: Unlocks = { ...prev.unlocks };
       for (const a of ACHIEVEMENTS) {
         unlocks[a.id] = { at: unlocks[a.id]?.at ?? now, seen: true };
       }
 
-      // ── 3. Mark level as seen so celebrations don't re-fire ──
       const progressSeen: ProgressSeen = {
         ...prev.progressSeen,
         level: 99,
@@ -308,29 +422,32 @@ export function DatabaseToolsSection({ query }: { query: string }) {
       };
     }, false);
     const habitsCount = data.habits.filter((h) => !h.archived).length;
-    toast.success(`Max level achieved! (${habitsCount} habits × 3650 days of completions)`);
+    toast.success(
+      `Max level achieved! (${habitsCount} habits × 3650 days of completions)`,
+    );
   }
 
   function maxEverything() {
     if (
       !window.confirm(
         "This will fill 10 years of completion data, " +
-        "unlock all achievements, buy all shop items, give max coins, and set your " +
-        "progress markers to maximum. Continue?",
+          "unlock all achievements, buy all shop items, give max coins, and set your " +
+          "progress markers to maximum. Continue?",
       )
     )
       return;
     const now = new Date().toISOString();
-    const today = new Date();
+    const d = new Date();
     mutateData((prev) => {
       const active = prev.habits.filter((h) => !h.archived);
       const habitIds = active.map((h) => h.id);
 
-      // ── 1. Fill marks: 3650 days (~10 years) of completions for all habits ──
-      const newMarks = { ...prev.marks };
+      const newMarks: Record<string, Record<string, MarkStatus>> = {
+        ...prev.marks,
+      };
       if (habitIds.length > 0) {
         for (let i = 1; i <= 3650; i++) {
-          const key = dateKey(addDays(today, -i));
+          const key = dateKey(addDays(d, -i));
           const day: Record<string, MarkStatus> = {};
           for (const id of habitIds) {
             day[id] = "done";
@@ -339,13 +456,11 @@ export function DatabaseToolsSection({ query }: { query: string }) {
         }
       }
 
-      // ── 2. Unlock all achievements (seen=true so no celebration flood) ──
       const unlocks: Unlocks = { ...prev.unlocks };
       for (const a of ACHIEVEMENTS) {
         unlocks[a.id] = { at: unlocks[a.id]?.at ?? now, seen: true };
       }
 
-      // ── 3. Own all shop items, equip the best per slot ──
       const allItemIds = SHOP_ITEMS.map((i) => i.id);
       const owned = [...new Set([...prev.economy.owned, ...allItemIds])];
       const equipped = {
@@ -355,10 +470,8 @@ export function DatabaseToolsSection({ query }: { query: string }) {
         accent: "accent-ocean",
       };
 
-      // ── 4. Give max coins ──
       const bonusCoins = (prev.economy.bonusCoins ?? 0) + 99999;
 
-      // ── 5. Set progressSeen to maximum so celebrations never re-fire ──
       const progressSeen: ProgressSeen = {
         seeded: true,
         level: 99,
@@ -388,7 +501,7 @@ export function DatabaseToolsSection({ query }: { query: string }) {
       <DevGroup title="🔥 Max Everything">
         <DevRow
           label="Max Level"
-          hint="Fill 10 years of completion data and unlock all achievements to reach max level. Does NOT affect coins or shop."
+          hint="Fill 10 years of completions and unlock all achievements to reach max level. Does NOT affect coins or shop."
           query={query}
           terms="max level xp experience maxlevel"
         >
@@ -398,7 +511,7 @@ export function DatabaseToolsSection({ query }: { query: string }) {
         </DevRow>
         <DevRow
           label="Max Everything"
-          hint="Fill 10 years of completions, unlock all achievements, buy all shop items, max coins, set progress markers to max. Persists locally + syncs to Supabase."
+          hint="Fill 10 years of completions, unlock all achievements, buy all shop items, max coins, set progress markers to max."
           query={query}
           terms="max maxout full complete all achievements shop coins level progress maxlevel maximum everything"
         >
@@ -478,62 +591,81 @@ export function DatabaseToolsSection({ query }: { query: string }) {
         </DevRow>
       </DevGroup>
 
-      {/* Enhanced Seeders */}
       <DevGroup title="Economy">
         <DevRow
           label="Max Gold (99,999)"
           hint="Add 99,999 bonus coins for testing."
           query={query}
-          terms="coins money"
+          terms="coins money add"
         >
           <DevButton tone="accent" onClick={addGold}>
             <Coins className="size-3.5" /> Add
           </DevButton>
         </DevRow>
+        <DevRow
+          label="Remove All Gold"
+          hint="Set bonus coin balance to 0. Other economy data is preserved."
+          query={query}
+          terms="coins money remove reset zero clear"
+        >
+          <DevButton tone="danger" onClick={removeAllGold}>
+            <Ban className="size-3.5" /> Remove All
+          </DevButton>
+        </DevRow>
       </DevGroup>
 
-      <DevGroup title="Progress">
+      <DevGroup title="Habits">
         <DevRow
-          label="Complete All Habits"
-          hint="Mark all habits as done for today."
+          label="Mark All Habits as Completed"
+          hint="Mark every active habit as done for the last 55 consecutive days. Correctly updates streaks (55 days), XP, completions, and achievements."
           query={query}
-          terms="done today"
+          terms="complete all habits done 55 days streak xp achievements marks fill"
         >
-          <DevButton tone="accent" onClick={completeAllHabits}>
-            <Zap className="size-3.5" /> Complete
+          <DevButton tone="accent" onClick={markAllHabitsCompleted}>
+            <ListChecks className="size-3.5" /> Mark All Completed
           </DevButton>
         </DevRow>
         <DevRow
-          label="Reset Progress"
-          hint="Clear marks, unlocks, and economy."
+          label="Reset Habits"
+          hint="Delete ALL habits and marks."
           query={query}
-          terms="clear wipe"
+          terms="remove delete"
         >
-          <DevButton tone="danger" onClick={resetProgress}>
+          <DevButton tone="danger" onClick={resetHabits}>
             Reset
           </DevButton>
         </DevRow>
       </DevGroup>
 
-      <DevGroup title="XP & Marks">
+      <DevGroup title="XP & Level">
         <DevRow
-          label="Mark 50 Days as Done"
-          hint="Fill 50 past days with completions to gain XP. Repeated clicks stack."
+          label="Set Level to Max (99)"
+          hint="Fill enough completion records to reach level 99 for all active habits."
           query={query}
-          terms="experience level up mark done"
+          terms="max level 99 xp experience setlevel maxlevel"
         >
-          <DevButton tone="accent" onClick={mark50DaysDone}>
-            <Sparkles className="size-3.5" /> Mark 50
+          <DevButton tone="accent" onClick={setLevelMax}>
+            <Gauge className="size-3.5" /> Level 99
           </DevButton>
         </DevRow>
         <DevRow
-          label="Unmark 50 Days as Done"
-          hint="Clear the last 50 days of marks to remove the corresponding XP."
+          label="Set Level"
+          hint="Enter a level (1–99) and fill enough completions to reach it."
           query={query}
-          terms="experience level down remove clear"
+          terms="set level xp experience custom target"
         >
-          <DevButton tone="danger" onClick={unmark50DaysDone}>
-            <Trash2 className="size-3.5" /> Unmark 50
+          <DevButton tone="accent" onClick={setLevelPrompt}>
+            <Target className="size-3.5" /> Set Level
+          </DevButton>
+        </DevRow>
+        <DevRow
+          label="Reset Progress"
+          hint="Clear marks, unlocks, economy, and celebration markers."
+          query={query}
+          terms="clear wipe progress reset marks unlocks economy"
+        >
+          <DevButton tone="danger" onClick={resetProgress}>
+            Reset
           </DevButton>
         </DevRow>
       </DevGroup>
@@ -557,19 +689,6 @@ export function DatabaseToolsSection({ query }: { query: string }) {
         >
           <DevButton tone="danger" onClick={lockAllAchievements}>
             <Trophy className="size-3.5" /> Lock all
-          </DevButton>
-        </DevRow>
-      </DevGroup>
-
-      <DevGroup title="Habits">
-        <DevRow
-          label="Reset Habits"
-          hint="Delete ALL habits and marks."
-          query={query}
-          terms="remove delete"
-        >
-          <DevButton tone="danger" onClick={resetHabits}>
-            Reset
           </DevButton>
         </DevRow>
       </DevGroup>
@@ -607,51 +726,42 @@ export function DatabaseToolsSection({ query }: { query: string }) {
 
         <DevRow
           label="Seed Comprehensive (55+ records/table)"
-          hint="Generate 55 habits, 50 notes, 30 goals, spend ledger, achievements — push to Supabase."
+          hint="Generate 55 habits, 60 days of completion marks, 50 notes, 30 goals, economy entries, and achievement unlocks — all internally consistent. NOTE: Replaces existing marks, economy, unlocks, and progress with fresh seed data. Pushes to Supabase."
           query={query}
-          terms="seed full comprehensive populate all tables"
+          terms="seed full comprehensive populate all tables marks economy unlocks progress"
         >
           <DevButton
             tone="accent"
             onClick={async () => {
-              if (!user) { toast.error("Must be logged in."); return; }
-              if (!window.confirm("Generate 55+ habits, 50 notes, 30 goals with 60 days of history and push to Supabase?")) return;
+              if (!user) {
+                toast.error("Must be logged in.");
+                return;
+              }
+              if (
+                !window.confirm(
+                  "Generate 55 habits, 60 days of completion marks, 50 notes, 30 goals, economy entries, and achievements — then push to Supabase?",
+                )
+              )
+                return;
               setSeeding(true);
               try {
                 const seeded = makeComprehensiveSeedData(data, today);
                 replaceData(seeded);
                 await fullResync(user.id);
                 reloadCache();
-                toast.success("Comprehensive seed data pushed to Supabase!");
-              } catch (e) { toast.error(`Failed: ${e}`); }
-              finally { setSeeding(false); }
+                toast.success(
+                  "Comprehensive seed data generated and pushed to Supabase!",
+                );
+              } catch (e) {
+                toast.error(`Failed: ${e}`);
+              } finally {
+                setSeeding(false);
+              }
             }}
             disabled={seeding || !user}
           >
-            <Database className="size-3.5" /> {seeding ? "..." : "Seed (55+)"}
-          </DevButton>
-        </DevRow>
-
-        <DevRow
-          label="Recalculate Stats"
-          hint="Force a recalculation of your public stats snapshot from current marks. Fixes stale Level 11 / Focus Seeker data from the old corruption bug."
-          query={query}
-          terms="recalculate recompute stats snapshot refresh user_stats_snapshots level xp achievements"
-        >
-          <DevButton
-            tone="accent"
-            onClick={async () => {
-              if (!user) { toast.error("Must be logged in."); return; }
-              setSeeding(true);
-              try {
-                await refreshStatsSnapshot(user.id);
-                toast.success("Stats recalculated from your current data!");
-              } catch (e) { toast.error(`Failed: ${e}`); }
-              finally { setSeeding(false); }
-            }}
-            disabled={seeding || !user}
-          >
-            <Zap className="size-3.5" /> {seeding ? "..." : "Recalculate"}
+            <Database className="size-3.5" />{" "}
+            {seeding ? "..." : "Seed (55+)"}
           </DevButton>
         </DevRow>
 

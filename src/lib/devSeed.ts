@@ -10,11 +10,13 @@ import type {
   MarkStatus,
   Goal,
   Note,
-  SpendEntry,
-  FreezeEntry,
+  Economy,
+  Unlocks,
+  ProgressSeen,
 } from "./types";
 import { CATEGORIES, type Category } from "./categories";
 import { ACHIEVEMENTS } from "./achievements";
+import { SHOP_ITEMS } from "./economy";
 import { addDays, dateKey } from "./date";
 import { uid } from "./util";
 
@@ -241,13 +243,33 @@ const NOTE_TEMPLATES: string[] = [
 
 
 /**
- * Generate comprehensive seed data: 55 habits, 50 notes, and 30 goals.
- * Does NOT generate marks, economy, unlocks, or progressSeen — those are left
- * at their current state so the seed is purely additive (no data loss).
+ * Generate a complete 55+ day completion history for the given habits.
+ * Every habit is marked "done" for every day to ensure correct streaks.
+ */
+function makeCompletionMarks(habits: Habit[], today: Date, days: number): Marks {
+  const marks: Marks = {};
+  const habitIds = habits.map((h) => h.id);
+  for (let i = 1; i <= days; i++) {
+    const key = dateKey(addDays(today, -i));
+    const day: Record<string, MarkStatus> = {};
+    for (const id of habitIds) {
+      day[id] = "done";
+    }
+    marks[key] = day;
+  }
+  return marks;
+}
+
+/**
+ * Generate comprehensive seed data: 55 habits, 50 notes, 30 goals, 60 days of
+ * completion marks, economy entries, achievement unlocks, and progress markers.
+ * All generated data is internally consistent: habits link to marks which drive
+ * XP, streaks, achievements, and level progression.
  */
 export function makeComprehensiveSeedData(base: AppData, today: Date): AppData {
   const daysBack = 60;
   const startDate = dateKey(addDays(today, -daysBack));
+  const nowIso = new Date().toISOString();
 
   // 55 habits across all categories
   const habits: Habit[] = EXTRA_HABITS.map((h) => ({
@@ -263,6 +285,9 @@ export function makeComprehensiveSeedData(base: AppData, today: Date): AppData {
         ? { kind: "daily" }
         : { kind: "weekly", weekdays: h.repeatDays },
   }));
+
+  // 60 days of completion marks for all habits (every habit done every day)
+  const marks = makeCompletionMarks(habits, today, daysBack);
 
   // 50 notes with diverse content
   const notes: Note[] = Array.from({ length: 50 }, (_, i) => {
@@ -300,10 +325,61 @@ export function makeComprehensiveSeedData(base: AppData, today: Date): AppData {
     };
   });
 
+  // Economy: some spend entries and owned items for a realistic shop history
+  const seedItems = SHOP_ITEMS.slice(0, 8);
+  const ownedItems = seedItems.map((i) => i.id);
+  const spendEntries = seedItems.map((item) => ({
+    id: uid(),
+    at: new Date(addDays(today, -Math.floor(Math.random() * 30))).toISOString(),
+    amount: item.price,
+    item: item.id,
+  }));
+  const economy: Economy = {
+    spent: spendEntries,
+    owned: ownedItems,
+    equipped: {
+      flame: "flame-gold",
+      confetti: "confetti-default",
+      accent: "accent-violet",
+    },
+    freezes: [],
+    bonusCoins: 5000,
+    lastCheckIn: dateKey(today),
+    checkInStreak: 7,
+    lastQuestDate: dateKey(today),
+    currentQuest: null,
+    lastSpinDate: null,
+    lastSpinResult: null,
+  };
+
+  // Achievements: unlock the first 10 achievements by ID (sorted deterministically)
+  const sortedAchievements = [...ACHIEVEMENTS].sort((a, b) => a.id.localeCompare(b.id));
+  const unlockedIds = sortedAchievements.slice(0, 10).map((a) => a.id);
+  const unlocks: Unlocks = {};
+  for (const id of unlockedIds) {
+    unlocks[id] = { at: nowIso, seen: true };
+  }
+
+  // ProgressSeen: baseline markers so celebrations don't re-fire
+  const progressSeen: ProgressSeen = {
+    seeded: true,
+    level: 1,
+    title: "Habit Newbie",
+    shop: ownedItems,
+    streaks: Object.fromEntries(
+      habits.filter(() => Math.random() < 0.3).map((h) => [h.id, 30]),
+    ),
+    tierUnlocks: [],
+  };
+
   return {
     ...base,
     habits: [...base.habits, ...habits],
+    marks,
     notes: [...base.notes, ...notes],
     goals: [...base.goals, ...goals],
+    economy,
+    unlocks,
+    progressSeen,
   };
 }
