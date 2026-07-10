@@ -43,10 +43,10 @@ self.addEventListener("fetch", (event) => {
   if (request.mode === "navigate") {
     event.respondWith(
       fetch(request)
-        .then(async (response) => {
+        .then((response) => {
           if (response.ok) {
-            const cache = await caches.open(CACHE);
-            cache.put(request, response.clone());
+            const cloned = response.clone();
+            caches.open(CACHE).then((cache) => cache.put(request, cloned)).catch(() => {});
           }
           return response;
         })
@@ -67,7 +67,8 @@ self.addEventListener("fetch", (event) => {
         const fetchPromise = fetch(request)
           .then((response) => {
             if (response.ok) {
-              caches.open(CACHE).then((cache) => cache.put(request, response.clone()));
+              const cloned = response.clone();
+              caches.open(CACHE).then((cache) => cache.put(request, cloned)).catch(() => {});
             }
             return response;
           })
@@ -81,10 +82,10 @@ self.addEventListener("fetch", (event) => {
   // For API-like requests (/_next/...), network-first with cache fallback
   event.respondWith(
     fetch(request)
-      .then(async (response) => {
+      .then((response) => {
         if (response.ok) {
-          const cache = await caches.open(CACHE);
-          cache.put(request, response.clone());
+          const cloned = response.clone();
+          caches.open(CACHE).then((cache) => cache.put(request, cloned)).catch(() => {});
         }
         return response;
       })
