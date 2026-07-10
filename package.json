@@ -11,9 +11,14 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "test:benchmark": "vitest run --reporter=verbose src/lib/integration.test.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "cap:sync": "npx cap sync",
+    "cap:open:android": "npx cap open android",
+    "cap:add:android": "npx cap add android"
   },
   "dependencies": {
+    "@capacitor/core": "^8.4.1",
+    "@capacitor/network": "^8.0.1",
     "@supabase/ssr": "^0.12.0",
     "@supabase/supabase-js": "^2.108.2",
     "clsx": "^2.1.1",
@@ -35,6 +40,7 @@
     "postcss": "8.5.16"
   },
   "devDependencies": {
+    "@capacitor/cli": "^8.4.1",
     "@next/bundle-analyzer": "^16.2.9",
     "@playwright/test": "^1.61.1",
     "@tailwindcss/postcss": "^4",

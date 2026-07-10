@@ -67,3 +67,7 @@ AGENTS.md
 # Documentation (internal only)
 docs/
 
+# Capacitor native platforms
+android/
+capacitor.config.json
+
