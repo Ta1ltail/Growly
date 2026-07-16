@@ -97,7 +97,7 @@ DECLARE
   ];
 BEGIN
   -- Generate bcrypt password hash once
-  v_pw_hash := crypt('test123456', gen_salt('bf'));
+  v_pw_hash := extensions.crypt('test123456', extensions.gen_salt('bf'));
 
   FOR i IN 1..50 LOOP
     -- Idempotency guard: if this seed user already exists, skip the whole

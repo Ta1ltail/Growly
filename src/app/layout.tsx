@@ -52,15 +52,6 @@ export default function RootLayout({
         <link rel="apple-touch-icon" href="/icon-192.svg" />
       </head>
       <body className="min-h-full">
-        {/* Skip-to-content link for keyboard and screen reader users.
-            Visually hidden by default, becomes visible on focus. */}
-        <a
-          href="#main-content"
-          className="fixed left-3 top-3 z-[100] -translate-y-full rounded-xl bg-accent px-4 py-2 text-sm font-semibold text-white shadow-lg transition-transform focus:translate-y-0 focus:outline-none"
-        >
-          Skip to content
-        </a>
-
         <Script
           id="theme-no-flash"
           strategy="beforeInteractive"

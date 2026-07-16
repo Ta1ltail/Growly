@@ -13,11 +13,7 @@ import {
   Smartphone,
   Check,
   Star,
-  ChevronRight,
-  Quote,
-  Users,
-  Trophy,
-  TrendingUp,
+
 } from "lucide-react";
 
 /* ───────────────────────────
@@ -55,35 +51,6 @@ const FEATURES = [
     desc: "Dark/light themes, custom accent colors, smooth animations, and a fully responsive design.",
   },
 ];
-
-const STATS = [
-  { value: "10K+", label: "Active users", icon: Users },
-  { value: "500K+", label: "Habits tracked", icon: TrendingUp },
-  { value: "50K+", label: "Streaks earned", icon: Trophy },
-  { value: "4.9★", label: "App rating", icon: Star },
-];
-
-const TESTIMONIALS = [
-  {
-    quote:
-      "Growly completely changed how I approach my daily routines. The gamification keeps me coming back every day.",
-    author: "Alex Chen",
-    role: "Product Designer",
-  },
-  {
-    quote:
-      "I've tried dozens of habit trackers, but Growly's honest tracking policy is what sets it apart. No cheating, just real progress.",
-    author: "Sarah Mitchell",
-    role: "Software Engineer",
-  },
-  {
-    quote:
-      "The local-first approach means my data is always mine. Plus, it works even when I'm offline — perfect for my commute.",
-    author: "James Wilson",
-    role: "Freelance Writer",
-  },
-];
-
 /** Lightweight IntersectionObserver hook — fires once when element enters view. */
 function useOnceInView(ref: React.RefObject<Element | null>) {
   const [inView, setInView] = useState(false);
@@ -119,17 +86,8 @@ export default function LandingPage() {
       {/* ── Hero ── */}
       <HeroSection />
 
-      {/* ── Trust bar ── */}
-      <TrustBar />
-
       {/* ── Features ── */}
       <FeaturesSection />
-
-      {/* ── Stats ── */}
-      <StatsSection />
-
-      {/* ── Testimonials ── */}
-      <TestimonialsSection />
 
       {/* ── Final CTA ── */}
       <CtaSection />
@@ -323,52 +281,6 @@ function HeroSection() {
           </div>
         </div>
       </div>
-
-      {/* ── Scroll indicator ── */}
-      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 animate-fade-in">
-        <div
-          className="flex animate-scroll-bounce flex-col items-center gap-1.5"
-          style={{ animationDelay: "1.2s" }}
-        >
-          <span className="text-[10px] font-medium uppercase tracking-widest text-faint">
-            Scroll
-          </span>
-          <ChevronRight className="size-4 rotate-90 text-faint" />
-        </div>
-      </div>
-    </section>
-  );
-}
-
-/* ─── Trust bar ─── */
-function TrustBar() {
-  const ref = useRef<HTMLDivElement>(null);
-  const inView = useOnceInView(ref);
-
-  return (
-    <section
-      ref={ref}
-      className={`border-y border-line/60 bg-surface/30 py-10 ${
-        inView ? "animate-fade-in" : "opacity-0"
-      }`}
-    >
-      <div className="mx-auto max-w-6xl px-5 sm:px-8">
-        <p className="mb-6 text-center text-xs font-medium uppercase tracking-[0.15em] text-faint">
-          Trusted by habit builders worldwide
-        </p>
-        <div className="flex flex-wrap items-center justify-center gap-x-10 gap-y-4">
-          {["Product Hunt", "TechCrunch", "Indie Hackers", "Hacker News", "BetaList"].map(
-            (name) => (
-              <span
-                key={name}
-                className="font-mono text-sm font-bold tracking-tight text-muted/40"
-              >
-                {name}
-              </span>
-            ),
-          )}
-        </div>
-      </div>
     </section>
   );
 }
@@ -437,98 +349,6 @@ function FeatureCard({
       <h3 className="text-sm font-semibold">{title}</h3>
       <p className="mt-1.5 text-xs leading-relaxed text-muted">{desc}</p>
     </div>
-  );
-}
-
-/* ─── Stats ─── */
-function StatsSection() {
-  const ref = useRef<HTMLDivElement>(null);
-  const inView = useOnceInView(ref);
-
-  return (
-    <section
-      ref={ref}
-      className="border-y border-line/50 bg-surface/20 py-16 sm:py-24"
-    >
-      <div className="mx-auto max-w-6xl px-5 sm:px-8">
-        <div
-          className={`grid gap-8 sm:grid-cols-2 lg:grid-cols-4 ${
-            inView ? "animate-fade-in" : "opacity-0"
-          }`}
-        >
-          {STATS.map((stat, i) => (
-            <div
-              key={stat.label}
-              className="flex animate-rise flex-col items-center text-center"
-              style={{ animationDelay: `${0.1 + i * 0.08}s` }}
-            >
-              <span className="mb-3 flex size-12 items-center justify-center rounded-2xl bg-accent/8 text-accent">
-                <stat.icon className="size-5" />
-              </span>
-              <span className="text-3xl font-bold tracking-tight">
-                {stat.value}
-              </span>
-              <span className="mt-1 text-sm text-muted">{stat.label}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-/* ─── Testimonials ─── */
-function TestimonialsSection() {
-  const ref = useRef<HTMLDivElement>(null);
-  const inView = useOnceInView(ref);
-
-  return (
-    <section ref={ref} className="py-20 sm:py-28">
-      <div className="mx-auto max-w-6xl px-5 sm:px-8">
-        {/* Section header */}
-        <div
-          className={`mx-auto max-w-2xl text-center transition-all duration-500 ${
-            inView ? "animate-fade-slide-up-lg" : "opacity-0"
-          }`}
-        >
-          <span className="mb-4 inline-flex items-center gap-1.5 rounded-full border border-accent/15 bg-accent/6 px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-accent">
-            <Quote className="size-3" />
-            Testimonials
-          </span>
-          <h2 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">
-            Loved by the community
-          </h2>
-          <p className="mt-3 text-muted">
-            Hear from people who&apos;ve transformed their daily routines with
-            Growly.
-          </p>
-        </div>
-
-        {/* Testimonial cards */}
-        <div
-          className={`mt-14 grid gap-6 md:grid-cols-3 ${
-            inView ? "animate-fade-in" : "opacity-0"
-          }`}
-        >
-          {TESTIMONIALS.map((t, i) => (
-            <div
-              key={t.author}
-              className="flex animate-rise flex-col rounded-2xl border border-line/60 bg-surface/40 p-6 backdrop-blur-sm"
-              style={{ animationDelay: `${0.1 + i * 0.08}s` }}
-            >
-              <Quote className="mb-4 size-5 text-accent/40" />
-              <p className="flex-1 text-sm leading-relaxed text-muted">
-                &ldquo;{t.quote}&rdquo;
-              </p>
-              <div className="mt-5 border-t border-line/40 pt-4">
-                <p className="text-sm font-semibold">{t.author}</p>
-                <p className="text-xs text-faint">{t.role}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
   );
 }
 
@@ -626,7 +446,7 @@ function Footer() {
 
           {/* Version */}
           <p className="font-mono text-[10px] text-faint">
-            honest habit tracking &middot; v0.5
+            growly - habit tracking dot release v2.1.5
           </p>
         </div>
       </div>
