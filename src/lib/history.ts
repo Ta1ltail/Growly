@@ -14,7 +14,18 @@
 
 import type { AppData } from "./types";
 
-const MAX_HISTORY = 50;
+// Maximum number of snapshots to keep. Each snapshot is a deep-cloned copy
+// of the full AppData (habits, marks, notes, goals, etc.), so memory usage
+// is proportional to data size × MAX_HISTORY. 20 snapshots of a typical user
+// with a few hundred marks uses ~1-2MB, which is acceptable for modern
+// browsers. Power users with thousands of marks may use up to ~5MB.
+// The redo stack shares the same cap, capped independently.
+const MAX_HISTORY = 20;
+
+// Estimated maximum bytes for a single snapshot before size-based eviction
+// kicks in (~200KB). Applied on push to prevent unbounded memory growth
+// for users with very large datasets.
+const MAX_HISTORY_BYTES = 200_000;
 
 // Stack of snapshots: index 0 is oldest, length-1 is newest.
 let undoStack: AppData[] = [];
@@ -26,9 +37,23 @@ export function pushSnapshot(data: AppData): void {
   // Deep-clone to freeze the snapshot
   const snapshot = JSON.parse(JSON.stringify(data)) as AppData;
   undoStack.push(snapshot);
-  if (undoStack.length > MAX_HISTORY) {
+  
+  // Cap by count
+  while (undoStack.length > MAX_HISTORY) {
     undoStack.shift();
   }
+  
+  // Cap by total estimated bytes — if the stack exceeds the budget, drop
+  // oldest entries until under the threshold. The undo stack holds compressed
+  // JSON strings, so rough estimate: JSON.stringify length × 2 (in-memory).
+  const totalBytes = undoStack.reduce(
+    (sum, s) => sum + JSON.stringify(s).length,
+    0,
+  );
+  while (undoStack.length > 1 && totalBytes > MAX_HISTORY_BYTES) {
+    undoStack.shift();
+  }
+  
   // Clear redo stack on new action (standard undo behavior)
   redoStack = [];
 }
@@ -49,6 +74,12 @@ export function undo(currentData: AppData): AppData | null {
 function replaceStack(stack: AppData[], item: AppData, max: number): AppData[] {
   const next = [...stack, item];
   return next.length > max ? next.slice(1) : next;
+}
+
+/** Reset both undo and redo stacks. Used by tests to isolate state between runs. */
+export function resetHistory(): void {
+  undoStack = [];
+  redoStack = [];
 }
 
 // Redo: restore the most recently undone snapshot.

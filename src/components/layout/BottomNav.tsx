@@ -144,7 +144,7 @@ export function BottomNav() {
                 key={href}
                 href={href}
                 aria-current={active ? "page" : undefined}
-                className="relative flex flex-1 flex-col items-center gap-0.5 py-1.5 text-[10px] font-medium"
+                className="relative flex flex-1 flex-col items-center gap-0.5 py-1.5 text-[10px] font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40 focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
               >
                 <span
                   className={`flex size-10 items-center justify-center rounded-xl transition-all duration-200 ${
@@ -180,7 +180,7 @@ export function BottomNav() {
             onClick={() => setDrawerOpen(true)}
             aria-label="More navigation options"
             aria-expanded={drawerOpen}
-            className="relative flex flex-1 flex-col items-center gap-0.5 py-1.5 text-[10px] font-medium"
+            className="relative flex flex-1 flex-col items-center gap-0.5 py-1.5 text-[10px] font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40 focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
           >
             <span className="flex size-10 items-center justify-center rounded-xl text-muted transition-colors">
               <Grip className="size-5 stroke-[1.8]" />

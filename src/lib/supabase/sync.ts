@@ -19,6 +19,7 @@ import {
 } from "./db";
 import {
   DEFAULT_PROFILE,
+  DEFAULT_PROGRESS_SEEN,
   type AppData,
   type Economy,
   type Profile,
@@ -73,7 +74,9 @@ export function subscribeToSyncStatus(listener: () => void): () => void {
 
 function setStatus(s: SyncStatus, _error?: string) {
   _status = s;
-  void _error;
+  if (_error) {
+    console.debug("[sync]", _error);
+  }
   notify();
 }
 
@@ -91,6 +94,20 @@ function setStatus(s: SyncStatus, _error?: string) {
    cleared-localStorage corrupting cloud data. */
 
 let _syncReady = false;
+
+/**
+ * Generation counter incremented before destructive operations (clearAllData,
+ * importRawData) so that any in-flight fullResync that loaded stale local data
+ * before the destructive write can detect the change and skip saving its
+ * (now-stale) merged result back to localStorage. Without this, a racing
+ * polling fullResync can resurrect data the user just cleared.
+ */
+let _dataGeneration = 0;
+
+/** @visibleForTesting */
+export function bumpDataGeneration(): void {
+  _dataGeneration++;
+}
 
 export function setSyncReady(ready: boolean): void {
   _syncReady = ready;
@@ -194,6 +211,10 @@ export async function fullResync(
   const supabase = createClient();
   if (!quiet) setStatus("syncing");
 
+  // Capture generation BEFORE any async work, so we can detect if a
+  // destructive write (clearAllData, importRawData) fires while we fetch.
+  const dataGenAtStart = _dataGeneration;
+
   try {
     const localData = loadData();
 
@@ -211,7 +232,25 @@ export async function fullResync(
 
     // ── Step 2: Merge by ID (union), local wins on conflict ──
     if (remoteData) {
-      const merged = mergeAppData(localData, remoteData);
+      // Guard: if the data generation changed while we were fetching, a
+      // destructive operation (clearAllData, importRawData) wrote to
+      // localStorage. Our merge result is based on stale data — abort the
+      // save to prevent data resurrection. Return the latest local state.
+      if (dataGenAtStart !== _dataGeneration) {
+        const currentLocal = loadData();
+        if (!quiet) {
+          setSyncReady(true);
+          setStatus("idle");
+        }
+        return currentLocal;
+      }
+
+      // Re-read local data immediately before merging to catch any in-flight
+      // user mutations that may have written to localStorage during the async
+      // remote fetch above. This prevents a stale `localData` from being used
+      // as the merge base, which could clobber the user's latest changes.
+      const freshLocal = loadData();
+      const merged = mergeAppData(freshLocal, remoteData);
 
       // Save merged result to localStorage
       saveData(merged);
@@ -382,13 +421,13 @@ function mergeAppData(local: AppData, remote: AppData): AppData {
     marks: mergedMarks,
     notes: mergedNotes,
     goals: mergedGoals,
-    // Singleton tables: local wins ONLY when it holds real data. On a fresh
-    // login (local was cleared on the previous sign-out) these locals are the
-    // hardcoded defaults — picking `local ?? remote` there silently wipes the
-    // user's coins, cosmetics, streaks, settings, and celebration markers and
-    // then pushes the defaults back to the server. Prefer remote unless local
-    // is genuinely customized/populated.
-    settings: isDefaultSettings(local.settings) ? remote.settings : local.settings,
+    // Singleton tables: field-level merge with the same pattern used in
+    // mergeProfile — prefer local when it's been explicitly customized away
+    // from its default/empty state, otherwise fall back to remote. This
+    // prevents a cleared localStorage (fresh login) from wiping the user's
+    // settings, economy, unlocks, or celebration markers, while still
+    // respecting local customizations when the user has active data.
+    settings: mergeSettings(local.settings, remote.settings),
     profile: mergeProfile(local.profile, remote.profile),
     unlocks:
       Object.keys(mergedUnlocks).length > 0
@@ -399,8 +438,13 @@ function mergeAppData(local: AppData, remote: AppData): AppData {
   };
 }
 
-/** True when the economy holds no real player state (fresh/default snapshot). */
-function isEmptyEconomy(e: Economy | undefined): boolean {
+/** True when the economy holds no real player state (fresh/default snapshot).
+ *  Economy is inherently interdependent (owned items require spend entries,
+ *  freezes reference habits). An all-or-nothing check is safest here since
+ *  field-level merging could produce inconsistent states (e.g., owning an
+ *  item without a matching spend entry after a failed sync). */
+/** @visibleForTesting */
+export function isEmptyEconomy(e: Economy | undefined): boolean {
   if (!e) return true;
   return (
     (e.owned?.length ?? 0) === 0 &&
@@ -416,64 +460,155 @@ function isEmptyEconomy(e: Economy | undefined): boolean {
   );
 }
 
-/** True when settings are the untouched defaults (no real user customization). */
-function isDefaultSettings(s: AppData["settings"] | undefined): boolean {
-  if (!s) return true;
-  return (
-    s.theme?.mode === DEFAULT_THEME.mode &&
-    s.theme?.accent === DEFAULT_THEME.accent &&
-    (s.graceHours ?? DEFAULT_GRACE_HOURS) === DEFAULT_GRACE_HOURS &&
-    (s.usedTemplateIds?.length ?? 0) === 0 &&
-    !s.widgetOrder &&
-    !s.onboardingComplete &&
-    (s.customCategories?.length ?? 0) === 0
-  );
+/**
+ * Merge settings with field-level granularity. Each field prefers the local
+ * value when it has been explicitly customized away from its default/empty
+ * state, otherwise falls back to the remote value. Consistent with
+ * mergeProfile's approach.
+ *
+ * Edge cases considered:
+ *  - Field not present locally (undefined) -> remote wins
+ *  - Field set to empty array locally -> remote wins (empty = not customized)
+ *  - Field set to non-default value locally -> local wins
+ *  - Remote is undefined (DB error / new user) -> local entirely
+ */
+/** @visibleForTesting */
+export function mergeSettings(
+  local: AppData["settings"],
+  remote: AppData["settings"] | undefined,
+): AppData["settings"] {
+  // Fast path: no remote data — trust local entirely.
+  if (!remote) return local;
+
+  return {
+    theme: {
+      mode:
+        local.theme.mode !== DEFAULT_THEME.mode
+          ? local.theme.mode
+          : remote.theme.mode,
+      accent:
+        local.theme.accent !== DEFAULT_THEME.accent
+          ? local.theme.accent
+          : remote.theme.accent,
+    },
+    graceHours:
+      (local.graceHours ?? DEFAULT_GRACE_HOURS) !== DEFAULT_GRACE_HOURS
+        ? (local.graceHours ?? DEFAULT_GRACE_HOURS)
+        : (remote.graceHours ?? DEFAULT_GRACE_HOURS),
+    usedTemplateIds: local.usedTemplateIds?.length
+      ? local.usedTemplateIds
+      : (remote.usedTemplateIds ?? []),
+    widgetOrder:
+      local.widgetOrder !== undefined
+        ? local.widgetOrder
+        : remote.widgetOrder,
+    onboardingComplete:
+      local.onboardingComplete !== undefined
+        ? local.onboardingComplete
+        : remote.onboardingComplete,
+    customCategories: local.customCategories?.length
+      ? local.customCategories
+      : (remote.customCategories ?? []),
+  };
 }
 
 /**
- * Prefer whichever progressSeen has actually been baselined. A cleared local
- * carries `seeded: false`; taking it over a `seeded: true` remote re-fires
- * every past celebration (level-ups, achievements) on each login.
+ * Merge progressSeen — prefers whichever has been baselined (seeded).
+ * This is safe because progressSeen fields only ever ADVANCE monotonically
+ * (level increases, streak tiers grow, shop unlocks accumulate). The
+ * "seeded" flag marks whether the initial baseline has been written;
+ * unseeded data (from a cleared localStorage) should never overwrite a
+ * seeded remote to avoid re-firing past celebrations.
+ *
+ * Consistent with mergeProfile/mergeSettings: early return for undefined
+ * remote, field-level fallback when both are seeded.
  */
-function mergeProgressSeen(
+/** @visibleForTesting */
+export function mergeProgressSeen(
   local: ProgressSeen | undefined,
   remote: ProgressSeen | undefined,
 ): ProgressSeen {
-  if (local?.seeded) return local;
-  if (remote?.seeded) return remote;
-  return local ?? remote ?? { seeded: false, level: 1, title: "Habit Newbie", shop: [], streaks: {}, tierUnlocks: [] };
+  // Fast path: no remote data — trust local entirely.
+  if (!remote) return local ?? DEFAULT_PROGRESS_SEEN;
+  // Fast path: no local data — use remote entirely.
+  if (!local) return remote;
+
+  // Prefer whichever has been baselined. An unseeded local (from cleared
+  // storage) should never overwrite a seeded remote, because that would
+  // re-fire every past celebration (level-ups, achievements) on each login.
+  if (!local.seeded) return remote;
+  if (!remote.seeded) return local;
+
+  // Both seeded: local wins on individual fields when explicitly advanced
+  // beyond defaults, otherwise remote wins. Consistent with mergeSettings.
+  return {
+    seeded: true,
+    level: local.level > 1 ? local.level : remote.level,
+    title: local.title !== "Habit Newbie" ? local.title : remote.title,
+    shop: local.shop.length > 0 ? local.shop : remote.shop,
+    streaks: Object.keys(local.streaks).length > 0
+      ? local.streaks
+      : remote.streaks,
+    tierUnlocks: local.tierUnlocks.length > 0
+      ? local.tierUnlocks
+      : remote.tierUnlocks,
+  };
 }
 
 /**
- * Merge profile — prefer remote values when local has placeholder defaults.
- * The local profile may be DEFAULT_PROFILE (from clearLocalAppData) while the
- * remote profile was seeded by the SQL trigger with the user's registration
- * data and a unique username. We don't want to overwrite server-generated
- * identity fields with hardcoded placeholders.
+ * Merge profile — prefers the local profile when it has been explicitly
+ * customized, but falls back to the remote (server-seeded) profile for
+ * identity fields when local still carries the initial defaults.
+ *
+ * Key behaviors:
+ *  - displayName/username/motto: local wins ONLY when it differs from the
+ *    DEFAULT_PROFILE constant (meaning the user explicitly customized it
+ *    during this session). The server-seeded version (from the SQL trigger
+ *    on auth registration) is preferred otherwise.
+ *  - bio/avatar/banner/showcaseBadgeId: optional fields use an explicit
+ *    `!== undefined` check so that an intentionally empty string (`""`)
+ *    set by the user is preserved, while `undefined` (never set) falls
+ *    through to the remote value.
+ *  - Fast-return when remote has no profile — avoid unnecessary comparisons.
  */
-function mergeProfile(local: Profile, remote: Profile | undefined): Profile {
+/** @visibleForTesting */
+export function mergeProfile(local: Profile, remote: Profile | undefined): Profile {
+  // Fast path: no remote data — trust local entirely.
+  if (!remote) return local;
+
   return {
+    // Identity fields: the server is the authority (generates unique
+    // usernames and seeds display names from registration metadata).
+    // Only use the local value when the user explicitly customized it
+    // away from the initial default.
     displayName:
       local.displayName !== DEFAULT_PROFILE.displayName
         ? local.displayName
-        : (remote?.displayName ?? local.displayName),
+        : remote.displayName,
     username:
       local.username !== DEFAULT_PROFILE.username
         ? local.username
-        : (remote?.username ?? local.username),
-    bio: local.bio ?? remote?.bio,
+        : remote.username,
+    // Optional fields: use `!== undefined` so that an empty string (`""`)
+    // set by the user to "clear" a field is preserved, while a genuinely
+    // unset field (undefined) delegates to the remote value.
+    bio: local.bio !== undefined ? local.bio : remote.bio,
     motto:
       local.motto !== DEFAULT_PROFILE.motto
         ? local.motto
-        : (remote?.motto ?? local.motto),
-    avatar: local.avatar ?? remote?.avatar,
-    banner: local.banner ?? remote?.banner,
-    showcaseBadgeId: local.showcaseBadgeId ?? remote?.showcaseBadgeId,
+        : (remote.motto ?? DEFAULT_PROFILE.motto),
+    avatar: local.avatar !== undefined ? local.avatar : remote.avatar,
+    banner: local.banner !== undefined ? local.banner : remote.banner,
+    showcaseBadgeId:
+      local.showcaseBadgeId !== undefined
+        ? local.showcaseBadgeId
+        : remote.showcaseBadgeId,
   };
 }
 
 /** Merge two arrays by ID — remote items first, local overwrites same IDs */
-function mergeById<T extends { id: string }>(
+/** @visibleForTesting */
+export function mergeById<T extends { id: string }>(
   remote: T[],
   local: T[],
   getId: (item: T) => string = (item) => item.id,
@@ -505,9 +640,9 @@ function hasChanges(a: AppData, b: AppData): boolean {
    ──────────────────────────────────────────── */
 
 async function verifySessionReady(supabase: ReturnType<typeof createClient>): Promise<boolean> {
-  const { data: { user }, error: sessionError } = await supabase.auth.getUser();
-  if (sessionError || !user) {
-    console.warn("[sync] Session not ready yet:", sessionError?.message ?? "no user");
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    console.warn("[sync] Session not ready yet: no user");
     return false;
   }
   return true;

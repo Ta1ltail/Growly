@@ -19,7 +19,7 @@ export function AvatarDisplay({ avatar, size = 36 }: Props) {
       >
         <img
           src={resolved.src}
-          alt=""
+          alt={`${avatar ?? "user"} avatar`}
           className="size-full object-cover"
         />
       </div>

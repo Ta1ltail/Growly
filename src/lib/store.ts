@@ -55,6 +55,7 @@ import {
   undo as undoHistory,
   redo as redoHistory,
 } from "./history";
+import { bumpDataGeneration } from "./supabase/sync";
 
 let cache: AppData | null = null;
 const listeners = new Set<() => void>();
@@ -505,6 +506,10 @@ export function resetTemplateUsage(templateId: string): void {
 }
 
 export function clearAllData(): void {
+  // Bump the generation BEFORE the update to signal any in-flight fullResync
+  // that its merge result is based on stale data and should be aborted.
+  bumpDataGeneration();
+
   // Wipe tracked data + unlocks (history is gone), but preserve the user's
   // settings, profile identity, and owned/equipped cosmetics (those were
   // purchased with coins legitimately earned from now-deleted history).
@@ -565,6 +570,9 @@ export function reloadCache(): void {
 // success. Developer Mode only.
 // After writing, fires the sync callback so changes are pushed to Supabase
 // (previously only mutated localStorage, never triggering a push).
+//
+// IMPORTANT: Bumps the data generation to abort any in-flight fullResync that
+// loaded stale data before this write (same pattern as clearAllData).
 export function importRawData(text: string): string | null {
   if (typeof window === "undefined") return "No storage available";
   try {
@@ -576,6 +584,9 @@ export function importRawData(text: string): string | null {
     ) {
       return "Root must be a JSON object";
     }
+    // Bump generation BEFORE the localStorage write (reloadData triggers
+    // listeners that could race with in-flight fullResync).
+    bumpDataGeneration();
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed));
     reloadData();
     // Fire sync callback — importRawData bypasses the normal update() path

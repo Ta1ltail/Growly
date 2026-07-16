@@ -1,25 +1,21 @@
 "use client";
 
 // Staggered entrance animation wrapper. Children animate in sequentially when
-// the container mounts. Uses motion's variants with staggerChildren for smooth
-// spring-based entrances — replaces CSS-based .stagger-children.
+// the container mounts. Uses CSS animations with custom-property delays
+// instead of motion's spring-based staggerChildren — removes the 35KB
+// motion dependency for a 2KB CSS alternative.
 //
 // Usage:
 //   <StaggerContainer className="grid gap-3 sm:grid-cols-2">
 //     <StaggerItem key={item.id}>...</StaggerItem>
 //   </StaggerContainer>
 
-import type { CSSProperties, ReactNode } from "react";
-import { motion } from "motion/react";
-
-const itemVariants = {
-  hidden: { opacity: 0, y: 12 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: { type: "spring" as const, stiffness: 260, damping: 24 },
-  },
-};
+import {
+  useLayoutEffect,
+  useRef,
+  type CSSProperties,
+  type ReactNode,
+} from "react";
 
 export function StaggerContainer({
   children,
@@ -32,25 +28,30 @@ export function StaggerContainer({
   style?: CSSProperties;
   staggerDelay?: number;
 }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useLayoutEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const items = el.querySelectorAll<HTMLElement>(":scope > .stagger-item");
+    items.forEach((item, i) => {
+      item.style.setProperty("--i", String(i));
+    });
+  }, [children, staggerDelay]);
+
   return (
-    <motion.div
-      initial="hidden"
-      animate="visible"
-      variants={{
-        hidden: { opacity: 0 },
-        visible: {
-          opacity: 1,
-          transition: {
-            staggerChildren: staggerDelay,
-            delayChildren: 0.02,
-          },
-        },
-      }}
+    <div
+      ref={containerRef}
       className={className}
-      style={style}
+      style={
+        {
+          "--stagger-delay": `${staggerDelay}s`,
+          ...style,
+        } as CSSProperties
+      }
     >
       {children}
-    </motion.div>
+    </div>
   );
 }
 
@@ -61,9 +62,5 @@ export function StaggerItem({
   children: ReactNode;
   className?: string;
 }) {
-  return (
-    <motion.div variants={itemVariants} className={className}>
-      {children}
-    </motion.div>
-  );
+  return <div className={`stagger-item ${className ?? ""}`}>{children}</div>;
 }

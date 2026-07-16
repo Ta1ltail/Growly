@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef, useMemo } from "react";
 import Link from "next/link";
-import { motion } from "motion/react";
 import {
   Mail,
   Lock,
@@ -267,11 +266,9 @@ export default function RegisterPage() {
         </div>
 
         {/* Value props (desktop) */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.2 }}
-          className="relative z-10 hidden lg:block"
+        <div
+          className="relative z-10 hidden animate-rise lg:block"
+          style={{ animationDelay: "0.2s" }}
         >
           <Quote className="mb-4 size-6 text-accent/30" />
           <h2 className="text-2xl font-bold leading-tight tracking-tight sm:text-3xl">
@@ -305,7 +302,7 @@ export default function RegisterPage() {
               </div>
             ))}
           </div>
-        </motion.div>
+        </div>
 
         {/* Bottom branding (desktop) */}
         <div className="relative z-10 hidden lg:block">
@@ -327,12 +324,8 @@ export default function RegisterPage() {
           </Link>
         </div>
 
-        <motion.div
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-          className="w-full max-w-sm"
-        >
+        <div className="w-full max-w-sm animate-slide-right" style={{ animationDelay: "0.1s" }}>
+          
           {/* Form header */}
           <div className="mb-8">
             <h1 className="text-2xl font-bold tracking-tight">
@@ -500,11 +493,7 @@ export default function RegisterPage() {
 
               {/* Password strength indicator */}
               {password.length > 0 && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: "auto" }}
-                  className="mt-2 space-y-2"
-                >
+                <div className="mt-2 animate-fade-in space-y-2">
                   {/* Strength bars */}
                   <div className="flex gap-1">
                     {[1, 2, 3, 4].map((bar) => (
@@ -564,7 +553,7 @@ export default function RegisterPage() {
                       );
                     })}
                   </div>
-                </motion.div>
+                </div>
               )}
             </div>
 
@@ -613,13 +602,9 @@ export default function RegisterPage() {
                 </button>
               </div>
               {confirmPassword.length > 0 && !passwordsMatch && (
-                <motion.p
-                  initial={{ opacity: 0, y: -2 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="mt-1.5 text-[11px] text-missed"
-                >
+                <p className="mt-1.5 animate-fade-in text-[11px] text-missed">
                   Passwords don&apos;t match
-                </motion.p>
+                </p>
               )}
             </div>
 
@@ -629,16 +614,11 @@ export default function RegisterPage() {
               Privacy Policy. Your data is encrypted and never shared.
             </p>
 
-            {/* Error message */}
-            {error && (
-              <motion.div
-                initial={{ opacity: 0, y: -4 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="flex items-start gap-2 rounded-xl bg-missed/8 px-3.5 py-2.5 text-xs text-missed"
-              >
+            {/* Error message */}              {error && (
+              <div className="flex animate-fade-in items-start gap-2 rounded-xl bg-missed/8 px-3.5 py-2.5 text-xs text-missed">
                 <AlertCircle className="mt-0.5 size-3.5 shrink-0" />
                 <span>{error}</span>
-              </motion.div>
+              </div>
             )}
 
             {/* Submit */}
@@ -672,7 +652,7 @@ export default function RegisterPage() {
           <p className="mt-8 text-center font-mono text-[10px] text-faint lg:hidden">
             honest habit tracking &mdash; v0.5
           </p>
-        </motion.div>
+        </div>
       </div>
     </div>
   );

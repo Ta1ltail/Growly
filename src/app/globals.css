@@ -45,10 +45,19 @@
   --animate-glow-pulse: glow-pulse 2.2s ease-in-out infinite;
   --animate-burst: burst 0.5s var(--ease-spring) both;
   --animate-text-sheen: text-sheen 3s linear infinite;
+  /* streak flame animations */
+  --animate-ember: ember 1.6s ease-out infinite;
   /* icon / nav animations */
   --animate-icon-bounce: icon-bounce 2s ease-in-out infinite;
   --animate-icon-pulse: icon-pulse 3s ease-in-out infinite;
   --animate-icon-wiggle: icon-wiggle 0.4s ease-in-out;
+
+  /* stagger / landing page animations */
+  --animate-stagger-in: stagger-in 0.4s var(--ease-out) both;
+  --animate-slide-right: slide-in-right 0.5s var(--ease-out) both;
+  --animate-scale-in: scale-in 0.5s var(--ease-out) both;
+  --animate-scroll-bounce: scroll-bounce 2s ease-in-out infinite;
+  --animate-fade-slide-up-lg: fade-slide-up-lg 0.6s var(--ease-out) both;
 }
 
 /* Motion language */
@@ -384,6 +393,72 @@ body {
 }
 .icon-cyan {
   color: #06b6d4;
+}
+
+/* ── Staggered entrance (replaces motion's staggerChildren) ── */
+.stagger-item {
+  animation: stagger-in 0.4s var(--ease-out) both;
+  animation-delay: calc(
+    var(--stagger-delay, 0.05s) * var(--i, 0) + 0.02s
+  );
+}
+
+@keyframes stagger-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ── Slide in from right (login/register form panels) ── */
+@keyframes slide-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* ── Scale in (landing feature cards) ── */
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* ── Large fade-slide-up (landing section headers, CTA) ── */
+@keyframes fade-slide-up-lg {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ── Subtle bounce for hero scroll indicator ── */
+@keyframes scroll-bounce {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(6px);
+  }
 }
 
 /* Respect users who prefer less motion (accessibility). */

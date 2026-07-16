@@ -14,7 +14,6 @@
 import {
   type ReactNode,
   createContext,
-  useContext,
   useEffect,
   useRef,
   useState,
@@ -31,10 +30,6 @@ const CapacitorContext = createContext<CapacitorContextValue>({
   isNative: false,
   isOnline: true,
 });
-
-export function useCapacitor() {
-  return useContext(CapacitorContext);
-}
 
 const CAPACITOR_STYLE_ID = "capacitor-native-styles";
 

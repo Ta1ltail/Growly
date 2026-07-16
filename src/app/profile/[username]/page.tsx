@@ -19,7 +19,6 @@ import {
   Sparkles,
   Gauge,
 } from "lucide-react";
-import { motion } from "motion/react";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { createNotification } from "@/lib/notifications";
@@ -227,11 +226,7 @@ export default function PublicProfilePage() {
   if (!profile || error) {
     return (
       <AppPageShell>
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="flex min-h-[60vh] flex-col items-center justify-center gap-5 text-center"
-        >
+        <div className="flex animate-rise min-h-[60vh] flex-col items-center justify-center gap-5 text-center">
           <div className="flex size-20 items-center justify-center rounded-2xl bg-surface2">
             <Trophy className="size-10 text-faint" />
           </div>
@@ -247,7 +242,7 @@ export default function PublicProfilePage() {
           >
             <ArrowLeft className="size-4" /> Back to friends
           </Link>
-        </motion.div>
+        </div>
       </AppPageShell>
     );
   }
@@ -258,11 +253,7 @@ export default function PublicProfilePage() {
 
   return (
     <AppPageShell>
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.3 }}
-      >
+      <div className="animate-fade-in">
         {/* Back link */}
         <Link
           href="/friends"
@@ -637,7 +628,7 @@ export default function PublicProfilePage() {
             })}
           </p>
         )}
-      </motion.div>
+      </div>
     </AppPageShell>
   );
 }

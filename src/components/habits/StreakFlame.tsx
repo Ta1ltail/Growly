@@ -123,11 +123,10 @@ function Ember({
   return (
     <span
       aria-hidden
-      className="pointer-events-none absolute bottom-1 left-1/2 size-1 rounded-full"
+      className="pointer-events-none absolute bottom-1 left-1/2 size-1 rounded-full animate-ember"
       style={{
         background: color,
         marginLeft: offset,
-        animation: "ember 1.6s ease-out infinite",
         animationDelay: delay,
       }}
     />

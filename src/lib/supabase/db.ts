@@ -280,7 +280,7 @@ function rowToSettings(row: DbUserSettings): AppData["settings"] {
     graceHours: row.grace_hours,
     usedTemplateIds: row.used_template_ids ?? [],
     widgetOrder: row.widget_order ?? undefined,
-    onboardingComplete: row.onboarding_complete || undefined,
+    onboardingComplete: row.onboarding_complete ?? undefined,
     customCategories: row.custom_categories?.length ? row.custom_categories : undefined,
   };
 }
@@ -594,7 +594,7 @@ async function upsertTable<T>(
   supabase: SupabaseClient,
   table: string,
   rows: T[],
-  rowToDb: (row: T) => Record<string, unknown>,
+  rowToDb: (row: T) => object,
   onConflict: string,
 ): Promise<void> {
   if (rows.length === 0) return;
@@ -602,7 +602,7 @@ async function upsertTable<T>(
   const batchSize = 500;
   for (let i = 0; i < rows.length; i += batchSize) {
     const batch = rows.slice(i, i + batchSize).map(rowToDb);
-    const { error } = await supabase.from(table).upsert(batch, { onConflict });
+    const { error } = await supabase.from(table).upsert(batch as never, { onConflict });
     if (error) throw error;
   }
 }
@@ -614,7 +614,7 @@ async function saveHabits(
 ): Promise<void> {
   await upsertTable(
     supabase, "habits", habits,
-    (h) => habitToRow(userId, h) as unknown as Record<string, unknown>,
+    (h) => habitToRow(userId, h),
     "id",
   );
 }
@@ -627,7 +627,7 @@ async function saveMarks(
   const rows = marksToRows(userId, marks);
   await upsertTable(
     supabase, "marks", rows,
-    (r) => r as unknown as Record<string, unknown>,
+    (r) => r,
     // Conflict on the composite unique key — not id — because id is a new
     // random UUID on every marksToRows call.
     "user_id,date_key,habit_id",
@@ -641,7 +641,7 @@ async function saveNotes(
 ): Promise<void> {
   await upsertTable(
     supabase, "notes", notes,
-    (n) => noteToRow(userId, n) as unknown as Record<string, unknown>,
+    (n) => noteToRow(userId, n),
     "id",
   );
 }
@@ -653,7 +653,7 @@ async function saveGoals(
 ): Promise<void> {
   await upsertTable(
     supabase, "goals", goals,
-    (g) => goalToRow(userId, g) as unknown as Record<string, unknown>,
+    (g) => goalToRow(userId, g),
     "id",
   );
 }
@@ -690,7 +690,7 @@ async function saveUnlocks(
   const rows = unlocksToRows(userId, unlocks);
   await upsertTable(
     supabase, "unlocks", rows,
-    (r) => r as unknown as Record<string, unknown>,
+    (r) => r,
     // Conflict on the composite unique key — not id — because id is a new
     // random UUID on every unlocksToRows call.
     "user_id,achievement_id",
@@ -711,14 +711,14 @@ async function saveEconomy(
   const spentRows = spentToRows(userId, economy.spent);
   await upsertTable(
     supabase, "economy_spent", spentRows,
-    (r) => r as unknown as Record<string, unknown>,
+    (r) => r,
     "id",
   );
 
   const freezeRows = freezesToRows(userId, economy.freezes);
   await upsertTable(
     supabase, "economy_freezes", freezeRows,
-    (r) => r as unknown as Record<string, unknown>,
+    (r) => r,
     "id",
   );
 }

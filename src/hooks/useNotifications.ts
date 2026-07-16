@@ -93,7 +93,7 @@ export function useNotifications() {
     const channel = supabase
       .channel(`notifications:${user.id}`)
       .on(
-        "postgres_changes" as never,
+        "postgres_changes",
         {
           event: "*",
           schema: "public",

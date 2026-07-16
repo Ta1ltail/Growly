@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { motion, useScroll, useTransform, useInView } from "motion/react";
 import {
   Activity,
   ArrowRight,
@@ -20,34 +19,6 @@ import {
   Trophy,
   TrendingUp,
 } from "lucide-react";
-
-/* ────────────────────────────────────────────────────────
-   ── Preset animation variants for staggered children  ──
-   ──────────────────────────────────────────────────────── */
-const containerVariants = {
-  hidden: {},
-  visible: {
-    transition: { staggerChildren: 0.08, delayChildren: 0.1 },
-  },
-};
-
-const fadeSlideUp = {
-  hidden: { opacity: 0, y: 24 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] as const },
-  },
-};
-
-const scaleIn = {
-  hidden: { opacity: 0, scale: 0.92 },
-  visible: {
-    opacity: 1,
-    scale: 1,
-    transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] as const },
-  },
-};
 
 /* ───────────────────────────
    ── Feature data (static) ──
@@ -113,6 +84,29 @@ const TESTIMONIALS = [
   },
 ];
 
+/** Lightweight IntersectionObserver hook — fires once when element enters view. */
+function useOnceInView(ref: React.RefObject<Element | null>) {
+  const [inView, setInView] = useState(false);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setInView(true);
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.1 },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [ref]);
+
+  return inView;
+}
+
 /* ───────────────────────
    ── Main landing page ──
    ─────────────────────── */
@@ -157,15 +151,13 @@ function NavBar() {
   }, []);
 
   return (
-    <motion.header
-      initial={{ y: -20, opacity: 0 }}
-      animate={{ y: 0, opacity: 1 }}
-      transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-      className={`fixed inset-x-0 top-0 z-50 transition-all duration-300 ${
+    <header
+      className={`fixed inset-x-0 top-0 z-50 animate-rise transition-all duration-300 ${
         scrolled
           ? "border-b border-line/60 bg-bg/85 backdrop-blur-xl"
           : "bg-transparent"
       }`}
+      style={{ animationDelay: "0.1s" }}
     >
       <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-3.5 sm:px-8">
         {/* Logo */}
@@ -195,21 +187,28 @@ function NavBar() {
           </Link>
         </div>
       </div>
-    </motion.header>
+    </header>
   );
 }
 
 /* ─── Hero ─── */
 function HeroSection() {
   const ref = useRef<HTMLDivElement>(null);
-  const inView = useInView(ref, { once: true });
+  const inView = useOnceInView(ref);
 
-  const { scrollYProgress } = useScroll({
-    target: ref,
-    offset: ["start start", "end start"],
-  });
-  const bgY = useTransform(scrollYProgress, [0, 1], ["0%", "30%"]);
-  const heroOpacity = useTransform(scrollYProgress, [0, 0.6], [1, 0.3]);
+  // Lightweight parallax — translates the background at 30% of scroll speed
+  const bgRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const bg = bgRef.current;
+    if (!bg) return;
+    const onScroll = () => {
+      const rect = bg.getBoundingClientRect();
+      const scrolled = -rect.top;
+      bg.style.transform = `translateY(${scrolled * 0.3}px)`;
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   return (
     <section
@@ -217,7 +216,10 @@ function HeroSection() {
       className="relative flex min-h-screen items-center justify-center overflow-hidden pt-20"
     >
       {/* ── Parallax background layers ── */}
-      <motion.div style={{ y: bgY }} className="pointer-events-none absolute inset-0">
+      <div
+        ref={bgRef}
+        className="pointer-events-none absolute inset-0"
+      >
         {/* Primary glow */}
         <div className="absolute -left-48 -top-48 size-[36rem] rounded-full bg-accent/6 blur-[160px]" />
         <div className="absolute -bottom-48 -right-48 size-[36rem] rounded-full bg-accent/4 blur-[160px]" />
@@ -235,60 +237,60 @@ function HeroSection() {
 
         {/* Radial vignette */}
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_0%,var(--c-bg)_80%)]" />
-      </motion.div>
+      </div>
 
       {/* ── Hero content ── */}
-      <motion.div
-        style={{ opacity: heroOpacity }}
-        className="relative mx-auto max-w-5xl px-5 pb-24 sm:px-8 sm:pb-36"
-      >
-        <motion.div
-          variants={containerVariants}
-          initial="hidden"
-          animate={inView ? "visible" : "hidden"}
-          className="mx-auto max-w-4xl text-center"
+      <div className="relative mx-auto max-w-5xl px-5 pb-24 transition-opacity duration-700 sm:px-8 sm:pb-36">
+        <div
+          className={`mx-auto max-w-4xl text-center ${
+            inView ? "animate-fade-in" : "opacity-0"
+          }`}
         >
           {/* Badge */}
-          <motion.div variants={fadeSlideUp} className="mb-6 flex justify-center">
+          <div
+            className="mb-6 flex animate-rise justify-center"
+            style={{ animationDelay: "0.1s" }}
+          >
             <span className="inline-flex items-center gap-1.5 rounded-full border border-accent/20 bg-accent/8 px-3.5 py-1 text-[11px] font-semibold uppercase tracking-wider text-accent">
               <Sparkles className="size-3" />
               Modern habit tracking
             </span>
-          </motion.div>
+          </div>
 
           {/* Main heading */}
-          <motion.h1
-            variants={fadeSlideUp}
-            className="text-4xl font-bold leading-[1.1] tracking-tight sm:text-5xl md:text-6xl lg:text-7xl"
+          <h1
+            className="animate-rise text-4xl font-bold leading-[1.1] tracking-tight sm:text-5xl md:text-6xl lg:text-7xl"
+            style={{ animationDelay: "0.18s" }}
           >
             <span className="text-ink">Make every day</span>
             <br />
             <span className="bg-gradient-to-r from-accent via-accent-glow to-purple-400 bg-clip-text text-transparent">
               count with Growly
             </span>
-          </motion.h1>
+          </h1>
 
           {/* Subheading */}
-          <motion.p
-            variants={fadeSlideUp}
-            className="mx-auto mt-5 max-w-xl text-base leading-relaxed text-muted sm:text-lg"
+          <p
+            className="mx-auto mt-5 max-w-xl animate-rise text-base leading-relaxed text-muted sm:text-lg"
+            style={{ animationDelay: "0.26s" }}
           >
             The honest, local-first habit tracker that turns your daily rituals
             into a rewarding journey. Build streaks that matter, earn
             achievements, and grow with friends.
-          </motion.p>
+          </p>
 
           {/* CTA buttons */}
-          <motion.div
-            variants={fadeSlideUp}
-            className="mt-8 flex flex-wrap items-center justify-center gap-3"
+          <div
+            className="mt-8 flex animate-rise flex-wrap items-center justify-center gap-3"
+            style={{ animationDelay: "0.34s" }}
           >
             <Link
               href="/register"
               className="group relative inline-flex items-center gap-2 overflow-hidden rounded-xl bg-accent px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-accent/25 transition-all duration-200 hover:shadow-xl hover:shadow-accent/30 active:scale-[0.97]"
             >
               <span className="relative z-10 flex items-center gap-2">
-                Start your streak <ArrowRight className="size-4 transition-transform duration-200 group-hover:translate-x-0.5" />
+                Start your streak{" "}
+                <ArrowRight className="size-4 transition-transform duration-200 group-hover:translate-x-0.5" />
               </span>
               <span className="absolute inset-0 -z-0 bg-gradient-to-r from-accent via-accent-glow to-accent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
             </Link>
@@ -299,12 +301,12 @@ function HeroSection() {
               <Activity className="size-4" />
               Sign in
             </Link>
-          </motion.div>
+          </div>
 
           {/* Trust markers */}
-          <motion.div
-            variants={fadeSlideUp}
-            className="mt-10 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-muted"
+          <div
+            className="mt-10 flex animate-rise flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-muted"
+            style={{ animationDelay: "0.42s" }}
           >
             <span className="inline-flex items-center gap-1.5">
               <Check className="size-3.5 text-done" /> No credit card
@@ -318,28 +320,22 @@ function HeroSection() {
             <span className="inline-flex items-center gap-1.5">
               <Check className="size-3.5 text-done" /> Free forever
             </span>
-          </motion.div>
-        </motion.div>
-      </motion.div>
+          </div>
+        </div>
+      </div>
 
       {/* ── Scroll indicator ── */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 1.2, duration: 0.8 }}
-        className="absolute bottom-8 left-1/2 -translate-x-1/2"
-      >
-        <motion.div
-          animate={{ y: [0, 6, 0] }}
-          transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-          className="flex flex-col items-center gap-1.5"
+      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 animate-fade-in">
+        <div
+          className="flex animate-scroll-bounce flex-col items-center gap-1.5"
+          style={{ animationDelay: "1.2s" }}
         >
           <span className="text-[10px] font-medium uppercase tracking-widest text-faint">
             Scroll
           </span>
           <ChevronRight className="size-4 rotate-90 text-faint" />
-        </motion.div>
-      </motion.div>
+        </div>
+      </div>
     </section>
   );
 }
@@ -347,15 +343,14 @@ function HeroSection() {
 /* ─── Trust bar ─── */
 function TrustBar() {
   const ref = useRef<HTMLDivElement>(null);
-  const inView = useInView(ref, { once: true });
+  const inView = useOnceInView(ref);
 
   return (
-    <motion.section
+    <section
       ref={ref}
-      initial={{ opacity: 0 }}
-      animate={inView ? { opacity: 1 } : {}}
-      transition={{ duration: 0.6 }}
-      className="border-y border-line/60 bg-surface/30 py-10"
+      className={`border-y border-line/60 bg-surface/30 py-10 ${
+        inView ? "animate-fade-in" : "opacity-0"
+      }`}
     >
       <div className="mx-auto max-w-6xl px-5 sm:px-8">
         <p className="mb-6 text-center text-xs font-medium uppercase tracking-[0.15em] text-faint">
@@ -374,24 +369,23 @@ function TrustBar() {
           )}
         </div>
       </div>
-    </motion.section>
+    </section>
   );
 }
 
 /* ─── Features ─── */
 function FeaturesSection() {
   const ref = useRef<HTMLDivElement>(null);
-  const inView = useInView(ref, { once: true, margin: "-80px" });
+  const inView = useOnceInView(ref);
 
   return (
     <section ref={ref} className="py-20 sm:py-28">
       <div className="mx-auto max-w-6xl px-5 sm:px-8">
         {/* Section header */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={inView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-          className="mx-auto max-w-2xl text-center"
+        <div
+          className={`mx-auto max-w-2xl text-center transition-all duration-500 ${
+            inView ? "animate-fade-slide-up-lg" : "opacity-0"
+          }`}
         >
           <span className="mb-4 inline-flex items-center gap-1.5 rounded-full border border-accent/15 bg-accent/6 px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-accent">
             <Sparkles className="size-3" />
@@ -404,19 +398,18 @@ function FeaturesSection() {
             A modern habit tracker that respects your data, your time, and your
             journey.
           </p>
-        </motion.div>
+        </div>
 
         {/* Feature grid */}
-        <motion.div
-          initial="hidden"
-          animate={inView ? "visible" : "hidden"}
-          variants={containerVariants}
-          className="mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-3"
+        <div
+          className={`mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-3 ${
+            inView ? "animate-fade-in" : "opacity-0"
+          }`}
         >
-          {FEATURES.map((feature) => (
-            <FeatureCard key={feature.title} {...feature} />
+          {FEATURES.map((feature, i) => (
+            <FeatureCard key={feature.title} {...feature} index={i} />
           ))}
-        </motion.div>
+        </div>
       </div>
     </section>
   );
@@ -426,45 +419,48 @@ function FeatureCard({
   icon: Icon,
   title,
   desc,
+  index,
 }: {
   icon: typeof Target;
   title: string;
   desc: string;
+  index: number;
 }) {
   return (
-    <motion.div
-      variants={scaleIn}
-      whileHover={{ y: -4, transition: { duration: 0.2 } }}
-      className="group rounded-2xl border border-line/60 bg-surface/50 p-6 backdrop-blur-sm transition-all duration-200 hover:border-accent/30 hover:bg-surface hover:shadow-lg hover:shadow-accent/5"
+    <div
+      className="group animate-scale-in rounded-2xl border border-line/60 bg-surface/50 p-6 backdrop-blur-sm transition-all duration-200 hover:-translate-y-1 hover:border-accent/30 hover:bg-surface hover:shadow-lg hover:shadow-accent/5"
+      style={{ animationDelay: `${0.1 + index * 0.08}s` }}
     >
       <span className="mb-4 flex size-10 items-center justify-center rounded-xl bg-accent/10 text-accent transition-colors duration-200 group-hover:bg-accent/20">
         <Icon className="size-[18px]" />
       </span>
       <h3 className="text-sm font-semibold">{title}</h3>
       <p className="mt-1.5 text-xs leading-relaxed text-muted">{desc}</p>
-    </motion.div>
+    </div>
   );
 }
 
 /* ─── Stats ─── */
 function StatsSection() {
   const ref = useRef<HTMLDivElement>(null);
-  const inView = useInView(ref, { once: true, margin: "-60px" });
+  const inView = useOnceInView(ref);
 
   return (
-    <section ref={ref} className="border-y border-line/50 bg-surface/20 py-16 sm:py-24">
+    <section
+      ref={ref}
+      className="border-y border-line/50 bg-surface/20 py-16 sm:py-24"
+    >
       <div className="mx-auto max-w-6xl px-5 sm:px-8">
-        <motion.div
-          initial="hidden"
-          animate={inView ? "visible" : "hidden"}
-          variants={containerVariants}
-          className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4"
+        <div
+          className={`grid gap-8 sm:grid-cols-2 lg:grid-cols-4 ${
+            inView ? "animate-fade-in" : "opacity-0"
+          }`}
         >
-          {STATS.map((stat) => (
-            <motion.div
+          {STATS.map((stat, i) => (
+            <div
               key={stat.label}
-              variants={fadeSlideUp}
-              className="flex flex-col items-center text-center"
+              className="flex animate-rise flex-col items-center text-center"
+              style={{ animationDelay: `${0.1 + i * 0.08}s` }}
             >
               <span className="mb-3 flex size-12 items-center justify-center rounded-2xl bg-accent/8 text-accent">
                 <stat.icon className="size-5" />
@@ -473,9 +469,9 @@ function StatsSection() {
                 {stat.value}
               </span>
               <span className="mt-1 text-sm text-muted">{stat.label}</span>
-            </motion.div>
+            </div>
           ))}
-        </motion.div>
+        </div>
       </div>
     </section>
   );
@@ -484,17 +480,16 @@ function StatsSection() {
 /* ─── Testimonials ─── */
 function TestimonialsSection() {
   const ref = useRef<HTMLDivElement>(null);
-  const inView = useInView(ref, { once: true, margin: "-80px" });
+  const inView = useOnceInView(ref);
 
   return (
     <section ref={ref} className="py-20 sm:py-28">
       <div className="mx-auto max-w-6xl px-5 sm:px-8">
         {/* Section header */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={inView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-          className="mx-auto max-w-2xl text-center"
+        <div
+          className={`mx-auto max-w-2xl text-center transition-all duration-500 ${
+            inView ? "animate-fade-slide-up-lg" : "opacity-0"
+          }`}
         >
           <span className="mb-4 inline-flex items-center gap-1.5 rounded-full border border-accent/15 bg-accent/6 px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-accent">
             <Quote className="size-3" />
@@ -507,20 +502,19 @@ function TestimonialsSection() {
             Hear from people who&apos;ve transformed their daily routines with
             Growly.
           </p>
-        </motion.div>
+        </div>
 
         {/* Testimonial cards */}
-        <motion.div
-          initial="hidden"
-          animate={inView ? "visible" : "hidden"}
-          variants={containerVariants}
-          className="mt-14 grid gap-6 md:grid-cols-3"
+        <div
+          className={`mt-14 grid gap-6 md:grid-cols-3 ${
+            inView ? "animate-fade-in" : "opacity-0"
+          }`}
         >
-          {TESTIMONIALS.map((t) => (
-            <motion.div
+          {TESTIMONIALS.map((t, i) => (
+            <div
               key={t.author}
-              variants={fadeSlideUp}
-              className="flex flex-col rounded-2xl border border-line/60 bg-surface/40 p-6 backdrop-blur-sm"
+              className="flex animate-rise flex-col rounded-2xl border border-line/60 bg-surface/40 p-6 backdrop-blur-sm"
+              style={{ animationDelay: `${0.1 + i * 0.08}s` }}
             >
               <Quote className="mb-4 size-5 text-accent/40" />
               <p className="flex-1 text-sm leading-relaxed text-muted">
@@ -530,9 +524,9 @@ function TestimonialsSection() {
                 <p className="text-sm font-semibold">{t.author}</p>
                 <p className="text-xs text-faint">{t.role}</p>
               </div>
-            </motion.div>
+            </div>
           ))}
-        </motion.div>
+        </div>
       </div>
     </section>
   );
@@ -541,7 +535,7 @@ function TestimonialsSection() {
 /* ─── Final CTA ─── */
 function CtaSection() {
   const ref = useRef<HTMLDivElement>(null);
-  const inView = useInView(ref, { once: true });
+  const inView = useOnceInView(ref);
 
   return (
     <section
@@ -553,11 +547,10 @@ function CtaSection() {
         <div className="absolute left-1/2 top-1/2 size-96 -translate-x-1/2 -translate-y-1/2 rounded-full bg-accent/6 blur-[140px]" />
       </div>
 
-      <motion.div
-        initial={{ opacity: 0, y: 24 }}
-        animate={inView ? { opacity: 1, y: 0 } : {}}
-        transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-        className="relative mx-auto max-w-2xl px-5 text-center sm:px-8"
+      <div
+        className={`relative mx-auto max-w-2xl px-5 text-center sm:px-8 ${
+          inView ? "animate-fade-slide-up-lg" : "opacity-0"
+        }`}
       >
         <span className="mx-auto mb-5 flex size-14 items-center justify-center rounded-2xl bg-accent/10">
           <Star className="size-6 text-accent" />
@@ -566,8 +559,8 @@ function CtaSection() {
           Start your streak today
         </h2>
         <p className="mt-3 text-muted">
-          No credit card. No data collection. Just a simple, honest habit tracker
-          that works — and it&apos;s completely free.
+          No credit card. No data collection. Just a simple, honest habit
+          tracker that works — and it&apos;s completely free.
         </p>
         <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
           <Link
@@ -575,7 +568,8 @@ function CtaSection() {
             className="group relative inline-flex items-center gap-2 overflow-hidden rounded-xl bg-accent px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-accent/25 transition-all duration-200 hover:shadow-xl hover:shadow-accent/30 active:scale-[0.97]"
           >
             <span className="relative z-10 flex items-center gap-2">
-              Get started free <ArrowRight className="size-4 transition-transform duration-200 group-hover:translate-x-0.5" />
+              Get started free{" "}
+              <ArrowRight className="size-4 transition-transform duration-200 group-hover:translate-x-0.5" />
             </span>
             <span className="absolute inset-0 -z-0 bg-gradient-to-r from-accent via-accent-glow to-accent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
           </Link>
@@ -589,7 +583,7 @@ function CtaSection() {
             Sign in with GitHub
           </Link>
         </div>
-      </motion.div>
+      </div>
     </section>
   );
 }

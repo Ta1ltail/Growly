@@ -44,7 +44,7 @@ export function RankAvatar({
         {resolved.kind === "image" ? (
           // data URI — next/image doesn't support data URIs, native img is intentional
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={resolved.src} alt="" className="size-full object-cover" />
+          <img src={resolved.src} alt={`${avatar ?? "default"} avatar`} className="size-full object-cover" />
         ) : (
           <span style={{ fontSize: inner * 0.5 }} aria-hidden>
             {resolved.glyph}

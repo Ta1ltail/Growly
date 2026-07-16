@@ -11,7 +11,7 @@
 <img src="https://img.shields.io/badge/Next.js-16.2.9-000?logo=next.js" alt="Next.js">
 <img src="https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript" alt="TypeScript">
 <img src="https://img.shields.io/badge/Tailwind-v4-06D6D4?logo=tailwindcss" alt="Tailwind CSS">
-<img src="https://img.shields.io/badge/Tests-210_%E2%9C%85-22c55e" alt="Tests 210">
+<img src="https://img.shields.io/badge/Tests-312_%E2%9C%85-22c55e" alt="Tests 312">
 <img src="https://img.shields.io/badge/License-MIT-blue" alt="MIT">
 
 </p>
@@ -158,7 +158,7 @@ npm start
 | **Framework** | Next.js 16.2.9 (App Router, Turbopack) |
 | **Language** | TypeScript 5 (strict mode) |
 | **Styling** | Tailwind CSS v4 |
-| **Animations** | Motion 12.x |
+| **Animations** | CSS Animations + Tailwind |
 | **Database** | PostgreSQL (Supabase) |
 | **ORM** | Drizzle ORM 0.45.x + Drizzle Kit 0.31.x |
 | **Auth** | Supabase Auth (SSR) |
@@ -182,7 +182,7 @@ npm start
 | **Components** | 55 across 16 directories |
 | **Lib modules** | 29 (131 exported functions) |
 | **Custom hooks** | 5 |
-| **Unit tests** | **210 passing** (13 files) |
+| **Unit tests** | **312 passing** (15 files) |
 | **E2E tests** | **21 passing** (5 files, 4 skipped without Supabase) |
 | **Android APK** | **Signed release** (sideloadable, `android/app/release/app-release.apk`) |
 | **TypeScript errors** | **0** |
@@ -200,15 +200,15 @@ All documentation is in the **`docs/`** directory:
 | Doc | Description |
 |-----|-------------|
 | [ARCHITECTURE.md](docs/ARCHITECTURE.md) | Project structure, data flow, gamification system |
+| [COMPREHENSIVE_AUDIT.md](docs/COMPREHENSIVE_AUDIT.md) | Complete technical documentation & schema reference |
+| [STORE_API_REFERENCE.md](docs/STORE_API_REFERENCE.md) | Store mutations, hooks, and type reference |
 | [SYSTEM_FEATURES.md](docs/SYSTEM_FEATURES.md) | Detailed feature breakdown |
 | [TOOLS_USED.md](docs/TOOLS_USED.md) | Complete tool/version inventory |
-| [CHANGELOG.md](docs/CHANGELOG.md) | Release history |
-| [CONTRIBUTING.md](docs/CONTRIBUTING.md) | Development setup & contribution guide |
 | [RUN_TEST_COMMAND.md](docs/RUN_TEST_COMMAND.md) | All test & quality commands |
-| [SECURITY.md](docs/SECURITY.md) | Security policy |
 | [todo.md](docs/todo.md) | Offline-first sync architecture plan |
 | [IDEA.md](docs/IDEA.md) | Dynamic Habit Icon Evolution proposal |
 | [MOBILE_APP_PLAN.md](docs/MOBILE_APP_PLAN.md) | Capacitor mobile app plan |
+| [update_plan.md](docs/update_plan.md) | Improvement & redesign documentation |
 
 ---
 

@@ -17,7 +17,7 @@ let _env: CapacitorEnv | null = null;
  * During SSR, `window` is undefined and we return `"browser"` without
  * caching, so that the client (hydrating) can re-detect correctly.
  */
-export function detectCapacitorEnvironment(): CapacitorEnv {
+function detectCapacitorEnvironment(): CapacitorEnv {
   // SSR guard — no window, no detection possible. Don't cache this result.
   if (typeof window === "undefined") return "browser";
 
@@ -46,18 +46,6 @@ export function detectCapacitorEnvironment(): CapacitorEnv {
  */
 export function isCapacitor(): boolean {
   return detectCapacitorEnvironment() === "capacitor";
-}
-
-/**
- * Get the current connectivity status.
- * In Capacitor, falls back to "online" since the Network plugin listener
- * (set up by subscribeToConnectivity) will correct the status immediately.
- * In the browser, uses navigator.onLine.
- */
-export function getConnectivityStatus(): "online" | "offline" {
-  return typeof navigator !== "undefined" && navigator.onLine === false
-    ? "offline"
-    : "online";
 }
 
 /**
