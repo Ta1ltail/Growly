@@ -331,18 +331,6 @@ function rowToUnlocks(rows: DbUnlock[]): Unlocks {
   return unlocks;
 }
 
-// unlocks.id is UUID in the DB — keep using uid() for the id field.
-// The upsert conflict target is the composite key (user_id, achievement_id).
-function unlocksToRows(userId: string, unlocks: Unlocks): DbUnlock[] {
-  return Object.entries(unlocks).map(([achievementId, rec]) => ({
-    id: uid(),
-    user_id: userId,
-    achievement_id: achievementId,
-    at: rec.at,
-    seen: rec.seen,
-  }));
-}
-
 function rowToEconomy(
   state: DbEconomyState,
   spent: DbEconomySpent[],
@@ -682,20 +670,9 @@ async function saveProfile(
   if (error) throw error;
 }
 
-async function saveUnlocks(
-  supabase: SupabaseClient,
-  userId: string,
-  unlocks: Unlocks,
-): Promise<void> {
-  const rows = unlocksToRows(userId, unlocks);
-  await upsertTable(
-    supabase, "unlocks", rows,
-    (r) => r,
-    // Conflict on the composite unique key — not id — because id is a new
-    // random UUID on every unlocksToRows call.
-    "user_id,achievement_id",
-  );
-}
+// saveUnlocks has been removed — unlocking achievements is now handled
+// server-side by the recompute-progression Edge Function (migration 008
+// revoked client INSERT/UPDATE on the unlocks table).
 
 async function saveEconomy(
   supabase: SupabaseClient,
@@ -765,30 +742,11 @@ export async function loadUserStatsSnapshot(
   };
 }
 
-export async function saveUserStatsSnapshot(
-  supabase: SupabaseClient,
-  userId: string,
-  stats: StatsSnapshotData,
-): Promise<void> {
-  const { error } = await supabase.from("user_stats_snapshots").upsert(
-    {
-      user_id: userId,
-      level: stats.level,
-      current_streak: stats.currentStreak,
-      best_streak: stats.bestStreak,
-      total_completions: stats.totalCompletions,
-      consistency_14d: stats.consistency14d,
-      achievement_count: stats.achievementCount,
-      title_name: stats.titleName,
-      rank_icon: stats.rankIcon,
-      updated_at: new Date().toISOString(),
-    },
-    { onConflict: "user_id" },
-  );
-  if (error) {
-    console.warn("[db] Failed to save stats snapshot:", error.message);
-  }
-}
+// saveUserStatsSnapshot has been removed — stats are now computed and written
+// server-side by the recompute-progression Edge Function (migration 008
+// revoked client INSERT/UPDATE on the user_stats_snapshots table).
+// The client still computes stats locally for instant UI, but the official
+// snapshot is managed by the Edge Function.
 
 /* ────────────────────────────────────────────
    Full AppData load & save (convenience)
@@ -964,7 +922,8 @@ export async function saveChanged(
   if (changed.goals)        promises.push(saveGoals(supabase, userId, data.goals));
   if (changed.settings)     promises.push(saveSettings(supabase, userId, data.settings));
   if (changed.profile)      promises.push(saveProfile(supabase, userId, data.profile));
-  if (changed.unlocks)      promises.push(saveUnlocks(supabase, userId, data.unlocks));
+  // unlocks are now computed server-side by the recompute-progression Edge
+  // Function. Migration 008 revoked client INSERT/UPDATE on the unlocks table.
   if (changed.economy) {
     // Freezes also have a FK to habits.id — filter out orphan freezes that
     // reference deleted habits to prevent the same FK violation.
