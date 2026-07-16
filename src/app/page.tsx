@@ -13,7 +13,6 @@ import {
   Smartphone,
   Check,
   Star,
-
 } from "lucide-react";
 
 /* ───────────────────────────
@@ -100,23 +99,8 @@ export default function LandingPage() {
 
 /* ─── Navigation ─── */
 function NavBar() {
-  const [scrolled, setScrolled] = useState(false);
-
-  useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 20);
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
-
   return (
-    <header
-      className={`fixed inset-x-0 top-0 z-50 animate-rise transition-all duration-300 ${
-        scrolled
-          ? "border-b border-line/60 bg-bg/85 backdrop-blur-xl"
-          : "bg-transparent"
-      }`}
-      style={{ animationDelay: "0.1s" }}
-    >
+    <header className="fixed inset-x-0 top-0 z-50 border-b border-line/60 bg-bg/85 backdrop-blur-xl">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-3.5 sm:px-8">
         {/* Logo */}
         <Link href="/" className="group flex items-center gap-2.5">
