@@ -71,3 +71,5 @@ docs/
 android/
 capacitor.config.json
 
+
+.vercel
