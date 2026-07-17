@@ -71,5 +71,10 @@ docs/
 android/
 capacitor.config.json
 
+# Android keystore files
+*.jks
+*.keystore
+keystore.properties
+
 
 .vercel

@@ -89,6 +89,10 @@
   --c-shadow: 30 20% 20%;
 }
 
+/* Make Tailwind's `dark:` variant respect the app's data-theme attribute
+   (manual toggle), not just the OS prefers-color-scheme media query. */
+@custom-variant dark (&:where([data-theme="dark"] *));
+
 /* ---- Dark theme ----
    Rich charcoal base with subtle warm-purple undertones. Not pure black — deep
    enough for comfortable dark reading without the harshness of #000. Cards float

@@ -18,6 +18,12 @@ export const metadata: Metadata = {
   manifest: "/manifest.json",
 };
 
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+};
+
 // Applies the saved theme before first paint so there is no light/dark flash.
 const noFlash = `(function(){try{
 var raw=localStorage.getItem('growly.data.v1');

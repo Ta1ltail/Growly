@@ -33,7 +33,7 @@ import {
 import { useAppData } from "@/lib/store";
 import { useNotifications } from "@/hooks/useNotifications";
 import { resolveAvatar } from "@/lib/cosmetics";
-import { isActive } from "./navItems";
+import { isActive, routeIconColors } from "./navItems";
 
 /* ─────────────────────────────────────────
    Nav items (5 shown in the bar)
@@ -171,7 +171,7 @@ export function BottomNav() {
     <>
       {/* ── Bottom nav bar ── */}
       <nav
-        className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-surface md:hidden"
+        className="fixed inset-x-0 bottom-0 z-30 bg-surface shadow-[0_-1px_4px_rgba(0,0,0,0.06)] dark:shadow-[0_-1px_4px_rgba(0,0,0,0.2)] md:hidden"
         style={{ paddingBottom: "var(--safe-area-bottom, 0px)" }}
       >
         <div className="mx-auto flex max-w-lg items-stretch justify-around px-1">
@@ -209,22 +209,24 @@ export function BottomNav() {
                   }`}
                 >
                   <span
-                    className={`flex size-9 items-center justify-center rounded-xl transition-all duration-200 ${
-                      active ? "bg-accent/12 ring-1 ring-accent/25" : ""
+                    className={`flex size-9 items-center justify-center rounded-full transition-all duration-200 ring-2 ${
+                      active
+                        ? "bg-accent/12 ring-accent/40"
+                        : "ring-transparent hover:ring-line/40"
                     }`}
                   >
                     {avatarResolved?.kind === "image" ? (
                       <img
                         src={avatarResolved.src}
                         alt="Your avatar"
-                        className="size-6 rounded-full object-cover"
+                        className="size-7 rounded-full object-cover"
                       />
                     ) : avatarResolved?.kind === "glyph" ? (
                       <span className="text-sm leading-none" role="img">
                         {avatarResolved.glyph}
                       </span>
                     ) : (
-                      <span className="flex size-6 items-center justify-center rounded-full bg-accent/15 text-[10px] font-bold leading-none text-accent">
+                      <span className="flex size-7 items-center justify-center rounded-full bg-accent/15 text-[11px] font-bold leading-none text-accent">
                         {initials || <UserRound className="size-4" />}
                       </span>
                     )}
@@ -363,17 +365,17 @@ export function BottomNav() {
                             aria-current={active ? "page" : undefined}
                             className={`flex items-center gap-4 rounded-2xl px-4 py-3.5 transition-all active:scale-[0.98] ${
                               active
-                                ? "bg-accent/10"
+                                ? "bg-accent/8"
                                 : "bg-surface hover:bg-surface2/70"
                             }`}
                           >
-                            {/* Icon container */}
+                            {/* Icon container — coloured per route */}
                             <span
-                              className={`flex size-11 shrink-0 items-center justify-center rounded-xl ${
+                              className={`flex size-11 shrink-0 items-center justify-center rounded-xl transition-colors ${
                                 active
                                   ? "bg-accent/15 text-accent"
-                                  : "bg-surface2 text-muted"
-                              }`}
+                                  : "bg-surface2"
+                              } ${routeIconColors[href] ?? "text-muted"}`}
                             >
                               <Icon
                                 className="size-5"
