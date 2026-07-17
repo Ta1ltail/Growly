@@ -2,9 +2,7 @@
 
 // App shell: sidebar (desktop) + bottom nav (mobile) + the page content area.
 // Content is offset by the sidebar width on desktop and given a max width.
-// No AnimatePresence wrapper — individual pages have their own animate-fade-in
-// entrance animation which avoids the layout-shifting bug where both exiting
-// and entering pages occupy the DOM simultaneously during transitions.
+// Uses safe-area variables for mobile compatibility.
 
 import { type ReactNode, lazy, Suspense } from "react";
 import { Toaster } from "sonner";
@@ -39,11 +37,15 @@ export function AppShell({ children }: { children: ReactNode }) {
   useKeyboardShortcuts();
   const pathname = usePathname();
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-bg">
       <Sidebar />
       <BottomNav />
       <div className="md:pl-60">
-        <main id="main-content" tabIndex={-1} className="mx-auto w-full max-w-5xl px-4 pb-24 pt-4 outline-none sm:px-6 md:pb-12 md:pt-8">
+        <main
+          id="main-content"
+          tabIndex={-1}
+          className="mx-auto w-full max-w-5xl px-4 pb-[calc(4rem+var(--safe-area-bottom,0px))] pt-4 outline-none sm:px-6 md:pb-12 md:pt-8"
+        >
           <div key={pathname} className="animate-fade-in">
             {children}
           </div>
@@ -72,9 +74,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <Suspense fallback={null}>
         <DevModeLazy />
       </Suspense>
-      {/* Floating sync status indicator — fixed position, no layout shift */}
       <SyncIndicator />
-      {/* Persistent warning banner when initial sync fails with retry info */}
       <SyncWarningBanner />
     </div>
   );

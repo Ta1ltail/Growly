@@ -180,16 +180,6 @@ function LoginForm() {
 
       {/* ── Right panel: Form ── */}
       <div className="relative flex flex-1 items-center justify-center px-5 py-8 lg:px-12 lg:py-14">
-        {/* Mobile brand header */}
-        <div className="absolute left-0 right-0 top-0 flex items-center justify-center pt-6 lg:hidden">
-          <Link href="/" className="flex items-center gap-2">
-            <span className="flex size-8 items-center justify-center rounded-lg bg-accent text-white shadow-sm">
-              <Activity className="size-4" strokeWidth={2.5} />
-            </span>
-            <span className="text-sm font-bold">Growly</span>
-          </Link>
-        </div>
-
         <div className="w-full max-w-sm animate-slide-right" style={{ animationDelay: "0.1s" }}>
           
           {/* Form header */}
@@ -383,10 +373,6 @@ function LoginForm() {
             </Link>
           </p>
 
-          {/* Mobile footer */}
-          <p className="mt-8 text-center font-mono text-[10px] text-faint lg:hidden">
-            honest habit tracking &mdash; v0.5
-          </p>
         </div>
       </div>
     </div>

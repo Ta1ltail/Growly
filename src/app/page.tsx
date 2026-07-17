@@ -64,7 +64,7 @@ function useOnceInView(ref: React.RefObject<Element | null>) {
           observer.disconnect();
         }
       },
-      { threshold: 0.1 },
+      { threshold: 0.08 },
     );
     observer.observe(el);
     return () => observer.disconnect();
@@ -79,7 +79,7 @@ function useOnceInView(ref: React.RefObject<Element | null>) {
 export default function LandingPage() {
   return (
     <div className="min-h-screen bg-bg text-ink">
-      {/* ── Nav ── */}
+      {/* ── Nav (desktop only) ── */}
       <NavBar />
 
       {/* ── Hero ── */}
@@ -91,7 +91,7 @@ export default function LandingPage() {
       {/* ── Final CTA ── */}
       <CtaSection />
 
-      {/* ── Footer ── */}
+      {/* ── Footer (desktop only) ── */}
       <Footer />
     </div>
   );
@@ -100,7 +100,7 @@ export default function LandingPage() {
 /* ─── Navigation ─── */
 function NavBar() {
   return (
-    <header className="fixed inset-x-0 top-0 z-50 border-b border-line/60 bg-bg/85 backdrop-blur-xl">
+    <header className="fixed inset-x-0 top-0 z-50 border-b border-line/60 bg-bg/85 backdrop-blur-xl max-md:hidden">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-3.5 sm:px-8">
         {/* Logo */}
         <Link href="/" className="group flex items-center gap-2.5">
@@ -157,11 +157,7 @@ function HeroSection() {
       ref={ref}
       className="relative flex min-h-screen items-center justify-center overflow-hidden pt-20"
     >
-      {/* ── Parallax background layers ── */}
-      <div
-        ref={bgRef}
-        className="pointer-events-none absolute inset-0"
-      >
+      {/* ── Parallax background layers ── */}      <div ref={bgRef} className="pointer-events-none absolute inset-0">
         {/* Primary glow */}
         <div className="absolute -left-48 -top-48 size-[36rem] rounded-full bg-accent/6 blur-[160px]" />
         <div className="absolute -bottom-48 -right-48 size-[36rem] rounded-full bg-accent/4 blur-[160px]" />
@@ -181,8 +177,19 @@ function HeroSection() {
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_0%,var(--c-bg)_80%)]" />
       </div>
 
-      {/* ── Hero content ── */}
+      {/* ── Mobile logo (visible only on small screens since NavBar is hidden) ── */}
       <div className="relative mx-auto max-w-5xl px-5 pb-24 transition-opacity duration-700 sm:px-8 sm:pb-36">
+        {/* Brand logo repositioned for mobile */}
+        <div className="mb-8 flex justify-center md:hidden">
+          <div className="inline-flex items-center gap-2.5">
+            <span className="flex size-10 items-center justify-center rounded-xl bg-gradient-to-br from-accent to-accent-glow text-white shadow-lg shadow-accent/20">
+              <Activity className="size-5" strokeWidth={2.5} />
+            </span>
+            <span className="bg-gradient-to-r from-ink to-muted bg-clip-text text-lg font-bold tracking-tight text-transparent">
+              Growly
+            </span>
+          </div>
+        </div>
         <div
           className={`mx-auto max-w-4xl text-center ${
             inView ? "animate-fade-in" : "opacity-0"

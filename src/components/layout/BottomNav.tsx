@@ -1,92 +1,133 @@
 "use client";
 
-// Mobile bottom navigation — a single clean bar with 5 primary tabs and a
-// "More" button that opens a sliding bottom sheet with all remaining routes.
-// No more dual-bar setup. Smooth spring animations, safe-area-aware.
+// Mobile bottom navigation — 5 tabs: Home, Today, More, Notifications, Profile.
+// The More button opens a full-screen page with every app route in organised
+// categories. The Profile button shows the user's actual avatar or initials.
+// Notifications has an unread badge. Solid bg, safe-area-aware.
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  CalendarDays,
-  LayoutGrid,
-  CalendarRange,
-  ChartColumnIncreasing,
-  UserRound,
   LayoutDashboard,
+  CalendarDays,
+  Grip,
+  Bell,
   ListTodo,
   Target,
+  LayoutGrid,
+  CalendarRange,
+  LayoutTemplate,
   NotebookPen,
+  ChartColumnIncreasing,
   Trophy,
   ShoppingBag,
-  Users,
   Medal,
-  Bell,
+  Users,
   Lightbulb,
   Settings2,
-  LayoutTemplate,
-  Grip,
+  UserRound,
   X,
   type LucideIcon,
 } from "lucide-react";
-import { isActive, routeIconColors } from "./navItems";
+import { useAppData } from "@/lib/store";
+import { useNotifications } from "@/hooks/useNotifications";
+import { resolveAvatar } from "@/lib/cosmetics";
+import { isActive } from "./navItems";
 
 /* ─────────────────────────────────────────
-   Primary tabs (5 shown in the bar)
+   Nav items (5 shown in the bar)
    ───────────────────────────────────────── */
 
-const PRIMARY_TABS = [
-  { href: "/today", label: "Today", icon: CalendarDays },
-  { href: "/tracker", label: "Tracker", icon: LayoutGrid },
-  { href: "/calendar", label: "Calendar", icon: CalendarRange },
-  { href: "/stats", label: "Stats", icon: ChartColumnIncreasing },
-  { href: "/profile", label: "Profile", icon: UserRound },
-] as const;
-
-/* ─────────────────────────────────────────
-   More drawer items (grouped)
-   ───────────────────────────────────────── */
-
-interface DrawerGroup {
-  title: string;
-  items: { href: string; label: string; icon: LucideIcon }[];
+interface NavTab {
+  href: string;
+  label: string;
+  icon: LucideIcon;
 }
 
-const DRAWER_GROUPS: DrawerGroup[] = [
+const NAV_TABS: NavTab[] = [
+  { href: "/dashboard", label: "Home", icon: LayoutDashboard },
+  { href: "/today", label: "Today", icon: CalendarDays },
+  { href: "#more", label: "More", icon: LayoutDashboard }, // icon unused — see special-case render below
+  { href: "/notifications", label: "Alerts", icon: Bell },
+  { href: "/profile", label: "Profile", icon: UserRound },
+];
+
+/* ─────────────────────────────────────────
+   More page categories — EVERY route, with
+   descriptions for a premium feel.
+   ───────────────────────────────────────── */
+
+interface MoreItem {
+  href: string;
+  label: string;
+  icon: LucideIcon;
+  description: string;
+}
+
+interface MoreCategory {
+  title: string;
+  items: MoreItem[];
+}
+
+const MORE_CATEGORIES: MoreCategory[] = [
   {
-    title: "Overview",
-    items: [{ href: "/dashboard", label: "Dashboard", icon: LayoutDashboard }],
-  },
-  {
-    title: "Manage",
+    title: "Productivity",
     items: [
-      { href: "/habits", label: "Habits", icon: ListTodo },
-      { href: "/goals", label: "Goals", icon: Target },
-      { href: "/templates", label: "Templates", icon: LayoutTemplate },
-      { href: "/notes", label: "Notes", icon: NotebookPen },
+      { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, description: "Overview & progress at a glance" },
+      { href: "/today", label: "Today", icon: CalendarDays, description: "Daily check-in & quick actions" },
+      { href: "/habits", label: "Habits", icon: ListTodo, description: "Manage and create new habits" },
+      { href: "/tracker", label: "Tracker", icon: LayoutGrid, description: "Weekly habit completion grid" },
     ],
   },
   {
-    title: "Social",
+    title: "Planning",
     items: [
-      { href: "/friends", label: "Friends", icon: Users },
-      { href: "/leaderboard", label: "Leaderboard", icon: Medal },
-      { href: "/notifications", label: "Notifications", icon: Bell },
-      { href: "/suggestions", label: "Suggestions", icon: Lightbulb },
+      { href: "/calendar", label: "Calendar", icon: CalendarRange, description: "Monthly view & mark history" },
+      { href: "/goals", label: "Goals", icon: Target, description: "Track your long-term targets" },
+      { href: "/templates", label: "Templates", icon: LayoutTemplate, description: "Pre-built habit templates" },
+      { href: "/notes", label: "Notes", icon: NotebookPen, description: "Journal & personal reflections" },
     ],
   },
   {
-    title: "Collection",
+    title: "Growth",
     items: [
-      { href: "/achievements", label: "Achievements", icon: Trophy },
-      { href: "/shop", label: "Shop", icon: ShoppingBag },
+      { href: "/stats", label: "Statistics", icon: ChartColumnIncreasing, description: "Charts, streaks & insights" },
+      { href: "/achievements", label: "Achievements", icon: Trophy, description: "Badges & milestones" },
+      { href: "/shop", label: "Shop", icon: ShoppingBag, description: "Cosmetics & power-ups" },
+      { href: "/leaderboard", label: "Leaderboard", icon: Medal, description: "Community rankings" },
     ],
   },
   {
-    title: "System",
-    items: [{ href: "/settings", label: "Settings", icon: Settings2 }],
+    title: "Community",
+    items: [
+      { href: "/friends", label: "Friends", icon: Users, description: "Connect with other growers" },
+      { href: "/notifications", label: "Alerts", icon: Bell, description: "Updates & friend requests" },
+      { href: "/suggestions", label: "Suggestions", icon: Lightbulb, description: "Share your ideas" },
+    ],
+  },
+  {
+    title: "Account",
+    items: [
+      { href: "/profile", label: "Profile", icon: UserRound, description: "Your character & stats" },
+      { href: "/settings", label: "Settings", icon: Settings2, description: "App preferences & theme" },
+    ],
   },
 ];
+
+/* ─────────────────────────────────────────
+   Helpers
+   ───────────────────────────────────────── */
+
+function getInitials(name: string): string {
+  return name
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
+}
 
 /* ─────────────────────────────────────────
    BottomNav component
@@ -94,12 +135,13 @@ const DRAWER_GROUPS: DrawerGroup[] = [
 
 export function BottomNav() {
   const pathname = usePathname();
-  const [drawerOpen, setDrawerOpen] = useState(false);
-  const sheetRef = useRef<HTMLDivElement>(null);
+  const { profile } = useAppData();
+  const { unreadCount } = useNotifications();
+  const [moreOpen, setMoreOpen] = useState(false);
 
-  // Prevent body scroll when the drawer is open
+  // Prevent body scroll when the More page is open
   useEffect(() => {
-    if (drawerOpen) {
+    if (moreOpen) {
       document.body.style.overflow = "hidden";
     } else {
       document.body.style.overflow = "";
@@ -107,164 +149,263 @@ export function BottomNav() {
     return () => {
       document.body.style.overflow = "";
     };
-  }, [drawerOpen]);
+  }, [moreOpen]);
 
   // Close on Escape
   useEffect(() => {
-    if (!drawerOpen) return;
+    if (!moreOpen) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setDrawerOpen(false);
+      if (e.key === "Escape") setMoreOpen(false);
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [drawerOpen]);
+  }, [moreOpen]);
 
-  // Close drawer on navigation
-  const onNav = useCallback(() => {
-    setDrawerOpen(false);
-  }, []);
-
-  // Close when tapping the backdrop
-  const onBackdropTap = useCallback(
-    (e: React.MouseEvent | React.TouchEvent) => {
-      if (e.target === e.currentTarget) setDrawerOpen(false);
-    },
-    [],
-  );
+  // Resolve avatar for the Profile button
+  const avatarResolved = profile.avatar
+    ? resolveAvatar(profile.avatar)
+    : null;
+  const initials = getInitials(profile.displayName);
 
   return (
     <>
-      {/* ── Main nav bar ── */}
-      <nav className="glass fixed inset-x-0 bottom-0 z-30 border-t border-line md:hidden">
-        <div className="mx-auto flex max-w-lg items-stretch justify-around px-2 pb-[env(safe-area-inset-bottom)]">
-          {PRIMARY_TABS.map(({ href, label, icon: Icon }) => {
+      {/* ── Bottom nav bar ── */}
+      <nav
+        className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-surface md:hidden"
+        style={{ paddingBottom: "var(--safe-area-bottom, 0px)" }}
+      >
+        <div className="mx-auto flex max-w-lg items-stretch justify-around px-1">
+          {NAV_TABS.map(({ href, label, icon: Icon }) => {
+            // More button is special
+            if (href === "#more") {
+              const isOpen = moreOpen;
+              return (
+                <button
+                  key="more"
+                  onClick={() => setMoreOpen(true)}
+                  aria-label="Open all sections"
+                  aria-expanded={isOpen}
+                  className="group relative flex flex-1 flex-col items-center gap-0.5 py-2 text-[10px] font-medium text-muted transition-colors hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40"
+                >
+                  <span className="flex size-9 items-center justify-center rounded-xl ring-1 ring-accent/30 transition-all duration-200 group-hover:ring-accent/60">
+                    <Grip className="size-5 stroke-[1.8]" />
+                  </span>
+                  <span className="leading-none">More</span>
+                </button>
+              );
+            }
+
             const active = isActive(pathname, href);
+
+            // Profile button — show avatar or initials
+            if (href === "/profile") {
+              return (
+                <Link
+                  key={href}
+                  href={href}
+                  aria-current={active ? "page" : undefined}
+                  className={`relative flex flex-1 flex-col items-center gap-0.5 py-2 text-[10px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40 ${
+                    active ? "text-accent" : "text-muted hover:text-ink"
+                  }`}
+                >
+                  <span
+                    className={`flex size-9 items-center justify-center rounded-xl transition-all duration-200 ${
+                      active ? "bg-accent/12 ring-1 ring-accent/25" : ""
+                    }`}
+                  >
+                    {avatarResolved?.kind === "image" ? (
+                      <img
+                        src={avatarResolved.src}
+                        alt="Your avatar"
+                        className="size-6 rounded-full object-cover"
+                      />
+                    ) : avatarResolved?.kind === "glyph" ? (
+                      <span className="text-sm leading-none" role="img">
+                        {avatarResolved.glyph}
+                      </span>
+                    ) : (
+                      <span className="flex size-6 items-center justify-center rounded-full bg-accent/15 text-[10px] font-bold leading-none text-accent">
+                        {initials || <UserRound className="size-4" />}
+                      </span>
+                    )}
+                  </span>
+                  <span className={`leading-none ${active ? "font-semibold" : ""}`}>
+                    Profile
+                  </span>
+                  {active && (
+                    <span className="absolute -top-px left-1/2 h-0.5 w-5 -translate-x-1/2 rounded-full bg-accent" />
+                  )}
+                </Link>
+              );
+            }
+
+            // Notifications button — with unread badge
+            if (href === "/notifications") {
+              return (
+                <Link
+                  key={href}
+                  href={href}
+                  aria-current={active ? "page" : undefined}
+                  className={`relative flex flex-1 flex-col items-center gap-0.5 py-2 text-[10px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40 ${
+                    active ? "text-accent" : "text-muted hover:text-ink"
+                  }`}
+                >
+                  <span
+                    className={`relative flex size-9 items-center justify-center rounded-xl transition-all duration-200 ${
+                      active ? "bg-accent/12" : ""
+                    }`}
+                  >
+                    <Icon
+                      className={`size-5 transition-all duration-300 ${
+                        active ? "stroke-[2.5]" : "stroke-[1.8]"
+                      }`}
+                    />
+                    {unreadCount > 0 && (
+                      <span className="absolute -right-0.5 -top-0.5 flex min-w-[18px] items-center justify-center rounded-full bg-rose-500 px-1 py-px text-[9px] font-bold leading-tight text-white ring-2 ring-surface">
+                        {unreadCount > 99 ? "99+" : unreadCount}
+                      </span>
+                    )}
+                  </span>
+                  <span className={`leading-none ${active ? "font-semibold" : ""}`}>
+                    Alerts
+                  </span>
+                  {active && (
+                    <span className="absolute -top-px left-1/2 h-0.5 w-5 -translate-x-1/2 rounded-full bg-accent" />
+                  )}
+                </Link>
+              );
+            }
+
+            // Standard tab (Home, Today)
             return (
               <Link
                 key={href}
                 href={href}
                 aria-current={active ? "page" : undefined}
-                className="relative flex flex-1 flex-col items-center gap-0.5 py-1.5 text-[10px] font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40 focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
+                className={`relative flex flex-1 flex-col items-center gap-0.5 py-2 text-[10px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40 ${
+                  active ? "text-accent" : "text-muted hover:text-ink"
+                }`}
               >
                 <span
-                  className={`flex size-10 items-center justify-center rounded-xl transition-all duration-200 ${
-                    active
-                      ? "bg-accent/15 text-accent"
-                      : "text-muted"
+                  className={`flex size-9 items-center justify-center rounded-xl transition-all duration-200 ${
+                    active ? "bg-accent/12" : ""
                   }`}
                 >
                   <Icon
                     className={`size-5 transition-all duration-300 ${
-                      active
-                        ? "animate-icon-bounce stroke-[2.5]"
-                        : "stroke-[1.8]"
+                      active ? "stroke-[2.5]" : "stroke-[1.8]"
                     }`}
                   />
                 </span>
-                <span
-                  className={`transition-colors duration-200 leading-none ${
-                    active ? "text-accent font-semibold" : "text-faint"
-                  }`}
-                >
+                <span className={`leading-none ${active ? "font-semibold" : ""}`}>
                   {label}
                 </span>
                 {active && (
-                  <span className="absolute -top-px left-1/2 h-0.5 w-6 -translate-x-1/2 rounded-full bg-accent" />
+                  <span className="absolute -top-px left-1/2 h-0.5 w-5 -translate-x-1/2 rounded-full bg-accent" />
                 )}
               </Link>
             );
           })}
-
-          {/* ── More button ── */}
-          <button
-            onClick={() => setDrawerOpen(true)}
-            aria-label="More navigation options"
-            aria-expanded={drawerOpen}
-            className="relative flex flex-1 flex-col items-center gap-0.5 py-1.5 text-[10px] font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40 focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
-          >
-            <span className="flex size-10 items-center justify-center rounded-xl text-muted transition-colors">
-              <Grip className="size-5 stroke-[1.8]" />
-            </span>
-            <span className="leading-none text-faint">More</span>
-          </button>
         </div>
       </nav>
 
-      {/* ── More drawer overlay ── */}
-      {drawerOpen && (
-        <div
-          className="fixed inset-0 z-40 animate-fade-in md:hidden"
-          style={{ animationDuration: "0.2s" }}
-        >
+      {/* ── Full-screen More page ── */}
+      {moreOpen && (
+        <div className="fixed inset-0 z-40 md:hidden animate-fade-in motion-safe:animate-slide-up">
           {/* Backdrop */}
           <div
             className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-            onClick={onBackdropTap}
-            onTouchEnd={onBackdropTap}
+            onClick={() => setMoreOpen(false)}
           />
 
-          {/* Sheet */}
+          {/* Page */}
           <div
-            ref={sheetRef}
-            className="absolute bottom-0 left-0 right-0 animate-rise rounded-t-3xl bg-surface pb-[env(safe-area-inset-bottom)] shadow-2xl ring-1 ring-line"
-            style={{ maxHeight: "75dvh" }}
+            className="absolute bottom-0 left-0 right-0 top-0 flex flex-col rounded-t-3xl bg-bg motion-safe:animate-rise"
+            style={{
+              animationDuration: "0.35s",
+              marginTop: "env(safe-area-inset-top, 0px)",
+            }}
           >
-            {/* Handle */}
-            <div className="flex items-center justify-between px-5 pt-3 pb-1">
-              <div className="mx-auto h-1 w-10 rounded-full bg-line" />
-            </div>
-
             {/* Header */}
-            <div className="flex items-center justify-between px-5 py-3">
-              <h2 className="text-sm font-bold">All sections</h2>
+            <div
+              className="flex items-center justify-between px-5 py-3"
+              style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 0.75rem)" }}
+            >
+              <div>
+                <h2 className="text-lg font-bold text-ink">All sections</h2>
+                <p className="text-xs text-faint">Everything in one place</p>
+              </div>
               <button
-                onClick={() => setDrawerOpen(false)}
-                className="flex size-8 items-center justify-center rounded-xl text-muted transition-colors hover:bg-surface2 hover:text-ink"
-                aria-label="Close navigation drawer"
+                onClick={() => setMoreOpen(false)}
+                className="flex size-10 items-center justify-center rounded-xl bg-surface2 text-muted transition-colors hover:bg-surface2/80 hover:text-ink active:scale-95"
+                aria-label="Close"
               >
-                <X className="size-4" />
+                <X className="size-5" />
               </button>
             </div>
 
-            {/* Groups */}
-            <div className="overflow-y-auto px-3 pb-4" style={{ maxHeight: "calc(75dvh - 80px)" }}>
-              {DRAWER_GROUPS.map((group) => (
-                <div key={group.title} className="mb-1">
-                  <p className="px-2 pb-0.5 pt-2 text-[10px] font-semibold uppercase tracking-wider text-faint">
-                    {group.title}
-                  </p>
-                  {group.items.map(({ href, label, icon: Icon }) => {
-                    const active = isActive(pathname, href);
-                    const colorClass = routeIconColors[href] ?? "text-muted";
-                    return (
-                      <Link
-                        key={href}
-                        href={href}
-                        onClick={onNav}
-                        aria-current={active ? "page" : undefined}
-                        className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
-                          active
-                            ? "bg-accent/10 text-accent"
-                            : "text-muted hover:bg-surface2 hover:text-ink"
-                        }`}
-                      >
-                        <span className="relative">
-                          <Icon
-                            className={`size-4.5 transition-colors ${
-                              active ? "text-accent" : colorClass
+            {/* Scrollable categories */}
+            <div className="flex-1 overflow-y-auto px-4 pb-[calc(env(safe-area-inset-bottom,0px)+1rem)]">
+              <div className="space-y-6">
+                {MORE_CATEGORIES.map((category) => (
+                  <div key={category.title}>
+                    <h3 className="mb-2.5 px-1 text-xs font-semibold uppercase tracking-widest text-faint">
+                      {category.title}
+                    </h3>
+                    <div className="space-y-1">
+                      {category.items.map(({ href, label, icon: Icon, description }) => {
+                        const active = isActive(pathname, href);
+                        return (
+                          <Link
+                            key={href}
+                            href={href}
+                            onClick={() => setMoreOpen(false)}
+                            aria-current={active ? "page" : undefined}
+                            className={`flex items-center gap-4 rounded-2xl px-4 py-3.5 transition-all active:scale-[0.98] ${
+                              active
+                                ? "bg-accent/10"
+                                : "bg-surface hover:bg-surface2/70"
                             }`}
-                            strokeWidth={active ? 2.5 : 2}
-                          />
-                        </span>
-                        {label}
-                        {active && (
-                          <span className="ml-auto size-1.5 rounded-full bg-accent" />
-                        )}
-                      </Link>
-                    );
-                  })}
-                </div>
-              ))}
+                          >
+                            {/* Icon container */}
+                            <span
+                              className={`flex size-11 shrink-0 items-center justify-center rounded-xl ${
+                                active
+                                  ? "bg-accent/15 text-accent"
+                                  : "bg-surface2 text-muted"
+                              }`}
+                            >
+                              <Icon
+                                className="size-5"
+                                strokeWidth={active ? 2.5 : 2}
+                              />
+                            </span>
+
+                            {/* Text */}
+                            <div className="min-w-0 flex-1">
+                              <p
+                                className={`text-sm font-medium leading-tight ${
+                                  active ? "text-accent" : "text-ink"
+                                }`}
+                              >
+                                {label}
+                              </p>
+                              <p className="mt-0.5 text-xs leading-tight text-faint line-clamp-1">
+                                {description}
+                              </p>
+                            </div>
+
+                            {/* Active indicator */}
+                            {active && (
+                              <span className="size-2 shrink-0 rounded-full bg-accent" />
+                            )}
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>

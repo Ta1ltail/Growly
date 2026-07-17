@@ -56,6 +56,7 @@
   --animate-stagger-in: stagger-in 0.4s var(--ease-out) both;
   --animate-slide-right: slide-in-right 0.5s var(--ease-out) both;
   --animate-scale-in: scale-in 0.5s var(--ease-out) both;
+  --animate-slide-up: slide-up 0.35s var(--ease-out) both;
   --animate-scroll-bounce: scroll-bounce 2s ease-in-out infinite;
   --animate-fade-slide-up-lg: fade-slide-up-lg 0.6s var(--ease-out) both;
 }
@@ -299,6 +300,15 @@
   color: var(--c-ink);
 }
 
+/* Safe area variables for mobile devices */
+:root {
+  --safe-area-top: env(safe-area-inset-top, 0px);
+  --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-area-left: env(safe-area-inset-left, 0px);
+  --safe-area-right: env(safe-area-inset-right, 0px);
+  --nav-height: 64px;
+}
+
 /* Base canvas */
 html {
   color-scheme: dark;
@@ -307,12 +317,36 @@ html {
   transition:
     background-color 0.4s ease,
     color 0.4s ease;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
 }
 
 body {
   color: var(--c-ink);
   font-family: var(--font-sans), system-ui, sans-serif;
   transition: color 0.4s ease;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Ensure no horizontal overflow on any element */
+* {
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+/* Image/video/iframe overflow fix */
+img, video, iframe, svg {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Prevent iOS zoom on input focus */
+@media (max-width: 767px) {
+  input, textarea, select {
+    font-size: 16px !important;
+  }
 }
 
 /* Glassy surface used by cards/sidebar */
@@ -322,29 +356,34 @@ body {
   -webkit-backdrop-filter: blur(12px);
 }
 
-/* Soft, slim scrollbars — thinner on mobile for more content area */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+/* Scrollbar styling — hidden on mobile for native feel, visible on desktop */
+@media (max-width: 767px) {
+  ::-webkit-scrollbar {
+    width: 0px;
+    height: 0px;
+  }
+  * {
+    scrollbar-width: none;
+  }
 }
 @media (min-width: 768px) {
   ::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
+    width: 6px;
+    height: 6px;
   }
-}
-::-webkit-scrollbar-thumb {
-  background: var(--c-line);
-  border-radius: 9999px;
-  border: 2px solid transparent;
-  background-clip: content-box;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: var(--c-faint);
-  background-clip: content-box;
-}
-::-webkit-scrollbar-track {
-  background: var(--c-bg);
+  ::-webkit-scrollbar-thumb {
+    background: var(--c-line);
+    border-radius: 9999px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--c-faint);
+    background-clip: content-box;
+  }
+  ::-webkit-scrollbar-track {
+    background: var(--c-bg);
+  }
 }
 
 /* Skeleton placeholder: a soft, static block for loading states.
@@ -423,6 +462,18 @@ body {
   to {
     opacity: 1;
     transform: translateX(0);
+  }
+}
+
+/* ── Slide up (mobile nav More page, bottom sheets) ── */
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 

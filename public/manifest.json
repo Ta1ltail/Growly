@@ -4,8 +4,8 @@
   "description": "Make today count — a habit tracker and personal growth platform with gamification.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0f0e17",
-  "theme_color": "#4b8bf7",
+  "background_color": "#24222e",
+  "theme_color": "#24222e",
   "orientation": "any",
   "icons": [
     {

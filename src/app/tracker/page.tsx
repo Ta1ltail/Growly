@@ -1,7 +1,8 @@
 "use client";
 // Tracker — habits as rows, recent days as columns. Tap a cell to cycle.
-// Habit lists scroll internally within a fixed container to prevent layout breaking.
-// Past days lock (only today + a short grace window are editable).
+// Desktop: table layout with sticky headers and frozen habit column.
+// Mobile: card-based layout with inline day dots for marking.
+
 import {
   memo,
   useCallback,
@@ -19,6 +20,7 @@ import {
   Check,
   X,
   Minus,
+
 } from "lucide-react";
 import { StreakFlame } from "@/components/habits/StreakFlame";
 import { CATEGORIES, CATEGORY_COLORS, type Category } from "@/lib/categories";
@@ -33,26 +35,21 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { Card } from "@/components/ui/Card";
 import { Segmented } from "@/components/ui/Segmented";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { PageSkeleton } from "@/components/ui/PageSkeleton";
+import { useHydrated } from "@/hooks/useHydrated";
 import type { MarkStatus } from "@/lib/types";
 import { AppPageShell } from "@/components/layout/AppPageShell";
 
 const RANGES = [
+  { value: "7" as const, label: "7 days" },
   { value: "14" as const, label: "14 days" },
   { value: "30" as const, label: "30 days" },
 ];
 
-// Row metrics — used to compute the sticky offset for category header rows
-// so they dock directly beneath the column header row instead of behind it.
-// IMPORTANT: this must match the *actual rendered* height of the <thead> row
-// exactly. If it's even 1px off, the category band will show a sliver gap
-// (offset too small) or overlap the header (offset too large) until you've
-// scrolled past the mismatch. We measure it live via a ref instead of trusting
-// a guessed constant, since padding/line-height can shift with font loading,
-// browser zoom, or future style edits.
-const HEADER_ROW_H_FALLBACK = 44; // px, only used until the real height is measured
+// ── Desktop Table Components ─────────────────────────────────
 
-// Color-coded cell fill — no text labels, just background color states.
-// Editable cells get a hover lift; locked cells are muted.
+const HEADER_ROW_H_FALLBACK = 44;
+
 const CELL_STYLES: Record<string, string> = {
   done: "bg-done/90 shadow-sm shadow-done/20",
   missed: "bg-missed/80",
@@ -60,7 +57,7 @@ const CELL_STYLES: Record<string, string> = {
 };
 
 const TrackerCell = memo(function TrackerCell({
-  dateKey,
+  dateKey: dk,
   habitId,
   category,
   status,
@@ -84,7 +81,7 @@ const TrackerCell = memo(function TrackerCell({
   return (
     <td className="p-0.5">
       <button
-        onClick={() => editable && onMark(dateKey, habitId, category)}
+        onClick={() => editable && onMark(dk, habitId, category)}
         disabled={!editable || (!scheduled && !status)}
         title={
           cellFrozen
@@ -111,7 +108,6 @@ const TrackerCell = memo(function TrackerCell({
               : "bg-transparent"
         }`}
       >
-        {/* Status glyph for instant readability (✔ done · ✖ missed · – skipped) */}
         {status === "done" && (
           <Check className="size-4 text-white" strokeWidth={3} aria-hidden />
         )}
@@ -134,17 +130,190 @@ const TrackerCell = memo(function TrackerCell({
   );
 });
 
+// ── Mobile Card View ──────────────────────────────────────────
+
+function MobileCardView({
+  groupedHabits,
+  columns,
+  marks,
+  today,
+  grace,
+  frozen,
+  onMark,
+}: {
+  groupedHabits: { category: string; color: string; habits: import('@/lib/types').Habit[] }[];
+  columns: Date[];
+  marks: import('@/lib/types').Marks;
+  today: Date;
+  grace: number;
+  frozen: Set<string>;
+  onMark: (dateKey: string, habitId: string, category: string) => void;
+}) {
+  const todayKey = dateKey(today);
+
+  return (
+    <div className="space-y-4 md:hidden">
+      {groupedHabits.map((group) => (
+        <div key={group.category}>
+          {/* Category header */}
+          <div className="mb-2 flex items-center gap-2 px-1">
+            <span
+              className="size-2 rounded-full shrink-0"
+              style={{ backgroundColor: group.color }}
+            />
+            <span className="text-[11px] font-semibold uppercase tracking-wide text-muted">
+              {group.category}
+            </span>
+            <span className="font-mono text-[10px] text-faint">
+              {group.habits.length}
+            </span>
+          </div>
+
+          {/* Habit cards */}
+          <div className="space-y-2">
+            {group.habits.map((habit) => {
+              const { current } = habitStreaks(habit, marks, today, frozen);
+              return (
+                <Card key={habit.id} className="p-3">
+                  {/* Habit name row */}
+                  <div className="mb-2 flex items-center gap-2">
+                    <span
+                      className="size-2 shrink-0 rounded-full"
+                      style={{ backgroundColor: CATEGORY_COLORS[habit.category] }}
+                    />
+                    <span className="flex-1 truncate text-sm font-medium">
+                      {habit.name}
+                    </span>
+                    {current > 0 && (
+                      <StreakFlame
+                        streak={current}
+                        size={16}
+                        className="shrink-0"
+                      />
+                    )}
+                  </div>
+
+                  {/* Day dots row */}
+                  <div className="flex items-center gap-1.5">
+                    {columns.map((d) => {
+                      const dk = dateKey(d);
+                      const status = marks[dk]?.[habit.id];
+                      const scheduled = isScheduled(habit, d);
+                      const editable = canEditMark(dk, today, grace);
+                      const future = isFutureDay(dk, today);
+                      const cellFrozen =
+                        status === "missed" && isFrozen(frozen, habit.id, dk);
+                      const isDayToday = dk === todayKey;
+
+                      // Only show dots for scheduled days or days with marks
+                      if (!scheduled && !status) {
+                        return <div key={dk} className="size-9" />;
+                      }
+
+                      return (
+                        <button
+                          key={dk}
+                          onClick={() => editable && onMark(dk, habit.id, habit.category)}
+                          disabled={!editable || (!scheduled && !status)}
+                          className={`relative flex size-9 items-center justify-center rounded-lg transition-all active:scale-90 ${
+                            isDayToday ? "ring-1 ring-accent/40" : ""
+                          } ${
+                            status
+                              ? `${CELL_STYLES[status]} ${!editable ? "opacity-50" : ""}`
+                              : scheduled
+                                ? future
+                                  ? "border border-dashed border-line/50 bg-transparent"
+                                  : "bg-empty"
+                                : "bg-transparent"
+                          }`}
+                          title={
+                            cellFrozen
+                              ? "Protected by streak freeze"
+                              : status
+                                ? `Marked ${status}`
+                                : "Tap to mark"
+                          }
+                        >
+                          {status === "done" && (
+                            <Check className="size-3.5 text-white" strokeWidth={3} />
+                          )}
+                          {status === "missed" && (
+                            <X className="size-3.5 text-white" strokeWidth={3} />
+                          )}
+                          {status === "skipped" && (
+                            <Minus className="size-3.5 text-white/80" strokeWidth={3} />
+                          )}
+                          {cellFrozen && (
+                            <span className="absolute -right-0.5 -top-0.5 size-2 rounded-full bg-sky-400 ring-1 ring-surface" />
+                          )}
+                          {!status && !future && (
+                            <span className="text-[9px] text-faint">
+                              {d.getDate()}
+                            </span>
+                          )}
+                          {!status && future && (
+                            <span className="text-[9px] text-faint/50">
+                              {d.getDate()}
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Date labels row */}
+                  <div className="mt-1 flex gap-1.5">
+                    {columns.map((d) => {
+                      const dk = dateKey(d);
+                      const scheduled = isScheduled(habit, d);
+                      if (!scheduled && !marks[dk]?.[habit.id]) {
+                        return <div key={dk} className="size-9" />;
+                      }
+                      return (
+                        <div
+                          key={dk}
+                          className="flex size-9 items-center justify-center text-[8px] font-medium text-faint"
+                        >
+                          {d.toLocaleDateString(undefined, {
+                            weekday: "narrow",
+                          })}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </Card>
+              );
+            })}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ── Legend ────────────────────────────────────────────────────
+
+function Legend({ className, label }: { className: string; label: string }) {
+  return (
+    <span className="flex items-center gap-1.5">
+      <span className={`inline-block size-3 rounded ${className}`} />
+      {label}
+    </span>
+  );
+}
+
+// ── Main Page ────────────────────────────────────────────────
+
 export default function TrackerPage() {
   const data = useAppData();
   const today = useToday();
   const grace = data.settings.graceHours ?? DEFAULT_GRACE_HOURS;
+  const hydrated = useHydrated();
   const [filter, setFilter] = useState<Category | "All">("All");
-  const [range, setRange] = useState<"14" | "30">("14");
+  const [range, setRange] = useState<"7" | "14" | "30">("14");
   const daysShown = Number(range);
 
-  // Measure the header row's real rendered height so the category band's
-  // sticky offset is always exact — no guessed pixel constant that can drift
-  // out of sync with padding/font changes and reopen this same gap bug.
+  // Desktop table header measurement
   const headerRowRef = useRef<HTMLTableRowElement>(null);
   const [headerRowH, setHeaderRowH] = useState(HEADER_ROW_H_FALLBACK);
   useEffect(() => {
@@ -212,34 +381,46 @@ export default function TrackerPage() {
     [usedCategories],
   );
 
+  if (!hydrated) return <PageSkeleton />;
+
   return (
     <AppPageShell>
-        <PageHeader
-          title="Tracker"
-          subtitle="Tap a cell to mark · past days lock automatically"
+      <PageHeader
+        title="Tracker"
+        subtitle="Tap to mark · past days lock automatically"
+      />
+      {habits.length === 0 ? (
+        <EmptyState
+          icon={LayoutGrid}
+          title="Nothing to track yet"
+          hint="Add habits and they'll show up here."
+          illustration="tracker"
         />
-        {habits.length === 0 ? (
-          <EmptyState
-            icon={LayoutGrid}
-            title="Nothing to track yet"
-            hint="Add habits and they'll show up here as a grid."
-            illustration="tracker"
+      ) : (
+        <>
+          {/* Filters */}
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <Segmented
+              options={filterOptions}
+              value={filter}
+              onChange={setFilter}
+            />
+            <Segmented options={RANGES} value={range} onChange={setRange} />
+          </div>
+
+          {/* ══ Mobile Card View (hidden on md+) ══ */}
+          <MobileCardView
+            groupedHabits={groupedHabits}
+            columns={columns}
+            marks={data.marks}
+            today={today}
+            grace={grace}
+            frozen={frozen}
+            onMark={handleCellMark}
           />
-        ) : (
-          <>
-            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-              <Segmented
-                options={filterOptions}
-                value={filter}
-                onChange={setFilter}
-              />
-              <Segmented options={RANGES} value={range} onChange={setRange} />
-            </div>
-            {/* Fixed-height container. A SINGLE overflow-auto element handles both
-              axes so sticky-top (header) and sticky-left (habit column) resolve
-              against the same scrolling ancestor, and the horizontal scrollbar
-              lives at the bottom of this box — always reachable, independent of
-              vertical scroll position. */}
+
+          {/* ══ Desktop Table View (hidden on mobile) ══ */}
+          <div className="hidden md:block">
             <div className="h-[calc(100dvh-16rem)] min-h-[300px] md:h-[calc(100dvh-13rem)]">
               <Card className="overflow-hidden h-full">
                 <div className="h-full w-full overflow-auto">
@@ -271,123 +452,110 @@ export default function TrackerPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {groupedHabits.map((group) => {
-                        return (
-                          <Fragment key={group.category}>
-                            {/* Category group header. A colSpan cell can't stick
-                              correctly on both axes at once — its content sits
-                              wherever the cell was laid out, not anchored to the
-                              viewport, so the label would scroll off-screen while
-                              the (invisible) cell background stayed pinned. Instead
-                              we use TWO cells: a sticky-left label cell (mirrors the
-                              Habit column) and a plain cell that spans the day
-                              columns, just carrying the matching background so the
-                              band looks continuous as you scroll right. Both cells
-                              also stick to `top: headerRowH` (measured live from
-                              the actual <thead> row, with a 1px overlap to avoid a
-                              sub-pixel seam) so the whole band docks flush under
-                              the header while scrolling down — including the very
-                              first category, with no gap before it. */}
-                            <tr className="select-none border-t border-line/60">
-                              <td
-                                className="sticky left-0 z-20 min-w-36 bg-surface2/95 px-3 py-1.5 text-left backdrop-blur-sm"
-                                style={{ top: headerRowH - 1 }}
+                      {groupedHabits.map((group) => (
+                        <Fragment key={group.category}>
+                          {/* Category header row */}
+                          <tr className="select-none border-t border-line/60">
+                            <td
+                              className="sticky left-0 z-20 min-w-36 bg-surface2/95 px-3 py-1.5 text-left backdrop-blur-sm"
+                              style={{ top: headerRowH - 1 }}
+                            >
+                              <div className="flex items-center gap-2">
+                                <span
+                                  className="size-2 rounded-full shrink-0"
+                                  style={{ backgroundColor: group.color }}
+                                />
+                                <span className="text-[11px] font-semibold uppercase tracking-wide text-muted">
+                                  {group.category}
+                                </span>
+                                <span className="font-mono text-[10px] text-faint">
+                                  {group.habits.length}
+                                </span>
+                              </div>
+                            </td>
+                            <td
+                              colSpan={columns.length + 1}
+                              className="sticky z-[15] bg-surface2/95 backdrop-blur-sm"
+                              style={{ top: headerRowH - 1 }}
+                            />
+                          </tr>
+                          {group.habits.map((habit) => {
+                            const { current } = habitStreaks(
+                              habit,
+                              data.marks,
+                              today,
+                              frozen,
+                            );
+                            return (
+                              <tr
+                                key={habit.id}
+                                className="border-t border-line transition-colors hover:bg-surface2/30"
                               >
-                                <div className="flex items-center gap-2">
-                                  <span
-                                    className="size-2 rounded-full shrink-0"
-                                    style={{ backgroundColor: group.color }}
-                                  />
-                                  <span className="text-[11px] font-semibold uppercase tracking-wide text-muted">
-                                    {group.category}
-                                  </span>
-                                  <span className="font-mono text-[10px] text-faint">
-                                    {group.habits.length}
-                                  </span>
-                                </div>
-                              </td>
-                              <td
-                                colSpan={columns.length + 1}
-                                className="sticky z-[15] bg-surface2/95 backdrop-blur-sm"
-                                style={{ top: headerRowH - 1 }}
-                              />
-                            </tr>
-                            {group.habits.map((habit) => {
-                              const { current } = habitStreaks(
-                                habit,
-                                data.marks,
-                                today,
-                                frozen,
-                              );
-                              return (
-                                <tr
-                                  key={habit.id}
-                                  className="border-t border-line transition-colors hover:bg-surface2/30"
-                                >
-                                  <td className="sticky left-0 z-10 min-w-36 border-r border-line bg-surface px-3 py-2 text-left">
-                                    <span className="flex items-center gap-2 pl-5">
-                                      <span
-                                        className="size-1.5 shrink-0 rounded-full"
-                                        style={{
-                                          backgroundColor:
-                                            CATEGORY_COLORS[habit.category],
-                                        }}
-                                      />
-                                      <span className="truncate font-sans text-[13px]">
-                                        {habit.name}
-                                      </span>
+                                <td className="sticky left-0 z-10 min-w-36 border-r border-line bg-surface px-3 py-2 text-left">
+                                  <span className="flex items-center gap-2 pl-5">
+                                    <span
+                                      className="size-1.5 shrink-0 rounded-full"
+                                      style={{
+                                        backgroundColor:
+                                          CATEGORY_COLORS[habit.category],
+                                      }}
+                                    />
+                                    <span className="truncate font-sans text-[13px]">
+                                      {habit.name}
                                     </span>
-                                  </td>
-                                  {columns.map((d) => {
-                                    const key = dateKey(d);
-                                    const status = data.marks[key]?.[habit.id];
-                                    const scheduled = isScheduled(habit, d);
-                                    const editable = canEditMark(
-                                      key,
-                                      today,
-                                      grace,
-                                    );
-                                    const future = isFutureDay(key, today);
-                                    const cellFrozen =
-                                      status === "missed" &&
-                                      isFrozen(frozen, habit.id, key);
-                                    return (
-                                      <TrackerCell
-                                        key={key}
-                                        dateKey={key}
-                                        habitId={habit.id}
-                                        category={habit.category}
-                                        status={status}
-                                        scheduled={scheduled}
-                                        editable={editable}
-                                        future={future}
-                                        cellFrozen={cellFrozen}
-                                        onMark={handleCellMark}
-                                      />
-                                    );
-                                  })}
-                                  <td className="px-2 font-semibold">
-                                    {current > 0 ? (
-                                      <StreakFlame
-                                        streak={current}
-                                        size={15}
-                                        className="justify-center"
-                                      />
-                                    ) : (
-                                      <span className="text-faint">0</span>
-                                    )}
-                                  </td>
-                                </tr>
-                              );
-                            })}
-                          </Fragment>
-                        );
-                      })}
+                                  </span>
+                                </td>
+                                {columns.map((d) => {
+                                  const key = dateKey(d);
+                                  const status = data.marks[key]?.[habit.id];
+                                  const scheduled = isScheduled(habit, d);
+                                  const editable = canEditMark(
+                                    key,
+                                    today,
+                                    grace,
+                                  );
+                                  const future = isFutureDay(key, today);
+                                  const cellFrozen =
+                                    status === "missed" &&
+                                    isFrozen(frozen, habit.id, key);
+                                  return (
+                                    <TrackerCell
+                                      key={key}
+                                      dateKey={key}
+                                      habitId={habit.id}
+                                      category={habit.category}
+                                      status={status}
+                                      scheduled={scheduled}
+                                      editable={editable}
+                                      future={future}
+                                      cellFrozen={cellFrozen}
+                                      onMark={handleCellMark}
+                                    />
+                                  );
+                                })}
+                                <td className="px-2 font-semibold">
+                                  {current > 0 ? (
+                                    <StreakFlame
+                                      streak={current}
+                                      size={15}
+                                      className="justify-center"
+                                    />
+                                  ) : (
+                                    <span className="text-faint">0</span>
+                                  )}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </Fragment>
+                      ))}
                     </tbody>
                   </table>
                 </div>
               </Card>
             </div>
+
+            {/* Legend */}
             <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-xs text-muted">
               <Legend className="bg-done" label="done" />
               <Legend className="bg-missed" label="missed" />
@@ -399,17 +567,9 @@ export default function TrackerPage() {
                 <Flame className="size-3.5 text-amber-500" /> current streak
               </span>
             </div>
-          </>
-        )}
+          </div>
+        </>
+      )}
     </AppPageShell>
-  );
-}
-
-function Legend({ className, label }: { className: string; label: string }) {
-  return (
-    <span className="flex items-center gap-1.5">
-      <span className={`inline-block size-3 rounded ${className}`} />
-      {label}
-    </span>
   );
 }

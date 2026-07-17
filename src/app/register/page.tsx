@@ -29,6 +29,7 @@ import {
   REMEMBER_ME_KEY,
 } from "@/lib/storage";
 import { Button } from "@/components/ui/Button";
+import { PasswordRequirements } from "@/components/ui/PasswordRequirements";
 
 /* ── Password strength evaluation ── */
 function evaluateStrength(pw: string): {
@@ -81,6 +82,7 @@ export default function RegisterPage() {
     null,
   );
   const [checkingUsername, setCheckingUsername] = useState(false);
+  const [passwordFocused, setPasswordFocused] = useState(false);
 
   const pwStrength = useMemo(() => evaluateStrength(password), [password]);
   const passwordsMatch =
@@ -314,16 +316,6 @@ export default function RegisterPage() {
 
       {/* ── Right panel: Form ── */}
       <div className="relative flex flex-1 items-center justify-center px-5 py-8 lg:px-12 lg:py-14">
-        {/* Mobile brand header */}
-        <div className="absolute left-0 right-0 top-0 flex items-center justify-center pt-6 lg:hidden">
-          <Link href="/" className="flex items-center gap-2">
-            <span className="flex size-8 items-center justify-center rounded-lg bg-accent text-white shadow-sm">
-              <Activity className="size-4" strokeWidth={2.5} />
-            </span>
-            <span className="text-sm font-bold">Growly</span>
-          </Link>
-        </div>
-
         <div className="w-full max-w-sm animate-slide-right" style={{ animationDelay: "0.1s" }}>
           
           {/* Form header */}
@@ -454,7 +446,7 @@ export default function RegisterPage() {
             </div>
 
             {/* Password */}
-            <div>
+            <div className="relative">
               <label
                 htmlFor="password"
                 className="mb-1.5 block text-xs font-medium text-muted"
@@ -468,6 +460,8 @@ export default function RegisterPage() {
                   type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
+                  onFocus={() => setPasswordFocused(true)}
+                  onBlur={() => setPasswordFocused(false)}
                   placeholder="Create a strong password"
                   required
                   minLength={6}
@@ -491,70 +485,15 @@ export default function RegisterPage() {
                 </button>
               </div>
 
-              {/* Password strength indicator */}
-              {password.length > 0 && (
-                <div className="mt-2 animate-fade-in space-y-2">
-                  {/* Strength bars */}
-                  <div className="flex gap-1">
-                    {[1, 2, 3, 4].map((bar) => (
-                      <div
-                        key={bar}
-                        className={`h-1 flex-1 rounded-full transition-all duration-300 ${
-                          bar <= pwStrength.bars
-                            ? "opacity-100"
-                            : "opacity-20"
-                        }`}
-                        style={{
-                          backgroundColor:
-                            bar <= pwStrength.bars
-                              ? pwStrength.color
-                              : "var(--c-line)",
-                        }}
-                      />
-                    ))}
-                    <span
-                      className="ml-2 text-[11px] font-medium"
-                      style={{ color: pwStrength.color }}
-                    >
-                      {pwStrength.label}
-                    </span>
-                  </div>
-
-                  {/* Requirement checklist */}
-                  <div className="space-y-1">
-                    {REQUIREMENTS.map((req) => {
-                      const met = req.test(password);
-                      return (
-                        <div
-                          key={req.label}
-                          className="flex items-center gap-2"
-                        >
-                          <span
-                            className={`flex size-3.5 shrink-0 items-center justify-center rounded-full transition-colors duration-200 ${
-                              met
-                                ? "bg-done/15 text-done"
-                                : "bg-line/30 text-faint"
-                            }`}
-                          >
-                            {met ? (
-                              <Check className="size-2.5" strokeWidth={3} />
-                            ) : (
-                              <span className="size-1.5 rounded-full bg-current" />
-                            )}
-                          </span>
-                          <span
-                            className={`text-[11px] transition-colors duration-200 ${
-                              met ? "text-done" : "text-faint"
-                            }`}
-                          >
-                            {req.label}
-                          </span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
+              {/* Floating password requirements tooltip — no layout shift */}
+              <PasswordRequirements
+                password={password}
+                requirements={REQUIREMENTS}
+                isFocused={passwordFocused}
+                strengthLabel={pwStrength.label}
+                strengthColor={pwStrength.color}
+                strengthBars={pwStrength.bars}
+              />
             </div>
 
             {/* Confirm Password */}
@@ -648,10 +587,6 @@ export default function RegisterPage() {
             </Link>
           </p>
 
-          {/* Mobile footer */}
-          <p className="mt-8 text-center font-mono text-[10px] text-faint lg:hidden">
-            honest habit tracking &mdash; v0.5
-          </p>
         </div>
       </div>
     </div>

@@ -48,6 +48,12 @@ export default function RootLayout({
           content="black-translucent"
         />
         <meta name="mobile-web-app-capable" content="yes" />
+        {/*
+          theme-color meta tags for Android navigation bar.
+          The client-side ThemeApplier overrides these dynamically.
+        */}
+        <meta name="theme-color" media="(prefers-color-scheme: light)" content="#fafaf9" />
+        <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#24222e" />
         <link rel="icon" type="image/svg+xml" href="/icon-192.svg" />
         <link rel="apple-touch-icon" href="/icon-192.svg" />
       </head>

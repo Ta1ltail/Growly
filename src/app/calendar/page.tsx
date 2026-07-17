@@ -187,11 +187,10 @@ export default function CalendarPage() {
 
   return (
     <AppPageShell>
-    <div className="flex flex-col min-h-0 h-[calc(100dvh-7rem)] md:h-[calc(100dvh-5rem)]">
       <PageHeader
         title="Calendar"
         action={
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Segmented options={VIEWS} value={view} onChange={setView} />
             <div className="flex items-center gap-1">
               <button
@@ -203,7 +202,7 @@ export default function CalendarPage() {
               >
                 <ChevronLeft className="size-4" />
               </button>
-              <span className="w-36 text-center text-sm font-semibold">
+              <span className="min-w-28 text-center text-sm font-semibold">
                 {headerLabel}
               </span>
               <button
@@ -218,76 +217,61 @@ export default function CalendarPage() {
         }
       />
 
-      {/* Calendar + detail panel — fill available space */}
-      <div className="flex-1 min-h-0 grid gap-6 lg:grid-cols-5">
+      {/* Calendar + detail panel — responsive stack */}
+      <div className="flex flex-col gap-6 lg:grid lg:grid-cols-5 lg:gap-6">
         {/* Calendar grid */}
-        <div className="lg:col-span-3 flex flex-col min-h-0">
-          <h2 className="mb-3 flex items-center justify-between text-sm font-semibold uppercase tracking-wide text-muted shrink-0">
-            <span>{view === "month" ? "Month" : "Week"}</span>
-            <span className="text-[10px] font-normal normal-case tracking-normal text-faint">
-              Tap a day to view
-            </span>
-          </h2>
-          <Card className="p-4 h-full flex flex-col">
-            <div className="flex-1 min-h-0 flex flex-col">
-              <div className="mb-2 grid grid-cols-7 gap-1.5 text-center font-mono text-[11px] text-faint shrink-0">
-                {WEEKDAY_LABELS.map((w) => (
-                  <div key={w} className="py-1">
-                    {w}
-                  </div>
-                ))}
-              </div>
-              <div className="grid grid-cols-7 gap-1.5 auto-rows-fr flex-1">
-                {(view === "month" ? monthCells : weekCells).map((d, i) => {
-                  if (!d)
-                    return <div key={`b-${i}`} className="min-h-[60px]" />;
-                  const rate = dayCompletion(active, data.marks, d);
-                  const isToday = dateKey(d) === dateKey(today);
-                  const isSelected = dateKey(d) === selectedKey;
-                  const hasNote = data.notes.some(
-                    (n) => n.links.date === dateKey(d),
-                  );
-                  const hasDeadline = data.goals.some(
-                    (g) => g.deadline === dateKey(d),
-                  );
-                  return (
-                    <button
-                      key={dateKey(d)}
-                      onClick={() => setSelected(d)}
-                      aria-label={`${d.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" })} — ${Math.round(rate * 100)}% complete`}
-                      className={`relative flex flex-col items-center justify-center gap-1 rounded-xl border py-3 transition-all hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 ${shade(rate)} ${
-                        isSelected
-                          ? "border-accent ring-2 ring-accent/40"
-                          : isToday
-                            ? "border-accent/50"
-                            : "border-transparent"
-                      } ${rate === 0 && !isToday ? "bg-surface2/40 text-muted" : ""} min-h-[60px]`}
-                    >
-                      <span
-                        className={`text-sm font-semibold ${isToday ? "text-accent" : ""}`}
-                      >
-                        {d.getDate()}
+        <div className="lg:col-span-3">
+          <Card className="p-4">
+            <div className="grid grid-cols-7 gap-1.5 text-center font-mono text-[11px] text-faint mb-2">
+              {WEEKDAY_LABELS.map((w) => (
+                <div key={w} className="py-1">{w}</div>
+              ))}
+            </div>
+            <div className="grid grid-cols-7 gap-1.5">
+              {(view === "month" ? monthCells : weekCells).map((d, i) => {
+                if (!d) return <div key={`b-${i}`} className="min-h-[56px]" />;
+                const rate = dayCompletion(active, data.marks, d);
+                const isToday = dateKey(d) === dateKey(today);
+                const isSelected = dateKey(d) === selectedKey;
+                const hasNote = data.notes.some(
+                  (n) => n.links.date === dateKey(d),
+                );
+                const hasDeadline = data.goals.some(
+                  (g) => g.deadline === dateKey(d),
+                );
+                return (
+                  <button
+                    key={dateKey(d)}
+                    onClick={() => setSelected(d)}
+                    aria-label={`${d.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" })} — ${Math.round(rate * 100)}% complete`}
+                    className={`relative flex flex-col items-center justify-center gap-0.5 rounded-xl border py-2 transition-all hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 ${shade(rate)} ${
+                      isSelected
+                        ? "border-accent ring-2 ring-accent/40"
+                        : isToday
+                          ? "border-accent/50"
+                          : "border-transparent"
+                    } ${rate === 0 && !isToday ? "bg-surface2/40 text-muted" : ""}`}
+                  >
+                    <span className={`text-sm font-semibold ${isToday ? "text-accent" : ""}`}>
+                      {d.getDate()}
+                    </span>
+                    <CircularProgress rate={rate} size={24} />
+                    {(hasNote || hasDeadline) && (
+                      <span className="flex gap-0.5">
+                        {hasNote && <span className="size-1 rounded-full bg-current opacity-60" />}
+                        {hasDeadline && <span className="size-1 rounded-full bg-amber-500" />}
                       </span>
-                      <CircularProgress rate={rate} size={28} />
-                      <span className="absolute bottom-1 left-1/2 -translate-x-1/2 flex gap-0.5">
-                        {hasNote && (
-                          <span className="size-1 rounded-full bg-current opacity-60" />
-                        )}
-                        {hasDeadline && (
-                          <span className="size-1 rounded-full bg-amber-500" />
-                        )}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
+                    )}
+                  </button>
+                );
+              })}
             </div>
           </Card>
         </div>
 
-        {/* Day detail panel — matches grid height */}
-        <div className="lg:col-span-2 flex flex-col min-h-0">
-          <h2 className="mb-3 flex items-center justify-between text-sm font-semibold uppercase tracking-wide text-muted shrink-0">
+        {/* Day detail panel */}
+        <div className="lg:col-span-2">
+          <h2 className="mb-3 flex items-center justify-between text-sm font-semibold uppercase tracking-wide text-muted">
             <span>{prettyDate(selected)}</span>
             {selectedIsToday && (
               <span className="rounded-full bg-accent/15 px-2 py-0.5 text-[10px] text-accent">
@@ -296,7 +280,7 @@ export default function CalendarPage() {
             )}
           </h2>
 
-          <div className="flex-1 min-h-0 overflow-y-auto space-y-3">
+          <div className="space-y-3 max-h-[60vh] overflow-y-auto">
             {deadlines.length > 0 && (
               <Card className="p-3">
                 {deadlines.map((g) => (
@@ -350,36 +334,18 @@ export default function CalendarPage() {
                         )}
                         {!editable &&
                           (status === "done" ? (
-                            <Check
-                              className="size-4 text-done"
-                              strokeWidth={2.5}
-                            />
+                            <Check className="size-4 text-done" strokeWidth={2.5} />
                           ) : status === "missed" ? (
                             dayFrozen ? (
-                              <span
-                                className="flex items-center gap-1"
-                                title="Protected by a streak freeze"
-                              >
-                                <X
-                                  className="size-4 text-missed opacity-50"
-                                  strokeWidth={2.5}
-                                />
-                                <Snowflake
-                                  className="size-3.5 text-sky-400"
-                                  strokeWidth={2.5}
-                                />
+                              <span className="flex items-center gap-1" title="Protected by a streak freeze">
+                                <X className="size-4 text-missed opacity-50" strokeWidth={2.5} />
+                                <Snowflake className="size-3.5 text-sky-400" strokeWidth={2.5} />
                               </span>
                             ) : (
-                              <X
-                                className="size-4 text-missed"
-                                strokeWidth={2.5}
-                              />
+                              <X className="size-4 text-missed" strokeWidth={2.5} />
                             )
                           ) : status === "skipped" ? (
-                            <Minus
-                              className="size-4 text-skipped"
-                              strokeWidth={2.5}
-                            />
+                            <Minus className="size-4 text-skipped" strokeWidth={2.5} />
                           ) : (
                             <span className="text-faint">—</span>
                           ))}
@@ -396,16 +362,13 @@ export default function CalendarPage() {
                   <NotebookPen className="size-3.5 icon-accent" /> Notes
                 </p>
                 {dayNotes.map((n) => (
-                  <p key={n.id} className="text-sm italic text-muted">
-                    &quot;{n.body}&quot;
-                  </p>
+                  <p key={n.id} className="text-sm italic text-muted">&quot;{n.body}&quot;</p>
                 ))}
               </Card>
             )}
           </div>
         </div>
       </div>
-    </div>
     </AppPageShell>
   );
 }

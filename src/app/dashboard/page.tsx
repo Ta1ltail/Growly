@@ -33,6 +33,7 @@ import { summarizeProgress } from "@/lib/progress";
 import { ACHIEVEMENTS } from "@/lib/achievements";
 import { RARITY_STYLE } from "@/lib/rarity";
 import type { AchievementDef } from "@/lib/types";
+import { useNotifications } from "@/hooks/useNotifications";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Card } from "@/components/ui/Card";
 import { StatCard } from "@/components/ui/StatCard";
@@ -51,6 +52,7 @@ import {
   StaggerItem,
 } from "@/components/ui/StaggerContainer";
 import { AppPageShell } from "@/components/layout/AppPageShell";
+import { Bell, MessageSquare } from "lucide-react";
 
 const BY_ID = new Map(ACHIEVEMENTS.map((a) => [a.id, a]));
 
@@ -102,6 +104,12 @@ export default function DashboardPage() {
   const insights = useMemo(
     () => buildInsights(active, data.marks, today),
     [active, data.marks, today],
+  );
+
+  const { notifications: recentNotifications } = useNotifications();
+  const recentActivity = useMemo(
+    () => recentNotifications.slice(0, 5),
+    [recentNotifications],
   );
 
   // Progress widgets data
@@ -407,7 +415,7 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Your Progress section — moved from Today page, fixed-size cards */}
+      {/* Your Progress section */}
       <section className="mt-6">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-sm font-semibold uppercase tracking-wide text-muted">
@@ -436,6 +444,47 @@ export default function DashboardPage() {
           ))}
         </div>
       </section>
+
+      {/* Recent Activity section — replaces stats/calendar on dashboard */}
+      {recentActivity.length > 0 && (
+        <section className="mt-6">
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-muted">
+              <Bell className="size-4 icon-accent" /> Recent Activity
+            </h2>
+            <Link
+              href="/notifications"
+              className="text-xs font-semibold text-accent hover:underline"
+            >
+              View all
+            </Link>
+          </div>
+          <Card className="divide-y divide-line overflow-hidden">
+            {recentActivity.map((n) => (
+              <Link
+                key={n.id}
+                href={n.link}
+                className="flex items-start gap-3 px-4 py-3 text-sm transition-colors hover:bg-surface2/50"
+              >
+                <div className="flex size-8 shrink-0 items-center justify-center rounded-xl bg-accent/10">
+                  <MessageSquare className="size-4 text-accent" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-medium text-ink">{n.title}</p>
+                  {n.body && (
+                    <p className="mt-0.5 truncate text-xs text-muted">
+                      {n.body}
+                    </p>
+                  )}
+                </div>
+                {!n.is_read && (
+                  <span className="mt-1.5 size-2 shrink-0 rounded-full bg-accent" />
+                )}
+              </Link>
+            ))}
+          </Card>
+        </section>
+      )}
 
       {/* Insights */}
       {insights.length > 0 && (
