@@ -3,9 +3,10 @@
 // React hook for the notification system — querying, creating (including
 // auto-wiring friend request notifications), and marking as read.
 // Notifications live in the `notifications` Supabase table.
-// Uses Supabase Realtime subscription instead of polling for instant updates.
+// Uses a singleton Realtime subscription so any number of components can
+// call useNotifications() without creating duplicate channels.
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useEffect, useCallback, useSyncExternalStore } from "react";
 import { useAuth } from "./useAuth";
 import { createClient } from "@/lib/supabase/client";
 import type { RealtimePostgresChangesPayload } from "@supabase/supabase-js";
@@ -22,152 +23,227 @@ export interface Notification {
   created_at: string;
 }
 
+/* ─────────────────────────────────────────
+   Module-level singleton store — manages
+   ONE Realtime subscription at a time.
+   ───────────────────────────────────────── */
+
+interface StoreState {
+  notifications: Notification[];
+  loading: boolean;
+  unreadCount: number;
+}
+
+type Listener = () => void;
+
+let store: StoreState = { notifications: [], loading: true, unreadCount: 0 };
+let listeners = new Set<Listener>();
+let currentUserId: string | null = null;
+let channelCleanup: (() => void) | null = null;
+let fetchTimer: ReturnType<typeof setTimeout> | null = null;
+
+function notifyListeners() {
+  listeners.forEach((fn) => fn());
+}
+
+function getSnapshot(): StoreState {
+  return store;
+}
+
+function subscribe(listener: Listener): () => void {
+  listeners.add(listener);
+  return () => {
+    listeners.delete(listener);
+    // Tear down the subscription when the LAST subscriber leaves
+    if (listeners.size === 0) teardown();
+  };
+}
+
+function updateStore(partial: Partial<StoreState>) {
+  store = { ...store, ...partial };
+  notifyListeners();
+}
+
+/* ── Start the singleton subscription for a given user ── */
+function subscribeToUser(userId: string) {
+  // Already subscribed to this user — nothing to do
+  if (currentUserId === userId && channelCleanup) return;
+
+  // Tear down any previous subscription first
+  teardown();
+
+  currentUserId = userId;
+  const supabase = createClient();
+
+  // ── Fetch on mount ──
+  updateStore({ loading: true });
+  fetchNotifications(userId);
+
+  // ── Realtime subscription ──
+  const channel = supabase
+    .channel(`notifications-singleton:${userId}`)
+    .on(
+      "postgres_changes",
+      {
+        event: "*",
+        schema: "public",
+        table: "notifications",
+        filter: `user_id=eq.${userId}`,
+      },
+      (payload: RealtimePostgresChangesPayload<Notification>) => {
+        handleChange(payload);
+      },
+    )
+    .subscribe();
+
+  channelCleanup = () => {
+    supabase.removeChannel(channel);
+  };
+}
+
+function teardown() {
+  if (channelCleanup) {
+    channelCleanup();
+    channelCleanup = null;
+  }
+  if (fetchTimer) {
+    clearTimeout(fetchTimer);
+    fetchTimer = null;
+  }
+  currentUserId = null;
+}
+
+/* ── Fetch notifications from Supabase ── */
+async function fetchNotifications(userId: string | null) {
+  if (!userId) {
+    updateStore({ notifications: [], loading: false, unreadCount: 0 });
+    return;
+  }
+
+  const supabase = createClient();
+  try {
+    const { data } = await supabase
+      .from("notifications")
+      .select("id, user_id, type, title, body, from_user, link, is_read, created_at")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(50);
+
+    const notifications = (data ?? []) as Notification[];
+    updateStore({
+      notifications,
+      loading: false,
+      unreadCount: notifications.filter((n) => !n.is_read).length,
+    });
+  } catch {
+    updateStore({ notifications: [], loading: false, unreadCount: 0 });
+  }
+}
+
+/* ── Handle a realtime change ── */
+function handleChange(payload: RealtimePostgresChangesPayload<Notification>) {
+  let next = [...store.notifications];
+
+  if (payload.eventType === "INSERT") {
+    next = [payload.new as Notification, ...next].slice(0, 50);
+  } else if (payload.eventType === "UPDATE") {
+    const updated = payload.new as Notification;
+    next = next.map((n) => (n.id === updated.id ? updated : n));
+  } else if (payload.eventType === "DELETE") {
+    next = next.filter((n) => n.id !== (payload.old as Notification).id);
+  }
+
+  updateStore({
+    notifications: next,
+    unreadCount: next.filter((n) => !n.is_read).length,
+  });
+}
+
+/* ── Refresh on visibility change (shared) ── */
+function onVisibilityChange() {
+  if (document.visibilityState === "visible" && currentUserId) {
+    // Debounce rapid visibility toggles
+    if (fetchTimer) clearTimeout(fetchTimer);
+    fetchTimer = setTimeout(() => fetchNotifications(currentUserId), 300);
+  }
+}
+
+// Register visibility listener once at module level
+if (typeof window !== "undefined") {
+  document.addEventListener("visibilitychange", onVisibilityChange);
+}
+
+/* ─────────────────────────────────────────
+   Public hook — any component can call this
+   safely; the subscription is a singleton.
+   ───────────────────────────────────────── */
+
 export function useNotifications() {
   const { user } = useAuth();
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [loading, setLoading] = useState(true);
-  const supabaseRef = useRef<ReturnType<typeof createClient> | null>(null);
-  const channelRef = useRef<ReturnType<ReturnType<typeof createClient>["channel"]> | null>(null);
+  const userId = user?.id ?? null;
 
-  const fetchNotificationsFn = useCallback(async () => {
-    if (!user) {
-      setNotifications([]);
-      setLoading(false);
-      return;
-    }
+  // Subscribe to the singleton store via useSyncExternalStore for tear-free reads
+  const state = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
 
-    const supabase = createClient();
-    try {
-      const { data } = await supabase
-        .from("notifications")
-        .select("id, user_id, type, title, body, from_user, link, is_read, created_at")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false })
-        .limit(50);
-
-      setNotifications((data ?? []) as Notification[]);
-    } catch {
-      // Silently handle — notifications are non-critical UI
-      setNotifications([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [user]);
-
-  // Handle a realtime change from Supabase
-  const handleRealtimeChange = useCallback(
-    (payload: RealtimePostgresChangesPayload<Notification>) => {
-      if (payload.eventType === "INSERT") {
-        setNotifications((prev) => [payload.new as Notification, ...prev].slice(0, 50));
-      } else if (payload.eventType === "UPDATE") {
-        const updated = payload.new as Notification;
-        setNotifications((prev) =>
-          prev.map((n) => (n.id === updated.id ? updated : n)),
-        );
-      } else if (payload.eventType === "DELETE") {
-        setNotifications((prev) =>
-          prev.filter((n) => n.id !== (payload.old as Notification).id),
-        );
-      }
-    },
-    [],
-  );
-
-  // Set up Supabase Realtime subscription + initial load
+  // React to user changes
   useEffect(() => {
-    // Use a stable supabase client instance across this component's lifetime
-    if (!supabaseRef.current) supabaseRef.current = createClient();
-    const supabase = supabaseRef.current;
-
-    queueMicrotask(() => fetchNotificationsFn());
-
-    if (!user) {
-      // Clean up any existing channel when user signs out
-      if (channelRef.current) {
-        supabase.removeChannel(channelRef.current);
-        channelRef.current = null;
-      }
-      return;
+    if (userId) {
+      subscribeToUser(userId);
+    } else {
+      // No user — reset
+      currentUserId = null;
+      updateStore({ notifications: [], loading: false, unreadCount: 0 });
     }
+  }, [userId]);
 
-    const channel = supabase
-      .channel(`notifications:${user.id}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "notifications",
-          filter: `user_id=eq.${user.id}`,
-        },
-        (payload: RealtimePostgresChangesPayload<Notification>) => {
-          handleRealtimeChange(payload);
-        },
-      )
-      .subscribe();
-
-    channelRef.current = channel;
-
-    return () => {
-      supabase.removeChannel(channel);
-      channelRef.current = null;
-    };
-  }, [user, handleRealtimeChange, fetchNotificationsFn]);
-
-  // Also refresh when the tab becomes visible again (covers reconnection after sleep)
-  useEffect(() => {
-    const onVisible = () => {
-      if (document.visibilityState === "visible") fetchNotificationsFn();
-    };
-    document.addEventListener("visibilitychange", onVisible);
-    return () => document.removeEventListener("visibilitychange", onVisible);
-  }, [fetchNotificationsFn]);
-
-  const unreadCount = notifications.filter((n) => !n.is_read).length;
-
-  const markAsRead = useCallback(
-    async (id: string) => {
-      const supabase = createClient();
-      try {
-        await supabase
-          .from("notifications")
-          .update({ is_read: true })
-          .eq("id", id);
-      } catch {
-        // Silently handle — optimistic update below keeps UI responsive
-      }
-
-      setNotifications((prev) =>
-        prev.map((n) => (n.id === id ? { ...n, is_read: true } : n)),
-      );
-    },
-    [],
-  );
-
-  const markAllAsRead = useCallback(async () => {
-    if (!user) return;
+  const markAsRead = useCallback(async (id: string) => {
     const supabase = createClient();
     try {
       await supabase
         .from("notifications")
         .update({ is_read: true })
-        .eq("user_id", user.id)
-        .eq("is_read", false);
+        .eq("id", id);
     } catch {
-      // Silently handle — non-critical
+      // Silently handle
     }
 
-    setNotifications((prev) =>
-      prev.map((n) => ({ ...n, is_read: true })),
-    );
-  }, [user]);
+    updateStore({
+      notifications: store.notifications.map((n) =>
+        n.id === id ? { ...n, is_read: true } : n,
+      ),
+      unreadCount: Math.max(0, store.unreadCount - 1),
+    });
+  }, []);
+
+  const markAllAsRead = useCallback(async () => {
+    if (!currentUserId) return;
+    const supabase = createClient();
+    try {
+      await supabase
+        .from("notifications")
+        .update({ is_read: true })
+        .eq("user_id", currentUserId)
+        .eq("is_read", false);
+    } catch {
+      // Silently handle
+    }
+
+    updateStore({
+      notifications: store.notifications.map((n) => ({ ...n, is_read: true })),
+      unreadCount: 0,
+    });
+  }, []);
+
+  const refreshNotifications = useCallback(() => {
+    if (currentUserId) fetchNotifications(currentUserId);
+  }, []);
 
   return {
-    notifications,
-    loading,
-    unreadCount,
+    notifications: state.notifications,
+    loading: state.loading,
+    unreadCount: state.unreadCount,
     markAsRead,
     markAllAsRead,
-    refreshNotifications: fetchNotificationsFn,
+    refreshNotifications,
   };
 }
