@@ -398,7 +398,7 @@ export default function TodayPage() {
                       ) : (
                         <Coins className="size-3 text-amber-500" />
                       )}
-                      {spinResult.label}
+                      {spinResult.originalLabel ?? spinResult.label}
                     </span>
                     <span className="text-[10px] text-muted">
                       <RotateCcw className="size-3 inline mr-0.5" /> Resets at

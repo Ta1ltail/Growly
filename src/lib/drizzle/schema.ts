@@ -71,9 +71,11 @@ export const habits = pgTable(
     priority: text("priority"),
     archived: boolean("archived").notNull().default(false),
     reminder: jsonb("reminder"),
+    deletedAt: timestamp("deleted_at", { withTimezone: true }),
   },
   (table) => [
     index("idx_habits_user_id").on(table.userId),
+    index("idx_habits_active").on(table.userId).where(sql`${table.deletedAt} IS NULL`),
     check("habits_priority_check", sql`${table.priority} IN ('low','med','high')`),
   ],
 );
@@ -121,8 +123,12 @@ export const notes = pgTable(
     body: text("body").notNull(),
     tags: text("tags").array().notNull().default(sql`'{}'::text[]`),
     links: jsonb("links").notNull().default(sql`'{}'::jsonb`),
+    deletedAt: timestamp("deleted_at", { withTimezone: true }),
   },
-  (table) => [index("idx_notes_user_id").on(table.userId)],
+  (table) => [
+    index("idx_notes_user_id").on(table.userId),
+    index("idx_notes_active").on(table.userId).where(sql`${table.deletedAt} IS NULL`),
+  ],
 );
 
 // ── Goals ───────────────────────────────────────────
@@ -143,8 +149,12 @@ export const goals = pgTable(
     deadline: date("deadline"),
     linkedHabitIds: uuid("linked_habit_ids").array().default(sql`'{}'::uuid[]`),
     milestones: jsonb("milestones"),
+    deletedAt: timestamp("deleted_at", { withTimezone: true }),
   },
-  (table) => [index("idx_goals_user_id").on(table.userId)],
+  (table) => [
+    index("idx_goals_user_id").on(table.userId),
+    index("idx_goals_active").on(table.userId).where(sql`${table.deletedAt} IS NULL`),
+  ],
 );
 
 // ── User Settings (single row per user) ─────────────

@@ -64,7 +64,9 @@ const LAST_USER_ID_KEY = "growly.last_user_id";
 // v6: added engagement fields on `economy` (bonusCoins, lastCheckIn,
 //     checkInStreak, currentQuest, lastSpinDate, lastSpinResult). Older saves
 //     default them; coins still re-derive from history.
-export const SCHEMA_VERSION = 6;
+// v7: soft-delete support — deletedAt on Habit/Note/Goal. The field is
+//     preserved through storage, filtered by consumers.
+export const SCHEMA_VERSION = 7;
 
 // How long after midnight a user may still edit "yesterday" before the day
 // locks permanently (Honest Tracking Policy). Tunable in Settings.
@@ -169,6 +171,8 @@ function cleanHabit(v: unknown, extraCategories?: Set<string>): Habit | null {
     habit.priority = v.priority as Priority;
   }
   if (typeof v.archived === "boolean") habit.archived = v.archived;
+  const deletedAt = asString(v.deletedAt);
+  if (deletedAt) habit.deletedAt = deletedAt;
   if (isObject(v.reminder) && typeof v.reminder.enabled === "boolean") {
     habit.reminder = {
       enabled: v.reminder.enabled,
@@ -201,6 +205,7 @@ function cleanNote(v: unknown): Note | null {
   const created =
     typeof createdAt === "string" ? createdAt : new Date(0).toISOString();
   const links = isObject(v.links) ? v.links : {};
+  const deletedAt = asString(v.deletedAt);
   return {
     id,
     createdAt: created,
@@ -209,6 +214,7 @@ function cleanNote(v: unknown): Note | null {
     tags: Array.isArray(v.tags)
       ? v.tags.filter((t): t is string => typeof t === "string")
       : [],
+    ...(deletedAt ? { deletedAt } : {}),
     links: {
       ...(asString(links.date) ? { date: links.date as string } : {}),
       ...(asString(links.habitId) ? { habitId: links.habitId as string } : {}),
@@ -276,6 +282,8 @@ function cleanGoal(v: unknown): Goal | null {
   }
   const milestones = cleanMilestones(v.milestones);
   if (milestones) goal.milestones = milestones;
+  const deletedAt = asString(v.deletedAt);
+  if (deletedAt) goal.deletedAt = deletedAt;
   return goal;
 }
 
@@ -434,6 +442,10 @@ function cleanEconomyV5(v: unknown): Economy {
         label: r.label,
         amount: r.amount,
         isFreeze: r.isFreeze,
+        originalLabel:
+          typeof r.originalLabel === "string"
+            ? r.originalLabel
+            : undefined,
       };
     }
   }

@@ -129,11 +129,14 @@ describe("habit actions", () => {
     expect(loadData().auditLog[0].action).toBe("habit.edit");
   });
 
-  it("deleteHabit removes the habit", () => {
+  it("deleteHabit soft-deletes the habit", () => {
     const h = makeTestHabit();
     addHabit(h);
     deleteHabit(h.id);
-    expect(loadData().habits).toHaveLength(0);
+    const habits = loadData().habits;
+    expect(habits).toHaveLength(1);
+    expect(habits[0].deletedAt).toBeDefined();
+    expect(typeof habits[0].deletedAt).toBe("string");
   });
 
   it("duplicateHabit creates a copy with (copy) suffix", () => {
@@ -174,11 +177,14 @@ describe("note actions", () => {
     expect(n.tags).toEqual(["updated"]);
   });
 
-  it("deleteNote removes a note", () => {
+  it("deleteNote soft-deletes a note", () => {
     const note = addNote({ body: "To delete" });
     expect(loadData().notes).toHaveLength(1);
     deleteNote(note.id);
-    expect(loadData().notes).toHaveLength(0);
+    const notes = loadData().notes;
+    expect(notes).toHaveLength(1);
+    expect(notes[0].deletedAt).toBeDefined();
+    expect(typeof notes[0].deletedAt).toBe("string");
   });
 
   it("setDailyNote creates a new daily note when none exists", () => {
@@ -197,11 +203,13 @@ describe("note actions", () => {
     expect(notes[0].body).toBe("Updated");
   });
 
-  it("setDailyNote with empty text deletes the note", () => {
+  it("setDailyNote with empty text soft-deletes the note", () => {
     setDailyNote("2026-07-16", "Something");
     expect(loadData().notes).toHaveLength(1);
     setDailyNote("2026-07-16", "");
-    expect(loadData().notes).toHaveLength(0);
+    const notes = loadData().notes;
+    expect(notes).toHaveLength(1);
+    expect(notes[0].deletedAt).toBeDefined();
   });
 
   it("setDailyNote does not affect non-daily notes", () => {
@@ -239,7 +247,7 @@ describe("goal actions", () => {
     expect(loadData().goals[0].current).toBe(5);
   });
 
-  it("deleteGoal removes a goal", () => {
+  it("deleteGoal soft-deletes a goal", () => {
     const goal: Goal = {
       id: "g1",
       title: "Walk",
@@ -249,7 +257,10 @@ describe("goal actions", () => {
     };
     addGoal(goal);
     deleteGoal("g1");
-    expect(loadData().goals).toHaveLength(0);
+    const goals = loadData().goals;
+    expect(goals).toHaveLength(1);
+    expect(goals[0].deletedAt).toBeDefined();
+    expect(typeof goals[0].deletedAt).toBe("string");
   });
 });
 

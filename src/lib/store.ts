@@ -117,7 +117,21 @@ function scheduleSave(data: AppData): void {
 function computeChanged(prev: AppData, next: AppData): ChangedTables {
   const changed: ChangedTables = {};
   if (prev.habits !== next.habits) changed.habits = true;
-  if (prev.marks !== next.marks) changed.marks = true;
+  if (prev.marks !== next.marks) {
+    changed.marks = true;
+    // Compute which individual mark dateKeys changed (Finding #4: dirty marks)
+    const dirtyKeys: string[] = [];
+    const allKeys = new Set([
+      ...Object.keys(prev.marks),
+      ...Object.keys(next.marks),
+    ]);
+    for (const key of allKeys) {
+      if (JSON.stringify(prev.marks[key]) !== JSON.stringify(next.marks[key])) {
+        dirtyKeys.push(key);
+      }
+    }
+    if (dirtyKeys.length > 0) changed.dirtyMarkKeys = dirtyKeys;
+  }
   if (prev.notes !== next.notes) changed.notes = true;
   if (prev.goals !== next.goals) changed.goals = true;
   if (prev.settings !== next.settings) changed.settings = true;
@@ -243,15 +257,20 @@ export function updateHabit(habit: Habit): void {
 export function deleteHabit(id: string): void {
   update((prev) => {
     const before = prev.habits.find((h) => h.id === id);
+    if (!before) return prev;
+    const now = new Date().toISOString();
     return {
       ...prev,
-      habits: prev.habits.filter((h) => h.id !== id),
+      habits: prev.habits.map((h) =>
+        h.id === id ? { ...h, deletedAt: now } : h,
+      ),
       auditLog: audit(
         prev,
         "habit.delete",
-        `Deleted “${before?.name ?? "habit"}”`,
+        `Deleted “${before.name}”`,
         id,
         before,
+        { ...before, deletedAt: now },
       ),
     };
   });
@@ -284,6 +303,7 @@ export function duplicateHabit(id: string): void {
       name: `${src.name} (copy)`,
       createdAt: new Date().toISOString(),
       archived: false,
+      deletedAt: undefined, // ensure copy starts as active, never inherits deletedAt
     };
     return {
       ...prev,
@@ -314,8 +334,9 @@ export function cycleMark(
   // undoing a single mark is rarely the desired action. Users can still undo
   // habit creation/editing/deletion and bulk actions.
   update((prev) => {
+    const now = new Date();
     const grace = prev.settings.graceHours ?? DEFAULT_GRACE_HOURS;
-    if (!canEditMark(dateK, new Date(), grace)) return prev;
+    if (!canEditMark(dateK, now, grace)) return prev;
     const day = { ...(prev.marks[dateK] ?? {}) };
     const next = nextStatus(day[habitId]);
     if (next === undefined) delete day[habitId];
@@ -324,11 +345,11 @@ export function cycleMark(
     // Marking can satisfy achievements — persist any new unlocks for popups.
     const { unlocks } = reconcileUnlocks(
       updated,
-      new Date(),
-      new Date().toISOString(),
+      now,
+      now.toISOString(),
     );
     // Progress daily quest if marking done today
-    const todayKey = dateKey(new Date());
+    const todayKey = dateKey(now);
     let eco = updated.economy;
     if (dateK === todayKey && next === "done") {
       const q = eco.currentQuest;
@@ -379,7 +400,12 @@ export function updateNote(
 }
 
 export function deleteNote(id: string): void {
-  update((prev) => ({ ...prev, notes: prev.notes.filter((n) => n.id !== id) }));
+  update((prev) => ({
+    ...prev,
+    notes: prev.notes.map((n) =>
+      n.id === id ? { ...n, deletedAt: new Date().toISOString() } : n,
+    ),
+  }));
 }
 
 // Upsert the single "daily note" for a date (used by Today's quick note box).
@@ -393,14 +419,18 @@ export function setDailyNote(dateK: string, text: string): void {
       if (trimmed === "") {
         return {
           ...prev,
-          notes: prev.notes.filter((n) => n.id !== existing.id),
+          notes: prev.notes.map((n) =>
+            n.id === existing.id
+              ? { ...n, deletedAt: new Date().toISOString() }
+              : n,
+          ),
         };
       }
       return {
         ...prev,
         notes: prev.notes.map((n) =>
           n.id === existing.id
-            ? { ...n, body: text, updatedAt: new Date().toISOString() }
+            ? { ...n, body: text, updatedAt: new Date().toISOString(), deletedAt: undefined }
             : n,
         ),
       };
@@ -433,7 +463,12 @@ export function updateGoal(goal: Goal): void {
 }
 
 export function deleteGoal(id: string): void {
-  update((prev) => ({ ...prev, goals: prev.goals.filter((g) => g.id !== id) }));
+  update((prev) => ({
+    ...prev,
+    goals: prev.goals.map((g) =>
+      g.id === id ? { ...g, deletedAt: new Date().toISOString() } : g,
+    ),
+  }));
 }
 
 /* ---------------- settings ---------------- */
@@ -563,6 +598,27 @@ function reloadData(): void {
 export function reloadCache(): void {
   cache = null;
   for (const listener of listeners) listener();
+}
+
+/* ────────────────────────────────────────────
+   Active item helpers — filter out soft-deleted
+   records (Finding #2). UI components should use
+   these instead of reading habits/notes/goals raw.
+   ──────────────────────────────────────────── */
+
+/** Return only habits that have NOT been soft-deleted. */
+export function activeHabits(habits: Habit[]): Habit[] {
+  return habits.filter((h) => !h.deletedAt);
+}
+
+/** Return only notes that have NOT been soft-deleted. */
+export function activeNotes(notes: Note[]): Note[] {
+  return notes.filter((n) => !n.deletedAt);
+}
+
+/** Return only goals that have NOT been soft-deleted. */
+export function activeGoals(goals: Goal[]): Goal[] {
+  return goals.filter((g) => !g.deletedAt);
 }
 
 // Write a raw JSON string straight to storage, then reload through loadData so
@@ -855,10 +911,11 @@ function summarizeLevel(data: AppData, today: Date): number {
 export function claimDailyCheckIn(): { reward: number; streak: number } {
   let result: { reward: number; streak: number } = { reward: 0, streak: 0 };
   update((prev) => {
-    const todayKey = dateKey(new Date());
+    const now = new Date();
+    const todayKey = dateKey(now);
     if (prev.economy.lastCheckIn === todayKey) return prev; // already claimed
     const prevStreak = prev.economy.checkInStreak;
-    const yesterday = dateKey(addDays(new Date(), -1));
+    const yesterday = dateKey(addDays(now, -1));
     const streak = prev.economy.lastCheckIn === yesterday ? prevStreak + 1 : 1;
     const reward = checkInReward(streak);
     result = { reward, streak };
@@ -880,7 +937,8 @@ export function claimDailyCheckIn(): { reward: number; streak: number } {
 // claimed (currentQuest is null despite lastQuestDate being today).
 export function refreshDailyQuest(): void {
   update((prev) => {
-    const todayKey = dateKey(new Date());
+    const now = new Date();
+    const todayKey = dateKey(now);
     // If today's quest already exists (claimed or unclaimed), don't regenerate
     if (prev.economy.lastQuestDate === todayKey) return prev;
     const quest = generateDailyQuest(prev.habits);
@@ -898,6 +956,7 @@ export function refreshDailyQuest(): void {
 // Claim the daily quest reward. Only works if the quest is completed.
 export function claimDailyQuest(): void {
   update((prev) => {
+    const now = new Date();
     const q = prev.economy.currentQuest;
     if (!q || q.current < q.target || q.claimed) return prev;
     return {
@@ -908,7 +967,7 @@ export function claimDailyQuest(): void {
         // Keep the quest around in a claimed state so the card stays visible
         // until midnight instead of vanishing the moment it's collected.
         currentQuest: { ...q, claimed: true },
-        lastQuestDate: dateKey(new Date()),
+        lastQuestDate: dateKey(now),
       },
     };
   });
@@ -919,21 +978,28 @@ export function doDailySpin(): {
   label: string;
   amount: number;
   isFreeze: boolean;
+  originalLabel?: string;
 } | null {
-  let result: { label: string; amount: number; isFreeze: boolean } | null =
-    null;
+  let result: { label: string; amount: number; isFreeze: boolean; originalLabel?: string } | null = null;
   update((prev) => {
-    const todayKey = dateKey(new Date());
+    const now = new Date();
+    const todayKey = dateKey(now);
     if (prev.economy.lastSpinDate === todayKey) return prev; // already spun
     const reward = randomSpinReward();
     const isFreeze = reward.item === "freeze";
     // When the spin lands on "Streak Freeze", give a coin consolation prize
     // since a scatter-shot freeze entry can't target a real missed day.
+    // Preserve the original reward label so the UI can display it properly.
     const effectiveAmount = isFreeze ? 25 : reward.amount;
     const effectiveLabel = isFreeze
       ? `25 coins (freeze consolation)`
       : reward.label;
-    result = { label: effectiveLabel, amount: effectiveAmount, isFreeze };
+    result = {
+      label: effectiveLabel,
+      amount: effectiveAmount,
+      isFreeze,
+      originalLabel: reward.label, // preserve original for display
+    };
     return {
       ...prev,
       economy: {

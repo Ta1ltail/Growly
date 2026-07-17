@@ -31,6 +31,7 @@ export interface Habit {
   reminder?: Reminder;
   priority?: Priority; // absent => treated as "med"
   archived?: boolean; // absent => false
+  deletedAt?: string; // ISO timestamp of soft-delete (schema v7)
 }
 
 export type Marks = Record<string, Record<string, MarkStatus>>;
@@ -56,6 +57,7 @@ export interface Goal {
   deadline?: string; // dateKey
   linkedHabitIds?: string[];
   milestones?: Milestone[];
+  deletedAt?: string; // ISO timestamp of soft-delete (schema v7)
 }
 
 // What a note can be attached to.
@@ -73,6 +75,7 @@ export interface Note {
   body: string; // Markdown
   tags: string[];
   links: NoteLinks;
+  deletedAt?: string; // ISO timestamp of soft-delete (schema v7)
 }
 
 // Append-only audit trail for habit & schedule changes (Honest Tracking Policy).
@@ -192,7 +195,7 @@ export interface Economy {
   lastQuestDate: string | null; // dateKey of last quest generated
   currentQuest: DailyQuest | null;
   lastSpinDate: string | null; // dateKey of last daily spin
-  lastSpinResult: { label: string; amount: number; isFreeze: boolean } | null; // last spin reward
+  lastSpinResult: { label: string; amount: number; isFreeze: boolean; originalLabel?: string } | null; // last spin reward
 }
 
 // A daily challenge generated once per day.

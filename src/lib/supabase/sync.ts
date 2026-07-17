@@ -6,8 +6,9 @@
 //
 // Strategy: Pull from Supabase FIRST, then merge remote changes on top of
 // local. This prevents a stale local session from blowing away newer remote
-// data. If both have changes, the local version wins for any given field
-// (last-write-wins per table).
+// data. When both have changes for the same record, the NEWEST timestamp
+// wins (Finding #7), with soft-deleted records propagating their deletion
+// state across devices (Finding #2).
 
 import { createClient } from "./client";
 import {
@@ -25,6 +26,7 @@ import {
   type Profile,
   type ProgressSeen,
 } from "../types";
+import type { Habit, Note, Goal } from "../types";
 import { DEFAULT_THEME } from "../theme";
 import {
   loadData,
@@ -111,6 +113,21 @@ export function bumpDataGeneration(): void {
 
 export function setSyncReady(ready: boolean): void {
   _syncReady = ready;
+}
+
+/** Check whether the sync-ready gate is currently open. */
+export function getSyncReady(): boolean {
+  return _syncReady;
+}
+
+/** Total items currently pending in the retry queue. */
+export function getPendingPushCount(): number {
+  return _retryQueue.length;
+}
+
+/** Check if there are any queued pushes waiting for retry. */
+export function hasUnsyncedChanges(): boolean {
+  return _retryQueue.length > 0;
 }
 
 /* ────────────────────────────────────────────
@@ -391,11 +408,13 @@ function mergeAppData(local: AppData, remote: AppData): AppData {
     return { ...remote, auditLog: local.auditLog };
   }
 
-  // Merge habits by ID — union of both, local overwrites same IDs
+  // Merge habits by ID — newest timestamp wins (Finding #7), and
+  // soft-deleted records propagate across devices (Finding #2).
   const mergedHabits = mergeById(
     remote.habits,
     local.habits,
     (h) => h.id,
+    compareHabitTimestamp,
   );
 
   // Merge marks — union of date keys, local wins per habit per day
@@ -404,18 +423,20 @@ function mergeAppData(local: AppData, remote: AppData): AppData {
     mergedMarks[dateKey] = { ...(mergedMarks[dateKey] ?? {}), ...day };
   }
 
-  // Merge notes by ID
+  // Merge notes by ID — newest timestamp wins
   const mergedNotes = mergeById(
     remote.notes,
     local.notes,
     (n) => n.id,
+    compareNoteTimestamp,
   );
 
-  // Merge goals by ID
+  // Merge goals by ID — newest timestamp wins
   const mergedGoals = mergeById(
     remote.goals,
     local.goals,
     (g) => g.id,
+    compareGoalTimestamp,
   );
 
   // Merge unlocks by achievement_id
@@ -613,23 +634,81 @@ export function mergeProfile(local: Profile, remote: Profile | undefined): Profi
   };
 }
 
-/** Merge two arrays by ID — remote items first, local overwrites same IDs */
+/**
+ * Merge two arrays by ID, with optional timestamp-based conflict resolution.
+ * When a `compare` function is provided, the NEWER item wins (Finding #7).
+ * Without a compare function, local wins (original behavior).
+ * Soft-deleted records (with `deletedAt`) are treated as "newer" than live
+ * ones of the same ID, so deletions propagate across devices (Finding #2).
+ */
 /** @visibleForTesting */
 export function mergeById<T extends { id: string }>(
   remote: T[],
   local: T[],
   getId: (item: T) => string = (item) => item.id,
+  compare?: (a: T, b: T) => number, // positive = a is newer/more-important
 ): T[] {
   const map = new Map<string, T>();
-  // Add remote items first
-  for (const item of remote) {
-    map.set(getId(item), item);
-  }
-  // Local overwrites same IDs
-  for (const item of local) {
-    map.set(getId(item), item);
-  }
+
+  const insert = (item: T) => {
+    const key = getId(item);
+    const existing = map.get(key);
+    if (!existing) {
+      map.set(key, item);
+    } else if (compare) {
+      // Use comparison function: keep the newer/more-important item
+      if (compare(item, existing) > 0) {
+        map.set(key, item);
+      }
+    } else {
+      // No comparator: local wins (items inserted later = more recent)
+      map.set(key, item);
+    }
+  };
+
+  // Process both arrays through the same insert logic
+  for (const item of remote) insert(item);
+  for (const item of local) insert(item);
+
   return Array.from(map.values());
+}
+
+// ── Timestamp comparison helpers (Finding #7 + Finding #2) ──
+//
+// Each comparator returns a number: positive = `a` is newer/more-important.
+// The comparison considers:
+//   1. deletedAt — if one has deletedAt and the other doesn't, the deleted
+//      one wins (propagates the deletion). If both have deletedAt, the
+//      newer deletion wins.
+//   2. createdAt/updatedAt — if neither is deleted, the newer timestamp wins.
+
+/** Compare two Habits by timestamp. Prefers deleted over live. */
+function compareHabitTimestamp(a: Habit, b: Habit): number {
+  // Deletion wins over non-deletion
+  if (a.deletedAt && !b.deletedAt) return 1;
+  if (!a.deletedAt && b.deletedAt) return -1;
+  // Both deleted or both live: compare by last-changed timestamp
+  const aTime = a.deletedAt ?? a.createdAt;
+  const bTime = b.deletedAt ?? b.createdAt;
+  return aTime.localeCompare(bTime);
+}
+
+/** Compare two Notes by timestamp. Prefers deleted over live. */
+function compareNoteTimestamp(a: Note, b: Note): number {
+  if (a.deletedAt && !b.deletedAt) return 1;
+  if (!a.deletedAt && b.deletedAt) return -1;
+  const aTime = a.deletedAt ?? a.updatedAt;
+  const bTime = b.deletedAt ?? b.updatedAt;
+  return aTime.localeCompare(bTime);
+}
+
+/** Compare two Goals by timestamp. Prefers deleted over live. */
+function compareGoalTimestamp(a: Goal, b: Goal): number {
+  if (a.deletedAt && !b.deletedAt) return 1;
+  if (!a.deletedAt && b.deletedAt) return -1;
+  const aTime = a.deletedAt ?? a.createdAt;
+  const bTime = b.deletedAt ?? b.createdAt;
+  return aTime.localeCompare(bTime);
 }
 
 /** Deep compare two AppData objects (excluding auditLog) */

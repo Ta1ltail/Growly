@@ -15,6 +15,7 @@ import { CelebrationManager } from "@/components/celebrations/CelebrationManager
 import { AccentThemeApplier } from "@/components/economy/AccentThemeApplier";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { SyncIndicator } from "@/components/sync/SyncIndicator";
+import { SyncWarningBanner } from "@/components/sync/SyncWarningBanner";
 
 const DevModeLazy = lazy(() =>
   import("@/components/devmode/DevMode").then((m) => ({
@@ -73,6 +74,8 @@ export function AppShell({ children }: { children: ReactNode }) {
       </Suspense>
       {/* Floating sync status indicator — fixed position, no layout shift */}
       <SyncIndicator />
+      {/* Persistent warning banner when initial sync fails with retry info */}
+      <SyncWarningBanner />
     </div>
   );
 }

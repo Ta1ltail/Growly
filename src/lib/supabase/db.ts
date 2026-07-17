@@ -53,6 +53,7 @@ interface DbHabit {
   priority: string | null;
   archived: boolean;
   reminder: unknown | null;
+  deleted_at: string | null;
 }
 
 interface DbMark {
@@ -71,6 +72,7 @@ interface DbNote {
   body: string;
   tags: string[];
   links: unknown;
+  deleted_at: string | null;
 }
 
 interface DbGoal {
@@ -84,6 +86,7 @@ interface DbGoal {
   deadline: string | null;
   linked_habit_ids: string[];
   milestones: unknown | null;
+  deleted_at: string | null;
 }
 
 interface DbUserSettings {
@@ -173,6 +176,7 @@ function rowToHabit(row: DbHabit): Habit {
   if (row.priority) h.priority = row.priority as Priority;
   if (row.archived) h.archived = true;
   if (row.reminder) h.reminder = row.reminder as { enabled: boolean; time?: string };
+  if (row.deleted_at) h.deletedAt = row.deleted_at;
   return h;
 }
 
@@ -190,6 +194,7 @@ function habitToRow(userId: string, h: Habit): DbHabit {
     priority: h.priority ?? null,
     archived: h.archived ?? false,
     reminder: h.reminder ?? null,
+    deleted_at: h.deletedAt ?? null,
   };
 }
 
@@ -222,7 +227,7 @@ function marksToRows(userId: string, marks: Marks): DbMark[] {
 }
 
 function rowToNote(row: DbNote): Note {
-  return {
+  const n: Note = {
     id: row.id,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
@@ -230,6 +235,8 @@ function rowToNote(row: DbNote): Note {
     tags: row.tags ?? [],
     links: (row.links ?? {}) as Note["links"],
   };
+  if (row.deleted_at) n.deletedAt = row.deleted_at;
+  return n;
 }
 
 function noteToRow(userId: string, n: Note): DbNote {
@@ -241,6 +248,7 @@ function noteToRow(userId: string, n: Note): DbNote {
     body: n.body,
     tags: n.tags ?? [],
     links: n.links ?? {},
+    deleted_at: n.deletedAt ?? null,
   };
 }
 
@@ -256,6 +264,7 @@ function rowToGoal(row: DbGoal): Goal {
   if (row.deadline) g.deadline = row.deadline;
   if (row.linked_habit_ids?.length) g.linkedHabitIds = row.linked_habit_ids;
   if (row.milestones) g.milestones = row.milestones as Goal["milestones"];
+  if (row.deleted_at) g.deletedAt = row.deleted_at;
   return g;
 }
 
@@ -271,6 +280,7 @@ function goalToRow(userId: string, g: Goal): DbGoal {
     deadline: g.deadline ?? null,
     linked_habit_ids: g.linkedHabitIds ?? [],
     milestones: g.milestones ?? null,
+    deleted_at: g.deletedAt ?? null,
   };
 }
 
@@ -356,7 +366,7 @@ function rowToEconomy(
     }
   }
 
-  let lastSpinResult: { label: string; amount: number; isFreeze: boolean } | null = null;
+  let lastSpinResult: { label: string; amount: number; isFreeze: boolean; originalLabel?: string } | null = null;
   if (state.last_spin_result && typeof state.last_spin_result === "object") {
     const r = state.last_spin_result as Record<string, unknown>;
     if (
@@ -364,7 +374,15 @@ function rowToEconomy(
       typeof r.amount === "number" &&
       typeof r.isFreeze === "boolean"
     ) {
-      lastSpinResult = r as unknown as typeof lastSpinResult;
+      lastSpinResult = {
+        label: r.label as string,
+        amount: r.amount as number,
+        isFreeze: r.isFreeze as boolean,
+        originalLabel:
+          typeof r.originalLabel === "string"
+            ? (r.originalLabel as string)
+            : undefined,
+      };
     }
   }
 
@@ -611,8 +629,18 @@ async function saveMarks(
   supabase: SupabaseClient,
   userId: string,
   marks: Marks,
+  dirtyMarkKeys?: string[],
 ): Promise<void> {
-  const rows = marksToRows(userId, marks);
+  // Only push the marks that actually changed (Finding #4: dirty marks).
+  // When no dirty keys specified (e.g. initial full sync), push all marks.
+  let marksToSave = marks;
+  if (dirtyMarkKeys && dirtyMarkKeys.length > 0) {
+    marksToSave = {};
+    for (const key of dirtyMarkKeys) {
+      if (marks[key]) marksToSave[key] = marks[key];
+    }
+  }
+  const rows = marksToRows(userId, marksToSave);
   await upsertTable(
     supabase, "marks", rows,
     (r) => r,
@@ -857,6 +885,7 @@ export async function loadAllUserData(
 export type ChangedTables = {
   habits?: true;
   marks?: true;
+  dirtyMarkKeys?: string[]; // specific mark dateKeys that changed (Finding #4)
   notes?: true;
   goals?: true;
   settings?: true;
@@ -945,7 +974,8 @@ export async function saveChanged(
         filteredMarks[dateKey] = filteredDay;
       }
     }
-    promises.push(saveMarks(supabase, userId, filteredMarks));
+    // Only push the dirty mark keys when available, otherwise push all
+    promises.push(saveMarks(supabase, userId, filteredMarks, changed.dirtyMarkKeys));
   }
   if (changed.notes)        promises.push(saveNotes(supabase, userId, data.notes));
   if (changed.goals)        promises.push(saveGoals(supabase, userId, data.goals));

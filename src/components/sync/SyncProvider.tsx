@@ -96,11 +96,23 @@ export function computeDataHash(d: AppData): string {
 // Child components can check this to know if the initial sync has completed.
 // Mount-time effects (seedCelebrationsSeen, refreshDailyQuest, etc.) can use
 // this to defer their execution until data is loaded from Supabase.
+// syncRetrying is true when the initial sync failed and we're retrying.
+// syncRetryCount tracks how many retries have been attempted.
 interface SyncContextValue {
   syncReady: boolean;
+  syncRetrying: boolean;
+  syncRetryCount: number;
 }
 
-const SyncContext = createContext<SyncContextValue>({ syncReady: false });
+export const SyncContext = createContext<SyncContextValue>({
+  syncReady: false,
+  syncRetrying: false,
+  syncRetryCount: 0,
+});
+
+// Max delay for exponential backoff of initial sync retries (2 minutes).
+const MAX_RETRY_DELAY_MS = 120_000;
+const BASE_RETRY_DELAY_MS = 10_000;
 
 export function SyncProvider({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -109,8 +121,14 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
   const [syncReady, setSyncReadyState] = useState(false);
   const pollTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const syncTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [timedOut, setTimedOut] = useState(false);
+  const [syncRetrying, setSyncRetrying] = useState(false);
+  const [syncRetryCount, setSyncRetryCount] = useState(0);
   const isTabVisibleRef = useRef(true);
+  const retryAttemptRef = useRef(0);
+  const timedOutRef = useRef(false); // ref version for closures
+
 
   useEffect(() => {
     if (loading) return;
@@ -166,33 +184,93 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
     // Supabase is unreachable. The _syncReady gate in sync.ts stays
     // false, so pushMutation silently drops all writes — no data reaches
     // Supabase until the next successful sync (via polling or refresh).
+    // The timeout also kicks off the first retry so the initial sync is
+    // re-attempted with exponential backoff (10s, 20s, 40s, 80s, 120s max).
     syncTimeoutRef.current = setTimeout(() => {
+      timedOutRef.current = true;
       setTimedOut(true);
+
+      // Start the retry loop if sync hasn't succeeded yet.
+      // retryAttemptRef.current === 0 means no retry has been scheduled yet
+      // (initial attempt failed before the timeout fired).
+      if (retryAttemptRef.current === 0) {
+        retryAttemptRef.current = 1;
+        scheduleRetry(1);
+      }
     }, 10_000);
 
-    fullResync(userId).then((result) => {
-      // Sync completed — cancel the timeout so timedOut stays false
-      if (syncTimeoutRef.current) {
-        clearTimeout(syncTimeoutRef.current);
-        syncTimeoutRef.current = null;
-      }
+    retryAttemptRef.current = 0;
 
-      if (result) reloadCache();
-
-      // ── 2. Wire the sync callback — fullResync has restored data ──
-      setSyncCallback(
-        (data: AppData, changed: ChangedTables) => {
-          pushMutation(userId, data, changed);
-        },
-        userId,
+    // Shared retry scheduler: schedules a fullResync attempt at the appropriate
+    // exponential backoff delay given the attempt number (1-based).
+    // Attempt #1 fires at BASE_RETRY_DELAY_MS (10s after timeout), #2 at 20s,
+    // #3 at 40s, #4 at 80s, up to MAX_RETRY_DELAY_MS (120s).
+    function scheduleRetry(attempt: number) {
+      const delay = Math.min(
+        BASE_RETRY_DELAY_MS * Math.pow(2, attempt - 1),
+        MAX_RETRY_DELAY_MS,
       );
-      setSyncReadyState(true);
-    }).catch(() => {
-      // Initial sync failed — the _syncReady gate stays closed, preventing
-      // any writes to Supabase. Data is safe in localStorage.
-      // The timeout fallback will let the user interact with local data.
-      console.warn("[sync] Initial fullResync failed, sync gate remains closed.");
-    });
+      console.warn(`[sync] Scheduling retry #${attempt} in ${delay}ms`);
+      setSyncRetrying(true);
+      setSyncRetryCount(attempt);
+      retryTimerRef.current = setTimeout(() => {
+        attemptSync();
+      }, delay);
+    }
+
+    function attemptSync() {
+      fullResync(uid).then((result) => {
+        // Sync completed — cancel the timeout so timedOut stays false
+        if (syncTimeoutRef.current) {
+          clearTimeout(syncTimeoutRef.current);
+          syncTimeoutRef.current = null;
+        }
+
+        if (result) reloadCache();
+
+        // ── 2. Wire the sync callback — fullResync has restored data ──
+        setSyncCallback(
+          (data: AppData, changed: ChangedTables) => {
+            pushMutation(uid, data, changed);
+          },
+          uid,
+        );
+
+        // Cancel any pending retry
+        if (retryTimerRef.current) {
+          clearTimeout(retryTimerRef.current);
+          retryTimerRef.current = null;
+        }
+        setSyncReadyState(true);
+        setSyncRetrying(false);
+        setSyncRetryCount(0);
+        timedOutRef.current = false;
+        startTransition(() => {
+          setTimedOut(false);
+        });
+      }).catch(() => {
+        // Initial sync failed — the _syncReady gate stays closed, preventing
+        // any writes to Supabase. Data is safe in localStorage.
+        // The timeout fallback will let the user interact with local data.
+        console.warn("[sync] Initial fullResync failed, sync gate remains closed.");
+
+        // ══ Retry with exponential backoff ══
+        // Once the timeout has fired (timedOutRef.current is true), the app
+        // renders with local data and we start retrying. The first retry is
+        // initiated by the timeout handler itself (see above) so it always
+        // fires even if the initial attempt failed before the timeout.
+        // Subsequent retries (attempt >= 2) are scheduled here automatically.
+        // If the timeout hasn't fired yet, we wait — the loading screen is
+        // still visible and retrying would produce the same network error.
+        if (timedOutRef.current) {
+          retryAttemptRef.current += 1;
+          scheduleRetry(retryAttemptRef.current);
+        }
+      });
+    }
+
+    // Fire the initial attempt
+    attemptSync();
 
     // ── 3. Periodic polling (quiet mode — never pushes) ──
     // Quiet-mode fullResync only updates localStorage. It NEVER calls
@@ -269,6 +347,10 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
         clearTimeout(syncTimeoutRef.current);
         syncTimeoutRef.current = null;
       }
+      if (retryTimerRef.current) {
+        clearTimeout(retryTimerRef.current);
+        retryTimerRef.current = null;
+      }
     };
   }, [userId, loading]);
 
@@ -281,7 +363,7 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
   // Public pages (landing, login, register) don't need sync.
   if (!user) {
     return (
-      <SyncContext.Provider value={{ syncReady: false }}>
+      <SyncContext.Provider value={{ syncReady: false, syncRetrying: false, syncRetryCount: 0 }}>
         {children}
       </SyncContext.Provider>
     );
@@ -310,7 +392,7 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
 
   // ── Authenticated and sync complete: render the app ──
   return (
-    <SyncContext.Provider value={{ syncReady }}>
+    <SyncContext.Provider value={{ syncReady, syncRetrying, syncRetryCount }}>
       {children}
     </SyncContext.Provider>
   );
