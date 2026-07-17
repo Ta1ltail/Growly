@@ -670,9 +670,24 @@ async function saveProfile(
   if (error) throw error;
 }
 
-// saveUnlocks has been removed — unlocking achievements is now handled
-// server-side by the recompute-progression Edge Function (migration 008
-// revoked client INSERT/UPDATE on the unlocks table).
+async function saveUnlocks(
+  supabase: SupabaseClient,
+  userId: string,
+  unlocks: Unlocks,
+): Promise<void> {
+  const rows = Object.entries(unlocks).map(([achievementId, rec]) => ({
+    id: uid(),
+    user_id: userId,
+    achievement_id: achievementId,
+    at: rec.at,
+    seen: rec.seen,
+  }));
+  await upsertTable(
+    supabase, "unlocks", rows,
+    (r) => r,
+    "user_id,achievement_id",
+  );
+}
 
 async function saveEconomy(
   supabase: SupabaseClient,
@@ -742,11 +757,25 @@ export async function loadUserStatsSnapshot(
   };
 }
 
-// saveUserStatsSnapshot has been removed — stats are now computed and written
-// server-side by the recompute-progression Edge Function (migration 008
-// revoked client INSERT/UPDATE on the user_stats_snapshots table).
-// The client still computes stats locally for instant UI, but the official
-// snapshot is managed by the Edge Function.
+export async function saveUserStatsSnapshot(
+  supabase: SupabaseClient,
+  userId: string,
+  stats: StatsSnapshotData,
+): Promise<void> {
+  const { error } = await supabase.from("user_stats_snapshots").upsert({
+    user_id: userId,
+    level: stats.level,
+    current_streak: stats.currentStreak,
+    best_streak: stats.bestStreak,
+    total_completions: stats.totalCompletions,
+    consistency_14d: stats.consistency14d,
+    achievement_count: stats.achievementCount,
+    title_name: stats.titleName,
+    rank_icon: stats.rankIcon,
+    updated_at: stats.updatedAt,
+  }, { onConflict: "user_id" });
+  if (error) throw error;
+}
 
 /* ────────────────────────────────────────────
    Full AppData load & save (convenience)
@@ -922,8 +951,7 @@ export async function saveChanged(
   if (changed.goals)        promises.push(saveGoals(supabase, userId, data.goals));
   if (changed.settings)     promises.push(saveSettings(supabase, userId, data.settings));
   if (changed.profile)      promises.push(saveProfile(supabase, userId, data.profile));
-  // unlocks are now computed server-side by the recompute-progression Edge
-  // Function. Migration 008 revoked client INSERT/UPDATE on the unlocks table.
+  if (changed.unlocks)    promises.push(saveUnlocks(supabase, userId, data.unlocks));
   if (changed.economy) {
     // Freezes also have a FK to habits.id — filter out orphan freezes that
     // reference deleted habits to prevent the same FK violation.

@@ -14,6 +14,7 @@ import {
   loadAllUserData,
   loadUserStatsSnapshot,
   saveChanged,
+  saveUserStatsSnapshot,
   type ChangedTables,
 } from "./db";
 import {
@@ -307,15 +308,15 @@ export async function fullResync(
           };
           // Save to localStorage so the UI can read it even when offline
           saveStatsSnapshot(stats);
-          // Push to Supabase so the public profile / leaderboard stays current
-          // Note: This is no longer a direct write — migration 008 revoked client
-          // INSERT/UPDATE on user_stats_snapshots. The recompute-progression Edge
-          // Function handles server-side stats. The local snapshot is saved to
-          // localStorage and will be picked up by the next edge function call.
-          void supabase.functions.invoke("recompute-progression").catch(() => {
-            // Non-critical — edge function call is best-effort. Stats will be
-            // recomputed on the next fullResync or login.
-          });
+          // Write stats snapshot directly to Supabase so the public profile /
+          // leaderboard stays current. Migration 009 restored client INSERT/UPDATE
+          // on user_stats_snapshots after the recompute-progression Edge Function
+          // proved unreliable (503 errors).
+          try {
+            await saveUserStatsSnapshot(supabase, userId, stats);
+          } catch (statsPushErr) {
+            console.warn("[sync] Failed to push stats snapshot:", statsPushErr);
+          }
         } catch (statsErr) {
           // Non-critical — the merged data IS saved to localStorage and Supabase
           // via the push above. The stats snapshot is derived data that can lag.
