@@ -135,18 +135,18 @@ export function ProfileEditModal({
       title="Edit profile"
       subtitle="Your character page identity."
       size="lg"
-      footer={
-        <>
-          <Button variant="ghost" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button onClick={save} disabled={saving}>
-            {saving ? "Saving..." : "Save"}
-          </Button>
-        </>
-      }
     >
-      <div className="flex flex-col gap-5">
+      {/* Mobile: save/cancel at the top so it's always reachable */}
+      <div className="mb-5 flex items-center justify-end gap-2 sm:hidden">
+        <Button variant="ghost" onClick={onClose}>
+          Cancel
+        </Button>
+        <Button onClick={save} disabled={saving}>
+          {saving ? "Saving..." : "Save"}
+        </Button>
+      </div>
+
+      <div className="flex flex-col gap-5 pb-20 sm:pb-0">
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="Display name">
             <input
@@ -289,6 +289,16 @@ export function ProfileEditModal({
             </select>
           )}
         </Field>
+
+        {/* Desktop: save/cancel at the bottom (hidden on mobile since they're at the top) */}
+        <div className="hidden sm:flex items-center justify-end gap-2 border-t border-line pt-5">
+          <Button variant="ghost" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button onClick={save} disabled={saving}>
+            {saving ? "Saving..." : "Save"}
+          </Button>
+        </div>
       </div>
     </Modal>
   );

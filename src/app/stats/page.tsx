@@ -270,39 +270,24 @@ export default function StatsPage() {
           </div>
         )}
 
-        {/*
-        Equal-height analytics cards.
-        IMPORTANT: each wrapper below uses a HARD height (h-[...]), not
-        min-height, on lg screens. Previously the Card inside used
-        `min-h-[calc(100%-28px)]`, which let the card grow TALLER than its
-        280px-tall grid cell whenever its content (e.g. a long Top Categories
-        list) didn't fit. Because the grid row itself doesn't grow to match an
-        overflowing child, that card would visually spill out of its cell and
-        overlap whatever section came next on the page (Habit Correlations).
-        Switching the Card to a matching hard height makes the chain
-        (fixed-height wrapper -> fixed-height Card -> flex-1 min-h-0 scroll
-        area) actually bounded, so any list longer than the box scrolls
-        INSIDE the card instead of pushing past it.
-      */}
         <div className="mt-6 grid gap-6 sm:grid-cols-2">
-          {" "}
           {/* Recent trends — interactive line chart */}
-          <div className="min-h-60 lg:h-[280px]">
+          <div className="min-h-72 lg:h-[300px]">
             <h2 className="mb-3 shrink-0 text-sm font-semibold uppercase tracking-wide text-muted">
               Recent trends
             </h2>
-            <Card className="p-5 h-[calc(100%-28px)] min-h-60 flex flex-col">
+            <Card className="p-5 h-[calc(100%-28px)] min-h-72 flex flex-col">
               <div className="flex-1 min-h-0">
-                <TrendLineChart points={chart} height={180} />
+                <TrendLineChart points={chart} height={220} />
               </div>
             </Card>
           </div>
           {/* Last 7 Days — fixed with bar chart, proper sizing */}
-          <div className="min-h-60 lg:h-[280px]">
+          <div className="min-h-72 lg:h-[300px]">
             <h2 className="mb-3 shrink-0 text-sm font-semibold uppercase tracking-wide text-muted">
               Last 7 days
             </h2>
-            <Card className="p-5 h-[calc(100%-28px)] min-h-60 flex flex-col">
+            <Card className="p-5 h-[calc(100%-28px)] min-h-72 flex flex-col">
               <div className="flex-1 flex items-end justify-between gap-2">
                 {week7.map(({ date, rate }) => (
                   <div
