@@ -4,8 +4,9 @@
 // The More button opens a full-screen page with every app route in organised
 // categories. The Profile button shows the user's actual avatar or initials.
 // Notifications has an unread badge. Solid bg, safe-area-aware.
+// Auto-hides when scrolling down, reveals when scrolling up or at top.
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -52,6 +53,14 @@ const NAV_TABS: NavTab[] = [
   { href: "/notifications", label: "Alerts", icon: Bell },
   { href: "/profile", label: "Profile", icon: UserRound },
 ];
+
+// Bottom nav tab icon colors — per-route unique colors matching sidebar
+const BOTTOM_NAV_ICON_COLORS: Record<string, string> = {
+  "/dashboard": "text-indigo-500",
+  "/today": "text-emerald-500",
+  "/notifications": "text-red-400",
+  "/profile": "text-violet-400",
+};
 
 /* ─────────────────────────────────────────
    More page categories — EVERY route, with
@@ -138,6 +147,72 @@ export function BottomNav() {
   const { profile } = useAppData();
   const { unreadCount } = useNotifications();
   const [moreOpen, setMoreOpen] = useState(false);
+  const [visible, setVisible] = useState(true);
+  const lastScrollY = useRef(0);
+  const ticking = useRef(false);
+
+  // Auto-hide bottom nav on scroll down, reveal on scroll up.
+  // Paused when the More page overlay is open to avoid background scroll interference.
+  useEffect(() => {
+    const handleScroll = () => {
+      // Skip when the More page is open to avoid hiding nav behind the overlay
+      if (moreOpen) return;
+      if (ticking.current) return;
+      ticking.current = true;
+      requestAnimationFrame(() => {
+        const scrollY = window.scrollY;
+        const maxScroll = Math.max(
+          document.documentElement.scrollHeight - window.innerHeight,
+          0,
+        );
+        // Ignore tiny scroll deltas (rubber-banding on iOS, Safari bounce)
+        const delta = Math.abs(scrollY - lastScrollY.current);
+        if (delta < 3) {
+          ticking.current = false;
+          return;
+        }
+        // If at the very top or scrolling up — show nav
+        if (scrollY <= 0 || scrollY < lastScrollY.current) {
+          setVisible(true);
+        } else if (scrollY > lastScrollY.current && scrollY < maxScroll) {
+          // Scrolling down and not at bottom — hide nav
+          setVisible(false);
+        }
+        lastScrollY.current = scrollY;
+        ticking.current = false;
+      });
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [moreOpen]);
+
+  // Sync Android navigation bar color with bottom nav surface.
+  // Runs on every theme/mode change by observing data-theme attribute changes.
+  useEffect(() => {
+    const syncNavColor = () => {
+      const meta = document.querySelector('meta[name="theme-color"]');
+      if (!meta) return;
+      const surface = getComputedStyle(document.documentElement)
+        .getPropertyValue("--c-surface")
+        .trim();
+      if (surface) {
+        meta.setAttribute("content", surface);
+      }
+    };
+
+    // Sync now
+    syncNavColor();
+
+    // Re-sync when the theme changes (data-theme attribute mutation)
+    const observer = new MutationObserver(syncNavColor);
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["data-theme"],
+    });
+
+    return () => observer.disconnect();
+  }, []);
 
   // Prevent body scroll when the More page is open
   useEffect(() => {
@@ -171,7 +246,9 @@ export function BottomNav() {
     <>
       {/* ── Bottom nav bar ── */}
       <nav
-        className="fixed inset-x-0 bottom-0 z-30 bg-surface shadow-[0_-1px_4px_rgba(0,0,0,0.06)] dark:shadow-[0_-1px_4px_rgba(0,0,0,0.2)] md:hidden"
+        className={`fixed inset-x-0 bottom-0 z-30 bg-surface shadow-[0_-1px_4px_rgba(0,0,0,0.06)] dark:shadow-[0_-1px_4px_rgba(0,0,0,0.2)] md:hidden transition-transform duration-300 ease-out ${
+          visible ? "translate-y-0" : "translate-y-full"
+        }`}
         style={{ paddingBottom: "var(--safe-area-bottom, 0px)" }}
       >
         <div className="mx-auto flex max-w-lg items-stretch justify-around px-1">
@@ -196,6 +273,7 @@ export function BottomNav() {
             }
 
             const active = isActive(pathname, href);
+            const baseIconColor = BOTTOM_NAV_ICON_COLORS[href] ?? "text-muted";
 
             // Profile button — show avatar or initials
             if (href === "/profile") {
@@ -211,8 +289,8 @@ export function BottomNav() {
                   <span
                     className={`flex size-9 items-center justify-center rounded-full transition-all duration-200 ring-2 ${
                       active
-                        ? "bg-accent/12 ring-accent/40"
-                        : "ring-transparent hover:ring-line/40"
+                        ? "bg-accent/12 ring-accent/50"
+                        : "ring-surface2/80 hover:ring-accent/40"
                     }`}
                   >
                     {avatarResolved?.kind === "image" ? (
@@ -260,7 +338,7 @@ export function BottomNav() {
                     <Icon
                       className={`size-5 transition-all duration-300 ${
                         active ? "stroke-[2.5]" : "stroke-[1.8]"
-                      }`}
+                      } ${active ? "" : baseIconColor}`}
                     />
                     {unreadCount > 0 && (
                       <span className="absolute -right-0.5 -top-0.5 flex min-w-[18px] items-center justify-center rounded-full bg-rose-500 px-1 py-px text-[9px] font-bold leading-tight text-white ring-2 ring-surface">
@@ -296,7 +374,7 @@ export function BottomNav() {
                   <Icon
                     className={`size-5 transition-all duration-300 ${
                       active ? "stroke-[2.5]" : "stroke-[1.8]"
-                    }`}
+                    } ${active ? "" : baseIconColor}`}
                   />
                 </span>
                 <span className={`leading-none ${active ? "font-semibold" : ""}`}>

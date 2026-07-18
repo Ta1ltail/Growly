@@ -218,16 +218,16 @@ export default function CalendarPage() {
       />
 
       {/* Calendar + detail panel — responsive stack */}
-      <div className="flex flex-col gap-6 lg:grid lg:grid-cols-5 lg:gap-6">
+      <div className="flex flex-col gap-6 lg:grid lg:grid-cols-12 lg:gap-6 lg:items-start">
         {/* Calendar grid */}
-        <div className="lg:col-span-3">
+        <div className="lg:col-span-7">
           <Card className="p-4">
             <div className="grid grid-cols-7 gap-1.5 text-center font-mono text-[11px] text-faint mb-2">
               {WEEKDAY_LABELS.map((w) => (
                 <div key={w} className="py-1">{w}</div>
               ))}
             </div>
-            <div className="grid grid-cols-7 gap-1.5">
+            <div className="grid grid-cols-7 gap-1">
               {(view === "month" ? monthCells : weekCells).map((d, i) => {
                 if (!d) return <div key={`b-${i}`} className="min-h-[56px]" />;
                 const rate = dayCompletion(active, data.marks, d);
@@ -270,7 +270,7 @@ export default function CalendarPage() {
         </div>
 
         {/* Day detail panel */}
-        <div className="lg:col-span-2">
+        <div className="lg:col-span-5">
           <h2 className="mb-3 flex items-center justify-between text-sm font-semibold uppercase tracking-wide text-muted">
             <span>{prettyDate(selected)}</span>
             {selectedIsToday && (

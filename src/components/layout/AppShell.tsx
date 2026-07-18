@@ -14,6 +14,9 @@ import { AccentThemeApplier } from "@/components/economy/AccentThemeApplier";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { SyncIndicator } from "@/components/sync/SyncIndicator";
 import { SyncWarningBanner } from "@/components/sync/SyncWarningBanner";
+import { usePullToRefresh } from "@/hooks/usePullToRefresh";
+import { PullToRefreshIndicator } from "@/components/ui/PullToRefreshIndicator";
+import { reloadCache } from "@/lib/store";
 
 const DevModeLazy = lazy(() =>
   import("@/components/devmode/DevMode").then((m) => ({
@@ -36,8 +39,21 @@ const OnboardingWizardLazy = lazy(() =>
 export function AppShell({ children }: { children: ReactNode }) {
   useKeyboardShortcuts();
   const pathname = usePathname();
+
+  // Pull-to-refresh: reloads app data cache from storage
+  const ptrState = usePullToRefresh(async () => {
+    reloadCache();
+    // Brief delay so the refresh indicator is visible
+    await new Promise((r) => setTimeout(r, 400));
+  });
+
   return (
     <div className="min-h-screen bg-bg">
+      <PullToRefreshIndicator
+        pulling={ptrState.pulling}
+        progress={ptrState.progress}
+        refreshing={ptrState.refreshing}
+      />
       <Sidebar />
       <BottomNav />
       <div className="md:pl-60">

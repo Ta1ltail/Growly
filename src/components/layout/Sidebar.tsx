@@ -3,15 +3,37 @@
 // Desktop sidebar (hidden on mobile). Brand, grouped nav links.
 // Icons are colourized with idle animations for a premium feel.
 // Sign out is handled on the Profile page.
+// Scroll position is persisted across navigations via a module-level variable.
 
+import { useRef, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Activity } from "lucide-react";
 import { NAV_GROUPS, isActive, routeIconColors } from "./navItems";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 
+// Module-level scroll position persists across component mount/unmount cycles
+// that may occur during client-side navigation.
+let sidebarScrollPos = 0;
+
 export function Sidebar() {
   const pathname = usePathname();
+  const navRef = useRef<HTMLElement>(null);
+
+  // Restore saved scroll position on mount
+  useEffect(() => {
+    if (navRef.current) {
+      navRef.current.scrollTop = sidebarScrollPos;
+    }
+  }, [pathname]);
+
+  // Save scroll position on every scroll event
+  const handleScroll = () => {
+    if (navRef.current) {
+      sidebarScrollPos = navRef.current.scrollTop;
+    }
+  };
+
   return (
     <aside className="glass fixed inset-y-0 left-0 z-20 hidden w-60 flex-col border-r border-line px-3 py-5 md:flex">
       <div className="flex items-center gap-2 px-3 pb-5">
@@ -26,7 +48,11 @@ export function Sidebar() {
         </span>
       </div>
 
-      <nav className="flex flex-1 flex-col gap-4 overflow-y-auto">
+      <nav
+        ref={navRef}
+        onScroll={handleScroll}
+        className="flex flex-1 flex-col gap-4 overflow-y-auto"
+      >
         {NAV_GROUPS.map((group, gi) => (
           <div key={group.title ?? gi} className="flex flex-col gap-0.5">
             {group.title && (

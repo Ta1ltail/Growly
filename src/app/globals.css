@@ -360,34 +360,22 @@ img, video, iframe, svg {
   -webkit-backdrop-filter: blur(12px);
 }
 
-/* Scrollbar styling — hidden on mobile for native feel, visible on desktop */
-@media (max-width: 767px) {
-  ::-webkit-scrollbar {
-    width: 0px;
-    height: 0px;
-  }
-  * {
-    scrollbar-width: none;
-  }
+/* ── Global scrollbar hiding ── 
+   Hide scrollbars everywhere while keeping scrolling functional.
+   Creates a clean native app feel. */
+* {
+  scrollbar-width: none !important; /* Firefox */
+  -ms-overflow-style: none !important; /* IE/Edge */
 }
-@media (min-width: 768px) {
-  ::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
-  }
-  ::-webkit-scrollbar-thumb {
-    background: var(--c-line);
-    border-radius: 9999px;
-    border: 2px solid transparent;
-    background-clip: content-box;
-  }
-  ::-webkit-scrollbar-thumb:hover {
-    background: var(--c-faint);
-    background-clip: content-box;
-  }
-  ::-webkit-scrollbar-track {
-    background: var(--c-bg);
-  }
+*::-webkit-scrollbar {
+  display: none !important; /* Chrome/Safari/Opera */
+  width: 0 !important;
+  height: 0 !important;
+}
+
+/* ── Safe-area aware bottom spacing utility ── */
+.safe-area-bottom {
+  padding-bottom: calc(var(--safe-area-bottom, 0px));
 }
 
 /* Skeleton placeholder: a soft, static block for loading states.

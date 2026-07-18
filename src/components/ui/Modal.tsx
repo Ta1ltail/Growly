@@ -71,7 +71,7 @@ export function Modal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-0 backdrop-blur-sm animate-fade-in sm:items-center sm:p-4"
+      className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-0 backdrop-blur-sm animate-fade-in sm:items-center sm:p-4 md:ml-60"
       role="dialog"
       aria-modal="true"
       aria-label={title}
@@ -104,7 +104,7 @@ export function Modal({
         </div>
 
         {footer && (
-          <div className="flex justify-end gap-2 border-t border-line px-5 py-3.5">
+          <div className="flex justify-end gap-2 border-t border-line px-5 py-3.5 safe-area-bottom">
             {footer}
           </div>
         )}

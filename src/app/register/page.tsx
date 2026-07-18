@@ -239,84 +239,61 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-bg lg:flex-row">
-      {/* ── Left panel: Branding / showcase ── */}
-      <div className="relative flex flex-col justify-between overflow-hidden bg-gradient-to-br from-accent/8 via-accent/4 to-transparent px-8 py-10 lg:w-1/2 lg:px-12 lg:py-14">
-        {/* Background decorations */}
-        <div className="pointer-events-none absolute inset-0">
-          <div className="absolute -left-20 -top-20 size-[30rem] rounded-full bg-accent/6 blur-[140px]" />
-          <div className="absolute -bottom-20 -right-20 size-[30rem] rounded-full bg-accent/4 blur-[140px]" />
-          <div
-            className="absolute inset-0 opacity-[0.03]"
-            style={{
-              backgroundImage:
-                "linear-gradient(var(--c-line) 1px, transparent 1px), linear-gradient(90deg, var(--c-line) 1px, transparent 1px)",
-              backgroundSize: "48px 48px",
-            }}
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-bg/40 to-transparent lg:bg-gradient-to-r lg:from-bg/20 lg:to-transparent" />
-        </div>
-
-        {/* Brand link */}
-        <div className="relative z-10">
-          <Link href="/" className="group inline-flex items-center gap-2.5">
-            <span className="flex size-10 items-center justify-center rounded-xl bg-gradient-to-br from-accent to-accent-glow text-white shadow-lg shadow-accent/20 transition-all duration-300 group-hover:shadow-accent/40">
-              <Activity className="size-5" strokeWidth={2.5} />
-            </span>
-            <span className="text-lg font-bold tracking-tight">Growly</span>
-          </Link>
-        </div>
-
-        {/* Value props (desktop) */}
-        <div
-          className="relative z-10 hidden animate-rise lg:block"
-          style={{ animationDelay: "0.2s" }}
-        >
-          <Quote className="mb-4 size-6 text-accent/30" />
-          <h2 className="text-2xl font-bold leading-tight tracking-tight sm:text-3xl">
-            Start your journey
-            <br />
-            <span className="bg-gradient-to-r from-accent to-accent-glow bg-clip-text text-transparent">
-              in under 60 seconds
-            </span>
-          </h2>
-          <p className="mt-3 max-w-sm text-sm leading-relaxed text-muted">
-            Create your free account and start building streaks that matter. No
-            credit card needed — ever.
-          </p>
-
-          {/* Feature bullets */}
-          <div className="mt-8 space-y-4">
-            {[
-              { icon: Target, text: "Set up your first habit in seconds" },
-              { icon: Zap, text: "Unlock achievements as you grow" },
-              { icon: Shield, text: "100% free, no hidden fees" },
-              {
-                icon: Sparkles,
-                text: "Sync across devices seamlessly",
-              },
-            ].map((item) => (
-              <div key={item.text} className="flex items-center gap-3">
-                <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-accent/10 text-accent">
-                  <item.icon className="size-4" />
-                </span>
-                <span className="text-sm text-muted">{item.text}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Bottom branding (desktop) */}
-        <div className="relative z-10 hidden lg:block">
-          <p className="font-mono text-[11px] text-faint">
-            honest habit tracking &middot; v0.5
-          </p>
-        </div>
+    <div className="flex min-h-screen flex-col bg-bg">
+      {/* ── Minimal header with brand ── */}
+      <div className="sticky top-0 z-10 bg-bg/90 backdrop-blur-sm px-5 py-4 lg:hidden">
+        <Link href="/" className="inline-flex items-center gap-2.5">
+          <span className="flex size-9 items-center justify-center rounded-xl bg-gradient-to-br from-accent to-accent-glow text-white shadow-lg shadow-accent/20">
+            <Activity className="size-5" strokeWidth={2.5} />
+          </span>
+          <span className="text-base font-bold tracking-tight">Growly</span>
+        </Link>
       </div>
 
-      {/* ── Right panel: Form ── */}
-      <div className="relative flex flex-1 items-center justify-center px-5 py-8 lg:px-12 lg:py-14">
-        <div className="w-full max-w-sm animate-slide-right" style={{ animationDelay: "0.1s" }}>
+      <div className="flex flex-1 items-center justify-center px-5 py-6 lg:py-10 safe-area-bottom">
+        <div className="flex w-full max-w-md flex-col lg:flex-row lg:gap-12 lg:max-w-4xl lg:items-center">
+          {/* ── Left: Value props (desktop only) ── */}
+          <div className="hidden lg:block lg:w-1/2 lg:pr-8">
+            <Link href="/" className="group inline-flex items-center gap-2.5 mb-8">
+              <span className="flex size-10 items-center justify-center rounded-xl bg-gradient-to-br from-accent to-accent-glow text-white shadow-lg shadow-accent/20 transition-all duration-300 group-hover:shadow-accent/40">
+                <Activity className="size-5" strokeWidth={2.5} />
+              </span>
+              <span className="text-lg font-bold tracking-tight">Growly</span>
+            </Link>
+            <Quote className="mb-4 size-6 text-accent/30" />
+            <h2 className="text-2xl font-bold leading-tight tracking-tight sm:text-3xl">
+              Start your journey
+              <br />
+              <span className="bg-gradient-to-r from-accent to-accent-glow bg-clip-text text-transparent">
+                in under 60 seconds
+              </span>
+            </h2>
+            <p className="mt-3 max-w-sm text-sm leading-relaxed text-muted">
+              Create your free account and start building streaks that matter. No
+              credit card needed — ever.
+            </p>
+            <div className="mt-8 space-y-4">
+              {[
+                { icon: Target, text: "Set up your first habit in seconds" },
+                { icon: Zap, text: "Unlock achievements as you grow" },
+                { icon: Shield, text: "100% free, no hidden fees" },
+                {
+                  icon: Sparkles,
+                  text: "Sync across devices seamlessly",
+                },
+              ].map((item) => (
+                <div key={item.text} className="flex items-center gap-3">
+                  <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-accent/10 text-accent">
+                    <item.icon className="size-4" />
+                  </span>
+                  <span className="text-sm text-muted">{item.text}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* ── Right: Form ── */}
+          <div className="w-full lg:w-1/2">
           
           {/* Form header */}
           <div className="mb-8">
@@ -587,6 +564,7 @@ export default function RegisterPage() {
             </Link>
           </p>
 
+          </div>
         </div>
       </div>
     </div>
