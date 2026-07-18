@@ -15,10 +15,10 @@ const PAD_RIGHT = 2;
 
 export function TrendLineChart({
   points,
-  height = 180,
+  height,
 }: {
   points: TrendPoint[];
-  height?: number;
+  height?: number; // optional — omit to fill the parent container instead
 }) {
   const gradId = useId();
   const glowId = `glow-${gradId}`;
@@ -29,6 +29,7 @@ export function TrendLineChart({
   // Map data indices/rates to SVG viewBox percentages.
   // Declared before any early return so hook order stays stable
   // across renders regardless of whether points is empty.
+  // eslint-disable-next-line react-hooks/preserve-manual-memoization
   const xPos = useMemo(() => {
     if (n <= 1) return () => PAD_LEFT + (100 - PAD_LEFT - PAD_RIGHT) / 2;
     return (i: number) =>
@@ -38,8 +39,8 @@ export function TrendLineChart({
   if (n === 0) {
     return (
       <div
-        className="grid place-items-center text-sm text-faint"
-        style={{ height }}
+        className={`grid place-items-center text-sm text-faint ${height ? "" : "h-full"}`}
+        style={height ? { height } : undefined}
       >
         No trend data yet
       </div>
@@ -62,7 +63,10 @@ export function TrendLineChart({
   const gridLinesDesc = [...gridLines].reverse();
 
   return (
-    <div className="relative w-full" style={{ height }}>
+    <div
+      className={`relative w-full ${height ? "" : "h-full"}`}
+      style={height ? { height } : undefined}
+    >
       {/* ── SVG chart layer ── */}
       <svg
         viewBox="0 0 100 100"

@@ -246,7 +246,7 @@ export function BottomNav() {
     <>
       {/* ── Bottom nav bar ── */}
       <nav
-        className={`fixed inset-x-0 bottom-0 z-30 bg-[#121116] shadow-[0_-1px_4px_rgba(0,0,0,0.06)] dark:shadow-[0_-1px_4px_rgba(0,0,0,0.2)] md:hidden transition-transform duration-300 ease-out ${
+        className={`fixed inset-x-0 bottom-0 z-30 bg-black md:hidden transition-transform duration-300 ease-out ${
           visible ? "translate-y-0" : "translate-y-full"
         }`}
         style={{ paddingBottom: "var(--safe-area-bottom, 0px)" }}

@@ -13,7 +13,6 @@ import { createClient } from "@/lib/supabase/client";
 import { AVATAR_PRESETS, BANNER_PRESETS, resolveAvatar } from "@/lib/cosmetics";
 import { RARITY_STYLE } from "@/lib/rarity";
 import { Modal } from "@/components/ui/Modal";
-import { Button } from "@/components/ui/Button";
 
 export function ProfileEditModal({
   open,
@@ -135,18 +134,27 @@ export function ProfileEditModal({
       title="Edit profile"
       subtitle="Your character page identity."
       size="lg"
+      headerActions={
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-lg px-3 py-1.5 text-sm font-medium text-muted transition-colors hover:bg-surface2 hover:text-ink"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={save}
+            disabled={saving}
+            className="rounded-lg bg-accent px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-accent/90 disabled:opacity-50"
+          >
+            {saving ? "Saving..." : "Save"}
+          </button>
+        </div>
+      }
     >
-      {/* Mobile: save/cancel at the top so it's always reachable */}
-      <div className="mb-5 flex items-center justify-end gap-2 sm:hidden">
-        <Button variant="ghost" onClick={onClose}>
-          Cancel
-        </Button>
-        <Button onClick={save} disabled={saving}>
-          {saving ? "Saving..." : "Save"}
-        </Button>
-      </div>
-
-      <div className="flex flex-col gap-5 pb-20 sm:pb-0">
+      <div className="flex flex-col gap-5">
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="Display name">
             <input
@@ -290,15 +298,7 @@ export function ProfileEditModal({
           )}
         </Field>
 
-        {/* Desktop: save/cancel at the bottom (hidden on mobile since they're at the top) */}
-        <div className="hidden sm:flex items-center justify-end gap-2 border-t border-line pt-5">
-          <Button variant="ghost" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button onClick={save} disabled={saving}>
-            {saving ? "Saving..." : "Save"}
-          </Button>
-        </div>
+
       </div>
     </Modal>
   );

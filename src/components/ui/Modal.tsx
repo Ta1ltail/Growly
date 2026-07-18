@@ -14,6 +14,7 @@ export function Modal({
   subtitle,
   children,
   footer,
+  headerActions,
   size = "md",
 }: {
   open: boolean;
@@ -22,6 +23,7 @@ export function Modal({
   subtitle?: string;
   children: ReactNode;
   footer?: ReactNode;
+  headerActions?: ReactNode;
   size?: "sm" | "md" | "lg";
 }) {
   const panelRef = useRef<HTMLDivElement>(null);
@@ -90,13 +92,16 @@ export function Modal({
               <p className="mt-0.5 text-xs text-muted">{subtitle}</p>
             )}
           </div>
-          <button
-            onClick={onClose}
-            aria-label="Close"
-            className="-mr-1 shrink-0 rounded-lg p-1.5 text-muted transition-colors hover:bg-surface2 hover:text-ink"
-          >
-            <X className="size-4" />
-          </button>
+          <div className="flex items-center gap-2">
+            {headerActions}
+            <button
+              onClick={onClose}
+              aria-label="Close"
+              className="shrink-0 rounded-lg p-1.5 text-muted transition-colors hover:bg-surface2 hover:text-ink"
+            >
+              <X className="size-4" />
+            </button>
+          </div>
         </div>
 
         <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
