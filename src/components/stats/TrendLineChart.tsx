@@ -21,9 +21,21 @@ export function TrendLineChart({
   height?: number;
 }) {
   const gradId = useId();
+  const glowId = `glow-${gradId}`;
   const [active, setActive] = useState<number | null>(null);
 
-  if (points.length === 0) {
+  const n = points.length;
+
+  // Map data indices/rates to SVG viewBox percentages.
+  // Declared before any early return so hook order stays stable
+  // across renders regardless of whether points is empty.
+  const xPos = useMemo(() => {
+    if (n <= 1) return () => PAD_LEFT + (100 - PAD_LEFT - PAD_RIGHT) / 2;
+    return (i: number) =>
+      PAD_LEFT + (i / (n - 1)) * (100 - PAD_LEFT - PAD_RIGHT);
+  }, [n]);
+
+  if (n === 0) {
     return (
       <div
         className="grid place-items-center text-sm text-faint"
@@ -33,15 +45,6 @@ export function TrendLineChart({
       </div>
     );
   }
-
-  const n = points.length;
-
-  // Map data indices/rates to SVG viewBox percentages
-  const xPos = useMemo(() => {
-    if (n === 1) return () => PAD_LEFT + (100 - PAD_LEFT - PAD_RIGHT) / 2;
-    return (i: number) =>
-      PAD_LEFT + (i / (n - 1)) * (100 - PAD_LEFT - PAD_RIGHT);
-  }, [n]);
 
   const yPos = (rate: number) =>
     PAD_TOP + (1 - rate / 100) * (100 - PAD_TOP - PAD_BOT);
@@ -54,6 +57,9 @@ export function TrendLineChart({
 
   // Grid lines at 0%, 25%, 50%, 75%, 100%
   const gridLines = [0, 25, 50, 75, 100];
+  // Labels need to render top-to-bottom as 100% → 0% to match the
+  // actual vertical position of each gridline (yPos is inverted).
+  const gridLinesDesc = [...gridLines].reverse();
 
   return (
     <div className="relative w-full" style={{ height }}>
@@ -67,9 +73,13 @@ export function TrendLineChart({
         <defs>
           <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor="var(--c-accent)" stopOpacity="0.3" />
-            <stop offset="100%" stopColor="var(--c-accent)" stopOpacity="0.02" />
+            <stop
+              offset="100%"
+              stopColor="var(--c-accent)"
+              stopOpacity="0.02"
+            />
           </linearGradient>
-          <filter id="glow-${gradId}">
+          <filter id={glowId}>
             <feGaussianBlur stdDeviation="1.5" result="blur" />
             <feMerge>
               <feMergeNode in="blur" />
@@ -105,7 +115,7 @@ export function TrendLineChart({
           strokeLinecap="round"
           strokeLinejoin="round"
           vectorEffect="non-scaling-stroke"
-          filter={`url(#glow-${gradId})`}
+          filter={`url(#${glowId})`}
         />
 
         {/* Data point dots */}
@@ -132,9 +142,7 @@ export function TrendLineChart({
                 cx={cx}
                 cy={cy}
                 r={isActive ? 3.5 : 2.5}
-                fill={
-                  isActive ? "var(--c-accent)" : "var(--c-accent-glow)"
-                }
+                fill={isActive ? "var(--c-accent)" : "var(--c-accent-glow)"}
                 stroke="var(--c-surface)"
                 strokeWidth={1.2}
                 vectorEffect="non-scaling-stroke"
@@ -154,7 +162,7 @@ export function TrendLineChart({
           width: `${PAD_LEFT}%`,
         }}
       >
-        {gridLines.map((g) => (
+        {gridLinesDesc.map((g) => (
           <span
             key={g}
             className="font-mono text-[9px] leading-none text-faint translate-y-1/2 pr-1"
@@ -178,7 +186,7 @@ export function TrendLineChart({
           <button
             key={p.date.toISOString()}
             type="button"
-            className="h-full flex-1 cursor-default outline-none"
+            className="block h-full flex-1 min-w-0 appearance-none border-0 bg-transparent p-0 m-0 cursor-default outline-none"
             onMouseEnter={() => setActive(i)}
             onMouseLeave={() => setActive((a) => (a === i ? null : a))}
             onFocus={() => setActive(i)}
