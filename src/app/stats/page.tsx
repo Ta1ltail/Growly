@@ -175,8 +175,8 @@ export default function StatsPage() {
         }
       />
 
-      {/* Fixed-size stat cards */}
-      <StaggerContainer className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+      {/* Fixed-size stat cards — 2 cols mobile, 3 tablet, 5 desktop */}
+      <StaggerContainer className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5">
         <StatCard
           icon={Target}
           value={`${range.rate}%`}
@@ -222,13 +222,13 @@ export default function StatsPage() {
           <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-muted">
             <Gauge className="size-4 icon-accent" /> Projection
           </h2>
-          <div className="grid gap-4 sm:grid-cols-4">
-            <Card className="p-4 h-[100px] flex flex-col justify-center">
-              <p className="text-xs text-muted">Estimated completion</p>
-              <p className="mt-1 text-2xl font-bold">
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+            <Card className="flex flex-col justify-center p-4 min-h-[100px]">
+              <p className="text-xs font-medium text-muted">Estimated completion</p>
+              <p className="mt-1.5 text-2xl font-bold tabular-nums tracking-tight">
                 {projection.estimatedCompletion}%
               </p>
-              <div className="mt-1 flex items-center gap-1">
+              <div className="mt-1.5 flex items-center gap-1">
                 {projection.trend === "up" && (
                   <ArrowUp className="size-3.5 text-done" />
                 )}
@@ -238,26 +238,28 @@ export default function StatsPage() {
                 {projection.trend === "stable" && (
                   <Minus className="size-3.5 text-muted" />
                 )}
-                <span className="text-[11px] text-muted capitalize">
+                <span className="text-[11px] capitalize text-muted">
                   {projection.trend}
                 </span>
               </div>
             </Card>
-            <Card className="p-4 h-[100px] flex flex-col justify-center">
-              <p className="text-xs text-muted">Projected streak</p>
-              <p className="mt-1 text-2xl font-bold">
-                {projection.estimatedStreak} days
+            <Card className="flex flex-col justify-center p-4 min-h-[100px]">
+              <p className="text-xs font-medium text-muted">Projected streak</p>
+              <p className="mt-1.5 text-2xl font-bold tabular-nums tracking-tight">
+                {projection.estimatedStreak}
               </p>
-              <p className="mt-1 text-[11px] text-muted">In the next 7 days</p>
+              <p className="mt-1 text-[11px] text-muted">days in next 7</p>
             </Card>
-            <Card className="p-4 h-[100px] flex flex-col justify-center">
-              <p className="text-xs text-muted">XP per day</p>
-              <p className="mt-1 text-2xl font-bold">{xpPerDay}</p>
+            <Card className="flex flex-col justify-center p-4 min-h-[100px]">
+              <p className="text-xs font-medium text-muted">XP per day</p>
+              <p className="mt-1.5 text-2xl font-bold tabular-nums tracking-tight">
+                {xpPerDay}
+              </p>
               <p className="mt-1 text-[11px] text-muted">Average</p>
             </Card>
-            <Card className="p-4 h-[100px] flex flex-col justify-center">
-              <p className="text-xs text-muted">Next level</p>
-              <p className="mt-1 text-2xl font-bold">
+            <Card className="flex flex-col justify-center p-4 min-h-[100px]">
+              <p className="text-xs font-medium text-muted">Next level</p>
+              <p className="mt-1.5 text-2xl font-bold tabular-nums tracking-tight">
                 {projection.estimatedDaysToNextLevel != null
                   ? `${projection.estimatedDaysToNextLevel}d`
                   : "—"}
@@ -268,38 +270,63 @@ export default function StatsPage() {
         </div>
       )}
 
-      <div className="mt-6 grid gap-6 sm:grid-cols-2">
+      <div className="mt-6 grid gap-6 lg:grid-cols-2">
         {/* Recent trends — interactive line chart */}
-        <div className="flex min-h-72 flex-col lg:h-[300px]">
+        <div className="flex flex-col">
           <h2 className="mb-3 shrink-0 text-sm font-semibold uppercase tracking-wide text-muted">
             Recent trends
           </h2>
-          <Card className="flex flex-1 min-h-0 flex-col overflow-hidden p-5">
+          <Card className="flex flex-1 flex-col p-5 min-h-[260px]">
             <div className="flex-1 min-h-0">
               <TrendLineChart points={chart} />
             </div>
           </Card>
         </div>
-        {/* Last 7 Days — fixed with bar chart, proper sizing */}
-        <div className="flex min-h-72 flex-col lg:h-[300px]">
+        {/* Last 7 Days — bar chart matching the line chart aesthetic */}
+        <div className="flex flex-col">
           <h2 className="mb-3 shrink-0 text-sm font-semibold uppercase tracking-wide text-muted">
             Last 7 days
           </h2>
-          <Card className="flex flex-1 min-h-0 flex-col overflow-hidden p-5">
-            <div className="flex flex-1 items-end justify-between gap-2">
+          <Card className="flex flex-1 flex-col p-5 min-h-[260px]">
+            <div className="relative flex-1 flex items-end gap-2">
+              {/* Grid lines background */}
+              <div className="absolute inset-0 pointer-events-none"
+                style={{
+                  left: "10%", right: 0,
+                  top: "5%", bottom: "8%",
+                }}
+              >
+                {[0, 25, 50, 75, 100].map((g) => (
+                  <div
+                    key={g}
+                    className="absolute w-full border-t border-dashed"
+                    style={{
+                      borderColor: "var(--c-line)",
+                      borderWidth: "0.5px",
+                      top: `${100 - g}%`,
+                    }}
+                  />
+                ))}
+              </div>
+              {/* Bars */}
               {week7.map(({ date, rate }) => (
                 <div
                   key={date.toISOString()}
-                  className="flex flex-1 flex-col items-center gap-2 h-full justify-end"
+                  className="flex flex-1 flex-col items-center gap-1.5 h-full justify-end relative z-10"
                 >
-                  <div className="flex w-full flex-1 items-end justify-center">
+                  {/* Bar — title attr provides native tooltip */}
+                  <div className="relative flex w-full items-end justify-center">
                     <div
-                      className="w-full max-w-9 rounded-t-lg transition-all duration-500 hover:opacity-80"
+                      className="w-full max-w-8 rounded-t-md transition-all duration-500 ease-out hover:brightness-110"
                       style={{
                         height: `${Math.max(rate, 4)}%`,
                         background:
-                          rate >= 100 ? "var(--color-done)" : "var(--c-accent)",
-                        opacity: rate === 0 ? 0.25 : 1,
+                          rate >= 100
+                            ? "var(--color-done)"
+                            : rate >= 50
+                              ? "var(--c-accent)"
+                              : "var(--c-accent-glow)",
+                        opacity: rate === 0 ? 0.25 : 0.85,
                       }}
                       title={`${rate}%`}
                     />
@@ -314,66 +341,64 @@ export default function StatsPage() {
             </div>
           </Card>
         </div>
-        {/* Top categories — fixed height, internal scroll */}
-        <div className="flex min-h-60 flex-col lg:h-[280px]">
+        {/* Top categories — scrollable */}
+        <div className="flex flex-col">
           <h2 className="mb-3 shrink-0 text-sm font-semibold uppercase tracking-wide text-muted">
             Top categories
           </h2>
-          <Card className="flex flex-1 min-h-0 flex-col overflow-hidden p-5">
-            <div className="flex-1 min-h-0 overflow-y-auto pr-1">
-              <div className="flex flex-col gap-3.5">
-                {topCategories.length === 0 ? (
-                  <p className="text-sm text-muted">
-                    Complete some habits to see category breakdowns.
-                  </p>
-                ) : (
-                  topCategories.map(({ category, rate }) => (
-                    <div key={category}>
-                      <div className="mb-1.5 flex items-center justify-between text-xs">
-                        <span className="flex items-center gap-1.5 font-medium">
-                          <span
-                            className="size-2 rounded-full"
-                            style={{
-                              backgroundColor: CATEGORY_COLORS[category],
-                            }}
-                          />
-                          {category}
-                        </span>
-                        <span className="font-mono text-muted">{rate}%</span>
-                      </div>
-                      <ProgressBar
-                        value={rate}
-                        color={CATEGORY_COLORS[category]}
-                      />
+          <Card className="flex flex-1 flex-col p-5 overflow-y-auto min-h-[240px]">
+            {topCategories.length === 0 ? (
+              <p className="text-sm text-muted">
+                Complete some habits to see category breakdowns.
+              </p>
+            ) : (
+              <div className="flex flex-col gap-4">
+                {topCategories.map(({ category, rate }) => (
+                  <div key={category}>
+                    <div className="mb-1.5 flex items-center justify-between text-xs">
+                      <span className="flex items-center gap-1.5 font-medium">
+                        <span
+                          className="size-2 rounded-full"
+                          style={{
+                            backgroundColor: CATEGORY_COLORS[category],
+                          }}
+                        />
+                        {category}
+                      </span>
+                      <span className="font-mono tabular-nums text-muted">
+                        {rate}%
+                      </span>
                     </div>
-                  ))
-                )}
-              </div>
-            </div>
-          </Card>
-        </div>
-        {/* By weekday — fixed height, internal scroll */}
-        <div className="flex min-h-60 flex-col lg:h-[280px]">
-          <h2 className="mb-3 shrink-0 text-sm font-semibold uppercase tracking-wide text-muted">
-            By weekday
-          </h2>
-          <Card className="flex flex-1 min-h-0 flex-col overflow-hidden p-5">
-            <div className="flex-1 min-h-0 overflow-y-auto pr-1">
-              <div className="flex flex-col gap-2.5">
-                {byWeekday.map(({ weekday, rate }) => (
-                  <div key={weekday} className="flex items-center gap-3">
-                    <span className="w-9 shrink-0 font-mono text-xs text-muted">
-                      {WEEKDAY_SHORT[weekday]}
-                    </span>
-                    <div className="flex-1">
-                      <ProgressBar value={rate} />
-                    </div>
-                    <span className="w-9 shrink-0 text-right font-mono text-xs text-muted">
-                      {rate}%
-                    </span>
+                    <ProgressBar
+                      value={rate}
+                      color={CATEGORY_COLORS[category]}
+                    />
                   </div>
                 ))}
               </div>
+            )}
+          </Card>
+        </div>
+        {/* By weekday */}
+        <div className="flex flex-col">
+          <h2 className="mb-3 shrink-0 text-sm font-semibold uppercase tracking-wide text-muted">
+            By weekday
+          </h2>
+          <Card className="flex flex-1 flex-col p-5 overflow-y-auto min-h-[240px]">
+            <div className="flex flex-col gap-3">
+              {byWeekday.map(({ weekday, rate }) => (
+                <div key={weekday} className="flex items-center gap-3">
+                  <span className="w-9 shrink-0 font-mono text-xs font-medium text-muted">
+                    {WEEKDAY_SHORT[weekday]}
+                  </span>
+                  <div className="flex-1">
+                    <ProgressBar value={rate} />
+                  </div>
+                  <span className="w-9 shrink-0 text-right font-mono text-xs tabular-nums text-muted">
+                    {rate}%
+                  </span>
+                </div>
+              ))}
             </div>
           </Card>
         </div>

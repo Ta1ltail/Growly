@@ -6,7 +6,7 @@ import { AppPageShell } from "@/components/layout/AppPageShell";
 export default function OfflinePage() {
   return (
     <AppPageShell>
-    <div className="flex min-h-screen flex-col items-center justify-center gap-4 p-8 text-center">
+      <div className="flex min-h-screen flex-col items-center justify-center gap-4 p-8 text-center">
       <div className="flex size-16 items-center justify-center rounded-2xl bg-surface2">
         <WifiOff className="size-8 text-muted" />
       </div>
@@ -15,7 +15,7 @@ export default function OfflinePage() {
         Your habits and progress are saved locally and will sync when
         you&apos;re back online.
       </p>
-    </div>
+      </div>
     </AppPageShell>
   );
 }

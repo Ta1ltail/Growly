@@ -15,6 +15,8 @@ import {
   Sparkles,
   ChevronRight,
   CalendarRange,
+  Bell,
+  MessageSquare,
 } from "lucide-react";
 import { useAppData } from "@/lib/store";
 import { useToday } from "@/hooks/useToday";
@@ -52,7 +54,6 @@ import {
   StaggerItem,
 } from "@/components/ui/StaggerContainer";
 import { AppPageShell } from "@/components/layout/AppPageShell";
-import { Bell, MessageSquare } from "lucide-react";
 
 const BY_ID = new Map(ACHIEVEMENTS.map((a) => [a.id, a]));
 

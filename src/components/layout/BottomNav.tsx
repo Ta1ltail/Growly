@@ -49,12 +49,12 @@ interface NavTab {
 const NAV_TABS: NavTab[] = [
   { href: "/dashboard", label: "Home", icon: LayoutDashboard },
   { href: "/today", label: "Today", icon: CalendarDays },
-  { href: "#more", label: "More", icon: LayoutDashboard }, // icon unused — see special-case render below
+  { href: "#more", label: "More", icon: LayoutDashboard }, // icon placeholder — special-cased below
   { href: "/notifications", label: "Alerts", icon: Bell },
   { href: "/profile", label: "Profile", icon: UserRound },
 ];
 
-// Bottom nav tab icon colors — per-route unique colors matching sidebar
+// Icon colors — matching sidebar route colors
 const BOTTOM_NAV_ICON_COLORS: Record<string, string> = {
   "/dashboard": "text-indigo-500",
   "/today": "text-emerald-500",

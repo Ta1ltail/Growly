@@ -1,8 +1,7 @@
 "use client";
 
-import { memo } from "react";
+import { memo, type ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
-import type { ReactNode } from "react";
 
 // Warm, characterful SVG illustrations for empty states.
 // Each illustration uses the app's accent color and feels hand-drawn.

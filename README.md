@@ -80,9 +80,12 @@ Whether you're building healthy habits, managing routines, organizing tasks, tra
 
 ### 📊 Analytics
 
-- Statistics Dashboard
-- Progress Reports & Activity History
-- Performance Trends & Habit Completion Rate
+- Statistics Dashboard with trend line chart, bar charts & projections
+- Per-category breakdowns with progress bars
+- By-weekday completion analysis
+- Interactive trend chart with hover tooltips & animated line drawing
+- Habit correlations — habits you tend to complete together
+- Projection engine: estimated completion, streak, XP, next level timing
 - Daily, Weekly & Monthly Reviews
 - CSV/JSON import/export
 
@@ -192,23 +195,6 @@ npm start
 | **Dependencies** | 15 + 13 dev |
 
 ---
-
-# 🗺️ Documentation
-
-All documentation is in the **`docs/`** directory:
-
-| Doc | Description |
-|-----|-------------|
-| [ARCHITECTURE.md](docs/ARCHITECTURE.md) | Project structure, data flow, gamification system |
-| [COMPREHENSIVE_AUDIT.md](docs/COMPREHENSIVE_AUDIT.md) | Complete technical documentation & schema reference |
-| [STORE_API_REFERENCE.md](docs/STORE_API_REFERENCE.md) | Store mutations, hooks, and type reference |
-| [SYSTEM_FEATURES.md](docs/SYSTEM_FEATURES.md) | Detailed feature breakdown |
-| [TOOLS_USED.md](docs/TOOLS_USED.md) | Complete tool/version inventory |
-| [RUN_TEST_COMMAND.md](docs/RUN_TEST_COMMAND.md) | All test & quality commands |
-| [todo.md](docs/todo.md) | Offline-first sync architecture plan |
-| [IDEA.md](docs/IDEA.md) | Dynamic Habit Icon Evolution proposal |
-| [MOBILE_APP_PLAN.md](docs/MOBILE_APP_PLAN.md) | Capacitor mobile app plan |
-| [update_plan.md](docs/update_plan.md) | Improvement & redesign documentation |
 
 ---
 

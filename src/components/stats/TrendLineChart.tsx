@@ -1,95 +1,102 @@
 "use client";
 
-import { useId, useState, useMemo } from "react";
+// Interactive trend line chart with SVG rendering, hover tooltips,
+// and animated line drawing. Fills its parent container by default.
+
+import { useId, useState, useEffect, useRef } from "react";
 
 export interface TrendPoint {
   date: Date;
   rate: number; // 0..100
 }
 
-// Padding percentages so 0%/100% labels aren't clipped
-const PAD_TOP = 6;
-const PAD_BOT = 6;
-const PAD_LEFT = 8; // room for Y-axis labels
-const PAD_RIGHT = 2;
+// Padding within the SVG viewBox so labels aren't clipped
+const PAD_TOP = 5;
+const PAD_BOT = 8;
+const PAD_LEFT = 10;
+const PAD_RIGHT = 4;
+
+const CHART_W = 100;
+const CHART_H = 100;
+
+function xPos(i: number, n: number): number {
+  if (n <= 1) return PAD_LEFT + (CHART_W - PAD_LEFT - PAD_RIGHT) / 2;
+  return PAD_LEFT + (i / (n - 1)) * (CHART_W - PAD_LEFT - PAD_RIGHT);
+}
+
+function yPos(rate: number): number {
+  return PAD_TOP + (1 - rate / 100) * (CHART_H - PAD_TOP - PAD_BOT);
+}
 
 export function TrendLineChart({
   points,
-  height,
 }: {
   points: TrendPoint[];
-  height?: number; // optional — omit to fill the parent container instead
 }) {
   const gradId = useId();
   const glowId = `glow-${gradId}`;
   const [active, setActive] = useState<number | null>(null);
+  const pathRef = useRef<SVGPathElement>(null);
 
   const n = points.length;
 
-  // Map data indices/rates to SVG viewBox percentages.
-  // Declared before any early return so hook order stays stable
-  // across renders regardless of whether points is empty.
-  // eslint-disable-next-line react-hooks/preserve-manual-memoization
-  const xPos = useMemo(() => {
-    if (n <= 1) return () => PAD_LEFT + (100 - PAD_LEFT - PAD_RIGHT) / 2;
-    return (i: number) =>
-      PAD_LEFT + (i / (n - 1)) * (100 - PAD_LEFT - PAD_RIGHT);
-  }, [n]);
+  // Animate the line drawing on mount / data change
+  useEffect(() => {
+    const path = pathRef.current;
+    if (!path) return;
+    const length = path.getTotalLength();
+    path.style.strokeDasharray = `${length}`;
+    path.style.strokeDashoffset = `${length}`;
+    // Trigger reflow then animate
+    path.getBoundingClientRect();
+    path.style.transition = "stroke-dashoffset 0.8s cubic-bezier(0.22, 1, 0.36, 1)";
+    path.style.strokeDashoffset = "0";
+    return () => {
+      path.style.transition = "";
+      path.style.strokeDasharray = "";
+      path.style.strokeDashoffset = "";
+    };
+  }, [points]);
 
   if (n === 0) {
     return (
-      <div
-        className={`grid place-items-center text-sm text-faint ${height ? "" : "h-full"}`}
-        style={height ? { height } : undefined}
-      >
+      <div className="grid h-full place-items-center text-sm text-faint">
         No trend data yet
       </div>
     );
   }
 
-  const yPos = (rate: number) =>
-    PAD_TOP + (1 - rate / 100) * (100 - PAD_TOP - PAD_BOT);
-
   // Build SVG path
   const line = points
-    .map((p, i) => `${i === 0 ? "M" : "L"} ${xPos(i)} ${yPos(p.rate)}`)
+    .map((p, i) => `${i === 0 ? "M" : "L"} ${xPos(i, n)} ${yPos(p.rate)}`)
     .join(" ");
-  const area = `${line} L ${xPos(n - 1)} ${100 - PAD_BOT} L ${xPos(0)} ${100 - PAD_BOT} Z`;
+  const area = `${line} L ${xPos(n - 1, n)} ${CHART_H - PAD_BOT} L ${xPos(0, n)} ${CHART_H - PAD_BOT} Z`;
 
-  // Grid lines at 0%, 25%, 50%, 75%, 100%
+  // Grid lines
   const gridLines = [0, 25, 50, 75, 100];
-  // Labels need to render top-to-bottom as 100% → 0% to match the
-  // actual vertical position of each gridline (yPos is inverted).
-  const gridLinesDesc = [...gridLines].reverse();
 
   return (
-    <div
-      className={`relative w-full ${height ? "" : "h-full"}`}
-      style={height ? { height } : undefined}
-    >
-      {/* ── SVG chart layer ── */}
+    <div className="relative size-full">
+      {/* ── SVG chart ── */}
       <svg
-        viewBox="0 0 100 100"
+        viewBox={`0 0 ${CHART_W} ${CHART_H}`}
         preserveAspectRatio="none"
-        className="absolute inset-0 size-full"
+        className="absolute inset-0 size-full select-none"
         aria-hidden
       >
         <defs>
           <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="var(--c-accent)" stopOpacity="0.3" />
-            <stop
-              offset="100%"
-              stopColor="var(--c-accent)"
-              stopOpacity="0.02"
-            />
+            <stop offset="0%" stopColor="var(--c-accent)" stopOpacity="0.35" />
+            <stop offset="100%" stopColor="var(--c-accent)" stopOpacity="0.02" />
           </linearGradient>
-          <filter id={glowId}>
-            <feGaussianBlur stdDeviation="1.5" result="blur" />
+          <filter id={glowId} x="-10%" y="-20%" width="120%" height="140%">
+            <feGaussianBlur stdDeviation="1.2" result="blur" />
             <feMerge>
               <feMergeNode in="blur" />
               <feMergeNode in="SourceGraphic" />
             </feMerge>
           </filter>
+
         </defs>
 
         {/* Grid lines */}
@@ -98,57 +105,81 @@ export function TrendLineChart({
             key={g}
             x1={PAD_LEFT}
             y1={yPos(g)}
-            x2={100 - PAD_RIGHT}
+            x2={CHART_W - PAD_RIGHT}
             y2={yPos(g)}
             stroke="var(--c-line)"
-            strokeWidth={0.3}
+            strokeWidth={0.25}
             strokeDasharray="2,3"
             vectorEffect="non-scaling-stroke"
           />
         ))}
+        {/* Bottom axis line */}
+        <line
+          x1={PAD_LEFT}
+          y1={CHART_H - PAD_BOT}
+          x2={CHART_W - PAD_RIGHT}
+          y2={CHART_H - PAD_BOT}
+          stroke="var(--c-line)"
+          strokeWidth={0.35}
+          vectorEffect="non-scaling-stroke"
+        />
 
         {/* Area fill */}
         <path d={area} fill={`url(#${gradId})`} />
 
         {/* Line */}
         <path
+          ref={pathRef}
           d={line}
           fill="none"
           stroke="var(--c-accent)"
-          strokeWidth={1.8}
+          strokeWidth={2}
           strokeLinecap="round"
           strokeLinejoin="round"
           vectorEffect="non-scaling-stroke"
           filter={`url(#${glowId})`}
+          style={{ willChange: "stroke-dashoffset" }}
         />
 
         {/* Data point dots */}
         {points.map((p, i) => {
-          const cx = xPos(i);
+          const cx = xPos(i, n);
           const cy = yPos(p.rate);
           const isActive = active === i;
           return (
             <g key={p.date.toISOString()}>
-              {/* Outer glow ring for active dot */}
+              {/* Hover glow ring */}
               {isActive && (
                 <circle
                   cx={cx}
                   cy={cy}
-                  r={6}
+                  r={5}
                   fill="none"
                   stroke="var(--c-accent)"
-                  strokeWidth={3}
-                  opacity={0.3}
+                  strokeWidth={2.5}
+                  opacity={0.25}
                   vectorEffect="non-scaling-stroke"
+                  className="animate-ping"
+                  style={{ animationDuration: "1.5s" }}
                 />
               )}
+              {/* Outer dot */}
               <circle
                 cx={cx}
                 cy={cy}
-                r={isActive ? 3.5 : 2.5}
-                fill={isActive ? "var(--c-accent)" : "var(--c-accent-glow)"}
-                stroke="var(--c-surface)"
-                strokeWidth={1.2}
+                r={isActive ? 3.5 : 2}
+                fill={isActive ? "var(--c-accent)" : "transparent"}
+                stroke={isActive ? "var(--c-accent)" : "var(--c-accent-glow)"}
+                strokeWidth={isActive ? 0 : 1.5}
+                vectorEffect="non-scaling-stroke"
+                className="transition-all duration-200"
+              />
+              {/* Inner dot (always shows accent color) */}
+              <circle
+                cx={cx}
+                cy={cy}
+                r={isActive ? 2 : 1.5}
+                fill={isActive ? "var(--c-surface)" : "var(--c-accent)"}
                 vectorEffect="non-scaling-stroke"
                 className="transition-all duration-200"
               />
@@ -159,17 +190,18 @@ export function TrendLineChart({
 
       {/* ── Y-axis labels ── */}
       <div
-        className="pointer-events-none absolute left-0 flex flex-col justify-between text-right"
+        className="pointer-events-none absolute flex flex-col justify-between text-right"
         style={{
           top: `${PAD_TOP}%`,
           bottom: `${PAD_BOT}%`,
+          left: 0,
           width: `${PAD_LEFT}%`,
         }}
       >
-        {gridLinesDesc.map((g) => (
+        {[...gridLines].reverse().map((g) => (
           <span
             key={g}
-            className="font-mono text-[9px] leading-none text-faint translate-y-1/2 pr-1"
+            className="translate-y-1/2 pr-1.5 font-mono text-[9px] leading-none text-faint"
           >
             {g}%
           </span>
@@ -203,53 +235,51 @@ export function TrendLineChart({
       {/* ── Tooltip ── */}
       {active !== null && (
         <div
-          className="pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-full rounded-xl border border-line bg-surface px-3 py-2.5 text-center shadow-xl backdrop-blur-sm"
+          className="pointer-events-none absolute z-10 -translate-x-1/2 animate-rise"
           style={{
-            left: `${xPos(active)}%`,
+            left: `${xPos(active, n)}%`,
             top: `${yPos(points[active].rate)}%`,
-            marginTop: -8,
+            marginTop: -10,
+            animationDuration: "0.15s",
           }}
         >
+          <div className="rounded-lg border border-line bg-surface px-2.5 py-2 text-center shadow-xl backdrop-blur-sm">
+            <div className="font-mono text-sm font-bold tabular-nums leading-none text-accent">
+              {points[active].rate}%
+            </div>
+            <div className="mt-0.5 whitespace-nowrap text-[9px] font-medium text-muted leading-none">
+              {points[active].date.toLocaleDateString(undefined, {
+                weekday: "short",
+                month: "short",
+                day: "numeric",
+              })}
+            </div>
+          </div>
+          {/* Arrow */}
           <div
-            className="mx-auto mb-1.5 h-1.5 w-1.5 rounded-full"
-            style={{ background: "var(--c-accent)" }}
+            className="mx-auto size-2 -mt-px rotate-45 border-l border-t border-line bg-surface"
+            style={{ width: 6, height: 6 }}
           />
-          <div className="font-mono text-sm font-bold tabular-nums">
-            {points[active].rate}%
-          </div>
-          <div className="whitespace-nowrap text-[10px] text-muted">
-            {points[active].date.toLocaleDateString(undefined, {
-              weekday: "short",
-              month: "short",
-              day: "numeric",
-            })}
-          </div>
         </div>
       )}
 
       {/* ── X-axis labels ── */}
       <div
-        className="absolute left-0 right-0 flex"
+        className="pointer-events-none absolute flex items-start"
         style={{
+          left: `${PAD_LEFT}%`,
+          right: `${PAD_RIGHT}%`,
           top: `${100 - PAD_BOT}%`,
           height: `${PAD_BOT}%`,
         }}
       >
         {points.map((p, i) => {
           const step = Math.max(1, Math.floor(n / 7));
-          if (i % step !== 0 && i !== n - 1)
-            return (
-              <div
-                key={i}
-                className="flex-1"
-                style={{ marginLeft: 0, marginRight: 0 }}
-              />
-            );
+          if (i % step !== 0 && i !== n - 1) {
+            return <div key={i} className="flex-1" />;
+          }
           return (
-            <div
-              key={i}
-              className="flex-1 flex items-end justify-center pb-0.5"
-            >
+            <div key={i} className="flex-1 flex justify-center pt-0.5">
               <span className="font-mono text-[9px] text-faint whitespace-nowrap">
                 {p.date.toLocaleDateString(undefined, {
                   month: "numeric",

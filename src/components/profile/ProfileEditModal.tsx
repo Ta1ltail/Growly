@@ -297,8 +297,6 @@ export function ProfileEditModal({
             </select>
           )}
         </Field>
-
-
       </div>
     </Modal>
   );
