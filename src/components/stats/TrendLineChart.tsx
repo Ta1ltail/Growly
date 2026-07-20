@@ -88,6 +88,7 @@ export function TrendLineChart({ points }: { points: TrendPoint[] }) {
         viewBox={`0 0 ${W} ${H}`}
         preserveAspectRatio="none"
         className="absolute inset-0 size-full"
+        style={{ maxWidth: "none", height: "100%" }}
         aria-hidden
       >
         <defs>

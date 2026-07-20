@@ -1,8 +1,9 @@
 "use client";
 
 // Tracker — single scrollable table for all screen sizes.
-// Habit name column sticks left; day columns scroll horizontally.
-// Works on mobile and desktop with the same layout.
+// Always shows the last 30 days. Auto-scrolls to the far right
+// (most recent day) on mount. Habit name column sticks left;
+// day columns scroll horizontally on mobile.
 
 import {
   memo,
@@ -40,13 +41,7 @@ import { useHydrated } from "@/hooks/useHydrated";
 import type { MarkStatus } from "@/lib/types";
 import { AppPageShell } from "@/components/layout/AppPageShell";
 
-/* ── Constants ───────────────────────────────────────────── */
-
-const RANGES = [
-  { value: "7" as const, label: "7 days" },
-  { value: "14" as const, label: "14 days" },
-  { value: "30" as const, label: "30 days" },
-];
+const DAYS = 30;
 
 const STATUS_BG: Record<string, string> = {
   done: "bg-done/85 text-white",
@@ -148,11 +143,14 @@ export default function TrackerPage() {
   const grace = data.settings.graceHours ?? DEFAULT_GRACE_HOURS;
   const hydrated = useHydrated();
   const [filter, setFilter] = useState<Category | "All">("All");
-  const [range, setRange] = useState<"7" | "14" | "30">("14");
-  const daysShown = Number(range);
 
+  // Ref for the scrollable container
+  const scrollRef = useRef<HTMLDivElement>(null);
+  // Ref for the header row (used for sticky header offset)
   const headerRowRef = useRef<HTMLTableRowElement>(null);
   const [headerRowH, setHeaderRowH] = useState(44);
+
+  // Measure the header row height for category sticky positioning
   useEffect(() => {
     const el = headerRowRef.current;
     if (!el) return;
@@ -163,10 +161,22 @@ export default function TrackerPage() {
     return () => ro.disconnect();
   }, []);
 
+  // Always 30 days
   const columns = useMemo(
-    () => Array.from({ length: daysShown }, (_, i) => addDays(today, -(daysShown - 1 - i))),
-    [today, daysShown],
+    () => Array.from({ length: DAYS }, (_, i) => addDays(today, -(DAYS - 1 - i))),
+    [today],
   );
+
+  // Auto-scroll to the far right (most recent day) on mount and when data changes
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    // Use requestAnimationFrame to wait for layout
+    const raf = requestAnimationFrame(() => {
+      el.scrollLeft = el.scrollWidth;
+    });
+    return () => cancelAnimationFrame(raf);
+  }, [columns, data.marks, data.habits]);
 
   const habits = useMemo(
     () =>
@@ -219,20 +229,19 @@ export default function TrackerPage() {
         <EmptyState icon={LayoutGrid} title="Nothing to track yet" hint="Add habits and they'll show up here." illustration="tracker" />
       ) : (
         <>
-          {/* Filters */}
-          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          {/* Category filter only (range is always 30 days) */}
+          <div className="mb-4">
             <Segmented options={filterOptions} value={filter} onChange={setFilter} />
-            <Segmented options={RANGES} value={range} onChange={setRange} />
           </div>
 
-          {/* Single scrollable table for all screens */}
+          {/* Single scrollable table */}
           <div className="h-[calc(100dvh-16rem)] min-h-[360px] md:h-[calc(100dvh-13rem)]">
             <Card className="h-full overflow-hidden">
-              <div className="h-full w-full overflow-auto">
+              <div ref={scrollRef} className="h-full w-full overflow-auto">
                 <table className="border-collapse text-center font-mono text-xs">
                   <thead>
                     <tr ref={headerRowRef}>
-                      <th className="sticky left-0 top-0 z-30 min-w-32 w-32 border-r border-line bg-surface px-2.5 py-2.5 text-left text-sm font-semibold shadow-sm">
+                      <th className="sticky left-0 top-0 z-30 min-w-32 border-r border-line bg-surface px-2.5 py-2.5 text-left text-sm font-semibold shadow-sm">
                         Habit
                       </th>
                       {columns.map((d) => {
@@ -240,9 +249,9 @@ export default function TrackerPage() {
                         return (
                           <th
                             key={dateKey(d)}
-                            className={`sticky top-0 z-20 w-9 px-0.5 py-2 font-medium shadow-sm ${
+                            className={`sticky top-0 z-20 px-0.5 py-2 font-medium shadow-sm ${
                               isToday ? "bg-accent/10 text-accent" : "bg-surface text-faint"
-                            }`}
+                            } w-9 md:w-auto`}
                           >
                             <div className="text-[10px] uppercase">
                               {d.toLocaleDateString(undefined, { weekday: "narrow" })}
@@ -271,11 +280,7 @@ export default function TrackerPage() {
                               <span className="font-mono text-[10px] text-faint">{group.habits.length}</span>
                             </div>
                           </td>
-                          <td
-                            colSpan={columns.length + 1}
-                            className="bg-surface2/95"
-                            style={{ top: headerRowH - 1 }}
-                          />
+                          <td colSpan={columns.length + 1} className="bg-surface2/95" style={{ top: headerRowH - 1 }} />
                         </tr>
 
                         {/* Habit rows */}
