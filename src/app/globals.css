@@ -352,8 +352,11 @@ body {
   box-sizing: border-box;
 }
 
-/* Image/video/iframe overflow fix */
-img, video, iframe, svg {
+/* Image/video/iframe overflow fix — svg excluded so lucide-react icons
+   sized with tailwind utility classes (e.g. size-4) keep their explicit
+   dimensions instead of being reset to height:auto. The universal
+   * { max-width: 100% } above already covers overflow prevention. */
+img, video, iframe {
   max-width: 100%;
   height: auto;
 }
