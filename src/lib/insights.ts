@@ -1,5 +1,4 @@
-// Turns raw numbers into short, human, encouraging insights for the Today,
-// Dashboard, and Statistics screens. Never shame-based (see docs/notes.txt).
+// Derive short encouraging insights from habit data. Never shame-based.
 
 import type { Habit, Marks } from "./types";
 import { addDays } from "./date";

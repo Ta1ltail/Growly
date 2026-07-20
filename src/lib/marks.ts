@@ -1,8 +1,6 @@
-// Shared logic for habit marks: the tap cycle.
-
 import type { MarkStatus } from "./types";
 
-// Tap order: none -> done -> missed -> skipped -> none
+// Tap cycle: none -> done -> missed -> skipped -> none
 const CYCLE: (MarkStatus | undefined)[] = [
   undefined,
   "done",

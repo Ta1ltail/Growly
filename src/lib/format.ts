@@ -1,9 +1,7 @@
-// Human-readable formatting helpers shared across screens. Pure, no UI.
-
 import type { Habit, Priority, Recurrence } from "./types";
 import { effectiveRecurrence } from "./stats";
 
-// Mon-first ordering for display (the app schedules with 0=Sun..6=Sat).
+// Mon-first weekday ordering (internal uses 0=Sun..6=Sat).
 export const WEEKDAYS_MON_FIRST = [1, 2, 3, 4, 5, 6, 0];
 
 export const WEEKDAY_SHORT: Record<number, string> = {
@@ -26,7 +24,7 @@ export const WEEKDAY_LONG: Record<number, string> = {
   6: "Saturday",
 };
 
-// Single-letter label for compact grids (still backed by tooltips elsewhere).
+// Single-letter labels for compact grids.
 export const WEEKDAY_LETTER: Record<number, string> = {
   0: "S",
   1: "M",

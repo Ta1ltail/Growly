@@ -1,38 +1,14 @@
 "use client";
 
-// Undo/redo history stack for the app store.
-// Captures snapshots of AppData before each mutation so users can undo/redo
-// habit creation, editing, deletion, and mark-cycling actions.
-//
-// The stack is a circular buffer with undo and redo pointers.
-// MAX_HISTORY limits memory usage. Older entries are dropped.
-//
-// Integration:
-//   - Call `pushSnapshot(data)` BEFORE any store mutation (inside update()).
-//   - Call `undo()` to go back; returns the restored AppData or null.
-//   - Call `redo()` to go forward; returns the restored AppData or null.
+// Undo/redo stack for AppData snapshots. Captures state before each mutation.
 
 import type { AppData } from "./types";
 
-// Maximum number of snapshots to keep. Each snapshot is a deep-cloned copy
-// of the full AppData (habits, marks, notes, goals, etc.), so memory usage
-// is proportional to data size × MAX_HISTORY. 20 snapshots of a typical user
-// with a few hundred marks uses ~1-2MB, which is acceptable for modern
-// browsers. Power users with thousands of marks may use up to ~5MB.
-// The redo stack shares the same cap, capped independently.
 const MAX_HISTORY = 20;
-
-// Estimated maximum bytes for a single snapshot before size-based eviction
-// kicks in (~200KB). Applied on push to prevent unbounded memory growth
-// for users with very large datasets.
 const MAX_HISTORY_BYTES = 200_000;
 
-// Stack of snapshots: index 0 is oldest, length-1 is newest.
 let undoStack: AppData[] = [];
 let redoStack: AppData[] = [];
-
-// Push a snapshot before a mutation. Captures the current state so we can
-// restore it on undo.
 export function pushSnapshot(data: AppData): void {
   // Deep-clone to freeze the snapshot
   const snapshot = JSON.parse(JSON.stringify(data)) as AppData;

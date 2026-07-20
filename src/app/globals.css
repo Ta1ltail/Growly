@@ -38,7 +38,6 @@
   --animate-fade-in: fade-in 0.35s ease both;
   --animate-rise: rise 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
   --animate-pop: pop 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) both;
-  /* --animate-float and --animate-shimmer were removed; unused */
   --animate-flicker: flicker 2.2s ease-in-out infinite;
   --animate-flicker-medium: flicker 1.6s ease-in-out infinite;
   --animate-flicker-fast: flicker 0.9s ease-in-out infinite;
@@ -57,7 +56,6 @@
   --animate-slide-right: slide-in-right 0.5s var(--ease-out) both;
   --animate-scale-in: scale-in 0.5s var(--ease-out) both;
   --animate-slide-up: slide-up 0.35s var(--ease-out) both;
-  --animate-scroll-bounce: scroll-bounce 2s ease-in-out infinite;
   --animate-fade-slide-up-lg: fade-slide-up-lg 0.6s var(--ease-out) both;
 }
 
@@ -140,7 +138,6 @@
     opacity: 1;
   }
 }
-/* Streak flame: organic flicker via tiny scale/skew + opacity wobble. */
 @keyframes flicker {
   0%,
   100% {
@@ -160,7 +157,6 @@
     opacity: 0.97;
   }
 }
-/* Halo glow that breathes behind larger flames. */
 @keyframes glow-pulse {
   0%,
   100% {
@@ -173,7 +169,6 @@
   }
 }
 
-/* Rising ember particle for large streak flames (30+ days). */
 @keyframes ember {
   0% {
     opacity: 0;
@@ -188,7 +183,6 @@
   }
 }
 
-/* One-shot celebratory burst on habit completion. */
 @keyframes burst {
   0% {
     transform: scale(0.4);
@@ -204,7 +198,6 @@
   }
 }
 
-/* Confetti: a piece falls + drifts (X via custom prop) while spinning, then fades. */
 @keyframes confetti-fall {
   0% {
     transform: translate3d(0, -10vh, 0) rotate(0deg);
@@ -215,7 +208,6 @@
     opacity: 1;
   }
 }
-/* Major-unlock entrance: badge zooms in past final size then settles. */
 @keyframes celebrate-in {
   0% {
     transform: scale(0.3) rotate(-12deg);
@@ -230,20 +222,17 @@
     opacity: 1;
   }
 }
-/* Conic shine sweeping behind a legendary badge. */
 @keyframes spin-slow {
   to {
     transform: rotate(360deg);
   }
 }
-/* Sweeping sheen across a legendary rank's gradient-filled title text. */
 @keyframes text-sheen {
   to {
     background-position: 200% center;
   }
 }
 
-/* Gentle float-bounce for nav icons — like a heartbeat */
 @keyframes icon-bounce {
   0%,
   100% {
@@ -254,7 +243,6 @@
   }
 }
 
-/* Slow pulse for active nav icons */
 @keyframes icon-pulse {
   0%,
   100% {
@@ -267,7 +255,6 @@
   }
 }
 
-/* Quick playful wiggle on hover (used by IconBtn, nav items) */
 @keyframes icon-wiggle {
   0%,
   100% {
@@ -368,19 +355,13 @@ img, video, iframe {
   }
 }
 
-/* Glassy surface used by cards/sidebar */
 .glass {
   background: color-mix(in srgb, var(--c-surface) 85%, transparent);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
 }
 
-/* ── Scrollbar policy ── 
-   By default: scrollbars hidden everywhere (mobile native app feel).
-   Desktop (≥768px): thin custom scrollbar integrated with the design.
-   Scrolling always works — only the visual bar is hidden on mobile. */
-
-/* All devices — no scrollbars */
+/* Scrollbars hidden on mobile, thin custom on desktop */
 * {
   scrollbar-width: none !important;
   -ms-overflow-style: none !important;
@@ -395,7 +376,6 @@ img, video, iframe {
   display: none !important;
 }
 
-/* Desktop — thin custom scrollbar */
 @media (min-width: 768px) {
   * {
     scrollbar-width: thin !important;
@@ -420,7 +400,6 @@ img, video, iframe {
   }
 }
 
-/* Make absolutely sure the html/body never show scrollbars on mobile */
 @media (max-width: 767px) {
   html, body, #__next, main {
     scrollbar-width: none !important;
@@ -434,14 +413,10 @@ img, video, iframe {
   }
 }
 
-/* ── Safe-area aware bottom spacing utility ── */
 .safe-area-bottom {
   padding-bottom: calc(var(--safe-area-bottom, 0px));
 }
 
-/* Skeleton placeholder: a soft, static block for loading states.
-   No animation — the brief hydration flash should not draw attention.
-   The gradient still gives it depth without a pulsing effect. */
 .skeleton {
   background: linear-gradient(
     100deg,
@@ -452,42 +427,15 @@ img, video, iframe {
   border-radius: 0.5rem;
 }
 
-/* Icon color styling system */
+/* Icon color helpers */
 .icon-accent {
   color: var(--c-accent);
-}
-.icon-done {
-  color: var(--color-done);
-}
-.icon-missed {
-  color: var(--color-missed);
-}
-.icon-amber {
-  color: #f59e0b;
-}
-.icon-emerald {
-  color: #10b981;
-}
-.icon-violet {
-  color: #8b5cf6;
 }
 .icon-rose {
   color: #f43f5e;
 }
-.icon-sky {
-  color: #0ea5e9;
-}
-.icon-orange {
-  color: #f97316;
-}
-.icon-pink {
-  color: #ec4899;
-}
-.icon-cyan {
-  color: #06b6d4;
-}
 
-/* ── Staggered entrance (replaces motion's staggerChildren) ── */
+/* Staggered entrance */
 .stagger-item {
   animation: stagger-in 0.4s var(--ease-out) both;
   animation-delay: calc(
@@ -506,7 +454,6 @@ img, video, iframe {
   }
 }
 
-/* ── Slide in from right (login/register form panels) ── */
 @keyframes slide-in-right {
   from {
     opacity: 0;
@@ -518,7 +465,6 @@ img, video, iframe {
   }
 }
 
-/* ── Slide up (mobile nav More page, bottom sheets) ── */
 @keyframes slide-up {
   from {
     opacity: 0;
@@ -530,7 +476,6 @@ img, video, iframe {
   }
 }
 
-/* ── Scale in (landing feature cards) ── */
 @keyframes scale-in {
   from {
     opacity: 0;
@@ -542,7 +487,6 @@ img, video, iframe {
   }
 }
 
-/* ── Large fade-slide-up (landing section headers, CTA) ── */
 @keyframes fade-slide-up-lg {
   from {
     opacity: 0;
@@ -554,18 +498,7 @@ img, video, iframe {
   }
 }
 
-/* ── Subtle bounce for hero scroll indicator ── */
-@keyframes scroll-bounce {
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(6px);
-  }
-}
-
-/* Respect users who prefer less motion (accessibility). */
+/* Accessibility: respect reduced motion preference */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

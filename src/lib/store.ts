@@ -1,10 +1,7 @@
 "use client";
 
-// A tiny shared store for the app's data, backed by localStorage.
-// Uses React's useSyncExternalStore so every screen reads the same data
-// and updates together — hydration-safe for Next.js server rendering.
-// All mutations go through the action functions below; habit/schedule changes
-// are recorded in an append-only audit log (Honest Tracking Policy).
+// Shared store backed by localStorage. Uses useSyncExternalStore for
+// hydration-safe access. Habit/schedule changes are audit-logged.
 
 import { useSyncExternalStore } from "react";
 import type {
@@ -62,10 +59,7 @@ const listeners = new Set<() => void>();
 
 const MAX_AUDIT = 500;
 
-/* ────────────────────────────────────────────
-   Sync callback — wired by SyncProvider so the
-   store can notify the sync layer after mutations.
-   ──────────────────────────────────────────── */
+/* Sync callback — wired by SyncProvider to notify sync layer after mutations */
 
 export type SyncCallback = (
   data: AppData,
@@ -109,10 +103,7 @@ function scheduleSave(data: AppData): void {
   }, 100);
 }
 
-/* ────────────────────────────────────────────
-   Diff helper: compare two snapshots to determine
-   which tables changed (for incremental sync).
-   ──────────────────────────────────────────── */
+/* Diff two snapshots to determine which tables changed for incremental sync */
 
 function computeChanged(prev: AppData, next: AppData): ChangedTables {
   const changed: ChangedTables = {};

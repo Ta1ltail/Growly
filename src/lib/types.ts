@@ -5,8 +5,7 @@ export type MarkStatus = "done" | "missed" | "skipped";
 
 export type Priority = "low" | "med" | "high";
 
-// daily (on/after startDate), weekly (0=Sun..6=Sat, [] = daily),
-// or monthly (1..31, skips if day past month's length).
+// daily | weekly (0=Sun..6=Sat, [] = daily) | monthly (1..31, skips if past month length)
 export type Recurrence =
   | { kind: "daily" }
   | { kind: "weekly"; weekdays: number[] }
@@ -36,7 +35,7 @@ export interface Habit {
 
 export type Marks = Record<string, Record<string, MarkStatus>>;
 
-// A step toward a goal, unlocked when the goal's `current` reaches `at`.
+// A goal milestone unlocked when goal.current reaches `at`.
 export interface Milestone {
   id: string;
   title: string;
@@ -44,7 +43,7 @@ export interface Milestone {
   done: boolean;
 }
 
-// A bigger target the user works toward (e.g. "Workout 20 times this month").
+// A target the user works toward.
 export interface Goal {
   id: string;
   title: string;
@@ -60,14 +59,14 @@ export interface Goal {
   deletedAt?: string; // ISO timestamp of soft-delete (schema v7)
 }
 
-// What a note can be attached to.
+// What a note can link to.
 export interface NoteLinks {
   date?: string; // dateKey
   habitId?: string;
   goalId?: string;
 }
 
-// A rich note. Body is Markdown text. (Replaces the old notes[dateKey]=string.)
+// A rich note with Markdown body.
 export interface Note {
   id: string;
   createdAt: string; // ISO
@@ -78,7 +77,7 @@ export interface Note {
   deletedAt?: string; // ISO timestamp of soft-delete (schema v7)
 }
 
-// Append-only audit trail for habit & schedule changes (Honest Tracking Policy).
+// Append-only audit trail for habit & schedule changes.
 export type AuditAction =
   | "habit.create"
   | "habit.edit"
@@ -100,7 +99,7 @@ export interface AuditEntry {
   after?: unknown;
 }
 
-// The value produced by the add/edit habit form (UI -> data bridge).
+// Add/edit habit form state.
 export interface HabitFormValue {
   name: string;
   category: Category;
@@ -121,12 +120,8 @@ interface Settings {
   customCategories?: string[]; // user-defined habit categories
 }
 
-/* ---- Gamification (derived from immutable history) ----
- * XP, levels, streaks, titles, and achievement *progress* are all computed
- * from `marks`/`habits` by pure functions in lib/ — never stored — so they
- * can't be cheated (Honest Tracking). The only persisted gamification state
- * is which achievements have been unlocked (for one-time popups) and the
- * editable profile fields. */
+/* Gamification is derived from history, never stored (anti-cheat).
+   Only persisted state: unlock records + profile fields. */
 
 export type Rarity = "common" | "rare" | "epic" | "legendary";
 
@@ -137,7 +132,7 @@ export type AchievementCategory =
   | "category"
   | "special";
 
-// A static achievement definition (lives in code, not storage).
+// Static achievement definition.
 export interface AchievementDef {
   id: string;
   name: string;
@@ -148,22 +143,17 @@ export interface AchievementDef {
   target: number; // threshold on the achievement's metric (for progress bars)
 }
 
-// Persisted unlock record — the only mutable gamification state.
+// Persisted unlock record.
 interface AchievementUnlock {
   at: string; // ISO timestamp the achievement was first satisfied
   seen: boolean; // has the unlock popup been shown?
 }
 export type Unlocks = Record<string, AchievementUnlock>;
 
-/* ---- Economy (schema v4) ----
- * Coins, like XP, are DERIVED from the immutable history (see lib/economy.ts) —
- * never stored as a balance. The only persisted economy state is the
- * append-only spend ledger, owned/equipped cosmetics, and a dated freeze-use
- * log. Spendable balance = coinsEarned(history) − sum(ledger amounts). This
- * keeps earnings uncheatable (you can't grant yourself coins) while letting the
- * user spend, mirroring how `unlocks` is the one persisted gamification fact. */
+/* Economy: coins are derived from history, never stored as a balance.
+   Persisted: spend ledger + cosmetics + freeze log. */
 
-// A single coin expenditure (append-only — never mutated or removed).
+// Single coin expenditure (append-only).
 export interface SpendEntry {
   id: string;
   at: string; // ISO timestamp
@@ -171,9 +161,7 @@ export interface SpendEntry {
   item: string; // catalog item id this paid for
 }
 
-// A use of a streak-freeze consumable. The targeted day stays a real "missed"
-// mark in history (honest); the freeze only makes the streak walk treat it as
-// neutral. Limited (max 1 / rolling 7 days) and audit-logged.
+// Streak-freeze use. Miss stays in history; freeze makes streak walk treat as neutral.
 export interface FreezeEntry {
   id: string;
   at: string; // ISO timestamp the freeze was applied
@@ -181,14 +169,14 @@ export interface FreezeEntry {
   habitId: string; // the habit whose miss is protected
 }
 
-// Persisted economy state (the only mutable economy facts).
+// Persisted economy state.
 export interface Economy {
   spent: SpendEntry[]; // append-only ledger
   owned: string[]; // cosmetic catalog ids the user has bought
   equipped: Partial<Record<CosmeticSlot, string>>; // slot -> equipped item id
   freezes: FreezeEntry[]; // streak-freeze use log
 
-  // ---- Engagement features (schema v6) ----
+  // Engagement features (schema v6)
   bonusCoins: number; // total bonus coins earned from engagement rewards
   lastCheckIn: string | null; // dateKey of last daily check-in
   checkInStreak: number; // consecutive daily check-in count
@@ -198,7 +186,7 @@ export interface Economy {
   lastSpinResult: { label: string; amount: number; isFreeze: boolean; originalLabel?: string } | null; // last spin reward
 }
 
-// A daily challenge generated once per day.
+// Daily challenge generated once per day.
 export interface DailyQuest {
   description: string;
   target: number;
@@ -222,15 +210,11 @@ export const DEFAULT_ECONOMY: Economy = {
   lastSpinResult: null,
 };
 
-// Cosmetic categories that can be equipped (one active per slot).
+// Equippable cosmetic categories.
 export type CosmeticSlot = "flame" | "confetti" | "accent";
 
-/* ---- Celebration "seen" markers (schema v5) ----
- * Like `unlocks`, these are the ONLY persisted facts for non-achievement
- * celebrations (level-ups, new titles, shop unlocks, streak milestones). The
- * celebration queue itself is DERIVED each render by diffing current progress
- * against these markers (see lib/celebrations.ts) — nothing else is stored.
- * `seeded` is written once on first run so existing histories aren't re-fired. */
+/* Celebration seen-markers (schema v5) — only persisted facts for non-achievement
+   celebrations. Queue is derived by diffing progress against these markers. */
 export interface ProgressSeen {
   seeded: boolean; // has the one-time baseline been written?
   level: number; // highest level already celebrated
@@ -249,7 +233,7 @@ export const DEFAULT_PROGRESS_SEEN: ProgressSeen = {
   tierUnlocks: [],
 };
 
-// Editable, user-owned profile (the "character page").
+// Editable user profile.
 export interface Profile {
   displayName: string;
   username: string;

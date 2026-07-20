@@ -1,16 +1,10 @@
-// Shared utility helpers. Kept small and framework-free so any module can
-// import them without circular-dependency risk.
-
 import { clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 
-// Merge class names with Tailwind conflict resolution.
 export function cn(...inputs: Parameters<typeof clsx>): string {
   return twMerge(clsx(inputs));
 }
 
-// Generate a unique ID. Uses crypto.randomUUID when available (modern browsers)
-// with a fallback for older environments and SSR.
 export function uid(): string {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto)
     return crypto.randomUUID();

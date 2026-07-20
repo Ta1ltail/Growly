@@ -1,5 +1,4 @@
-// Categories for habits, each with a color (Data/Pro palette).
-// 0 = Sunday ... 6 = Saturday is used elsewhere for repeat days.
+// Habit categories with associated colors.
 
 export const CATEGORIES = [
   "Workout",

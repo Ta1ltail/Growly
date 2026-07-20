@@ -19,11 +19,7 @@ import type {
   Unlocks,
 } from "./types";
 
-/* ────────────────────────────────────────────
-   Public Stats Snapshot (stored in its own
-   localStorage key, loaded from Supabase by
-   fullResync — never recomputed automatically).
-   ──────────────────────────────────────────── */
+/* Public stats snapshot stored in its own localStorage key, loaded by fullResync */
 
 export interface StatsSnapshotData {
   level: number;
@@ -53,23 +49,11 @@ export const SAVED_EMAIL_KEY = "growly.saved_email";
 const LAST_AUTH_USER_KEY = "growly.last_auth_user";
 const LAST_USER_ID_KEY = "growly.last_user_id";
 
-// Current schema version. Bumped when the shape of stored data changes so
-// loadData() can migrate older saves forward.
-// v3: added `profile` + `unlocks` (gamification). Older saves default them.
-// v4: added `economy` (coins ledger + cosmetics + freezes). Older saves default
-//     it to an empty economy; coins re-derive from history automatically.
-// v5: added `progressSeen` (celebration seen-markers for level/title/shop/streak).
-//     Older saves default it to an unseeded baseline; the seed step then records
-//     current progress so existing histories don't re-fire celebrations.
-// v6: added engagement fields on `economy` (bonusCoins, lastCheckIn,
-//     checkInStreak, currentQuest, lastSpinDate, lastSpinResult). Older saves
-//     default them; coins still re-derive from history.
-// v7: soft-delete support — deletedAt on Habit/Note/Goal. The field is
-//     preserved through storage, filtered by consumers.
+// Schema version: bumped on data shape changes; loadData migrates older saves.
+// v3: profile+unlocks, v4: economy, v5: progressSeen, v6: engagement fields, v7: soft-delete
 export const SCHEMA_VERSION = 7;
 
-// How long after midnight a user may still edit "yesterday" before the day
-// locks permanently (Honest Tracking Policy). Tunable in Settings.
+// Grace period (hours) after midnight to edit yesterday's marks. Tunable in Settings.
 export const DEFAULT_GRACE_HOURS = 5;
 
 export const emptyData: AppData = {
@@ -92,10 +76,7 @@ export const emptyData: AppData = {
 
 const COSMETIC_SLOTS = new Set<CosmeticSlot>(["flame", "confetti", "accent"]);
 
-/* ---------- validation ----------
- * Saved data comes from localStorage, which can be edited, truncated, or
- * left over from an older version. We sanitize every record on load and
- * drop anything malformed so a bad entry can never crash the app. */
+/* Sanitize every record on load — localStorage can be edited or truncated */
 
 const CATEGORY_SET = new Set<string>(CATEGORIES);
 const MARK_SET = new Set<MarkStatus>(["done", "missed", "skipped"]);

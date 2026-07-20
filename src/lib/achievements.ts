@@ -16,7 +16,6 @@ import {
 const EARLY_BEFORE = "08:00";
 const NIGHT_AFTER = "21:00";
 
-// Compact, history-derived context every achievement (and XP) reads from.
 export interface GameStats {
   doneCount: number;
   missedCount: number;

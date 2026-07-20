@@ -1,15 +1,8 @@
-// Unified celebration queue. Every progression event — achievement unlocked,
-// level up, new title, shop unlock, streak milestone — is normalized into one
-// CelebrationEvent descriptor that drives both the center popup and the
-// bottom-right toast (see components/celebrations/*).
-//
-// Like the rest of the app, the queue is DERIVED: it diffs the current
-// history-derived progress against a small persisted "seen" record
-// (AppData.progressSeen) — no event objects are stored, only seen-markers. The
-// achievement portion reuses the existing unseen-`unlocks` mechanism.
-//
-// Anti-flood: `baselineProgressSeen` records current progress once on first run
-// (store.seedCelebrationsSeen) so an existing history doesn't re-celebrate.
+// Normalize progression events into CelebrationEvent descriptors that drive the
+// celebration UI. Like the rest of the app, the queue is DERIVED: it diffs
+// current history-derived progress against persisted seen-markers — no event
+// objects stored, only markers. baselineProgressSeen prevents re-celebrating
+// existing history on first run.
 
 import type { AchievementDef, AppData, ProgressSeen, Rarity } from "./types";
 import { ACHIEVEMENTS, RARITY_LABEL, RARITY_ORDER } from "./achievements";

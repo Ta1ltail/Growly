@@ -1,13 +1,7 @@
-// Coin economy — earnings are DERIVED from the immutable history (mirrors XP in
-// xp.ts), so they can never be granted or inflated. The store persists only an
-// append-only spend ledger + owned/equipped cosmetics + a freeze log; the
-// spendable balance is the difference:
-//
+// Earnings are DERIVED from immutable history (mirrors XP in xp.ts).
 //   balance = coinsEarned(history) − Σ ledger.amount
-//
-// This is the anti-cheat-safe way to add a spendable currency on top of the
-// Honest Tracking model: you can spend what the record proves you earned, and
-// nothing more.
+// Store persists only: append-only spend ledger + owned/equipped cosmetics + freeze log.
+// This is anti-cheat-safe: spend what the record proves you earned, nothing more.
 
 import type {
   CosmeticSlot,
@@ -22,14 +16,13 @@ import type { GameStats } from "./achievements";
 import { dateKey, addDays, startOfDay } from "./date";
 import type { Category } from "./categories";
 
-/* ---------------- earning ---------------- */
+/* earning */
 
 export const COINS_PER_COMPLETION = 2;
 export const COINS_PER_PERFECT_DAY = 10;
 
-/* ---------------- engagement rewards ---------------- */
+/* engagement rewards */
 
-// Level-up bonus: coins granted each time the user levels up.
 const LEVEL_UP_COINS = [
   0, // level 1 (starting, no bonus)
   5, // level 2
@@ -49,8 +42,7 @@ function levelUpBonus(level: number): number {
   return 100 + (level - 10) * 25;
 }
 
-// Total level-up coins for advancing from `fromLevel` to `toLevel` — sums every
-// level crossed, so jumping several levels in one go still pays out in full.
+// Sum of level-up bonuses from fromLevel to toLevel (handles multi-level jumps).
 export function levelUpCoinsBetween(
   fromLevel: number,
   toLevel: number,
@@ -61,9 +53,7 @@ export function levelUpCoinsBetween(
   return total;
 }
 
-// Streak milestone rewards: one-time bonus coins for reaching a per-habit streak
-// milestone. Keyed to the celebration tiers in celebrations.ts (streakTier); an
-// unknown tier pays 0 so the two lists can never silently double-grant.
+// One-time bonus coins for per-habit streak milestones. Keyed to celebration tiers.
 const STREAK_MILESTONE_REWARDS: Record<number, number> = {
   7: 25,
   14: 50,
@@ -76,7 +66,7 @@ export function streakMilestoneReward(tier: number): number {
   return STREAK_MILESTONE_REWARDS[tier] ?? 0;
 }
 
-// Daily check-in bonus: scales with streak.
+// Daily check-in bonus scaling with streak length.
 export function checkInReward(streak: number): number {
   if (streak < 2) return 3; // first check-in
   if (streak < 5) return 5;

@@ -1,7 +1,3 @@
-// Client-side notification creation utilities.
-// Used by the friends page and other features to create notifications
-// for other users when events happen (friend requests, accepts, etc.)
-
 import { createClient } from "@/lib/supabase/client";
 
 export type NotificationType =

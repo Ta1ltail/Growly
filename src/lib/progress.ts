@@ -28,7 +28,7 @@ export interface ProgressSummary {
   coinBalance: number; // spendable: earned − spent
 }
 
-// The closest locked achievement (by fewest remaining, among those started).
+// Nearest locked achievement by fewest remaining progress.
 function nearestAchievement(
   achievements: AchievementProgress[],
 ): ProgressMilestone | null {

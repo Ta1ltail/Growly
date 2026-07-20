@@ -1,15 +1,11 @@
-// Pure calculation helpers: scheduling, streaks, completion rates, and the
-// analytics that power the Statistics and Dashboard screens.
-// Kept separate from UI so they are easy to reuse and reason about.
-
 import type { Category } from "./categories";
 import type { Habit, Marks, MarkStatus, Recurrence } from "./types";
 import { addDays, dateKey, parseDateKey, startOfDay } from "./date";
 
-/* ---------------- scheduling ---------------- */
+/* scheduling */
 
-// The canonical schedule for a habit. New habits store `recurrence`; older
-// saved habits only have `repeatDays`, so we derive it (empty => daily).
+// Derive canonical recurrence: newer habits store `recurrence`; older ones
+// have `repeatDays` only (empty => daily).
 export function effectiveRecurrence(habit: Habit): Recurrence {
   if (habit.recurrence) return habit.recurrence;
   return habit.repeatDays.length === 0
@@ -17,13 +13,13 @@ export function effectiveRecurrence(habit: Habit): Recurrence {
     : { kind: "weekly", weekdays: habit.repeatDays };
 }
 
-// The day a habit becomes active. Prefers `startDate`, falls back to createdAt.
+// Day the habit becomes active (startDate || createdAt).
 export function habitStartDay(habit: Habit): Date {
   if (habit.startDate) return startOfDay(parseDateKey(habit.startDate));
   return startOfDay(new Date(habit.createdAt));
 }
 
-// Is this habit scheduled on the given date? Honors recurrence + start date.
+// Whether the habit is scheduled on the given date.
 export function isScheduled(habit: Habit, date: Date): boolean {
   if (startOfDay(date).getTime() < habitStartDay(habit).getTime()) return false;
   const rec = effectiveRecurrence(habit);
@@ -43,17 +39,11 @@ function markFor(marks: Marks, key: string, habitId: string) {
   return marks[key]?.[habitId];
 }
 
-/* ---------------- streaks ---------------- */
+/* streaks */
 
-// Current and best "done" streaks for a habit, counting only scheduled days.
-// A scheduled day marked "done" extends the streak; "skipped" is neutral
-// (ignored); anything else (missed / unmarked) breaks it.
-//
-// `frozen` is an optional set of "habitId@dateKey" strings from a streak-freeze
-// consumable (lib/economy). A frozen day is treated as NEUTRAL (like skipped) —
-// the miss still exists in history, it just doesn't break the streak. This is
-// the only sanctioned way a recorded miss is bridged, and it's gated/logged in
-// the store, so Honest Tracking holds.
+// Current and best "done" streaks counting only scheduled days.
+// `frozen` is a set of "habitId@dateKey" strings from streak-freeze consumables;
+// frozen days are treated as neutral (like skipped).
 export function habitStreaks(
   habit: Habit,
   marks: Marks,
@@ -109,9 +99,9 @@ export function habitStreaks(
   return { current, best };
 }
 
-/* ---------------- completion ---------------- */
+/* completion */
 
-// Completion rate over a date range (inclusive), across the given habits.
+// Completion rate over a date range across the given habits.
 export function rangeCompletion(
   habits: Habit[],
   marks: Marks,
@@ -191,10 +181,9 @@ export function lastNDaysCompletion(
   return out;
 }
 
-/* ---------------- richer analytics ---------------- */
+/* analytics */
 
-// A 0–100 "consistency" score over a range: completion rate weighted so that
-// recent days count a little more (keeps the score responsive).
+// 0–100 consistency score: recent days weighted ~2x more.
 export function consistencyScore(
   habits: Habit[],
   marks: Marks,
