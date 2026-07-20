@@ -242,6 +242,26 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
           uid,
         );
 
+        // ── 3. Push any accumulated local mutations ──
+        // If the user made edits while the sync-ready gate was closed
+        // (e.g. during the 10-second timeout window), those changes are
+        // only in localStorage and were never pushed. Re-push all tables
+        // to ensure Supabase has the latest local state.
+        // The _syncReady gate inside sync.ts is now open, so pushMutation
+        // will accept this push.
+        const accumulatedData = loadData();
+        pushMutation(uid, accumulatedData, {
+          habits: true,
+          marks: true,
+          notes: true,
+          goals: true,
+          settings: true,
+          profile: true,
+          unlocks: true,
+          economy: true,
+          progressSeen: true,
+        });
+
         // Cancel any pending retry
         if (retryTimerRef.current) {
           clearTimeout(retryTimerRef.current);
