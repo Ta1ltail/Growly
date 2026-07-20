@@ -172,7 +172,7 @@ export function ProfileEditModal({
             disabled={saving || uploadingAvatar}
             className="rounded-lg bg-accent px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-accent/90 disabled:opacity-50"
           >
-            {uploadingAvatar ? "Uploading avatar..." : saving ? "Saving..." : "Save"}
+            {saving ? "Saving..." : "Save"}
           </button>
         </div>
       }

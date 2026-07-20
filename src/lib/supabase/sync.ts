@@ -594,8 +594,8 @@ export function mergeProfile(local: Profile, remote: Profile | undefined): Profi
  * inserted last).
 /** @visibleForTesting */
 export function mergeById<T extends { id: string }>(
-  remote: T[],
-  local: T[],
+  first: T[],
+  second: T[],
   getId: (item: T) => string = (item) => item.id,
   compare?: (a: T, b: T) => number, // positive = a is newer/more-important
 ): T[] {
@@ -612,17 +612,20 @@ export function mergeById<T extends { id: string }>(
         map.set(key, item);
       }
     } else {
-      // No comparator: local wins (items inserted later = more recent)
+      // No comparator: second wins (inserted later = more recent,
+      // and database is the source of truth)
       map.set(key, item);
     }
   };
 
-  // Process local FIRST, then remote — remote items are inserted
-  // last, so they win on conflict (database is source of truth).
+  // Process first items FIRST, then second items — second items are
+  // inserted last, so they win on conflict (database is source of truth).
   // When a `compare` function is used, the newer/more-important
   // item wins regardless of insertion order.
-  for (const item of local) insert(item);
-  for (const item of remote) insert(item);
+  //
+  // IMPORTANT: The callers pass (local, remote) so that remote wins.
+  for (const item of first) insert(item);
+  for (const item of second) insert(item);
 
   return Array.from(map.values());
 }

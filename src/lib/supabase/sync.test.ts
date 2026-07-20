@@ -34,18 +34,18 @@ describe("mergeProfile", () => {
     expect(result.username).toBe("alice_xyz");
   });
 
-  it("prefers local displayName when it differs from default", () => {
+  it("prefers remote displayName even when local differs from default", () => {
     const local = makeProfile({ displayName: "Custom", username: "user" });
     const remote = makeProfile({ displayName: "Server", username: "server_abc" });
     const result = mergeProfile(local, remote);
-    expect(result.displayName).toBe("Custom");
+    expect(result.displayName).toBe("Server");
   });
 
-  it("prefers local username when it differs from default", () => {
+  it("prefers remote username even when local differs from default", () => {
     const local = makeProfile({ displayName: "User", username: "custom_user" });
     const remote = makeProfile({ displayName: "Server", username: "server_abc" });
     const result = mergeProfile(local, remote);
-    expect(result.username).toBe("custom_user");
+    expect(result.username).toBe("server_abc");
   });
 
   it("uses remote bio when local bio is unset", () => {
@@ -55,11 +55,11 @@ describe("mergeProfile", () => {
     expect(result.bio).toBe("Remote bio here");
   });
 
-  it("preserves local bio when explicitly set (even empty string)", () => {
+  it("prefers remote bio even when local has an empty string", () => {
     const local = makeProfile({ bio: "" });
     const remote = makeProfile({ bio: "Remote bio" });
     const result = mergeProfile(local, remote);
-    expect(result.bio).toBe("");
+    expect(result.bio).toBe("Remote bio");
   });
 
   it("uses remote motto when local is default", () => {
@@ -69,11 +69,11 @@ describe("mergeProfile", () => {
     expect(result.motto).toBe("Custom motto");
   });
 
-  it("preserves local motto when it differs from default", () => {
+  it("prefers remote motto even when local differs from default", () => {
     const local = makeProfile({ motto: "My motto" });
     const remote = makeProfile({ motto: "Remote motto" });
     const result = mergeProfile(local, remote);
-    expect(result.motto).toBe("My motto");
+    expect(result.motto).toBe("Remote motto");
   });
 
   it("uses remote avatar when local is unset", () => {
@@ -83,11 +83,11 @@ describe("mergeProfile", () => {
     expect(result.avatar).toBe("fox");
   });
 
-  it("preserves local avatar when set", () => {
+  it("prefers remote avatar even when local is set", () => {
     const local = makeProfile({ avatar: "dragon" });
     const remote = makeProfile({ avatar: "fox" });
     const result = mergeProfile(local, remote);
-    expect(result.avatar).toBe("dragon");
+    expect(result.avatar).toBe("fox");
   });
 
   it("uses remote showcaseBadgeId when local is unset", () => {
@@ -124,12 +124,12 @@ describe("mergeSettings", () => {
     expect(result.theme.accent).toBe("violet");
   });
 
-  it("prefers local theme when customized", () => {
+  it("prefers remote theme even when local is customized", () => {
     const local = makeSettings({ theme: { mode: "light", accent: "rose" } });
     const remote = makeSettings({ theme: { mode: "dark", accent: "blue" } });
     const result = mergeSettings(local, remote);
-    expect(result.theme.mode).toBe("light");
-    expect(result.theme.accent).toBe("rose");
+    expect(result.theme.mode).toBe("dark");
+    expect(result.theme.accent).toBe("blue");
   });
 
   it("prefers remote graceHours when local is default", () => {
@@ -139,11 +139,11 @@ describe("mergeSettings", () => {
     expect(result.graceHours).toBe(12);
   });
 
-  it("prefers local graceHours when customized", () => {
+  it("prefers remote graceHours even when local is customized", () => {
     const local = makeSettings({ graceHours: 3 });
     const remote = makeSettings({ graceHours: 12 });
     const result = mergeSettings(local, remote);
-    expect(result.graceHours).toBe(3);
+    expect(result.graceHours).toBe(12);
   });
 
   it("prefers remote usedTemplateIds when local is empty", () => {
@@ -153,11 +153,11 @@ describe("mergeSettings", () => {
     expect(result.usedTemplateIds).toEqual(["gym", "morning"]);
   });
 
-  it("prefers local usedTemplateIds when not empty", () => {
+  it("prefers remote usedTemplateIds even when local is not empty", () => {
     const local = makeSettings({ usedTemplateIds: ["student"] });
     const remote = makeSettings({ usedTemplateIds: ["gym"] });
     const result = mergeSettings(local, remote);
-    expect(result.usedTemplateIds).toEqual(["student"]);
+    expect(result.usedTemplateIds).toEqual(["gym"]);
   });
 
   it("prefers remote widgetOrder when local is unset", () => {
@@ -167,11 +167,11 @@ describe("mergeSettings", () => {
     expect(result.widgetOrder).toEqual(["stats", "habits"]);
   });
 
-  it("prefers local widgetOrder when set", () => {
+  it("prefers remote widgetOrder even when local is set", () => {
     const local = makeSettings({ widgetOrder: ["habits", "stats"] });
     const remote = makeSettings({ widgetOrder: ["stats", "habits"] });
     const result = mergeSettings(local, remote);
-    expect(result.widgetOrder).toEqual(["habits", "stats"]);
+    expect(result.widgetOrder).toEqual(["stats", "habits"]);
   });
 
   it("prefers remote onboardingComplete when local is unset", () => {
@@ -181,11 +181,11 @@ describe("mergeSettings", () => {
     expect(result.onboardingComplete).toBe(true);
   });
 
-  it("prefers local onboardingComplete when set", () => {
+  it("prefers remote onboardingComplete even when local is set", () => {
     const local = makeSettings({ onboardingComplete: true });
-    const remote = makeSettings();
+    const remote = makeSettings({ onboardingComplete: false });
     const result = mergeSettings(local, remote);
-    expect(result.onboardingComplete).toBe(true);
+    expect(result.onboardingComplete).toBe(false);
   });
 });
 
@@ -235,11 +235,11 @@ describe("mergeProgressSeen", () => {
     expect(result.level).toBe(15);
   });
 
-  it("prefers local level when > 1", () => {
+  it("prefers remote level even when local is higher", () => {
     const local = seeded({ level: 15 });
     const remote = seeded({ level: 10 });
     const result = mergeProgressSeen(local, remote);
-    expect(result.level).toBe(15);
+    expect(result.level).toBe(10);
   });
 
   it("prefers remote level when local is 1", () => {
@@ -249,11 +249,11 @@ describe("mergeProgressSeen", () => {
     expect(result.level).toBe(10);
   });
 
-  it("prefers local title when not default", () => {
+  it("prefers remote title even when local is not default", () => {
     const local = seeded({ title: "Consistency Master" });
     const remote = seeded({ title: "Habit Newbie" });
     const result = mergeProgressSeen(local, remote);
-    expect(result.title).toBe("Consistency Master");
+    expect(result.title).toBe("Habit Newbie");
   });
 
   it("prefers remote shop when local is empty", () => {
@@ -273,23 +273,39 @@ describe("mergeById", () => {
     expect(mergeById([], [])).toEqual([]);
   });
 
-  it("merges two arrays by id, local overwrites remote", () => {
-    const remote = [
+  it("merges two arrays by id, remote overwrites local", () => {
+    const local = [
       { id: "1", name: "a" },
       { id: "2", name: "b" },
     ];
-    const local = [
-      { id: "2", name: "updated-b" },
+    const remote = [
+      { id: "2", name: "remote-updated" },
       { id: "3", name: "c" },
     ];
-    const result = mergeById(remote, local, (x) => x.id);
+    const result = mergeById(local, remote, (x) => x.id);
     expect(result).toHaveLength(3);
     expect(result.find((x) => x.id === "1")?.name).toBe("a");
-    expect(result.find((x) => x.id === "2")?.name).toBe("updated-b");
+    expect(result.find((x) => x.id === "2")?.name).toBe("remote-updated");
     expect(result.find((x) => x.id === "3")?.name).toBe("c");
   });
 
-  it("uses default getId when not provided", () => {
+  it("uses timestamp comparison when comparator is provided", () => {
+    const local = [
+      { id: "1", name: "older", createdAt: "2024-01-01T00:00:00Z" },
+    ];
+    const remote = [
+      { id: "1", name: "newer", createdAt: "2024-06-01T00:00:00Z" },
+    ];
+    const result = mergeById(
+      local,
+      remote,
+      (x) => x.id,
+      (a, b) => a.createdAt.localeCompare(b.createdAt),
+    );
+    expect(result.find((x) => x.id === "1")?.name).toBe("newer");
+  });
+
+  it("uses default getId when not provided, remote wins", () => {
     const result = mergeById([{ id: "x", name: "old" }], [{ id: "x", name: "updated" }]);
     expect(result.find((i) => i.id === "x")?.name).toBe("updated");
   });

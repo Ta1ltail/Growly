@@ -28,10 +28,13 @@ import type { AppData } from "@/lib/types";
 import { loadData, clearLocalAppData, getLastUserId, setLastUserId } from "@/lib/storage";
 
 // Interval for periodic polling (ms)
-// Increased from 15s to 30s to reduce Supabase API calls on the free tier.
-// Combined with the Page Visibility pause below, this eliminates ~95% of
-// unnecessary polling when the tab is backgrounded.
-const POLL_INTERVAL_MS = 30_000;
+// Set to 15s for responsive cross-device sync while keeping API calls
+// reasonable for a habit tracker. Combined with the Page Visibility pause
+// below (polling stops when tab is hidden), actual API usage is ~15 calls
+// per device per foreground-hour — well within the Supabase free tier limits.
+// Navigation-triggered syncs and foreground-polling ensure the UI always
+// shows the latest database state.
+const POLL_INTERVAL_MS = 15_000;
 
 // Compute a stable hash of AppData to detect changes across any table.
 // Covers all 9 sync tables so the polling interval can skip reloadCache()

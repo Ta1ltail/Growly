@@ -28,11 +28,13 @@ import {
   Lightbulb,
   Settings2,
   UserRound,
+  LogOut,
   X,
   type LucideIcon,
 } from "lucide-react";
 import { useAppData } from "@/lib/store";
 import { useNotifications } from "@/hooks/useNotifications";
+import { useAuth } from "@/hooks/useAuth";
 import { resolveAvatar } from "@/lib/cosmetics";
 import { isActive, routeIconColors } from "./navItems";
 
@@ -146,6 +148,7 @@ export function BottomNav() {
   const pathname = usePathname();
   const { profile } = useAppData();
   const { unreadCount } = useNotifications();
+  const { signOut } = useAuth();
   const [moreOpen, setMoreOpen] = useState(false);
   const [visible, setVisible] = useState(true);
   const [modalCount, setModalCount] = useState(0);
@@ -509,6 +512,29 @@ export function BottomNav() {
                     </div>
                   </div>
                 ))}
+
+                {/* Sign out */}
+                <div className="pt-4 border-t border-line/50">
+                  <button
+                    onClick={() => {
+                      setMoreOpen(false);
+                      signOut();
+                    }}
+                    className="flex w-full items-center gap-4 rounded-2xl px-4 py-3.5 transition-all active:scale-[0.98] hover:bg-missed/10"
+                  >
+                    <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-surface2 text-muted">
+                      <LogOut className="size-5" />
+                    </span>
+                    <div className="min-w-0 flex-1 text-left">
+                      <p className="text-sm font-medium leading-tight text-muted transition-colors hover:text-missed">
+                        Sign out
+                      </p>
+                      <p className="mt-0.5 text-xs leading-tight text-faint line-clamp-1">
+                        End your current session
+                      </p>
+                    </div>
+                  </button>
+                </div>
               </div>
             </div>
           </div>
