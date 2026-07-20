@@ -86,7 +86,8 @@ export function TrendLineChart({ points }: { points: TrendPoint[] }) {
     <div className="relative size-full select-none">
       <svg
         viewBox={`0 0 ${W} ${H}`}
-        className="size-full"
+        preserveAspectRatio="none"
+        className="absolute inset-0 size-full"
         aria-hidden
       >
         <defs>
