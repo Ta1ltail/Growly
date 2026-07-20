@@ -6,7 +6,7 @@ import {
   Mail,
   Lock,
   UserPlus,
-  AtSign,
+  User,
   AlertCircle,
   Eye,
   EyeOff,
@@ -367,7 +367,7 @@ export default function RegisterPage() {
                 Username
               </label>
               <div className="group relative">
-                <AtSign className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-faint transition-colors duration-200 group-focus-within:text-accent" />
+                <User className="pointer-events-none absolute left-3.5 top-1/2 size-[18px] -translate-y-1/2 text-muted transition-colors duration-200 group-focus-within:text-accent" />
                 <input
                   id="username"
                   type="text"
@@ -408,7 +408,7 @@ export default function RegisterPage() {
                 Email address
               </label>
               <div className="group relative">
-                <Mail className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-faint transition-colors duration-200 group-focus-within:text-accent" />
+                <Mail className="pointer-events-none absolute left-3.5 top-1/2 size-[18px] -translate-y-1/2 text-muted transition-colors duration-200 group-focus-within:text-accent" />
                 <input
                   id="email"
                   type="email"
@@ -431,7 +431,7 @@ export default function RegisterPage() {
                 Password
               </label>
               <div className="group relative">
-                <Lock className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-faint transition-colors duration-200 group-focus-within:text-accent" />
+                <Lock className="pointer-events-none absolute left-3.5 top-1/2 size-[18px] -translate-y-1/2 text-muted transition-colors duration-200 group-focus-within:text-accent" />
                 <input
                   id="password"
                   type={showPassword ? "text" : "password"}
@@ -448,7 +448,7 @@ export default function RegisterPage() {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-faint transition-colors hover:text-muted"
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted transition-colors hover:text-ink"
                   tabIndex={-1}
                   aria-label={
                     showPassword ? "Hide password" : "Show password"
@@ -482,7 +482,7 @@ export default function RegisterPage() {
                 Confirm password
               </label>
               <div className="group relative">
-                <Lock className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-faint transition-colors duration-200 group-focus-within:text-accent" />
+                <Lock className="pointer-events-none absolute left-3.5 top-1/2 size-[18px] -translate-y-1/2 text-muted transition-colors duration-200 group-focus-within:text-accent" />
                 <input
                   id="confirmPassword"
                   type={showConfirmPassword ? "text" : "password"}
@@ -502,7 +502,7 @@ export default function RegisterPage() {
                   onClick={() =>
                     setShowConfirmPassword(!showConfirmPassword)
                   }
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-faint transition-colors hover:text-muted"
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted transition-colors hover:text-ink"
                   tabIndex={-1}
                   aria-label={
                     showConfirmPassword
