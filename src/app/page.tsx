@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   Activity,
   ArrowRight,
@@ -13,7 +14,10 @@ import {
   Smartphone,
   Check,
   Star,
+  Loader2,
 } from "lucide-react";
+import { isCapacitor } from "@/lib/capacitor";
+import { useAuth } from "@/hooks/useAuth";
 
 /* ───────────────────────────
    ── Feature data (static) ──
@@ -77,6 +81,26 @@ function useOnceInView(ref: React.RefObject<Element | null>) {
    ── Main landing page ──
    ─────────────────────── */
 export default function LandingPage() {
+  const { user, loading } = useAuth();
+  const router = useRouter();
+
+  // ── Mobile app (Capacitor) only: if already logged in, skip landing page ──
+  useEffect(() => {
+    if (loading) return;
+    if (isCapacitor() && user) {
+      router.replace("/profile");
+    }
+  }, [loading, user, router]);
+
+  // Show a brief loading screen only in Capacitor mode while we verify auth.
+  if (isCapacitor() && (loading || user)) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-bg">
+        <Loader2 className="size-8 animate-spin text-accent" />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-bg text-ink">
       {/* ── Nav (desktop only) ── */}
