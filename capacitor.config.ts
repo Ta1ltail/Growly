@@ -11,8 +11,6 @@ const config: CapacitorConfig = {
   android: {
     allowMixedContent: false,
   },
-  // Capacitor splash screen preferences — the app loads from the live URL,
-  // so this splash shows while the WebView connects.
   plugins: {
     SplashScreen: {
       launchShowDuration: 2000,
