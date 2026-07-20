@@ -134,7 +134,7 @@ Deno.serve(async (req: Request) => {
     );
 
     // ══ Load economy and stats ══
-    const [ecoStateRes, ecoSpentRes, statsRes, unlocksRes, habitsRes, marksRes] = await Promise.all([
+    const [ecoStateRes, ecoSpentRes, statsRes, , habitsRes, marksRes] = await Promise.all([
       supabase.from("economy_state").select("*").eq("user_id", userId).single(),
       supabase.from("economy_spent").select("amount").eq("user_id", userId),
       supabase.from("user_stats_snapshots").select("*").eq("user_id", userId).single(),

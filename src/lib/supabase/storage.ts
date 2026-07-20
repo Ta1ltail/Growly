@@ -23,7 +23,7 @@ function getStorageBaseUrl(): string {
 /**
  * Check if a profile.avatar value refers to a file in Supabase Storage.
  */
-export function isStorageAvatar(avatar: string | undefined | null): boolean {
+function isStorageAvatar(avatar: string | undefined | null): boolean {
   if (!avatar) return false;
   return avatar.startsWith(getStorageBaseUrl());
 }
@@ -80,7 +80,7 @@ export async function uploadAvatar(
  * Delete a user's avatar from Supabase Storage.
  * Only deletes if the current avatar is stored in Storage (not a preset or data URL).
  */
-export async function deleteAvatarFromStorage(
+async function deleteAvatarFromStorage(
   userId: string,
   currentAvatarUrl?: string,
 ): Promise<void> {

@@ -27,7 +27,6 @@ export function usePullToRefresh(onRefresh: () => Promise<void> | void): PullToR
   const pullingRef = useRef(false);
   const refreshingRef = useRef(false);
   const refreshRef = useRef(onRefresh);
-  refreshRef.current = onRefresh;
 
   const handleTouchStart = useCallback((e: TouchEvent) => {
     if (window.scrollY > 0) return;
@@ -86,6 +85,12 @@ export function usePullToRefresh(onRefresh: () => Promise<void> | void): PullToR
       setState((s) => ({ ...s, pulling: false, progress: 0 }));
     }
   }, []);
+
+  // Sync the onRefresh callback to the ref outside render to avoid
+  // the react ref access during render lint error.
+  useEffect(() => {
+    refreshRef.current = onRefresh;
+  }, [onRefresh]);
 
   useEffect(() => {
     document.addEventListener("touchstart", handleTouchStart, { passive: true });

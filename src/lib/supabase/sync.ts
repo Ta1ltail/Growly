@@ -19,7 +19,6 @@ import {
   type ChangedTables,
 } from "./db";
 import {
-  DEFAULT_PROFILE,
   DEFAULT_PROGRESS_SEEN,
   type AppData,
   type Economy,
@@ -27,7 +26,6 @@ import {
   type ProgressSeen,
 } from "../types";
 import type { Habit, Note, Goal } from "../types";
-import { DEFAULT_THEME } from "../theme";
 import {
   loadData,
   saveData,
@@ -120,15 +118,7 @@ export function getSyncReady(): boolean {
   return _syncReady;
 }
 
-/** Total items currently pending in the retry queue. */
-export function getPendingPushCount(): number {
-  return _retryQueue.length;
-}
 
-/** Check if there are any queued pushes waiting for retry. */
-export function hasUnsyncedChanges(): boolean {
-  return _retryQueue.length > 0;
-}
 
 /* ────────────────────────────────────────────
    Retry queue for failed pushes

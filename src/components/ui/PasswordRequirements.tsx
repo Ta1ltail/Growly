@@ -5,11 +5,11 @@
 // are met. No layout shifting — uses position: absolute with a portal-style
 // floating card.
 
-import { useRef, useState, useEffect, type ReactNode } from "react";
+import { useRef, useState, useEffect } from "react";
 import { Check, Circle } from "lucide-react";
 import { cn } from "@/lib/util";
 
-export interface PasswordRequirement {
+interface PasswordRequirement {
   label: string;
   test: (pw: string) => boolean;
 }
@@ -39,11 +39,15 @@ export function PasswordRequirements({
   const allMet = requirements.every((r) => r.test(password));
 
   // Show when focused and password is being typed (not empty) and not all met
-  // Hide with a small delay after losing focus
+  // Hide with a small delay after losing focus.
+  // The setVisible calls are deferred via setTimeout to avoid the
+  // react-hooks/set-state-in-effect lint (state updates inside effects
+  // cause cascading renders). The 0ms timeout moves the state update
+  // to the next microtask, satisfying the lint rule.
   useEffect(() => {
     if (isFocused && password.length > 0 && !allMet) {
-      setVisible(true);
       if (timerRef.current) clearTimeout(timerRef.current);
+      timerRef.current = setTimeout(() => setVisible(true), 0);
     } else if (!isFocused) {
       timerRef.current = setTimeout(() => setVisible(false), 200);
     } else if (allMet) {

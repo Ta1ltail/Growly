@@ -57,12 +57,6 @@ function addDays(d: Date, n: number): Date {
   return out;
 }
 
-function dayDiff(a: Date, b: Date): number {
-  return Math.round(
-    (startOfDay(a).getTime() - startOfDay(b).getTime()) / 86400000,
-  );
-}
-
 function dateKey(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
@@ -331,11 +325,10 @@ Deno.serve(async (req: Request) => {
     );
 
     // ══ Load raw data ══
-    const [habitsRes, marksRes, existingUnlocksRes, existingStatsRes] = await Promise.all([
+    const [habitsRes, marksRes, existingUnlocksRes] = await Promise.all([
       supabaseClient.from("habits").select("*").eq("user_id", userId),
       supabaseClient.from("marks").select("date_key, habit_id, status").eq("user_id", userId),
       serviceClient.from("unlocks").select("achievement_id, at, seen").eq("user_id", userId),
-      supabaseClient.from("user_stats_snapshots").select("*").eq("user_id", userId).single(),
     ]);
 
     if (habitsRes.error) throw new Error(`Failed to load habits: ${habitsRes.error.message}`);
@@ -418,7 +411,7 @@ Deno.serve(async (req: Request) => {
             const isEarly = h.time_of_day < "08:00";
             const isNight = h.time_of_day >= "21:00";
             if ((def.id === "early-bird" && isEarly) || (def.id === "night-owl" && isNight)) {
-              for (const [dKey, day] of Object.entries(marks)) {
+              for (const [, day] of Object.entries(marks)) {
                 if (day[h.id] === "done") current++;
               }
             }

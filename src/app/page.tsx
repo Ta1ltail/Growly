@@ -343,9 +343,7 @@ function DownloadApkSection() {
 
         <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
           <a
-            href="/growly-v2.2.5.apk"
-            download
-            type="application/vnd.android.package-archive"
+            href="/api/download-apk"
             className="group relative inline-flex items-center gap-2 overflow-hidden rounded-xl bg-accent px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-accent/25 transition-all duration-200 hover:shadow-xl hover:shadow-accent/30 active:scale-[0.97]"
           >
             <span className="relative z-10 flex items-center gap-2">

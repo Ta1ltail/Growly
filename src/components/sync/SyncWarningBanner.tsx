@@ -16,7 +16,6 @@ import {
   setSyncReady,
 } from "@/lib/supabase/sync";
 import {
-  loadData,
   getLastUserId,
 } from "@/lib/storage";
 import { reloadCache, setSyncCallback } from "@/lib/store";

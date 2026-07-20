@@ -42,17 +42,6 @@ const POLL_INTERVAL_MS = 15_000;
 // Uses summary statistics + selective JSON.stringify on small objects
 // rather than serializing the entire AppData (which could be large).
 export function computeDataHash(d: AppData): string {
-  // Marks: count by status so status changes (e.g. done→missed) are detected,
-  // not just total entry count (which stays the same on status-only edits).
-  let marksDone = 0, marksMissed = 0, marksSkipped = 0;
-  for (const day of Object.values(d.marks)) {
-    for (const status of Object.values(day)) {
-      if (status === "done") marksDone++;
-      else if (status === "missed") marksMissed++;
-      else if (status === "skipped") marksSkipped++;
-    }
-  }
-
   return JSON.stringify({
     // Habits: include all mutable fields so renames, archives, schedule changes,
     // and category/priority changes from other devices are detected by the poll.

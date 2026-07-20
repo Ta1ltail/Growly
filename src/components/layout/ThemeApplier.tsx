@@ -52,7 +52,7 @@ async function syncCapacitorNavBar() {
     // Derive style from the resolved theme (already set as data-theme),
     // never from a hardcoded colour value.
     const theme = document.documentElement.dataset.theme;
-    await (StatusBar.setStyle as any)({ style: theme === "light" ? "LIGHT" : "DARK" });
+    await (StatusBar.setStyle as (options: { style: string }) => Promise<void>)({ style: theme === "light" ? "LIGHT" : "DARK" });
   } catch {
     // Plugin may not be installed — silently ignore
   }

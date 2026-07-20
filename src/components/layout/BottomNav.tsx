@@ -321,11 +321,14 @@ export function BottomNav() {
                     }`}
                   >
                     {avatarResolved?.kind === "image" ? (
-                      <img
-                        src={avatarResolved.src}
-                        alt="Your avatar"
-                        className="size-7 rounded-full object-cover"
-                      />
+                      <>
+                        {/* eslint-disable-next-line @next/next/no-img-element -- dynamic avatar URL */}
+                        <img
+                          src={avatarResolved.src}
+                          alt="Your avatar"
+                          className="size-7 rounded-full object-cover"
+                        />
+                      </>
                     ) : avatarResolved?.kind === "glyph" ? (
                       <span className="text-sm leading-none" role="img">
                         {avatarResolved.glyph}

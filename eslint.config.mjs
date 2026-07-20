@@ -13,6 +13,8 @@ const eslintConfig = defineConfig([
     "build/**",
     "next-env.d.ts",
     "node_modules/**",
+    // Generated Capacitor files — not our code
+    "android/**",
   ]),
 ]);
 

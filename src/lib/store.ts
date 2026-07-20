@@ -600,26 +600,7 @@ export function reloadCache(): void {
   for (const listener of listeners) listener();
 }
 
-/* ────────────────────────────────────────────
-   Active item helpers — filter out soft-deleted
-   records (Finding #2). UI components should use
-   these instead of reading habits/notes/goals raw.
-   ──────────────────────────────────────────── */
 
-/** Return only habits that have NOT been soft-deleted. */
-export function activeHabits(habits: Habit[]): Habit[] {
-  return habits.filter((h) => !h.deletedAt);
-}
-
-/** Return only notes that have NOT been soft-deleted. */
-export function activeNotes(notes: Note[]): Note[] {
-  return notes.filter((n) => !n.deletedAt);
-}
-
-/** Return only goals that have NOT been soft-deleted. */
-export function activeGoals(goals: Goal[]): Goal[] {
-  return goals.filter((g) => !g.deletedAt);
-}
 
 // Write a raw JSON string straight to storage, then reload through loadData so
 // every validator/migration runs on it. Returns an error message or null on

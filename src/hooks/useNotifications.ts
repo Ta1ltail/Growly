@@ -11,7 +11,7 @@ import { useAuth } from "./useAuth";
 import { createClient } from "@/lib/supabase/client";
 import type { RealtimePostgresChangesPayload } from "@supabase/supabase-js";
 
-export interface Notification {
+interface Notification {
   id: string;
   user_id: string;
   type: "friend_request" | "friend_accept" | "achievement" | "system";
@@ -37,7 +37,7 @@ interface StoreState {
 type Listener = () => void;
 
 let store: StoreState = { notifications: [], loading: true, unreadCount: 0 };
-let listeners = new Set<Listener>();
+const listeners = new Set<Listener>();
 let currentUserId: string | null = null;
 let channelCleanup: (() => void) | null = null;
 let fetchTimer: ReturnType<typeof setTimeout> | null = null;
