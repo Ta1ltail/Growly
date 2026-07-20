@@ -32,7 +32,10 @@ export default function LoginPage() {
         <div className="flex min-h-screen items-center justify-center bg-bg">
           <div className="text-center">
             <div className="mx-auto mb-4 flex size-12 items-center justify-center rounded-xl bg-accent/10">
-              <Activity className="size-6 text-accent animate-pulse" strokeWidth={2.5} />
+              <Activity
+                className="size-6 text-accent animate-pulse"
+                strokeWidth={2.5}
+              />
             </div>
             <h1 className="text-xl font-bold tracking-tight">Welcome back</h1>
             <p className="mt-1 text-sm text-muted">Loading&hellip;</p>
@@ -50,7 +53,7 @@ function LoginForm() {
     if (typeof window === "undefined") return "";
     const saved = localStorage.getItem(REMEMBER_ME_KEY);
     return saved === "true"
-      ? localStorage.getItem(SAVED_EMAIL_KEY) ?? ""
+      ? (localStorage.getItem(SAVED_EMAIL_KEY) ?? "")
       : "";
   });
   const [password, setPassword] = useState("");
@@ -120,7 +123,10 @@ function LoginForm() {
         <div className="flex w-full max-w-md flex-col lg:flex-row lg:gap-12 lg:max-w-4xl lg:items-center">
           {/* ── Left: Value props (desktop only) ── */}
           <div className="hidden lg:block lg:w-1/2 lg:pr-8">
-            <Link href="/" className="group inline-flex items-center gap-2.5 mb-8">
+            <Link
+              href="/"
+              className="group inline-flex items-center gap-2.5 mb-8"
+            >
               <span className="flex size-10 items-center justify-center rounded-xl bg-gradient-to-br from-accent to-accent-glow text-white shadow-lg shadow-accent/20 transition-all duration-300 group-hover:shadow-accent/40">
                 <Activity className="size-5" strokeWidth={2.5} />
               </span>
@@ -135,8 +141,8 @@ function LoginForm() {
               </span>
             </h2>
             <p className="mt-3 max-w-sm text-sm leading-relaxed text-muted">
-              Join thousands of people who&apos;ve transformed their daily routines
-              with honest, local-first habit tracking.
+              Join thousands of people who&apos;ve transformed their daily
+              routines with honest, local-first habit tracking.
             </p>
             <div className="mt-8 space-y-4">
               {[
@@ -159,7 +165,9 @@ function LoginForm() {
           <div className="w-full lg:w-1/2">
             {/* Form header */}
             <div className="mb-6 lg:mb-8">
-              <h1 className="text-2xl font-bold tracking-tight">Welcome back</h1>
+              <h1 className="text-2xl font-bold tracking-tight">
+                Welcome back
+              </h1>
               <p className="mt-1.5 text-sm text-muted">
                 Sign in to continue your streak
               </p>
@@ -173,7 +181,9 @@ function LoginForm() {
                   const supabase = createClient();
                   await supabase.auth.signInWithOAuth({
                     provider: "github",
-                    options: { redirectTo: `${window.location.origin}/auth/callback` },
+                    options: {
+                      redirectTo: `${window.location.origin}/auth/callback`,
+                    },
                   });
                 }}
                 className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-line/60 bg-surface/50 px-4 py-2.5 text-sm font-medium text-muted shadow-sm backdrop-blur-sm transition-all duration-200 hover:border-line hover:bg-surface hover:text-ink active:scale-[0.97]"
@@ -189,7 +199,9 @@ function LoginForm() {
                   const supabase = createClient();
                   await supabase.auth.signInWithOAuth({
                     provider: "google",
-                    options: { redirectTo: `${window.location.origin}/auth/callback` },
+                    options: {
+                      redirectTo: `${window.location.origin}/auth/callback`,
+                    },
                   });
                 }}
                 className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-line/60 bg-surface/50 px-4 py-2.5 text-sm font-medium text-muted shadow-sm backdrop-blur-sm transition-all duration-200 hover:border-line hover:bg-surface hover:text-ink active:scale-[0.97]"
@@ -222,7 +234,9 @@ function LoginForm() {
                 <div className="w-full border-t border-line/60" />
               </div>
               <div className="relative flex justify-center text-xs">
-                <span className="bg-bg px-3 text-faint">or continue with email</span>
+                <span className="bg-bg px-3 text-faint">
+                  or continue with email
+                </span>
               </div>
             </div>
 
@@ -237,7 +251,7 @@ function LoginForm() {
                   Email address
                 </label>
                 <div className="group relative">
-                  <Mail className="pointer-events-none absolute left-3.5 top-1/2 size-[18px] -translate-y-1/2 text-muted transition-colors duration-200 group-focus-within:text-accent" />
+                  <Mail className="pointer-events-none absolute left-3.5 top-1/2 z-10 size-[18px] -translate-y-1/2 text-muted transition-colors duration-200 group-focus-within:text-accent" />
                   <input
                     id="email"
                     type="email"
@@ -261,93 +275,97 @@ function LoginForm() {
                   >
                     Password
                   </label>
-                <button
-                  type="button"
-                  className="text-[11px] font-medium text-accent transition-colors hover:text-accent-glow"
-                  tabIndex={-1}
-                >
-                  Forgot password?
-                </button>
+                  <button
+                    type="button"
+                    className="text-[11px] font-medium text-accent transition-colors hover:text-accent-glow"
+                    tabIndex={-1}
+                  >
+                    Forgot password?
+                  </button>
+                </div>
+                <div className="group relative">
+                  <Lock className="pointer-events-none absolute left-3.5 top-1/2 z-10 size-[18px] -translate-y-1/2 text-muted transition-colors duration-200 group-focus-within:text-accent" />
+                  <input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    required
+                    autoComplete="current-password"
+                    className="w-full rounded-xl border border-line/70 bg-surface/50 px-10 py-2.5 text-sm outline-none backdrop-blur-sm transition-all duration-200 placeholder:text-faint/70 hover:border-line focus:border-accent focus:bg-surface focus:ring-2 focus:ring-accent/15"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted transition-colors hover:text-ink"
+                    tabIndex={-1}
+                    aria-label={
+                      showPassword ? "Hide password" : "Show password"
+                    }
+                  >
+                    {showPassword ? (
+                      <EyeOff className="size-4" />
+                    ) : (
+                      <Eye className="size-4" />
+                    )}
+                  </button>
+                </div>
               </div>
-              <div className="group relative">
-                <Lock className="pointer-events-none absolute left-3.5 top-1/2 size-[18px] -translate-y-1/2 text-muted transition-colors duration-200 group-focus-within:text-accent" />
-                <input
-                  id="password"
-                  type={showPassword ? "text" : "password"}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  required
-                  autoComplete="current-password"
-                  className="w-full rounded-xl border border-line/70 bg-surface/50 px-10 py-2.5 text-sm outline-none backdrop-blur-sm transition-all duration-200 placeholder:text-faint/70 hover:border-line focus:border-accent focus:bg-surface focus:ring-2 focus:ring-accent/15"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted transition-colors hover:text-ink"
-                  tabIndex={-1}
-                  aria-label={showPassword ? "Hide password" : "Show password"}
-                >
-                  {showPassword ? (
-                    <EyeOff className="size-4" />
-                  ) : (
-                    <Eye className="size-4" />
+
+              {/* Remember Me */}
+              <label className="flex cursor-pointer items-center gap-2.5 select-none">
+                <div className="relative">
+                  <input
+                    type="checkbox"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                    className="peer size-4 appearance-none rounded-md border border-line/70 bg-surface/50 transition-all duration-200 checked:border-accent checked:bg-accent hover:border-line focus:ring-2 focus:ring-accent/15"
+                  />
+                  {rememberMe && (
+                    <Check
+                      className="pointer-events-none absolute left-0 top-0 size-4 text-white"
+                      strokeWidth={3}
+                    />
                   )}
-                </button>
-              </div>
-            </div>
+                </div>
+                <span className="text-xs text-muted">Stay signed in</span>
+              </label>
 
-            {/* Remember Me */}
-            <label className="flex cursor-pointer items-center gap-2.5 select-none">
-              <div className="relative">
-                <input
-                  type="checkbox"
-                  checked={rememberMe}
-                  onChange={(e) => setRememberMe(e.target.checked)}
-                  className="peer size-4 appearance-none rounded-md border border-line/70 bg-surface/50 transition-all duration-200 checked:border-accent checked:bg-accent hover:border-line focus:ring-2 focus:ring-accent/15"
-                />
-                {rememberMe && (
-                  <Check className="pointer-events-none absolute left-0 top-0 size-4 text-white" strokeWidth={3} />
-                )}
-              </div>
-              <span className="text-xs text-muted">Stay signed in</span>
-            </label>
-
-            {/* Error message */}
-            {error && (
-              <div className="flex animate-fade-in items-start gap-2 rounded-xl bg-missed/8 px-3.5 py-2.5 text-xs text-missed">
-                <AlertCircle className="mt-0.5 size-3.5 shrink-0" />
-                <span>{error}</span>
-              </div>
-            )}
-
-            {/* Submit */}
-            <Button type="submit" disabled={loading} className="w-full">
-              {loading ? (
-                <span className="flex items-center justify-center gap-2">
-                  <span className="size-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-                  Signing in&hellip;
-                </span>
-              ) : (
-                <span className="flex items-center justify-center gap-2">
-                  <LogIn className="size-4" /> Sign in
-                </span>
+              {/* Error message */}
+              {error && (
+                <div className="flex animate-fade-in items-start gap-2 rounded-xl bg-missed/8 px-3.5 py-2.5 text-xs text-missed">
+                  <AlertCircle className="mt-0.5 size-3.5 shrink-0" />
+                  <span>{error}</span>
+                </div>
               )}
-            </Button>
-          </form>
 
-          {/* Footer link */}
-          <p className="mt-6 text-center text-xs text-muted">
-            Don&apos;t have an account?{" "}
-            <Link
-              href="/register"
-              className="inline-flex items-center gap-1 font-semibold text-accent transition-colors hover:text-accent-glow"
-            >
-              Create an account
-              <ArrowRight className="size-3" />
-            </Link>
-          </p>
+              {/* Submit */}
+              <Button type="submit" disabled={loading} className="w-full">
+                {loading ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <span className="size-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                    Signing in&hellip;
+                  </span>
+                ) : (
+                  <span className="flex items-center justify-center gap-2">
+                    <LogIn className="size-4" /> Sign in
+                  </span>
+                )}
+              </Button>
+            </form>
 
+            {/* Footer link */}
+            <p className="mt-6 text-center text-xs text-muted">
+              Don&apos;t have an account?{" "}
+              <Link
+                href="/register"
+                className="inline-flex items-center gap-1 font-semibold text-accent transition-colors hover:text-accent-glow"
+              >
+                Create an account
+                <ArrowRight className="size-3" />
+              </Link>
+            </p>
           </div>
         </div>
       </div>
