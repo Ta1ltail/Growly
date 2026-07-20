@@ -31,6 +31,15 @@ export function DailySpinModal({
   // Derive from reactive data so it updates properly
   const alreadySpun = lastSpinDate === dateKey(new Date());
 
+  // Notify the back-button handler and bottom nav that this modal is open
+  useEffect(() => {
+    if (!open) return;
+    window.dispatchEvent(new CustomEvent("modal:open"));
+    return () => {
+      window.dispatchEvent(new CustomEvent("modal:close"));
+    };
+  }, [open]);
+
   // Clean up spin timer on unmount
   useEffect(() => {
     return () => {

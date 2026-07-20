@@ -148,6 +148,7 @@ export function BottomNav() {
   const { unreadCount } = useNotifications();
   const [moreOpen, setMoreOpen] = useState(false);
   const [visible, setVisible] = useState(true);
+  const [modalCount, setModalCount] = useState(0);
   const lastScrollY = useRef(0);
   const ticking = useRef(false);
 
@@ -191,6 +192,22 @@ export function BottomNav() {
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, [moreOpen]);
+
+  // Hide nav when any modal/popup/dialog is open (Edit Profile, Add Habit,
+  // Add Note, Add Goal, Daily Spin, etc.) — prevents the nav from overlapping
+  // or being visible behind the modal.
+  // Uses a counter (not boolean) so stacked modals work correctly: nav only
+  // reappears when ALL modals have closed (count reaches 0).
+  useEffect(() => {
+    const onOpen = () => setModalCount(c => c + 1);
+    const onClose = () => setModalCount(c => Math.max(0, c - 1));
+    window.addEventListener("modal:open", onOpen);
+    window.addEventListener("modal:close", onClose);
+    return () => {
+      window.removeEventListener("modal:open", onOpen);
+      window.removeEventListener("modal:close", onClose);
+    };
+  }, []);
 
   // Sync Android navigation bar color with bottom nav surface.
   // Runs on every theme/mode change by observing data-theme attribute changes.
@@ -254,7 +271,7 @@ export function BottomNav() {
       {/* ── Bottom nav bar ── */}
       <nav
         className={`fixed inset-x-0 bottom-0 z-30 bg-black md:hidden transition-transform duration-300 ease-out ${
-          visible ? "translate-y-0" : "translate-y-full"
+          visible && modalCount === 0 ? "translate-y-0" : "translate-y-full"
         }`}
         style={{ paddingBottom: "var(--safe-area-bottom, 0px)" }}
       >
