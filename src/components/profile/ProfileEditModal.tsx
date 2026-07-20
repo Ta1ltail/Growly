@@ -133,7 +133,6 @@ export function ProfileEditModal({
       onClose={onClose}
       title="Edit profile"
       subtitle="Your character page identity."
-      size="lg"
       headerActions={
         <div className="flex items-center gap-2">
           <button

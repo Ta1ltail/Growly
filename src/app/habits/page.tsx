@@ -219,7 +219,6 @@ export default function HabitsPage() {
           setEditing(null);
         }}
         title={editing ? "Edit habit" : "Add habit"}
-        size="lg"
       >
         <HabitForm
           initial={editing ?? undefined}
@@ -236,7 +235,6 @@ export default function HabitsPage() {
         open={confirmDelete !== null}
         onClose={() => setConfirmDelete(null)}
         title="Delete habit?"
-        size="sm"
         footer={
           <>
             <Button variant="ghost" onClick={() => setConfirmDelete(null)}>

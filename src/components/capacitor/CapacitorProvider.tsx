@@ -95,7 +95,24 @@ export function CapacitorProvider({ children }: { children: ReactNode }) {
     };
   }, [native]);
 
-  // Handle Android back button — navigate back in history
+  // ── Track open modals for back-button hierarchy ──
+  // Any component can dispatch modal:open / modal:close custom events on
+  // window. The back button handler reads this set to know whether to
+  // close a dialog or navigate back.
+  const modalCountRef = useRef(0);
+  useEffect(() => {
+    if (!native) return;
+    const inc = () => { modalCountRef.current++; };
+    const dec = () => { modalCountRef.current = Math.max(0, modalCountRef.current - 1); };
+    window.addEventListener("modal:open", inc);
+    window.addEventListener("modal:close", dec);
+    return () => {
+      window.removeEventListener("modal:open", inc);
+      window.removeEventListener("modal:close", dec);
+    };
+  }, [native]);
+
+  // Handle Android back button — close dialogs, then navigate back, then exit.
   // Uses `cancelled` flag to guard against the component unmounting before the
   // Capacitor plugin async chain resolves (same pattern as capacitor.ts).
   useEffect(() => {
@@ -108,11 +125,59 @@ export function CapacitorProvider({ children }: { children: ReactNode }) {
     let cancelled = false;
     let removeListener: (() => void) | null = null;
 
+    const ROOT_PAGES = ["/", "/dashboard"];
+
     app
       .addListener("backButton", () => {
         if (cancelled) return;
+
+        // 1. If a modal/dialog is open, close it first by dispatching Escape
+        if (modalCountRef.current > 0) {
+          // Verify a dialog is actually in the DOM (guards against counter drift)
+          const topDialog = document.querySelector<HTMLElement>(
+            '[role="dialog"][aria-modal="true"]',
+          );
+          if (topDialog) {
+            // Dispatch Escape key to trigger the modal's close handler.
+            // Modal.tsx listens on document for keydown events and closes on Escape.
+            topDialog.dispatchEvent(
+              new KeyboardEvent("keydown", { key: "Escape", bubbles: true }),
+            );
+          } else {
+            // Fallback: modalCount is positive but no dialog in the DOM —
+            // likely a counter drift edge case. Reset it.
+            modalCountRef.current = 0;
+          }
+          return;
+        }
+
+        // 2. Close the "More" page overlay if it's open
+        const moreBtn = document.querySelector<HTMLElement>(
+          'button[aria-label="Open all sections"][aria-expanded="true"]',
+        );
+        if (moreBtn) {
+          moreBtn.click();
+          return;
+        }
+
+        // 3. If there's browser history, go back
         if (window.history.length > 1) {
           window.history.back();
+          return;
+        }
+
+        // 4. On a root page — exit the app (standard Android behavior)
+        const currentPath = window.location.pathname;
+        if (ROOT_PAGES.includes(currentPath)) {
+          try {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const capApp = (window as any).Capacitor?.Plugins?.App;
+            if (capApp?.exitApp) {
+              capApp.exitApp();
+            }
+          } catch {
+            // Plugin not available — just do nothing
+          }
         }
       })
       .then((handle: { remove: () => void }) => {

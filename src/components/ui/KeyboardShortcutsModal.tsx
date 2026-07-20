@@ -34,7 +34,6 @@ export function KeyboardShortcutsModal() {
       onClose={() => setOpen(false)}
       title="Keyboard Shortcuts"
       subtitle="Press keys to navigate and act quickly"
-      size="md"
     >
       <div className="space-y-5">
         {/* Navigation */}

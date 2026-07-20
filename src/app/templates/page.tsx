@@ -215,7 +215,6 @@ export default function TemplatesPage() {
         open={preview !== null}
         onClose={() => setPreview(null)}
         title={preview?.name ?? ""}
-        size="md"
       >
         {preview && (
           <div className="space-y-5">

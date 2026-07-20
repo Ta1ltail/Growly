@@ -218,8 +218,10 @@ export function BottomNav() {
   useEffect(() => {
     if (moreOpen) {
       document.body.style.overflow = "hidden";
+      window.dispatchEvent(new CustomEvent("modal:open"));
     } else {
       document.body.style.overflow = "";
+      window.dispatchEvent(new CustomEvent("modal:close"));
     }
     return () => {
       document.body.style.overflow = "";

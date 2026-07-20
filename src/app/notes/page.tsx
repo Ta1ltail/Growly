@@ -223,7 +223,6 @@ export default function NotesPage() {
           setEditing(null);
         }}
         title={editing ? "Edit note" : "New note"}
-        size="md"
       >
         <NoteEditor
           initial={editing ?? undefined}

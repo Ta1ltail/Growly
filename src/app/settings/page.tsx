@@ -290,7 +290,6 @@ export default function SettingsPage() {
         open={confirmReset}
         onClose={() => setConfirmReset(false)}
         title="Reset all data?"
-        size="sm"
         footer={
           <>
             <Button variant="ghost" onClick={() => setConfirmReset(false)}>

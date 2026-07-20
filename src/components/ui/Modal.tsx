@@ -15,7 +15,6 @@ export function Modal({
   children,
   footer,
   headerActions,
-  size = "md",
 }: {
   open: boolean;
   onClose: () => void;
@@ -24,7 +23,6 @@ export function Modal({
   children: ReactNode;
   footer?: ReactNode;
   headerActions?: ReactNode;
-  size?: "sm" | "md" | "lg";
 }) {
   const panelRef = useRef<HTMLDivElement>(null);
 
@@ -60,16 +58,20 @@ export function Modal({
     document.body.style.overflow = "hidden";
     // Move focus into the panel.
     panelRef.current?.querySelector<HTMLElement>(FOCUSABLE)?.focus();
+
+    // Notify the Capacitor back-button handler that a modal is open.
+    // The handler listens for these custom events to know to close dialogs
+    // before navigating back.
+    window.dispatchEvent(new CustomEvent("modal:open"));
+
     return () => {
       document.removeEventListener("keydown", onKey);
       document.body.style.overflow = prevOverflow;
+      window.dispatchEvent(new CustomEvent("modal:close"));
     };
   }, [open, onClose]);
 
   if (!open) return null;
-
-  const maxW =
-    size === "sm" ? "max-w-sm" : size === "lg" ? "max-w-2xl" : "max-w-lg";
 
   return (
     <div
@@ -83,7 +85,7 @@ export function Modal({
     >
       <div
         ref={panelRef}
-        className={`flex max-h-[92vh] w-full flex-col overflow-hidden rounded-t-3xl border border-line bg-surface shadow-2xl animate-rise sm:rounded-2xl ${maxW}`}
+        className="flex max-h-[92vh] w-full max-w-lg flex-col overflow-hidden rounded-t-3xl border border-line bg-surface shadow-2xl animate-rise sm:rounded-2xl"
       >
         <div className="flex items-start justify-between gap-4 border-b border-line px-5 py-4">
           <div className="min-w-0">

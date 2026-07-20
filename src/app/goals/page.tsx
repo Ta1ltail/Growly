@@ -200,7 +200,6 @@ export default function GoalsPage() {
           setEditing(null);
         }}
         title={editing ? "Edit goal" : "Add goal"}
-        size="lg"
       >
         <GoalForm
           initial={editing ?? undefined}
@@ -218,7 +217,6 @@ export default function GoalsPage() {
         open={confirmDelete !== null}
         onClose={() => setConfirmDelete(null)}
         title="Delete goal?"
-        size="sm"
         footer={
           <>
             <Button variant="ghost" onClick={() => setConfirmDelete(null)}>

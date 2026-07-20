@@ -449,7 +449,6 @@ export default function TodayPage() {
         onClose={() => setShowAdd(false)}
         title="Add habit"
         subtitle="Set a schedule and it appears here automatically."
-        size="lg"
       >
         <HabitForm
           onSave={handleAdd}

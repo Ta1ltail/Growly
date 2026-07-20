@@ -7,8 +7,8 @@
 
 import { useState, useRef, useCallback, useEffect } from "react";
 
-const PULL_THRESHOLD = 80;
-const MAX_PULL = 120;
+const PULL_THRESHOLD = 150;
+const MAX_PULL = 200;
 
 export interface PullToRefreshState {
   pulling: boolean;

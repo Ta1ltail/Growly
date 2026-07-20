@@ -31,7 +31,6 @@ export function TitlesModal({
       onClose={onClose}
       title="Titles"
       subtitle="Earn them by leveling up"
-      size="md"
     >
       <div className="flex flex-col gap-5">
         {ranks.map((rank) => {
