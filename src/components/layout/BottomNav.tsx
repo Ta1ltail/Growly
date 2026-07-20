@@ -152,7 +152,11 @@ export function BottomNav() {
   const ticking = useRef(false);
 
   // Auto-hide bottom nav on scroll down, reveal on scroll up.
-  // Paused when the More page overlay is open to avoid background scroll interference.
+  // Reads scroll position from document.scrollingElement (not window.scrollY)
+  // so it works correctly even when body (not html) is the scroll container
+  // — which happens inside the Capacitor WebView after scrollbar-hiding CSS
+  // is applied. The scroll event listener stays on window because all scroll
+  // events bubble up to window regardless of which element is the scroller.
   useEffect(() => {
     const handleScroll = () => {
       // Skip when the More page is open to avoid hiding nav behind the overlay
@@ -160,11 +164,10 @@ export function BottomNav() {
       if (ticking.current) return;
       ticking.current = true;
       requestAnimationFrame(() => {
-        const scrollY = window.scrollY;
-        const maxScroll = Math.max(
-          document.documentElement.scrollHeight - window.innerHeight,
-          0,
-        );
+        const el = document.scrollingElement;
+        if (!el) { ticking.current = false; return; }
+        const scrollY = el.scrollTop;
+        const maxScroll = Math.max(el.scrollHeight - window.innerHeight, 0);
         // Ignore tiny scroll deltas (rubber-banding on iOS, Safari bounce)
         const delta = Math.abs(scrollY - lastScrollY.current);
         if (delta < 3) {
@@ -183,6 +186,8 @@ export function BottomNav() {
       });
     };
 
+    // Listen on window — scroll events always bubble up to window regardless
+    // of which element is the actual scroller (html or body).
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, [moreOpen]);
