@@ -361,8 +361,32 @@ img, video, iframe, svg {
 }
 
 /* ── Scrollbar policy ── 
-   Mobile: hide scrollbars for a native app feel (still scrollable).
-   Desktop: keep default scrollbars visible. */
+   Desktop: thin, minimal scrollbar integrated with the design.
+   Mobile: completely hidden for a native app feel (still scrollable). */
+
+/* Desktop — thin custom scrollbar */
+@media (min-width: 768px) {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--c-line) transparent;
+  }
+  *::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  *::-webkit-scrollbar-thumb {
+    background: var(--c-line);
+    border-radius: 3px;
+  }
+  *::-webkit-scrollbar-thumb:hover {
+    background: var(--c-muted);
+  }
+}
+
+/* Mobile — no scrollbars */
 @media (max-width: 767px) {
   * {
     scrollbar-width: none !important;

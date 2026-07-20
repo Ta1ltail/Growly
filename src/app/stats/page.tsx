@@ -76,8 +76,8 @@ export default function StatsPage() {
     [active, data.marks, from, today],
   );
   const chart = useMemo(
-    () => lastNDaysCompletion(active, data.marks, today, Math.min(days, 14)),
-    [active, data.marks, today, days],
+    () => lastNDaysCompletion(active, data.marks, today, 14),
+    [active, data.marks, today],
   );
   const byCategory = useMemo(
     () => categoryCompletion(active, data.marks, from, today),
