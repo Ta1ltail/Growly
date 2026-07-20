@@ -10,6 +10,7 @@ import { Upload, AlertCircle } from "lucide-react";
 import type { AchievementDef, Profile } from "@/lib/types";
 import { updateProfile } from "@/lib/store";
 import { createClient } from "@/lib/supabase/client";
+import { uploadAvatar } from "@/lib/supabase/storage";
 import { AVATAR_PRESETS, BANNER_PRESETS, resolveAvatar } from "@/lib/cosmetics";
 import { RARITY_STYLE } from "@/lib/rarity";
 import { Modal } from "@/components/ui/Modal";
@@ -28,6 +29,7 @@ export function ProfileEditModal({
   const [draft, setDraft] = useState<Profile>(profile);
   const [usernameError, setUsernameError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
   // Re-seed the draft each time the modal opens so it reflects the latest save.
   // Render-phase adjustment (React's "adjusting state when a prop changes"
@@ -112,12 +114,34 @@ export function ProfileEditModal({
       }
     }
 
+    let avatar = draft.avatar;
+
+    // If the avatar is a data URL (freshly uploaded image), upload to
+    // Supabase Storage and use the public URL. This replaces the old
+    // Storage file automatically and avoids bloating the profile field.
+    if (avatar && avatar.startsWith("data:")) {
+      setUploadingAvatar(true);
+      try {
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          avatar = await uploadAvatar(user.id, avatar);
+        }
+      } catch (err) {
+        console.warn("[profile] Avatar upload failed, falling back to data URL:", err);
+        // Keep the data URL as-is — it still works, just won't have the
+        // Storage benefits (deduplication, smaller profile payload).
+      } finally {
+        setUploadingAvatar(false);
+      }
+    }
+
     updateProfile({
       displayName: draft.displayName.trim() || "Anonymous",
       username: newUsername,
       bio: draft.bio?.trim() || undefined,
       motto: draft.motto?.trim() || undefined,
-      avatar: draft.avatar,
+      avatar,
       banner: draft.banner,
       showcaseBadgeId: draft.showcaseBadgeId,
     });
@@ -145,10 +169,10 @@ export function ProfileEditModal({
           <button
             type="button"
             onClick={save}
-            disabled={saving}
+            disabled={saving || uploadingAvatar}
             className="rounded-lg bg-accent px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-accent/90 disabled:opacity-50"
           >
-            {saving ? "Saving..." : "Save"}
+            {uploadingAvatar ? "Uploading avatar..." : saving ? "Saving..." : "Save"}
           </button>
         </div>
       }

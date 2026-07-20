@@ -14,6 +14,7 @@
 
 import { createContext, useEffect, useRef, useState, startTransition } from "react";
 import { useAuth } from "@/hooks/useAuth";
+import { usePathname } from "next/navigation";
 import {
   fullResync,
   pushMutation,
@@ -134,7 +135,26 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
   const isTabVisibleRef = useRef(true);
   const retryAttemptRef = useRef(0);
   const timedOutRef = useRef(false); // ref version for closures
+  const pathname = usePathname();
+  const lastPathRef = useRef(pathname);
 
+  // ── Re-sync on page navigation ──
+  // Whenever the URL changes (client-side navigation), trigger a quiet
+  // fullResync so the new page always shows the latest data from the
+  // database. This ensures the database is the single source of truth
+  // and stale local data is replaced immediately.
+  // Always reload the cache after navigation to guarantee fresh data.
+  useEffect(() => {
+    if (!userId || !syncReady) return;
+    if (lastPathRef.current === pathname) return;
+    lastPathRef.current = pathname;
+
+    fullResync(userId, true).then((result) => {
+      if (result) reloadCache();
+    }).catch(() => {
+      // Silent — best-effort refresh on navigation
+    });
+  }, [pathname, userId, syncReady]);
 
   useEffect(() => {
     if (loading) return;

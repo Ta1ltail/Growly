@@ -392,7 +392,8 @@ export async function fullResync(
 
 /* ────────────────────────────────────────────
    Merge helper: combine local and remote AppData
-   by ID (union), local wins on conflict.
+   by ID (union), REMOTE wins on conflict.
+   The database is the single source of truth.
    ──────────────────────────────────────────── */
 
 function mergeAppData(local: AppData, remote: AppData): AppData {
@@ -408,39 +409,47 @@ function mergeAppData(local: AppData, remote: AppData): AppData {
     return { ...remote, auditLog: local.auditLog };
   }
 
+  // Remote is empty — adopt local entirely (nothing to merge).
+  const remoteIsEmpty =
+    remote.habits.length === 0 && Object.keys(remote.marks).length === 0;
+  if (remoteIsEmpty) {
+    return local;
+  }
+
   // Merge habits by ID — newest timestamp wins (Finding #7), and
   // soft-deleted records propagate across devices (Finding #2).
+  // Remote items are inserted LAST so they win on conflict.
   const mergedHabits = mergeById(
-    remote.habits,
     local.habits,
+    remote.habits,
     (h) => h.id,
     compareHabitTimestamp,
   );
 
-  // Merge marks — union of date keys, local wins per habit per day
-  const mergedMarks = { ...remote.marks };
-  for (const [dateKey, day] of Object.entries(local.marks)) {
+  // Merge marks — union of date keys, REMOTE wins per habit per day
+  const mergedMarks = { ...local.marks };
+  for (const [dateKey, day] of Object.entries(remote.marks)) {
     mergedMarks[dateKey] = { ...(mergedMarks[dateKey] ?? {}), ...day };
   }
 
-  // Merge notes by ID — newest timestamp wins
+  // Merge notes by ID — newest timestamp wins, remote wins on tie
   const mergedNotes = mergeById(
-    remote.notes,
     local.notes,
+    remote.notes,
     (n) => n.id,
     compareNoteTimestamp,
   );
 
-  // Merge goals by ID — newest timestamp wins
+  // Merge goals by ID — newest timestamp wins, remote wins on tie
   const mergedGoals = mergeById(
-    remote.goals,
     local.goals,
+    remote.goals,
     (g) => g.id,
     compareGoalTimestamp,
   );
 
-  // Merge unlocks by achievement_id
-  const mergedUnlocks = { ...remote.unlocks, ...local.unlocks };
+  // Merge unlocks — remote wins (database is source of truth)
+  const mergedUnlocks = { ...local.unlocks, ...remote.unlocks };
 
   return {
     ...remote,
@@ -449,19 +458,12 @@ function mergeAppData(local: AppData, remote: AppData): AppData {
     marks: mergedMarks,
     notes: mergedNotes,
     goals: mergedGoals,
-    // Singleton tables: field-level merge with the same pattern used in
-    // mergeProfile — prefer local when it's been explicitly customized away
-    // from its default/empty state, otherwise fall back to remote. This
-    // prevents a cleared localStorage (fresh login) from wiping the user's
-    // settings, economy, unlocks, or celebration markers, while still
-    // respecting local customizations when the user has active data.
+    // Remote wins on all singleton tables (database is source of truth).
+    // Local values are only preserved when remote has no data.
     settings: mergeSettings(local.settings, remote.settings),
     profile: mergeProfile(local.profile, remote.profile),
-    unlocks:
-      Object.keys(mergedUnlocks).length > 0
-        ? mergedUnlocks
-        : remote.unlocks,
-    economy: isEmptyEconomy(local.economy) ? remote.economy : local.economy,
+    unlocks: Object.keys(mergedUnlocks).length > 0 ? mergedUnlocks : remote.unlocks,
+    economy: isEmptyEconomy(remote.economy) ? local.economy : remote.economy,
     progressSeen: mergeProgressSeen(local.progressSeen, remote.progressSeen),
   };
 }
@@ -489,16 +491,14 @@ export function isEmptyEconomy(e: Economy | undefined): boolean {
 }
 
 /**
- * Merge settings with field-level granularity. Each field prefers the local
- * value when it has been explicitly customized away from its default/empty
- * state, otherwise falls back to the remote value. Consistent with
- * mergeProfile's approach.
+ * Merge settings with field-level granularity. REMOTE wins on all fields.
+ * Local values are only preserved when remote has no data (undefined).
+ * The database is the single source of truth.
  *
  * Edge cases considered:
- *  - Field not present locally (undefined) -> remote wins
- *  - Field set to empty array locally -> remote wins (empty = not customized)
- *  - Field set to non-default value locally -> local wins
- *  - Remote is undefined (DB error / new user) -> local entirely
+ *  - Remote field present -> remote wins
+ *  - Remote field absent (undefined) -> local wins
+ *  - Remote is undefined entirely (DB error / new user) -> local entirely
  */
 /** @visibleForTesting */
 export function mergeSettings(
@@ -510,46 +510,23 @@ export function mergeSettings(
 
   return {
     theme: {
-      mode:
-        local.theme.mode !== DEFAULT_THEME.mode
-          ? local.theme.mode
-          : remote.theme.mode,
-      accent:
-        local.theme.accent !== DEFAULT_THEME.accent
-          ? local.theme.accent
-          : remote.theme.accent,
+      mode: remote.theme.mode,
+      accent: remote.theme.accent,
     },
-    graceHours:
-      (local.graceHours ?? DEFAULT_GRACE_HOURS) !== DEFAULT_GRACE_HOURS
-        ? (local.graceHours ?? DEFAULT_GRACE_HOURS)
-        : (remote.graceHours ?? DEFAULT_GRACE_HOURS),
-    usedTemplateIds: local.usedTemplateIds?.length
-      ? local.usedTemplateIds
-      : (remote.usedTemplateIds ?? []),
-    widgetOrder:
-      local.widgetOrder !== undefined
-        ? local.widgetOrder
-        : remote.widgetOrder,
-    onboardingComplete:
-      local.onboardingComplete !== undefined
-        ? local.onboardingComplete
-        : remote.onboardingComplete,
-    customCategories: local.customCategories?.length
-      ? local.customCategories
-      : (remote.customCategories ?? []),
+    graceHours: remote.graceHours ?? DEFAULT_GRACE_HOURS,
+    usedTemplateIds: remote.usedTemplateIds ?? [],
+    widgetOrder: remote.widgetOrder,
+    onboardingComplete: remote.onboardingComplete,
+    customCategories: remote.customCategories ?? [],
   };
 }
 
 /**
- * Merge progressSeen — prefers whichever has been baselined (seeded).
- * This is safe because progressSeen fields only ever ADVANCE monotonically
- * (level increases, streak tiers grow, shop unlocks accumulate). The
- * "seeded" flag marks whether the initial baseline has been written;
- * unseeded data (from a cleared localStorage) should never overwrite a
- * seeded remote to avoid re-firing past celebrations.
- *
- * Consistent with mergeProfile/mergeSettings: early return for undefined
- * remote, field-level fallback when both are seeded.
+ * Merge progressSeen — REMOTE wins on all fields.
+ * The database is the single source of truth. Local values are only
+ * preserved when remote has no data (undefined).
+ * Unseeded data (from cleared localStorage) never overwrites seeded
+ * remote to avoid re-firing past celebrations.
  */
 /** @visibleForTesting */
 export function mergeProgressSeen(
@@ -561,43 +538,31 @@ export function mergeProgressSeen(
   // Fast path: no local data — use remote entirely.
   if (!local) return remote;
 
-  // Prefer whichever has been baselined. An unseeded local (from cleared
-  // storage) should never overwrite a seeded remote, because that would
-  // re-fire every past celebration (level-ups, achievements) on each login.
+  // An unseeded local (from cleared storage) should never overwrite a
+  // seeded remote, because that would re-fire every past celebration
+  // (level-ups, achievements) on each login.
   if (!local.seeded) return remote;
   if (!remote.seeded) return local;
 
-  // Both seeded: local wins on individual fields when explicitly advanced
-  // beyond defaults, otherwise remote wins. Consistent with mergeSettings.
+  // Both seeded: remote wins (database is source of truth).
   return {
     seeded: true,
-    level: local.level > 1 ? local.level : remote.level,
-    title: local.title !== "Habit Newbie" ? local.title : remote.title,
-    shop: local.shop.length > 0 ? local.shop : remote.shop,
-    streaks: Object.keys(local.streaks).length > 0
-      ? local.streaks
-      : remote.streaks,
-    tierUnlocks: local.tierUnlocks.length > 0
-      ? local.tierUnlocks
-      : remote.tierUnlocks,
+    level: remote.level,
+    title: remote.title,
+    shop: remote.shop,
+    streaks: remote.streaks,
+    tierUnlocks: remote.tierUnlocks,
   };
 }
 
 /**
- * Merge profile — prefers the local profile when it has been explicitly
- * customized, but falls back to the remote (server-seeded) profile for
- * identity fields when local still carries the initial defaults.
+ * Merge profile — REMOTE wins on all fields.
+ * The database is the single source of truth. Local values are only
+ * preserved when remote has no data (undefined).
  *
  * Key behaviors:
- *  - displayName/username/motto: local wins ONLY when it differs from the
- *    DEFAULT_PROFILE constant (meaning the user explicitly customized it
- *    during this session). The server-seeded version (from the SQL trigger
- *    on auth registration) is preferred otherwise.
- *  - bio/avatar/banner/showcaseBadgeId: optional fields use an explicit
- *    `!== undefined` check so that an intentionally empty string (`""`)
- *    set by the user is preserved, while `undefined` (never set) falls
- *    through to the remote value.
- *  - Fast-return when remote has no profile — avoid unnecessary comparisons.
+ *  - All fields prefer the remote value.
+ *  - Remote being undefined (DB error / new user) -> local entirely.
  */
 /** @visibleForTesting */
 export function mergeProfile(local: Profile, remote: Profile | undefined): Profile {
@@ -605,42 +570,28 @@ export function mergeProfile(local: Profile, remote: Profile | undefined): Profi
   if (!remote) return local;
 
   return {
-    // Identity fields: the server is the authority (generates unique
-    // usernames and seeds display names from registration metadata).
-    // Only use the local value when the user explicitly customized it
-    // away from the initial default.
-    displayName:
-      local.displayName !== DEFAULT_PROFILE.displayName
-        ? local.displayName
-        : remote.displayName,
-    username:
-      local.username !== DEFAULT_PROFILE.username
-        ? local.username
-        : remote.username,
-    // Optional fields: use `!== undefined` so that an empty string (`""`)
-    // set by the user to "clear" a field is preserved, while a genuinely
-    // unset field (undefined) delegates to the remote value.
-    bio: local.bio !== undefined ? local.bio : remote.bio,
-    motto:
-      local.motto !== DEFAULT_PROFILE.motto
-        ? local.motto
-        : (remote.motto ?? DEFAULT_PROFILE.motto),
-    avatar: local.avatar !== undefined ? local.avatar : remote.avatar,
-    banner: local.banner !== undefined ? local.banner : remote.banner,
-    showcaseBadgeId:
-      local.showcaseBadgeId !== undefined
-        ? local.showcaseBadgeId
-        : remote.showcaseBadgeId,
+    // All fields: remote wins (database is source of truth).
+    // Local value is only used when remote doesn't have it.
+    displayName: remote.displayName,
+    username: remote.username,
+    bio: remote.bio ?? undefined,
+    motto: remote.motto ?? undefined,
+    avatar: remote.avatar ?? undefined,
+    banner: remote.banner ?? undefined,
+    showcaseBadgeId: remote.showcaseBadgeId ?? undefined,
   };
 }
 
 /**
  * Merge two arrays by ID, with optional timestamp-based conflict resolution.
  * When a `compare` function is provided, the NEWER item wins (Finding #7).
- * Without a compare function, local wins (original behavior).
+ * Without a compare function, REMOTE wins (database is source of truth).
  * Soft-deleted records (with `deletedAt`) are treated as "newer" than live
  * ones of the same ID, so deletions propagate across devices (Finding #2).
- */
+ *
+ * IMPORTANT: remote is passed as the SECOND argument so that when
+ * both items have the same timestamp, the remote value wins (it's
+ * inserted last).
 /** @visibleForTesting */
 export function mergeById<T extends { id: string }>(
   remote: T[],
@@ -666,9 +617,12 @@ export function mergeById<T extends { id: string }>(
     }
   };
 
-  // Process both arrays through the same insert logic
-  for (const item of remote) insert(item);
+  // Process local FIRST, then remote — remote items are inserted
+  // last, so they win on conflict (database is source of truth).
+  // When a `compare` function is used, the newer/more-important
+  // item wins regardless of insertion order.
   for (const item of local) insert(item);
+  for (const item of remote) insert(item);
 
   return Array.from(map.values());
 }
