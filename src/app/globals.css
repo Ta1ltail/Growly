@@ -361,23 +361,42 @@ img, video, iframe, svg {
 }
 
 /* ── Scrollbar policy ── 
-   Desktop: thin, minimal scrollbar integrated with the design.
-   Mobile: completely hidden for a native app feel (still scrollable). */
+   By default: scrollbars hidden everywhere (mobile native app feel).
+   Desktop (≥768px): thin custom scrollbar integrated with the design.
+   Scrolling always works — only the visual bar is hidden on mobile. */
+
+/* All devices — no scrollbars */
+* {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+*::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+*::-webkit-scrollbar-track,
+*::-webkit-scrollbar-thumb {
+  display: none !important;
+}
 
 /* Desktop — thin custom scrollbar */
 @media (min-width: 768px) {
   * {
-    scrollbar-width: thin;
+    scrollbar-width: thin !important;
     scrollbar-color: var(--c-line) transparent;
   }
   *::-webkit-scrollbar {
+    display: block !important;
     width: 6px;
     height: 6px;
   }
   *::-webkit-scrollbar-track {
+    display: block !important;
     background: transparent;
   }
   *::-webkit-scrollbar-thumb {
+    display: block !important;
     background: var(--c-line);
     border-radius: 3px;
   }
@@ -386,13 +405,14 @@ img, video, iframe, svg {
   }
 }
 
-/* Mobile — no scrollbars */
+/* Make absolutely sure the html/body never show scrollbars on mobile */
 @media (max-width: 767px) {
-  * {
+  html, body, #__next, main {
     scrollbar-width: none !important;
     -ms-overflow-style: none !important;
   }
-  *::-webkit-scrollbar {
+  html::-webkit-scrollbar,
+  body::-webkit-scrollbar {
     display: none !important;
     width: 0 !important;
     height: 0 !important;
