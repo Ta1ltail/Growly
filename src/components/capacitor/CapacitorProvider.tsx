@@ -50,29 +50,11 @@ export function CapacitorProvider({ children }: { children: ReactNode }) {
         const style = document.createElement("style");
         style.id = CAPACITOR_STYLE_ID;
         style.textContent = `
-          /* ── Hide WebView native scrollbar ──
-             Android WebView draws its own overlay scrollbar at the html level.
-             We make html non-scrollable and delegate scrolling to body,
-             then hide body's scrollbar. Scrolling still works — only the
-             visual bar disappears. */
-          html {
-            overflow: hidden;
-            height: 100%;
-          }
           body {
             -webkit-user-select: none;
             user-select: none;
             -webkit-touch-callout: none;
             -webkit-tap-highlight-color: transparent;
-            overflow-y: auto;
-            height: 100%;
-            scrollbar-width: none;
-            -ms-overflow-style: none;
-          }
-          body::-webkit-scrollbar {
-            display: none;
-            width: 0;
-            height: 0;
           }
           input, textarea, [contenteditable] {
             -webkit-user-select: text;
