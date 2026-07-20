@@ -52,17 +52,23 @@ export function computeDataHash(d: AppData): string {
   return JSON.stringify({
     // Habits: include all mutable fields so renames, archives, schedule changes,
     // and category/priority changes from other devices are detected by the poll.
+    // deletedAt is included so soft-deletes propagate across devices (Finding #2).
     h: d.habits.length + d.habits.map(h =>
-      `${h.id}:${h.name}:${h.archived ? 1 : 0}:${h.category}:${h.priority ?? ""}:${JSON.stringify(h.recurrence ?? null)}:${h.startDate ?? ""}:${h.timeOfDay ?? ""}:${JSON.stringify(h.repeatDays)}`
+      `${h.id}:${h.name}:${h.archived ? 1 : 0}:${h.category}:${h.priority ?? ""}:${JSON.stringify(h.recurrence ?? null)}:${h.startDate ?? ""}:${h.timeOfDay ?? ""}:${JSON.stringify(h.repeatDays)}:${h.deletedAt ?? ""}`
     ).sort().join(","),
-    // Notes: updatedAt catches body edits
-    no: d.notes.length + d.notes.map(n => `${n.id}:${n.updatedAt}`).sort().join(","),
-    // Goals: include title, current, target, deadline, and category for completeness
+    // Notes: updatedAt catches body edits; deletedAt catches soft-deletes
+    no: d.notes.length + d.notes.map(n => `${n.id}:${n.updatedAt}:${n.deletedAt ?? ""}`).sort().join(","),
+    // Goals: include title, current, target, deadline, category, and deletedAt
     go: d.goals.length + d.goals.map(g =>
-      `${g.id}:${g.current}:${g.target}:${g.title}:${g.deadline ?? ""}:${g.category ?? ""}`
+      `${g.id}:${g.current}:${g.target}:${g.title}:${g.deadline ?? ""}:${g.category ?? ""}:${g.deletedAt ?? ""}`
     ).sort().join(","),
-    // Marks: done/missed/skipped counts cover all mutations (additions, removals, status edits)
-    mc: `${marksDone},${marksMissed},${marksSkipped}`,
+    // Marks: include each (dateKey,hhabitId,status) triple for granular detection
+    // so additions, removals, and status changes all trigger hash differences.
+    mc: d.habits.length > 0 || Object.keys(d.marks).length > 0
+      ? Object.entries(d.marks).map(([dk, day]) =>
+          Object.entries(day).map(([hid, st]) => `${dk}:${hid}:${st}`).join(",")
+        ).filter(Boolean).sort().join("|")
+      : "",
     // Singleton tables: JSON.stringify is fine (always small objects)
     st: JSON.stringify(d.settings),
     pr: JSON.stringify({
@@ -293,12 +299,16 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
     // Shared poll logic — runs once immediately on visibility restore and
     // repeatedly while the tab is visible (via setupPoll's interval).
     function doPoll() {
+      // Capture a snapshot hash BEFORE the fullResync (which saves merged
+      // data to localStorage). We compare this with the post-merge result
+      // to detect actual remote changes and only then reload the cache.
+      const preSyncHash = computeDataHash(loadData());
+
       fullResync(uid, true).then((result) => {
         if (result) {
-          // Only reload cache if the merged data differs from local, to
-          // avoid unnecessary re-renders every 30 seconds.
-          const localData = loadData();
-          if (computeDataHash(localData) !== computeDataHash(result)) {
+          // Compare post-merge data with the pre-sync snapshot, not with
+          // loadData() (which now holds the freshly-merged result).
+          if (preSyncHash !== computeDataHash(result)) {
             reloadCache();
           }
         }

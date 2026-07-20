@@ -93,8 +93,8 @@ export default function HabitsPage() {
     );
   }, [data.habits, filter, query]);
 
-  const activeHabits = filtered.filter((h) => !h.archived);
-  const archivedHabits = filtered.filter((h) => h.archived);
+  const activeHabits = filtered.filter((h) => !h.archived && !h.deletedAt);
+  const archivedHabits = filtered.filter((h) => h.archived && !h.deletedAt);
 
   // Pagination over the active list. Clamp displayed page to valid range;
   // out-of-range page numbers from a previous filter silently resolve on the
