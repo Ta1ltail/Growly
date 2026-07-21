@@ -775,7 +775,7 @@ BEGIN
       PERFORM public.refresh_user_stats(v_user.user_id);
       v_refreshed := v_refreshed + 1;
     EXCEPTION WHEN OTHERS THEN
-      RAISE WARNING 'refresh_user_stats failed for %: %', v_user.user_id, SQLERRM;
+      RAISE WARNING 'refresh_user_stats failed for a user (ID omitted for privacy): %', SQLERRM;
     END;
   END LOOP;
 

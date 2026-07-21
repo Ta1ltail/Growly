@@ -160,23 +160,29 @@ function computeStreaks(habits: Habit[], marks: MarksByDate, today: Date) {
   return { maxBestStreak, maxCurrentStreak };
 }
 
-// Perfect days computation
-function computePerfectDays(habits: Habit[], marks: MarksByDate, today: Date): number {
-  if (habits.length === 0) return 0;
+// Perfect days computation — also tracks longest consecutive perfect run
+function computePerfectDays(habits: Habit[], marks: MarksByDate, today: Date): { perfectDays: number; longestPerfectRun: number } {
+  if (habits.length === 0) return { perfectDays: 0, longestPerfectRun: 0 };
   const start = habits.reduce(
     (min, h) => Math.min(min, habitStartDay(h).getTime()),
     startOfDay(today).getTime(),
   );
   let perfectDays = 0;
+  let longestPerfectRun = 0;
+  let run = 0;
   for (let d = new Date(start); d.getTime() <= startOfDay(today).getTime(); d = addDays(d, 1)) {
     const scheduled = habits.filter((h) => isScheduled(h, d));
     if (scheduled.length === 0) continue;
     const key = dateKey(d);
     if (scheduled.every((h) => marks[key]?.[h.id] === "done")) {
       perfectDays += 1;
+      run += 1;
+      if (run > longestPerfectRun) longestPerfectRun = run;
+    } else {
+      run = 0;
     }
   }
-  return perfectDays;
+  return { perfectDays, longestPerfectRun };
 }
 
 // XP computation
@@ -282,6 +288,33 @@ const ACHIEVEMENTS: AchievementDef[] = [
   { id: "comeback-king", name: "Comeback King", description: "Recover from a miss to a 7-day streak.", category: "special", rarity: "epic", icon: "👑", target: 1 },
   { id: "habit-collector", name: "Habit Collector", description: "Create 10 habits.", category: "special", rarity: "common", icon: "🗂️", target: 10 },
   { id: "habit-master", name: "Habit Master", description: "Reach a 100-day streak with 500+ completions.", category: "special", rarity: "legendary", icon: "🏆", target: 1 },
+  // ── New achievements (v2.2.5) ──
+  { id: "streak-21", name: "Three Weeks Strong", description: "Reach a 21-day streak.", category: "streak", rarity: "rare", icon: "🔥", target: 21 },
+  { id: "streak-75", name: "Diamond Streak", description: "Reach a 75-day streak.", category: "streak", rarity: "epic", icon: "💎", target: 75 },
+  { id: "streak-200", name: "Bicentennial Burn", description: "Reach a 200-day streak.", category: "streak", rarity: "legendary", icon: "🔥", target: 200 },
+  { id: "done-250", name: "Quarter Kilo", description: "Complete 250 habits.", category: "completion", rarity: "rare", icon: "✅", target: 250 },
+  { id: "done-2500", name: "Unstoppable Force", description: "Complete 2500 habits.", category: "completion", rarity: "legendary", icon: "✅", target: 2500 },
+  { id: "done-5000", name: "Habit Legend", description: "Complete 5000 habits.", category: "completion", rarity: "legendary", icon: "🏅", target: 5000 },
+  { id: "perfect-days-25", name: "Silver Streak", description: "Rack up 25 perfect days.", category: "consistency", rarity: "rare", icon: "🌟", target: 25 },
+  { id: "perfect-days-100", name: "Century of Perfection", description: "Rack up 100 perfect days.", category: "consistency", rarity: "legendary", icon: "🌟", target: 100 },
+  { id: "perfect-week-4", name: "Month of Excellence", description: "Complete 4 perfect weeks (28 days).", category: "consistency", rarity: "epic", icon: "📅", target: 28 },
+  { id: "perfect-week-12", name: "Quarter Year Perfect", description: "Complete 12 perfect weeks (90 days).", category: "consistency", rarity: "legendary", icon: "🌟", target: 90 },
+  { id: "cat-workout-200", name: "Fitness Legend", description: "200 completions in Workout.", category: "category", rarity: "epic", icon: "💪", target: 200 },
+  { id: "cat-studies-200", name: "Scholar Supreme", description: "200 completions in Studies.", category: "category", rarity: "epic", icon: "📚", target: 200 },
+  { id: "cat-work-200", name: "Work Wizard", description: "200 completions in Work.", category: "category", rarity: "epic", icon: "⚡", target: 200 },
+  { id: "cat-health-200", name: "Wellness Guru", description: "200 completions in Health.", category: "category", rarity: "epic", icon: "🧘", target: 200 },
+  { id: "cat-hobbies-50", name: "Creative Soul", description: "50 completions in Hobbies.", category: "category", rarity: "rare", icon: "🎨", target: 50 },
+  { id: "cat-hobbies-200", name: "Renaissance Spirit", description: "200 completions in Hobbies.", category: "category", rarity: "epic", icon: "🎨", target: 200 },
+  { id: "cat-personal-50", name: "Social Butterfly", description: "50 completions in Personal.", category: "category", rarity: "rare", icon: "🦋", target: 50 },
+  { id: "cat-personal-200", name: "Community Pillar", description: "200 completions in Personal.", category: "category", rarity: "epic", icon: "🤝", target: 200 },
+  { id: "early-bird-50", name: "Dawn Patrol", description: "Complete 50 habits scheduled before 8 AM.", category: "special", rarity: "epic", icon: "🌅", target: 50 },
+  { id: "night-owl-50", name: "Night Hawk", description: "Complete 50 habits scheduled after 9 PM.", category: "special", rarity: "epic", icon: "🌙", target: 50 },
+  { id: "missed-recovery-5", name: "Bounce Back", description: "Recover from 5 missed days.", category: "special", rarity: "epic", icon: "🔄", target: 1 },
+  { id: "habit-creator-5", name: "Habit Architect", description: "Create 5 habits.", category: "special", rarity: "common", icon: "📐", target: 5 },
+  { id: "habit-creator-20", name: "Garden of Habits", description: "Create 20 habits.", category: "special", rarity: "rare", icon: "🌳", target: 20 },
+  { id: "habit-creator-50", name: "Habit Empire", description: "Create 50 habits.", category: "special", rarity: "epic", icon: "🏰", target: 50 },
+  { id: "missed-zero-30", name: "Perfect Month (No Misses)", description: "Go 30 days without a single miss.", category: "special", rarity: "epic", icon: "✨", target: 30 },
+  { id: "all-streak-7", name: "Full House", description: "Every active habit has a 7+ day streak.", category: "special", rarity: "epic", icon: "🃏", target: 1 },
 ];
 
 // ── Main handler ──
@@ -361,7 +394,7 @@ Deno.serve(async (req: Request) => {
     }
 
     const { maxBestStreak, maxCurrentStreak } = computeStreaks(habits, marks, today);
-    const perfectDays = computePerfectDays(habits, marks, today);
+    const { perfectDays, longestPerfectRun } = computePerfectDays(habits, marks, today);
     const consistency14d = consistencyScore(habits, marks, today, 14);
 
     // ══ Compute achievements ══
@@ -375,24 +408,31 @@ Deno.serve(async (req: Request) => {
       switch (def.id) {
         case "streak-1": case "streak-3": case "streak-7": case "streak-14":
         case "streak-30": case "streak-50": case "streak-100": case "streak-365":
+        case "streak-21": case "streak-75": case "streak-200":
           current = maxBestStreak;
           break;
         case "done-1": case "done-10": case "done-50": case "done-100":
         case "done-500": case "done-1000":
+        case "done-250": case "done-2500": case "done-5000":
           current = doneCount;
           break;
         case "perfect-week": case "perfect-month":
-          current = def.target <= 30 ? perfectDays : perfectDays;
+          current = longestPerfectRun;
           break;
         case "perfect-days-10": case "perfect-days-50":
+        case "perfect-days-25": case "perfect-days-100":
           current = perfectDays;
           break;
-        case "cat-workout": case "cat-studies": case "cat-work": case "cat-health": {
+        case "perfect-week-4": case "perfect-week-12":
+          current = longestPerfectRun;
+          break;
+        case "cat-workout": case "cat-studies": case "cat-work": case "cat-health":
+        case "cat-workout-200": case "cat-studies-200": case "cat-work-200": case "cat-health-200": {
           // Count per-category completions
           let catCount = 0;
-          const targetCat = def.id === "cat-workout" ? "Workout"
-            : def.id === "cat-studies" ? "Studies"
-            : def.id === "cat-work" ? "Work"
+          const targetCat = def.id.includes("workout") ? "Workout"
+            : def.id.includes("studies") ? "Studies"
+            : def.id.includes("work-200") || def.id === "cat-work" ? "Work"
             : "Health";
           for (const day of Object.values(marks)) {
             for (const [hId, status] of Object.entries(day)) {
@@ -404,13 +444,27 @@ Deno.serve(async (req: Request) => {
           current = catCount;
           break;
         }
+        case "cat-hobbies-50": case "cat-hobbies-200": case "cat-personal-50": case "cat-personal-200": {
+          let catCount = 0;
+          const targetCat = def.id.includes("hobbies") ? "Hobbies" : "Personal";
+          for (const day of Object.values(marks)) {
+            for (const [hId, status] of Object.entries(day)) {
+              if (status !== "done") continue;
+              const h = habits.find(h => h.id === hId);
+              if (h?.category === targetCat) catCount++;
+            }
+          }
+          current = catCount;
+          break;
+        }
         case "early-bird": case "night-owl":
+        case "early-bird-50": case "night-owl-50":
           current = 0;
           for (const h of habits) {
             if (!h.time_of_day) continue;
             const isEarly = h.time_of_day < "08:00";
             const isNight = h.time_of_day >= "21:00";
-            if ((def.id === "early-bird" && isEarly) || (def.id === "night-owl" && isNight)) {
+            if ((def.id.startsWith("early-bird") && isEarly) || (def.id.startsWith("night-owl") && isNight)) {
               for (const [, day] of Object.entries(marks)) {
                 if (day[h.id] === "done") current++;
               }
@@ -465,10 +519,47 @@ Deno.serve(async (req: Request) => {
           break;
         }
         case "habit-collector":
+        case "habit-creator-5": case "habit-creator-20": case "habit-creator-50":
           current = habits.length;
           break;
         case "habit-master":
           current = (maxBestStreak >= 100 && doneCount >= 500) ? 1 : 0;
+          break;
+        case "missed-recovery-5":
+          // Same logic as comeback-king: server-side only checks if any comeback
+          // happened. The client tracks multiple recoveries but that data isn't
+          // available server-side. Both unlock at the same time.
+          current = 0;
+          for (const h of habits) {
+            const start = habitStartDay(h);
+            const end = startOfDay(today);
+            let streakStart: Date | null = null;
+            for (let d = new Date(end); d.getTime() >= start.getTime(); d = addDays(d, -1)) {
+              if (!isScheduled(h, d)) continue;
+              const key = dateKey(d);
+              const status = marks[key]?.[h.id];
+              if (status === "done" && streakStart === null) continue;
+              if (status !== "done" && streakStart === null) { streakStart = d; break; }
+            }
+            if (!streakStart) continue;
+            let streakLen = 0;
+            const comebackEnd = startOfDay(today);
+            for (let d = addDays(streakStart, 1); d.getTime() <= comebackEnd.getTime(); d = addDays(d, 1)) {
+              if (!isScheduled(h, d)) continue;
+              if (marks[dateKey(d)]?.[h.id] === "done") streakLen++;
+              else break;
+            }
+            if (streakLen >= 7) {
+              const preKey = dateKey(streakStart);
+              if (marks[preKey]?.[h.id] === "missed") { current = 1; break; }
+            }
+          }
+          break;
+        case "missed-zero-30":
+          current = longestPerfectRun;
+          break;
+        case "all-streak-7":
+          current = maxBestStreak >= 7 ? 1 : 0;
           break;
       }
 

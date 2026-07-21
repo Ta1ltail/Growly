@@ -28,32 +28,34 @@ interface ShopItem {
   minLevel?: number;
 }
 
+// ── Shop catalog (must match src/lib/economy.ts exactly) ──
+
 const CATALOG: ShopItem[] = [
   // Flame skins
-  { id: "flame-azure", name: "Azure Flame", description: "Blue flame skin", slot: "flame", price: 100 },
-  { id: "flame-emerald", name: "Emerald Flame", description: "Green flame skin", slot: "flame", price: 100 },
-  { id: "flame-violet", name: "Violet Flame", description: "Purple flame skin", slot: "flame", price: 100 },
-  { id: "flame-gold", name: "Golden Flame", description: "Gold flame skin", slot: "flame", price: 150, minLevel: 5 },
-  { id: "flame-ice", name: "Ice Flame", description: "Ice flame skin", slot: "flame", price: 150 },
-  { id: "flame-lava", name: "Lava Flame", description: "Lava flame skin", slot: "flame", price: 200, minLevel: 10 },
-  { id: "flame-rainbow", name: "Rainbow Flame", description: "Rainbow flame skin", slot: "flame", price: 300, minLevel: 10 },
-  { id: "flame-solar", name: "Solar Flame", description: "Solar flame skin", slot: "flame", price: 500, minLevel: 15 },
+  { id: "flame-azure", name: "Azure Flame", description: "A cool blue streak flame.", slot: "flame", price: 120 },
+  { id: "flame-emerald", name: "Emerald Flame", description: "A verdant green streak flame.", slot: "flame", price: 120 },
+  { id: "flame-violet", name: "Violet Flame", description: "A mystic purple streak flame.", slot: "flame", price: 200 },
+  { id: "flame-gold", name: "Golden Flame", description: "A radiant gold flame for the dedicated.", slot: "flame", price: 400, minLevel: 10 },
+  { id: "flame-ice", name: "Ice Flame", description: "A frosty blue-cyan streak flame.", slot: "flame", price: 180 },
+  { id: "flame-lava", name: "Lava Flame", description: "A blazing red-hot streak flame.", slot: "flame", price: 250, minLevel: 6 },
+  { id: "flame-rainbow", name: "Rainbow Flame", description: "A prismatic, color-shifting flame.", slot: "flame", price: 500, minLevel: 15 },
+  { id: "flame-solar", name: "Solar Flame", description: "A brilliant golden-white streak flame.", slot: "flame", price: 350, minLevel: 12 },
   // Confetti palettes
-  { id: "confetti-mono", name: "Monochrome", description: "Black & white confetti", slot: "confetti", price: 100 },
-  { id: "confetti-neon", name: "Neon", description: "Neon confetti palette", slot: "confetti", price: 150 },
-  { id: "confetti-fire", name: "Firework", description: "Firework confetti", slot: "confetti", price: 200 },
-  { id: "confetti-pastel", name: "Pastel", description: "Pastel confetti palette", slot: "confetti", price: 150 },
-  { id: "confetti-gold", name: "Gold", description: "Gold confetti", slot: "confetti", price: 300, minLevel: 5 },
-  { id: "confetti-ocean", name: "Ocean", description: "Ocean confetti", slot: "confetti", price: 200 },
+  { id: "confetti-mono", name: "Monochrome Confetti", description: "Clean, minimal celebration.", slot: "confetti", price: 100 },
+  { id: "confetti-neon", name: "Neon Confetti", description: "Loud, electric celebration.", slot: "confetti", price: 150 },
+  { id: "confetti-fire", name: "Firework Confetti", description: "Warm sparks on every unlock.", slot: "confetti", price: 250, minLevel: 5 },
+  { id: "confetti-pastel", name: "Pastel Confetti", description: "Soft, dreamy celebration colors.", slot: "confetti", price: 120 },
+  { id: "confetti-gold", name: "Gold Confetti", description: "Luxurious golden shower.", slot: "confetti", price: 300, minLevel: 8 },
+  { id: "confetti-ocean", name: "Ocean Confetti", description: "Deep blue-teal celebration.", slot: "confetti", price: 200 },
   // Accent themes
-  { id: "accent-crimson", name: "Crimson", description: "Red accent theme", slot: "accent", price: 200 },
-  { id: "accent-emerald", name: "Emerald", description: "Green accent theme", slot: "accent", price: 200 },
-  { id: "accent-violet", name: "Violet", description: "Purple accent theme", slot: "accent", price: 200 },
-  { id: "accent-amber", name: "Amber", description: "Amber accent theme", slot: "accent", price: 200 },
-  { id: "accent-pink", name: "Pink", description: "Pink accent theme", slot: "accent", price: 250 },
-  { id: "accent-ocean", name: "Ocean", description: "Teal accent theme", slot: "accent", price: 250 },
-  { id: "accent-lime", name: "Lime", description: "Lime accent theme", slot: "accent", price: 300, minLevel: 5 },
-  // Streak freeze consumable
+  { id: "accent-crimson", name: "Crimson Accent", description: "Recolor the app in bold crimson.", slot: "accent", price: 150 },
+  { id: "accent-emerald", name: "Emerald Accent", description: "Recolor the app in fresh emerald.", slot: "accent", price: 150 },
+  { id: "accent-violet", name: "Violet Accent", description: "Recolor the app in deep violet.", slot: "accent", price: 200 },
+  { id: "accent-amber", name: "Amber Accent", description: "Recolor the app in warm amber.", slot: "accent", price: 300, minLevel: 8 },
+  { id: "accent-pink", name: "Pink Accent", description: "Recolor the app in vibrant pink.", slot: "accent", price: 180 },
+  { id: "accent-ocean", name: "Ocean Accent", description: "Recolor the app in deep teal.", slot: "accent", price: 220 },
+  { id: "accent-lime", name: "Lime Accent", description: "Recolor the app in fresh lime.", slot: "accent", price: 280, minLevel: 6 },
+  // Streak freeze consumable — price matches FREEZE_PRICE in src/lib/economy.ts
   { id: "freeze", name: "Streak Freeze", description: "Protect one streak from breaking", slot: "consumable", price: 75 },
 ];
 
@@ -64,7 +66,7 @@ interface PurchaseRequest {
   dateKey?: string;    // for freeze: which date to protect
 }
 
-// ── Coin computation (mirrors src/lib/economy.ts) ──
+// ── Coin computation (must match src/lib/economy.ts exactly) ──
 
 const COINS_PER_COMPLETION = 2;
 const COINS_PER_PERFECT_DAY = 10;
@@ -82,6 +84,96 @@ function coinsEarned(
   const perfect = perfectDays * COINS_PER_PERFECT_DAY;
   const fromAchievements = unlockedRarities.reduce((sum, r) => sum + (RARITY_COINS[r] ?? 0), 0);
   return base + perfect + fromAchievements + bonusCoins;
+}
+
+// ── Schedule helpers (for proper perfect-days computation) ──
+
+function startOfDay(d: Date): Date {
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+}
+
+function addDays(d: Date, n: number): Date {
+  const out = new Date(d);
+  out.setDate(out.getDate() + n);
+  return out;
+}
+
+function dateKey(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function parseDateKey(key: string): Date {
+  const [y, m, d] = key.split("-").map(Number);
+  return new Date(y, m - 1, d);
+}
+
+function effectiveRecurrence(habit: {
+  recurrence?: { kind: "daily" | "weekly" | "monthly"; weekdays?: number[]; monthDays?: number[] } | null;
+  repeat_days: number[];
+}): { kind: "daily" | "weekly" | "monthly"; weekdays?: number[]; monthDays?: number[] } {
+  if (habit.recurrence) return habit.recurrence;
+  return habit.repeat_days.length === 0
+    ? { kind: "daily" }
+    : { kind: "weekly", weekdays: habit.repeat_days };
+}
+
+function habitStartDay(habit: { start_date?: string | null; created_at: string }): Date {
+  if (habit.start_date) return startOfDay(parseDateKey(habit.start_date));
+  return startOfDay(new Date(habit.created_at));
+}
+
+function isScheduled(habit: {
+  recurrence?: { kind: "daily" | "weekly" | "monthly"; weekdays?: number[]; monthDays?: number[] } | null;
+  repeat_days: number[];
+  start_date?: string | null;
+  created_at: string;
+}, date: Date): boolean {
+  if (startOfDay(date).getTime() < habitStartDay(habit).getTime()) return false;
+  const rec = effectiveRecurrence(habit);
+  switch (rec.kind) {
+    case "daily": return true;
+    case "weekly": return rec.weekdays!.length === 0 || rec.weekdays!.includes(date.getDay());
+    case "monthly": return rec.monthDays!.length === 0
+        ? date.getDate() === habitStartDay(habit).getDate()
+        : rec.monthDays!.includes(date.getDate());
+  }
+}
+
+// Compute the number of perfect days (every scheduled habit done) from marks.
+function computePerfectDays(
+  habits: {
+    id: string;
+    recurrence?: { kind: "daily" | "weekly" | "monthly"; weekdays?: number[]; monthDays?: number[] } | null;
+    repeat_days: number[];
+    start_date?: string | null;
+    created_at: string;
+  }[],
+  marks: { date_key: string; habit_id: string; status: string }[],
+  today: Date,
+): number {
+  if (habits.length === 0) return 0;
+
+  // Build marksByDate: { dateKey: { habitId: status } }
+  const marksByDate: Record<string, Record<string, string>> = {};
+  for (const m of marks) {
+    if (!marksByDate[m.date_key]) marksByDate[m.date_key] = {};
+    marksByDate[m.date_key][m.habit_id] = m.status;
+  }
+
+  const start = habits.reduce(
+    (min, h) => Math.min(min, habitStartDay(h).getTime()),
+    startOfDay(today).getTime(),
+  );
+  let perfectDays = 0;
+  for (let d = new Date(start); d.getTime() <= startOfDay(today).getTime(); d = addDays(d, 1)) {
+    const scheduled = habits.filter((h) => isScheduled(h, d));
+    if (scheduled.length === 0) continue;
+    const key = dateKey(d);
+    if (scheduled.every((h) => marksByDate[key]?.[h.id] === "done")) {
+      perfectDays += 1;
+    }
+  }
+  return perfectDays;
 }
 
 Deno.serve(async (req: Request) => {
@@ -133,20 +225,61 @@ Deno.serve(async (req: Request) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
     );
 
-    // ══ Load economy and stats ══
-    const [ecoStateRes, ecoSpentRes, statsRes, , habitsRes, marksRes] = await Promise.all([
+    // ══ Load economy, stats, and data for server-side validation ══
+    // We need habits + marks to compute perfectDays server-side, and unlocks
+    // to determine unlocked rarity tiers (both affect coin balance).
+    const [ecoStateRes, ecoSpentRes, statsRes, unlocksRes, habitsRes, marksRes] = await Promise.all([
       supabase.from("economy_state").select("*").eq("user_id", userId).single(),
       supabase.from("economy_spent").select("amount").eq("user_id", userId),
       supabase.from("user_stats_snapshots").select("*").eq("user_id", userId).single(),
       supabase.from("unlocks").select("achievement_id").eq("user_id", userId),
-      supabase.from("habits").select("id").eq("user_id", userId),
-      supabase.from("marks").select("status").eq("user_id", userId),
+      supabase.from("habits").select("id, name, category, repeat_days, created_at, recurrence, start_date, time_of_day, archived").eq("user_id", userId),
+      supabase.from("marks").select("date_key, habit_id, status").eq("user_id", userId),
     ]);
 
-    // Compute coin balance server-side
+    // Compute coin balance server-side (must match src/lib/economy.ts logic)
     const doneCount = (marksRes.data ?? []).filter((m: { status: string }) => m.status === "done").length;
-    const perfectDays = 0; // simplified — computing perfect days requires full schedule logic
-    const unlockedRarities: string[] = []; // simplified — rarity lookup omitted
+
+    // Properly compute perfect days from marks + habit schedules
+    const habits = habitsRes.data ?? [];
+    const perfectDays = computePerfectDays(habits, marksRes.data ?? [], new Date());
+
+    // Determine unlocked rarities from actual unlock records
+    const achievementRarityMap: Record<string, string> = {
+      "streak-1": "common", "streak-3": "common", "streak-7": "rare", "streak-14": "rare",
+      "streak-21": "rare", "streak-30": "epic", "streak-50": "epic", "streak-75": "epic",
+      "streak-100": "legendary", "streak-200": "legendary", "streak-365": "legendary",
+      "done-1": "common", "done-10": "common", "done-50": "rare", "done-250": "rare",
+      "done-100": "epic", "done-500": "epic", "done-1000": "legendary", "done-2500": "legendary", "done-5000": "legendary",
+      "perfect-week": "rare", "perfect-week-4": "epic", "perfect-week-12": "legendary", "perfect-month": "legendary",
+      "perfect-days-10": "rare", "perfect-days-25": "rare", "perfect-days-50": "epic", "perfect-days-100": "legendary",
+      "cat-workout": "rare", "cat-workout-200": "epic",
+      "cat-studies": "rare", "cat-studies-200": "epic",
+      "cat-work": "rare", "cat-work-200": "epic",
+      "cat-health": "rare", "cat-health-200": "epic",
+      "cat-hobbies-50": "rare", "cat-hobbies-200": "epic",
+      "cat-personal-50": "rare", "cat-personal-200": "epic",
+      "early-bird": "rare", "early-bird-50": "epic",
+      "night-owl": "rare", "night-owl-50": "epic",
+      "weekend-warrior": "epic",
+      "comeback-king": "epic", "missed-recovery-5": "epic",
+      "habit-collector": "common", "habit-creator-5": "common", "habit-creator-20": "rare", "habit-creator-50": "epic",
+      "habit-master": "legendary",
+      "missed-zero-30": "epic",
+      "all-streak-7": "epic",
+    };
+    const unlockedRarities: string[] = [];
+    const seenRarities = new Set<string>();
+    if (unlocksRes.data) {
+      for (const row of unlocksRes.data as { achievement_id: string }[]) {
+        const rarity = achievementRarityMap[row.achievement_id];
+        if (rarity && !seenRarities.has(rarity)) {
+          seenRarities.add(rarity);
+          unlockedRarities.push(rarity);
+        }
+      }
+    }
+
     const bonusCoins = ecoStateRes.data?.bonus_coins ?? 0;
     const totalSpent = (ecoSpentRes.data ?? []).reduce(
       (sum: number, s: { amount: number }) => sum + s.amount, 0,

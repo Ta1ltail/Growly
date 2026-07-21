@@ -16,7 +16,8 @@ import {
 } from "lucide-react";
 import { CATEGORY_COLORS } from "@/lib/categories";
 import type { Goal } from "@/lib/types";
-import { addGoal, deleteGoal, updateGoal, useAppData } from "@/lib/store";
+import { toast } from "sonner";
+import { addGoal, deleteGoal, updateGoal, useAppData, undoAction } from "@/lib/store";
 import { parseDateKey } from "@/lib/date";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Card } from "@/components/ui/Card";
@@ -225,7 +226,18 @@ export default function GoalsPage() {
             <Button
               variant="danger"
               onClick={() => {
-                if (confirmDelete) deleteGoal(confirmDelete.id);
+                if (confirmDelete) {
+                  const title = confirmDelete.title;
+                  deleteGoal(confirmDelete.id);
+                  toast("Deleted goal", {
+                    description: title,
+                    action: {
+                      label: "Undo",
+                      onClick: () => undoAction(),
+                    },
+                    duration: 5000,
+                  });
+                }
                 setConfirmDelete(null);
               }}
             >

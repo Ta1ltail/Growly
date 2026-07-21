@@ -341,6 +341,7 @@ export function makeComprehensiveSeedData(base: AppData, today: Date): AppData {
       habits.filter(() => Math.random() < 0.3).map((h) => [h.id, 30]),
     ),
     tierUnlocks: [],
+    completedGoals: [],
   };
 
   return {

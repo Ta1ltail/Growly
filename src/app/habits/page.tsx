@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { CATEGORIES, CATEGORY_COLORS, type Category } from "@/lib/categories";
 import type { Habit } from "@/lib/types";
+import { toast } from "sonner";
 import {
   addHabit,
   updateHabit,
@@ -24,6 +25,7 @@ import {
   duplicateHabit,
   setHabitArchived,
   useAppData,
+  undoAction,
 } from "@/lib/store";
 import { makeHabit, applyHabitForm } from "@/lib/habits";
 import { habitStreaks } from "@/lib/stats";
@@ -243,7 +245,18 @@ export default function HabitsPage() {
             <Button
               variant="danger"
               onClick={() => {
-                if (confirmDelete) deleteHabit(confirmDelete.id);
+                if (confirmDelete) {
+                  const name = confirmDelete.name;
+                  deleteHabit(confirmDelete.id);
+                  toast("Deleted habit", {
+                    description: name,
+                    action: {
+                      label: "Undo",
+                      onClick: () => undoAction(),
+                    },
+                    duration: 5000,
+                  });
+                }
                 setConfirmDelete(null);
               }}
             >

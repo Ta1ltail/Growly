@@ -1,8 +1,4 @@
-// Data access layer — typed CRUD for every Supabase table backing AppData.
-// NOTE: no "use server" directive — these functions are called from client-side
-// sync.ts using the browser Supabase client. They run on the client.
-// All functions expect an authenticated Supabase client and the user's ID.
-// Used by sync.ts to orchestrate pull/push operations.
+// Data access layer — typed CRUD for Supabase tables backing AppData. Client-side only.
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type {
@@ -36,9 +32,7 @@ import type { ThemeSettings } from "../theme";
 import { DEFAULT_THEME } from "../theme";
 import { uid } from "../util";
 
-/* ────────────────────────────────────────────
-   Types matching the Supabase table shapes
-   ──────────────────────────────────────────── */
+/* Supabase table shapes */
 
 interface DbHabit {
   id: string;
@@ -156,11 +150,10 @@ interface DbProgressSeen {
   shop: string[];
   streaks: unknown;
   tier_unlocks: string[];
+  completed_goals: string[];
 }
 
-/* ────────────────────────────────────────────
-   Mapping helpers (DB row → AppData type)
-   ──────────────────────────────────────────── */
+/* Row mapping helpers (DB row → AppData type) */
 
 function rowToHabit(row: DbHabit): Habit {
   const h: Habit = {
@@ -448,6 +441,7 @@ function rowToProgressSeen(row: DbProgressSeen): ProgressSeen {
     shop: row.shop ?? [],
     streaks,
     tierUnlocks: row.tier_unlocks ?? [],
+    completedGoals: row.completed_goals ?? [],
   };
 }
 
@@ -460,12 +454,11 @@ function progressSeenToRow(userId: string, ps: ProgressSeen): DbProgressSeen {
     shop: ps.shop ?? [],
     streaks: ps.streaks ?? {},
     tier_unlocks: ps.tierUnlocks ?? [],
+    completed_goals: ps.completedGoals ?? [],
   };
 }
 
-/* ────────────────────────────────────────────
-   Public API: LOAD functions
-   ──────────────────────────────────────────── */
+/* LOAD functions */
 
 async function loadHabits(supabase: SupabaseClient, userId: string): Promise<Habit[]> {
   const { data, error } = await supabase
@@ -586,15 +579,9 @@ async function loadProgressSeen(
   return data ? rowToProgressSeen(data) : null;
 }
 
-/* ────────────────────────────────────────────
-   SAVE helpers
-   ──────────────────────────────────────────── */
+/* SAVE helpers */
 
-// upsertTable: upsert rows without prior DELETE.
-// This is SAFE — it never destroys data. If the rows array is empty, it's a
-// no-op. Compare to the old replaceTable which did DELETE+UPSERT: if the rows
-// array was empty (due to a race condition or cleared localStorage), it would
-// DELETE all rows and never re-insert them, causing permanent data loss.
+// upsertTable: upsert without prior DELETE. Safe — empty array is no-op.
 // onConflict must match a UNIQUE constraint on the table.
 async function upsertTable<T>(
   supabase: SupabaseClient,
@@ -755,9 +742,7 @@ async function saveProgressSeen(
   if (error) throw error;
 }
 
-/* ────────────────────────────────────────────
-   User Stats Snapshot (for public profiles)
-   ──────────────────────────────────────────── */
+/* User Stats Snapshot (for public profiles) */
 
 export async function loadUserStatsSnapshot(
   supabase: SupabaseClient,
@@ -805,18 +790,13 @@ export async function saveUserStatsSnapshot(
   if (error) throw error;
 }
 
-/* ────────────────────────────────────────────
-   Full AppData load & save (convenience)
-   ──────────────────────────────────────────── */
+/* Full AppData load (convenience) */
 
 export async function loadAllUserData(
   supabase: SupabaseClient,
   userId: string,
 ): Promise<AppData | null> {
-  // Retry up to 2 times with 2s delay on transient errors (network blip,
-  // Supabase timeout, JWT refresh race). If ALL retries fail, throw so the
-  // caller (fullResync) can signal the error instead of silently returning
-  // null and treating the user as brand-new.
+  // Retry up to 2 times with 2s delay on transient errors. Throw if all retries fail.
   const MAX_ATTEMPTS = 2;
   const RETRY_DELAY_MS = 2000;
 
@@ -835,8 +815,21 @@ export async function loadAllUserData(
           loadProgressSeen(supabase, userId),
         ]);
 
-      // No data at all → new user; let the caller push local data instead
-      if (habits.length === 0 && Object.keys(marks).length === 0) {
+      // No data at all → new user; let the caller push local data instead.
+      // Check ALL tables, not just habits+marks: a user may have cleared their
+      // habits but still have notes, goals, settings, etc. Returning null here
+      // would cause fullResync to treat them as brand-new and potentially push
+      // stale local data or silently drop their remote notes/goals.
+      const hasAnyData =
+        habits.length > 0 ||
+        Object.keys(marks).length > 0 ||
+        notes.length > 0 ||
+        goals.length > 0 ||
+        settings !== null ||
+        profile !== null ||
+        Object.keys(unlocks).length > 0 ||
+        economy !== null;
+      if (!hasAnyData) {
         return null;
       }
 
@@ -878,9 +871,7 @@ export async function loadAllUserData(
   return null; // Unreachable, but TypeScript needs it
 }
 
-/* ────────────────────────────────────────────
-   Incremental save (called after each mutation)
-   ──────────────────────────────────────────── */
+/* Incremental save (called after each mutation) */
 
 export type ChangedTables = {
   habits?: true;
@@ -895,12 +886,7 @@ export type ChangedTables = {
   progressSeen?: true;
 };
 
-// Save queue — serializes all saveChanged calls so that only one runs at a
-// time. The queue prevents FK constraint violations: marks have FK to habits.id
-// and freezes have FK to habits.id, so they must be saved in the correct order.
-// Unlike a simple Promise-based mutex, this queue properly handles multiple
-// waiters: when the active task completes, exactly ONE queued task runs next
-// (not ALL waiters at once).
+// Save queue — serializes saveChanged calls to prevent FK constraint violations.
 const _saveQueue: (() => Promise<void>)[] = [];
 let _saving = false;
 

@@ -344,6 +344,9 @@ function cleanProgressSeen(v: unknown): ProgressSeen {
   const tierUnlocks = Array.isArray(v.tierUnlocks)
     ? v.tierUnlocks.filter((x): x is string => typeof x === "string")
     : [];
+  const completedGoals = Array.isArray(v.completedGoals)
+    ? v.completedGoals.filter((x): x is string => typeof x === "string")
+    : [];
   return {
     seeded: v.seeded === true,
     level:
@@ -356,6 +359,7 @@ function cleanProgressSeen(v: unknown): ProgressSeen {
       : [],
     streaks,
     tierUnlocks,
+    completedGoals,
   };
 }
 
@@ -557,10 +561,20 @@ export function loadData(): AppData {
         graceHours,
         usedTemplateIds,
         widgetOrder,
-        onboardingComplete,
-        customCategories,
-      },
-      profile: cleanProfile(parsed.profile),
+    onboardingComplete,
+    customCategories,
+    autoFreezeThreshold:
+      typeof settingsRaw.autoFreezeThreshold === "number" &&
+      Number.isFinite(settingsRaw.autoFreezeThreshold) &&
+      settingsRaw.autoFreezeThreshold >= 0
+        ? settingsRaw.autoFreezeThreshold
+        : undefined,
+    reducedMotion:
+      typeof settingsRaw.reducedMotion === "boolean"
+        ? settingsRaw.reducedMotion
+        : undefined,
+  },
+  profile: cleanProfile(parsed.profile),
       unlocks: cleanUnlocks(parsed.unlocks),
       economy: cleanEconomyV5(parsed.economy),
       progressSeen: cleanProgressSeen(parsed.progressSeen),

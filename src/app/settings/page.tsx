@@ -19,6 +19,10 @@ import {
   Tags,
   Plus,
   X,
+  Sparkles,
+  Zap,
+  UserX,
+  AlertTriangle,
 } from "lucide-react";
 import { toast } from "sonner";
 import { dateKey } from "@/lib/date";
@@ -27,6 +31,8 @@ import {
   clearAllData,
   setGraceHours,
   setTheme,
+  setAutoFreezeThreshold,
+  setReducedMotion,
   useAppData,
   replaceData,
   addCustomCategory,
@@ -35,6 +41,7 @@ import {
 import { useToday } from "@/hooks/useToday";
 import { ACCENTS, type ThemeMode } from "@/lib/theme";
 import { exportMarksCSV, exportJSON, importJSON } from "@/lib/export";
+import { createClient } from "@/lib/supabase/client";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Card } from "@/components/ui/Card";
 import { Modal } from "@/components/ui/Modal";
@@ -55,6 +62,9 @@ export default function SettingsPage() {
   const { mode, accent } = data.settings.theme;
   const grace = data.settings.graceHours ?? DEFAULT_GRACE_HOURS;
   const [confirmReset, setConfirmReset] = useState(false);
+  const [confirmDeleteAccount, setConfirmDeleteAccount] = useState(false);
+  const [deletingAccount, setDeletingAccount] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   // Latest data kept in a ref (updated in an effect, not during render) so the
   // async import handler reads fresh state instead of a stale closure.
   const dataRef = useRef(data);
@@ -224,6 +234,61 @@ export default function SettingsPage() {
         </Card>
       </Section>
 
+      {/* Streak Saver */}
+      <Section icon={Sparkles} title="Streak Saver">
+        <Card className="p-5">
+          <p className="text-sm text-muted">
+            Automatically protect your streaks by applying a streak freeze
+            (costs {75} coins) when a habit is marked missed while its streak
+            is at or above the threshold below.
+          </p>
+          <div className="mt-4">
+            <label className="mb-2 text-xs font-medium text-muted">
+              Auto-freeze threshold
+            </label>
+            <div className="inline-flex gap-1 rounded-xl border border-line bg-surface2 p-1">
+              {[0, 7, 14, 30].map((t) => (
+                <button
+                  key={t}
+                  onClick={() => setAutoFreezeThreshold(t)}
+                  className={`rounded-lg px-3.5 py-1.5 text-xs font-medium transition-all ${
+                    (data.settings.autoFreezeThreshold ?? 0) === t
+                      ? "bg-accent text-white shadow-sm"
+                      : "text-muted hover:text-ink"
+                  }`}
+                >
+                  {t === 0 ? "Off" : `${t}+ days`}
+                </button>
+              ))}
+            </div>
+          </div>
+        </Card>
+      </Section>
+
+      {/* Performance */}
+      <Section icon={Zap} title="Performance">
+        <Card className="p-5">
+          <p className="text-sm text-muted">
+            Optimize for older devices or reduce battery usage on mobile.
+          </p>
+          <label className="mt-3 flex cursor-pointer items-center gap-3 rounded-xl border border-line p-3 transition-colors hover:bg-surface2/50">
+            <input
+              type="checkbox"
+              checked={data.settings.reducedMotion ?? false}
+              onChange={(e) => setReducedMotion(e.target.checked)}
+              className="size-4 accent-accent"
+            />
+            <div className="flex-1">
+              <p className="text-sm font-medium">Reduced animations</p>
+              <p className="text-xs text-muted">
+                Disables transitions, hover effects, and celebratory animations.
+                Improves performance on older devices.
+              </p>
+            </div>
+          </label>
+        </Card>
+      </Section>
+
       {/* Custom Categories */}
       <Section icon={Tags} title="Custom Categories">
         <Card className="p-5">
@@ -258,6 +323,23 @@ export default function SettingsPage() {
         </Card>
       </Section>
 
+      {/* Danger Zone */}
+      <Section icon={AlertTriangle} title="Danger Zone">
+        <Card className="p-5">
+          <p className="mb-3 text-sm text-muted">
+            Permanently delete your account and all associated data. This action
+            cannot be undone.
+          </p>
+          <Button
+            variant="danger"
+            onClick={() => setConfirmDeleteAccount(true)}
+          >
+            <UserX className="size-4" />
+            Delete account
+          </Button>
+        </Card>
+      </Section>
+
       {/* Audit log */}
       <Section icon={ScrollText} title="Audit log">
         {data.auditLog.length === 0 ? (
@@ -285,6 +367,101 @@ export default function SettingsPage() {
           </Card>
         )}
       </Section>
+
+      <Modal
+        open={confirmDeleteAccount}
+        onClose={() => {
+          if (!deletingAccount) {
+            setConfirmDeleteAccount(false);
+            setDeleteError(null);
+          }
+        }}
+        title="Delete your account?"
+        footer={
+          <>
+            <Button
+              variant="ghost"
+              onClick={() => {
+                if (!deletingAccount) {
+                  setConfirmDeleteAccount(false);
+                  setDeleteError(null);
+                }
+              }}
+              disabled={deletingAccount}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="danger"
+              onClick={async () => {
+                setDeletingAccount(true);
+                setDeleteError(null);
+                try {
+                  const supabase = createClient();
+                  const { data: { session } } = await supabase.auth.getSession();
+                  if (!session?.access_token) {
+                    setDeleteError("No active session. Please sign in again.");
+                    setDeletingAccount(false);
+                    return;
+                  }
+                  const res = await fetch(
+                    `${
+                      process.env.NEXT_PUBLIC_SUPABASE_URL
+                    }/functions/v1/delete-account`,
+                    {
+                      method: "POST",
+                      headers: {
+                        Authorization: `Bearer ${session.access_token}`,
+                        "Content-Type": "application/json",
+                      },
+                    },
+                  );
+                  const json = await res.json();
+                  if (!res.ok || json.error) {
+                    setDeleteError(
+                      json.error ?? "Failed to delete account. Please try again.",
+                    );
+                    setDeletingAccount(false);
+                    return;
+                  }
+                  // Sign out locally and redirect
+                  await supabase.auth.signOut();
+                  window.location.href = "/?account_deleted=true";
+                } catch {
+                  setDeleteError(
+                    "Connection error. Please check your internet and try again.",
+                  );
+                  setDeletingAccount(false);
+                }
+              }}
+              disabled={deletingAccount}
+            >
+              {deletingAccount ? (
+                <span className="flex items-center gap-2">
+                  <span className="size-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                  Deleting...
+                </span>
+              ) : (
+                <>
+                  <UserX className="size-4" />
+                  Delete permanently
+                </>
+              )}
+            </Button>
+          </>
+        }
+      >
+        <p className="text-sm text-muted">
+          This will permanently delete your account, all habits, marks, notes,
+          goals, achievements, and settings. Your data cannot be recovered.
+        </p>
+        {deleteError && (
+          <div className="mt-3 flex items-start gap-2 rounded-xl bg-missed/8 px-3.5 py-2.5 text-xs text-missed">
+            <AlertTriangle className="mt-0.5 size-3.5 shrink-0" />
+            <span>{deleteError}</span>
+          </div>
+        )}
+      </Modal>
 
       <Modal
         open={confirmReset}

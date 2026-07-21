@@ -28,6 +28,7 @@ import {
 } from "./storage";
 import { nextStatus } from "./marks";
 import { canEditMark } from "./policy";
+import { habitStreaks } from "./stats";
 import { uid } from "./util";
 import { reconcileUnlocks, summarizeProgress } from "./progress";
 import {
@@ -59,7 +60,7 @@ const listeners = new Set<() => void>();
 
 const MAX_AUDIT = 500;
 
-/* Sync callback — wired by SyncProvider to notify sync layer after mutations */
+/* Sync callback — wired by SyncProvider */
 
 export type SyncCallback = (
   data: AppData,
@@ -103,7 +104,7 @@ function scheduleSave(data: AppData): void {
   }, 100);
 }
 
-/* Diff two snapshots to determine which tables changed for incremental sync */
+/* Diff snapshots to determine changed tables for incremental sync */
 
 function computeChanged(prev: AppData, next: AppData): ChangedTables {
   const changed: ChangedTables = {};
@@ -144,8 +145,7 @@ function update(
   cache = updater(prev);
   // Compute what changed for sync
   const changed = computeChanged(prev, cache);
-  // Immediate save for undo/redo and destructive actions, debounced for
-  // high-frequency toggles (mark cycling, text input).
+  // Instant save for undo/redo; debounced for high-frequency toggles.
   if (!recordHistory) {
     scheduleSave(cache);
   } else {
@@ -163,10 +163,7 @@ export function useAppData(): AppData {
   return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 }
 
-// Granular selector hook — subscribe to a specific slice of AppData so
-// components re-render only when their relevant data changes, not on every
-// store mutation. Usage:
-//   const habits = useAppDataSelector((d) => d.habits);
+// Selector hook — subscribe to a specific slice of AppData to avoid re-renders on unrelated mutations.
 export function useAppDataSelector<T>(selector: (data: AppData) => T): T {
   return useSyncExternalStore(
     subscribe,
@@ -313,9 +310,7 @@ export function duplicateHabit(id: string): void {
 
 /* ---------------- marks (anti-cheat guarded) ---------------- */
 
-// Cycle a mark. Past/future days are locked per the Honest Tracking Policy,
-// so this is a no-op outside the editable window. Also progresses the daily
-// quest when a habit is marked "done" today.
+// Cycle a mark. Past/future days are locked per Honest Tracking Policy. Also progresses daily quest.
 export function cycleMark(
   dateK: string,
   habitId: string,
@@ -342,6 +337,55 @@ export function cycleMark(
     // Progress daily quest if marking done today
     const todayKey = dateKey(now);
     let eco = updated.economy;
+
+    // Auto-apply streak freeze when marking missed & streak saver is enabled
+    const autoThreshold = prev.settings.autoFreezeThreshold;
+    if (next === "missed" && autoThreshold && autoThreshold > 0) {
+      const habit = prev.habits.find((h) => h.id === habitId);
+      if (habit) {
+        const frozenSetLocal = frozenSet(prev.economy);
+        const { current: streakBefore } = habitStreaks(
+          habit,
+          prev.marks,
+          now,
+          frozenSetLocal,
+        );
+        if (
+          streakBefore >= autoThreshold &&
+          canUseFreeze(prev.economy, now)
+        ) {
+          const stats = buildGameStats(
+            prev.habits,
+            prev.marks,
+            now,
+            frozenSetLocal,
+          );
+          const unlockedRarities = evaluateAchievements(stats)
+            .filter((a) => a.unlocked)
+            .map((a) => a.def.rarity);
+          const balance = coinBalance(
+            coinsEarned(stats, unlockedRarities, prev.economy),
+            prev.economy,
+          );
+          if (balance >= FREEZE_PRICE) {
+            const nowIso = now.toISOString();
+            const freeze = makeFreezeEntry(habitId, dateK, uid(), nowIso);
+            const spend = {
+              id: uid(),
+              at: nowIso,
+              amount: FREEZE_PRICE,
+              item: "freeze",
+            };
+            eco = {
+              ...eco,
+              spent: [...eco.spent, spend],
+              freezes: [...eco.freezes, freeze],
+            };
+          }
+        }
+      }
+    }
+
     if (dateK === todayKey && next === "done") {
       const q = eco.currentQuest;
       if (
@@ -476,6 +520,30 @@ export function setGraceHours(hours: number): void {
     ...prev,
     settings: { ...prev.settings, graceHours: Math.max(0, hours) },
   }));
+}
+
+export function setAutoFreezeThreshold(threshold: number): void {
+  update((prev) => ({
+    ...prev,
+    settings: {
+      ...prev.settings,
+      autoFreezeThreshold: threshold > 0 ? threshold : undefined,
+    },
+  }));
+}
+
+export function setReducedMotion(reduced: boolean): void {
+  update((prev) => ({
+    ...prev,
+    settings: { ...prev.settings, reducedMotion: reduced },
+  }));
+  // Apply immediately via data attribute so animations stop right away
+  if (typeof document !== "undefined") {
+    document.documentElement.setAttribute(
+      "data-reduced-motion",
+      reduced ? "true" : "false",
+    );
+  }
 }
 
 export function markTemplateUsed(templateId: string): void {
@@ -741,6 +809,12 @@ export function acknowledgeCelebration(event: CelebrationEvent): void {
       if (rarity && !ps.tierUnlocks.includes(rarity)) {
         next = { ...ps, tierUnlocks: [...ps.tierUnlocks, rarity] };
       }
+    } else if (
+      event.kind === "goal" &&
+      event.goalId &&
+      !ps.completedGoals.includes(event.goalId)
+    ) {
+      next = { ...ps, completedGoals: [...ps.completedGoals, event.goalId] };
     }
     if (!next) return prev;
     const economy =
@@ -771,10 +845,7 @@ function balanceOf(data: AppData, today: Date): number {
   );
 }
 
-// Buy a cosmetic: must exist, not already owned, meet any level gate, and be
-// affordable. Appends an immutable spend-ledger entry + audit row, and marks it
-// owned. No-op (returns prev) if any guard fails — callers should pre-check to
-// show why, but the store stays authoritative.
+// Buy a cosmetic: must exist, not owned, meet level gate, affordable. Appends immutable spend entry. No-op if any guard fails.
 export function buyCosmetic(itemId: string): void {
   update((prev) => {
     const item = shopItem(itemId);
@@ -833,9 +904,7 @@ export function equipCosmetic(slot: CosmeticSlot, itemId: string): void {
   });
 }
 
-// Apply a streak-freeze to a genuine past miss. Costs coins, is limited to one
-// per rolling 7-day window, and only targets a day actually marked "missed" —
-// the miss stays in history, the freeze just makes the streak walk skip it.
+// Apply streak freeze to a past miss. Costs coins, 1 per 7-day window.
 export function redeemFreeze(habitId: string, dateK: string): void {
   update((prev) => {
     const today = new Date();
@@ -870,16 +939,14 @@ export function redeemFreeze(habitId: string, dateK: string): void {
   });
 }
 
-// Level for the current snapshot — used for shop level gates. Local helper to
-// avoid importing the full progress façade into the buy path twice.
+// Level for shop level gates (local helper).
 function summarizeLevel(data: AppData, today: Date): number {
   return summarizeProgress(data, today).level.level;
 }
 
 /* ---------------- engagement features ---------------- */
 
-// Claim the daily check-in bonus. Returns the reward amount and streak (0/0 if
-// already claimed today, so the UI can skip showing the popup).
+// Claim daily check-in bonus. Returns reward + streak (0/0 if already claimed).
 export function claimDailyCheckIn(): { reward: number; streak: number } {
   let result: { reward: number; streak: number } = { reward: 0, streak: 0 };
   update((prev) => {
@@ -904,9 +971,7 @@ export function claimDailyCheckIn(): { reward: number; streak: number } {
   return result;
 }
 
-// Refresh/generate the daily quest. Safe to call every time Today loads —
-// only generates if the stored quest is from an older date or has been
-// claimed (currentQuest is null despite lastQuestDate being today).
+// Refresh daily quest. Only generates if stored quest is from an older date or claimed.
 export function refreshDailyQuest(): void {
   update((prev) => {
     const now = new Date();
@@ -987,8 +1052,7 @@ export function doDailySpin(): {
 
 /* ---------------- undo / redo ---------------- */
 
-// Undo the last action. Returns true if something was undone, false if the
-// stack was empty.
+// Undo the last action. Returns true if something was undone.
 export function undoAction(): boolean {
   let didUndo = false;
   update((prev) => {
@@ -1006,8 +1070,7 @@ export function undoAction(): boolean {
   return didUndo;
 }
 
-// Redo the last undone action. Returns true if something was redone, false if
-// the stack was empty.
+// Redo the last undone action. Returns true if something was redone.
 export function redoAction(): boolean {
   let didRedo = false;
   update((prev) => {

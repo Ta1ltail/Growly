@@ -37,7 +37,9 @@ GRANT INSERT, UPDATE ON TABLE user_stats_snapshots TO authenticated;
 --     it with a SELECT-only policy. We need INSERT/UPDATE policies back.
 -- ############################################################################
 
--- Drop the SELECT-only policy created by migration 008
+-- Drop BOTH the old management policy (migration 001) and the SELECT-only
+-- policy (migration 008) so this migration can be reapplied safely.
+DROP POLICY IF EXISTS "Users can manage their own unlocks" ON unlocks;
 DROP POLICY IF EXISTS "Users can view their own unlocks" ON unlocks;
 
 -- Restore the full management policy (SELECT + INSERT + UPDATE)
@@ -58,6 +60,10 @@ CREATE POLICY "Users can manage their own unlocks"
 -- ############################################################################
 
 -- "Anyone can view public stats" already exists from migration 001
+
+-- Drop existing policies first to make this migration idempotent
+DROP POLICY IF EXISTS "Users can insert their own stats" ON user_stats_snapshots;
+DROP POLICY IF EXISTS "Users can update their own stats" ON user_stats_snapshots;
 
 CREATE POLICY "Users can insert their own stats"
   ON user_stats_snapshots

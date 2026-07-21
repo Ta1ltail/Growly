@@ -11,7 +11,7 @@
 <img src="https://img.shields.io/badge/Next.js-16.2.9-000?logo=next.js" alt="Next.js">
 <img src="https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript" alt="TypeScript">
 <img src="https://img.shields.io/badge/Tailwind-v4-06D6D4?logo=tailwindcss" alt="Tailwind CSS">
-<img src="https://img.shields.io/badge/Tests-312_%E2%9C%85-22c55e" alt="Tests 312">
+<img src="https://img.shields.io/badge/Tests-313_%E2%9C%85-22c55e" alt="Tests 313">
 <img src="https://img.shields.io/badge/License-MIT-blue" alt="MIT">
 
 </p>
@@ -32,7 +32,7 @@
 
 # 📖 Overview
 
-Growly is an all-in-one habit tracker and personal growth platform designed to help you become more consistent every day.
+Habit tracker with gamification, analytics, and cloud sync.
 
 Whether you're building healthy habits, managing routines, organizing tasks, tracking goals, or competing with friends, Growly transforms daily progress into an engaging and rewarding experience through gamification, insightful analytics, and social accountability.
 
@@ -66,7 +66,7 @@ Whether you're building healthy habits, managing routines, organizing tasks, tra
 
 - XP & Leveling (99 levels)
 - Per-habit streak system with scheduled-day-awareness
-- **28 achievements** across 5 categories with 4 rarity tiers
+- **54 achievements** across 5 categories with 4 rarity tiers
 - **20 titles** across 5 ranks (Beginner → Legendary)
 - Coin economy with shop cosmetics
 - Daily check-in bonus, daily quests, daily spin
@@ -181,11 +181,11 @@ npm start
 
 | Metric | Value |
 |--------|-------|
-| **Routes** | 21 (20 static + 1 dynamic) + middleware |
+| **Routes** | 20 + 1 dynamic + proxy |
 | **Components** | 55 across 16 directories |
 | **Lib modules** | 29 (131 exported functions) |
 | **Custom hooks** | 5 |
-| **Unit tests** | **312 passing** (15 files) |
+| **Unit tests** | **313 passing** (15 files) |
 | **E2E tests** | **21 passing** (5 files, 4 skipped without Supabase) |
 | **Android APK** | **Signed release** (sideloadable, `android/app/release/app-release.apk`) |
 | **TypeScript errors** | **0** |

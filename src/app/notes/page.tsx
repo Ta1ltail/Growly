@@ -13,10 +13,11 @@ import {
   CalendarDays,
   ListTodo,
   Target,
+
 } from "lucide-react";
 import { toast } from "sonner";
 import type { Note } from "@/lib/types";
-import { addNote, updateNote, deleteNote, useAppData } from "@/lib/store";
+import { addNote, updateNote, deleteNote, useAppData, undoAction } from "@/lib/store";
 import { parseDateKey } from "@/lib/date";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Card } from "@/components/ui/Card";
@@ -25,6 +26,36 @@ import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
 import { NoteEditor, type NoteDraft } from "@/components/notes/NoteEditor";
 import { AppPageShell } from "@/components/layout/AppPageShell";
+
+// Simple inline markdown render for note card previews
+function renderCardPreview(text: string): React.ReactNode {
+  if (!text) return null;
+  // Split into lines and render first few with basic formatting
+  const lines = text.split("\n").slice(0, 12);
+  const parts: React.ReactNode[] = [];
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    // Strip heading markers, list markers, blockquote for preview
+    const clean = line.replace(/^#{1,6}\s+/, "").replace(/^[-*+]\s+/, "").replace(/^>\s+/, "");
+    // Render **bold** and *italic* inline
+    const rendered = clean
+      .split(/(\*\*[^*]+\*\*|\*[^*]+\*|`[^`]+`)/g)
+      .map((part, j) => {
+        if (part.startsWith("**") && part.endsWith("**")) {
+          return <strong key={j}>{part.slice(2, -2)}</strong>;
+        }
+        if (part.startsWith("*") && part.endsWith("*") && !part.startsWith("**")) {
+          return <em key={j}>{part.slice(1, -1)}</em>;
+        }
+        if (part.startsWith("`") && part.endsWith("`")) {
+          return <code key={j} className="rounded bg-surface2 px-1 text-[11px] font-mono">{part.slice(1, -1)}</code>;
+        }
+        return part;
+      });
+    parts.push(<span key={i}>{rendered}{i < lines.length - 1 ? <br /> : null}</span>);
+  }
+  return parts.length > 3 ? <>{parts.slice(0, 3)}<span className="text-faint">…</span></> : parts;
+}
 
 function NoteCard({
   note,
@@ -59,9 +90,9 @@ function NoteCard({
           </span>
         )}
 
-        <p className="whitespace-pre-wrap text-sm leading-relaxed line-clamp-[12]">
-          {note.body || <span className="italic text-faint">Empty note</span>}
-        </p>
+        <div className="whitespace-pre-wrap text-sm leading-relaxed line-clamp-[12]">
+          {note.body ? renderCardPreview(note.body) : <span className="italic text-faint">Empty note</span>}
+        </div>
 
         {hasMeta && (
           <div className="mt-3 flex flex-wrap items-center gap-1.5 border-t border-line/40 pt-2.5 text-[10px] text-faint">
@@ -237,6 +268,13 @@ export default function NotesPage() {
             editing
               ? () => {
                   deleteNote(editing.id);
+                  toast("Deleted note", {
+                    action: {
+                      label: "Undo",
+                      onClick: () => undoAction(),
+                    },
+                    duration: 5000,
+                  });
                   setEditing(null);
                 }
               : undefined

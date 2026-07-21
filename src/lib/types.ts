@@ -118,6 +118,8 @@ interface Settings {
   widgetOrder?: string[]; // ordered widget IDs for dashboard reordering
   onboardingComplete?: boolean; // has the user completed onboarding?
   customCategories?: string[]; // user-defined habit categories
+  autoFreezeThreshold?: number; // auto-apply streak freeze when streak >= this (0=off)
+  reducedMotion?: boolean; // disable animations for better mobile performance
 }
 
 /* Gamification is derived from history, never stored (anti-cheat).
@@ -222,6 +224,7 @@ export interface ProgressSeen {
   shop: string[]; // shop item ids whose level-gate unlock was celebrated
   streaks: Record<string, number>; // habitId -> highest streak tier celebrated (7/30/100/365)
   tierUnlocks: string[]; // rarity tiers celebrated as milestones ("common","rare","epic","legendary")
+  completedGoals: string[]; // goal IDs whose completion has been celebrated
 }
 
 export const DEFAULT_PROGRESS_SEEN: ProgressSeen = {
@@ -231,6 +234,7 @@ export const DEFAULT_PROGRESS_SEEN: ProgressSeen = {
   shop: [],
   streaks: {},
   tierUnlocks: [],
+  completedGoals: [],
 };
 
 // Editable user profile.

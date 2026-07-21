@@ -412,6 +412,7 @@ export function DatabaseToolsSection({ query }: { query: string }) {
       const progressSeen: ProgressSeen = {
         ...prev.progressSeen,
         level: 99,
+        completedGoals: prev.progressSeen.completedGoals ?? [],
       };
 
       return {
@@ -479,6 +480,7 @@ export function DatabaseToolsSection({ query }: { query: string }) {
         shop: allItemIds,
         streaks: Object.fromEntries(habitIds.map((id) => [id, 365])),
         tierUnlocks: ["common", "rare", "epic", "legendary"],
+        completedGoals: [],
       };
 
       return {

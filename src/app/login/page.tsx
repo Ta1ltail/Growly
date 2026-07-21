@@ -65,12 +65,38 @@ function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [resetEmailSent, setResetEmailSent] = useState(false);
+  const [sendingReset, setSendingReset] = useState(false);
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get("redirect") || "/dashboard";
+
+  async function handleForgotPassword() {
+    if (!email.trim()) {
+      setError("Please enter your email address first.");
+      return;
+    }
+    setSendingReset(true);
+    setError(null);
+    const supabase = createClient();
+    const { error: resetError } = await supabase.auth.resetPasswordForEmail(
+      email.trim(),
+      {
+        redirectTo: `${window.location.origin}/auth/callback?type=recovery`,
+      },
+    );
+    if (resetError) {
+      setError(mapAuthError(resetError.message));
+      setSendingReset(false);
+      return;
+    }
+    setResetEmailSent(true);
+    setSendingReset(false);
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    setResetEmailSent(false);
     setLoading(true);
 
     const supabase = createClient();
@@ -277,10 +303,12 @@ function LoginForm() {
                   </label>
                   <button
                     type="button"
-                    className="text-[11px] font-medium text-accent transition-colors hover:text-accent-glow"
+                    onClick={handleForgotPassword}
+                    disabled={sendingReset}
+                    className="text-[11px] font-medium text-accent transition-colors hover:text-accent-glow disabled:opacity-50"
                     tabIndex={-1}
                   >
-                    Forgot password?
+                    {sendingReset ? "Sending..." : "Forgot password?"}
                   </button>
                 </div>
                 <div className="group relative">
@@ -337,6 +365,17 @@ function LoginForm() {
                 <div className="flex animate-fade-in items-start gap-2 rounded-xl bg-missed/8 px-3.5 py-2.5 text-xs text-missed">
                   <AlertCircle className="mt-0.5 size-3.5 shrink-0" />
                   <span>{error}</span>
+                </div>
+              )}
+
+              {/* Reset email sent success */}
+              {resetEmailSent && (
+                <div className="flex animate-fade-in items-start gap-2 rounded-xl bg-done/8 px-3.5 py-2.5 text-xs text-done">
+                  <Check className="mt-0.5 size-3.5 shrink-0" />
+                  <span>
+                    Password reset email sent! Check your inbox and follow the
+                    link to reset your password.
+                  </span>
                 </div>
               )}
 

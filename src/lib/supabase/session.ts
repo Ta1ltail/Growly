@@ -16,7 +16,8 @@ export async function updateSession(request: NextRequest) {
     pathname.startsWith("/_next") ||
     pathname.startsWith("/sw.js") ||
     pathname.startsWith("/manifest.json") ||
-    pathname.startsWith("/images/");
+    pathname.startsWith("/images/") ||
+    pathname.startsWith("/auth/");
 
   // If Supabase isn't configured, treat all routes as public
   if (!hasSupabase) {

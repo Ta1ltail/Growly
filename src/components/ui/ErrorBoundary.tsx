@@ -4,6 +4,7 @@
 // instead of crashing the entire page. Wraps the app in RootLayout.
 
 import { Component, type ReactNode, type ErrorInfo } from "react";
+import { reportError } from "@/lib/errorTracking";
 
 interface Props {
   children: ReactNode;
@@ -26,7 +27,9 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, info: ErrorInfo): void {
-    console.error("[ErrorBoundary] Caught:", error, info.componentStack);
+    reportError(error, "ErrorBoundary", {
+      componentStack: info.componentStack,
+    });
   }
 
   render(): ReactNode {

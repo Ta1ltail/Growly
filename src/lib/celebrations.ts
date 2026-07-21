@@ -25,7 +25,8 @@ type CelebrationKind =
   | "title"
   | "shop"
   | "streak"
-  | "tier";
+  | "tier"
+  | "goal";
 
 // Per-habit streak milestones that earn a celebration. Includes the same
 // thresholds as streak achievements so progression always feels recognized.
@@ -60,6 +61,8 @@ export interface CelebrationEvent {
   shopId?: string;
   habitId?: string;
   tier?: number;
+  goalId?: string;
+  goalTitle?: string;
 }
 
 const BY_ID = new Map(ACHIEVEMENTS.map((a) => [a.id, a]));
@@ -227,6 +230,42 @@ export function progressEvents(data: AppData, today: Date): CelebrationEvent[] {
   return out;
 }
 
+// Goal completion events: detect when a goal has been completed (current >= target)
+// for the first time. Once celebrated, the goal ID is added to completedGoals
+// so it doesn't re-fire if the goal is later decremented and re-completed.
+function goalCompletionEvents(
+  data: AppData,
+  seen: ProgressSeen,
+): CelebrationEvent[] {
+  const seenSet = new Set(seen.completedGoals);
+  const out: CelebrationEvent[] = [];
+
+  for (const goal of data.goals) {
+    if (goal.deletedAt) continue;
+    if (goal.current < goal.target) continue;
+    if (seenSet.has(goal.id)) continue;
+
+    out.push({
+      key: `goal:${goal.id}`,
+      kind: "goal",
+      eyebrow: "Goal Completed",
+      name: goal.title,
+      description:
+        goal.milestones
+          ? `Reached ${goal.current} of ${goal.target} — all milestones complete!`
+          : `Reached ${goal.current} of ${goal.target} — target achieved!`,
+      accent: LEVEL_ACCENT,
+      glow: LEVEL_GLOW,
+      reward: `🎯 ${goal.current}/${goal.target}`,
+      emoji: "🎯",
+      goalId: goal.id,
+      goalTitle: goal.title,
+    });
+  }
+
+  return out;
+}
+
 // Tier unlock events: detect when the user has unlocked their first achievement
 // of each rarity tier. Compared against the persisted seen-tierUnlocks.
 function tierUnlockEvents(data: AppData): CelebrationEvent[] {
@@ -282,6 +321,7 @@ export function buildCelebrationQueue(
   return [
     ...achievementEvents(data),
     ...tierUnlockEvents(data),
+    ...goalCompletionEvents(data, data.progressSeen),
     ...progressEvents(data, today),
   ];
 }
@@ -313,6 +353,11 @@ export function baselineProgressSeen(data: AppData, today: Date): ProgressSeen {
     if (hasUnlock) tierUnlocks.push(rarity);
   }
 
+  // Record already-completed goals so they don't re-fire.
+  const completedGoals = data.goals
+    .filter((g) => !g.deletedAt && g.current >= g.target)
+    .map((g) => g.id);
+
   return {
     seeded: true,
     level: summary.level.level,
@@ -320,5 +365,6 @@ export function baselineProgressSeen(data: AppData, today: Date): ProgressSeen {
     shop,
     streaks,
     tierUnlocks,
+    completedGoals,
   };
 }

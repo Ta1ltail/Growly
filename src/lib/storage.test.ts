@@ -311,6 +311,7 @@ describe("loadData validation", () => {
         shop: ["flame-gold"],
         streaks: { h: 7 },
         tierUnlocks: [],
+        completedGoals: [],
       },
     };
     saveData(data);
@@ -326,6 +327,7 @@ describe("loadData validation", () => {
       shop: [],
       streaks: {},
       tierUnlocks: [],
+      completedGoals: [],
     });
   });
 

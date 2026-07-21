@@ -1,14 +1,7 @@
 "use client";
 
-// Sync orchestration — manages the data flow between localStorage ↔ Supabase.
-// Keeps syncState observable so the UI can show a sync indicator.
-// All operations go through the browser Supabase client (client.ts).
-//
-// Strategy: Pull from Supabase FIRST, then merge remote changes on top of
-// local. This prevents a stale local session from blowing away newer remote
-// data. When both have changes for the same record, the NEWEST timestamp
-// wins (Finding #7), with soft-deleted records propagating their deletion
-// state across devices (Finding #2).
+// Sync orchestration: localStorage ↔ Supabase. Pull first, merge remote on top of local.
+// Newest timestamp wins; soft-deletes propagate across devices.
 
 import { createClient } from "./client";
 import {
@@ -50,9 +43,7 @@ const ALL_TABLES: ChangedTables = {
   progressSeen: true,
 };
 
-/* ────────────────────────────────────────────
-   Sync state (observable)
-   ──────────────────────────────────────────── */
+/* Sync state (observable) */
 
 export type SyncStatus = "idle" | "syncing" | "error" | "offline";
 
@@ -80,28 +71,11 @@ function setStatus(s: SyncStatus, _error?: string) {
   notify();
 }
 
-/* ────────────────────────────────────────────
-   Sync-ready gate — prevents mount-time
-   mutations from ever reaching Supabase.
-   ────────────────────────────────────────────
-   _syncReady starts as false on every page load.
-   It's set to true ONLY after the initial
-   fullResync completes successfully. Until then,
-   pushMutation silently drops all writes — data
-   is safely cached in localStorage and will be
-   pushed once the gate opens.
-   This is the single most important guard against
-   cleared-localStorage corrupting cloud data. */
+/* Sync-ready gate: blocks pushMutation until initial fullResync completes. */
 
 let _syncReady = false;
 
-/**
- * Generation counter incremented before destructive operations (clearAllData,
- * importRawData) so that any in-flight fullResync that loaded stale local data
- * before the destructive write can detect the change and skip saving its
- * (now-stale) merged result back to localStorage. Without this, a racing
- * polling fullResync can resurrect data the user just cleared.
- */
+/** Generation counter: prevents racing fullResync from resurrecting cleared data. */
 let _dataGeneration = 0;
 
 /** @visibleForTesting */
@@ -120,9 +94,7 @@ export function getSyncReady(): boolean {
 
 
 
-/* ────────────────────────────────────────────
-   Retry queue for failed pushes
-   ──────────────────────────────────────────── */
+/* Retry queue for failed pushes */
 
 interface QueuedPush {
   userId: string;
@@ -134,7 +106,8 @@ interface QueuedPush {
 let _retryQueue: QueuedPush[] = [];
 let _retryTimer: ReturnType<typeof setTimeout> | null = null;
 
-const MAX_RETRIES = 3;
+// Infinite retries — never silently drops mutations
+const MAX_RETRIES = Infinity;
 const RETRY_DELAY_MS = 5000;
 
 function processRetryQueue() {
@@ -192,24 +165,7 @@ function enqueueRetry(
   processRetryQueue();
 }
 
-// Stats snapshots are NOT updated from within fullResync. Instead, fullResync
-// loads the existing remote stats snapshot from Supabase and caches it to
-// localStorage — same treatment as economy_state. This prevents a cleared
-// localStorage from triggering a stale recomputation (summarizeProgress on
-// potentially corrupted marks data) that would overwrite the correct Level 23
-// with a computed Level 11.
-//
-/* ────────────────────────────────────────────
-   Full re-sync: pull all remote data and merge
-   with local. Called on login and periodically.
-   ────────────────────────────────────────────
-   Strategy:
-   1. Pull remote data FIRST (don't push local first)
-   2. Merge by ID: combine local and remote records, with local winning
-      on conflicts. This prevents stale local data from overwriting newer
-      remote data created on other devices.
-   3. Push the merged result back up only if something actually changed.
-*/
+// Pull remote → merge → push merged result. Remote wins on conflict.
 
 export async function fullResync(
   userId: string,
@@ -380,21 +336,22 @@ export async function fullResync(
   }
 }
 
-/* ────────────────────────────────────────────
-   Merge helper: combine local and remote AppData
-   by ID (union), REMOTE wins on conflict.
-   The database is the single source of truth.
-   ──────────────────────────────────────────── */
+/* Merge: union by ID, remote wins on conflict (database = source of truth) */
 
 function mergeAppData(local: AppData, remote: AppData): AppData {
-  // Fresh-login fast path: this branch only runs when REMOTE has real data.
-  // If LOCAL carries no habits and no marks, it's a just-cleared snapshot (the
-  // previous sign-out wiped localStorage) whose singleton state is nothing but
-  // hardcoded defaults — possibly already mutated by a mount-time celebration
-  // baseline. Adopt remote wholesale so we never clobber the user's real coins,
-  // cosmetics, settings, unlocks, or celebration markers with those defaults.
+  // Fresh-login fast path: if LOCAL has no user data at all (just hardcoded
+  // defaults from a cleared localStorage), adopt remote wholesale so we never
+  // clobber the user's real coins, cosmetics, settings, unlocks, or celebration
+  // markers with mount-time-mutated defaults.
+  // IMPORTANT: Check ALL tables, not just habits+marks. A user may have cleared
+  // their habits but still have notes, goals, or settings — the fast path must
+  // not discard those.
   const localIsEmpty =
-    local.habits.length === 0 && Object.keys(local.marks).length === 0;
+    local.habits.length === 0 &&
+    Object.keys(local.marks).length === 0 &&
+    local.notes.length === 0 &&
+    local.goals.length === 0 &&
+    Object.keys(local.unlocks).length === 0;
   if (localIsEmpty) {
     return { ...remote, auditLog: local.auditLog };
   }
@@ -458,11 +415,7 @@ function mergeAppData(local: AppData, remote: AppData): AppData {
   };
 }
 
-/** True when the economy holds no real player state (fresh/default snapshot).
- *  Economy is inherently interdependent (owned items require spend entries,
- *  freezes reference habits). An all-or-nothing check is safest here since
- *  field-level merging could produce inconsistent states (e.g., owning an
- *  item without a matching spend entry after a failed sync). */
+/** True when economy is fresh/default (no real player state). All-or-nothing check prevents inconsistent states. */
 /** @visibleForTesting */
 export function isEmptyEconomy(e: Economy | undefined): boolean {
   if (!e) return true;
@@ -480,16 +433,7 @@ export function isEmptyEconomy(e: Economy | undefined): boolean {
   );
 }
 
-/**
- * Merge settings with field-level granularity. REMOTE wins on all fields.
- * Local values are only preserved when remote has no data (undefined).
- * The database is the single source of truth.
- *
- * Edge cases considered:
- *  - Remote field present -> remote wins
- *  - Remote field absent (undefined) -> local wins
- *  - Remote is undefined entirely (DB error / new user) -> local entirely
- */
+/** Merge settings: remote wins on all fields. Local preserved only when remote is absent. */
 /** @visibleForTesting */
 export function mergeSettings(
   local: AppData["settings"],
@@ -511,13 +455,7 @@ export function mergeSettings(
   };
 }
 
-/**
- * Merge progressSeen — REMOTE wins on all fields.
- * The database is the single source of truth. Local values are only
- * preserved when remote has no data (undefined).
- * Unseeded data (from cleared localStorage) never overwrites seeded
- * remote to avoid re-firing past celebrations.
- */
+/** Merge progressSeen: remote wins. Unseeded local never overwrites seeded remote. */
 /** @visibleForTesting */
 export function mergeProgressSeen(
   local: ProgressSeen | undefined,
@@ -542,18 +480,11 @@ export function mergeProgressSeen(
     shop: remote.shop,
     streaks: remote.streaks,
     tierUnlocks: remote.tierUnlocks,
+    completedGoals: remote.completedGoals,
   };
 }
 
-/**
- * Merge profile — REMOTE wins on all fields.
- * The database is the single source of truth. Local values are only
- * preserved when remote has no data (undefined).
- *
- * Key behaviors:
- *  - All fields prefer the remote value.
- *  - Remote being undefined (DB error / new user) -> local entirely.
- */
+/** Merge profile: remote wins. Local only when remote is absent. */
 /** @visibleForTesting */
 export function mergeProfile(local: Profile, remote: Profile | undefined): Profile {
   // Fast path: no remote data — trust local entirely.
@@ -572,16 +503,7 @@ export function mergeProfile(local: Profile, remote: Profile | undefined): Profi
   };
 }
 
-/**
- * Merge two arrays by ID, with optional timestamp-based conflict resolution.
- * When a `compare` function is provided, the NEWER item wins (Finding #7).
- * Without a compare function, REMOTE wins (database is source of truth).
- * Soft-deleted records (with `deletedAt`) are treated as "newer" than live
- * ones of the same ID, so deletions propagate across devices (Finding #2).
- *
- * IMPORTANT: remote is passed as the SECOND argument so that when
- * both items have the same timestamp, the remote value wins (it's
- * inserted last).
+/** Merge two arrays by ID. Newer timestamp wins; deletions propagate; remote wins on tie. */
 /** @visibleForTesting */
 export function mergeById<T extends { id: string }>(
   first: T[],
@@ -628,6 +550,27 @@ export function mergeById<T extends { id: string }>(
 //      one wins (propagates the deletion). If both have deletedAt, the
 //      newer deletion wins.
 //   2. createdAt/updatedAt — if neither is deleted, the newer timestamp wins.
+//
+// ══ Clock drift mitigation ══
+// If the timestamps differ by less than CLOCK_DRIFT_THRESHOLD_MS (5 minutes),
+// prefer the REMOTE value (b). This prevents a client with a fast-forwarded
+// clock from incorrectly winning the merge and overwriting server-authoritative
+// data. Since remote items are inserted SECOND in mergeById, returning a
+// negative value (b is newer/more-important) ensures the remote value wins.
+
+const CLOCK_DRIFT_THRESHOLD_MS = 5 * 60 * 1000; // 5 minutes
+
+/**
+ * True if the absolute difference between two ISO timestamps is within the
+ * clock-drift threshold. When timestamps are this close, we can't trust the
+ * client clock — prefer the remote value (database = source of truth).
+ */
+function isWithinDriftThreshold(aTime: string, bTime: string): boolean {
+  const aMs = new Date(aTime).getTime();
+  const bMs = new Date(bTime).getTime();
+  if (isNaN(aMs) || isNaN(bMs)) return false;
+  return Math.abs(aMs - bMs) < CLOCK_DRIFT_THRESHOLD_MS;
+}
 
 /** Compare two Habits by timestamp. Prefers deleted over live. */
 function compareHabitTimestamp(a: Habit, b: Habit): number {
@@ -637,6 +580,8 @@ function compareHabitTimestamp(a: Habit, b: Habit): number {
   // Both deleted or both live: compare by last-changed timestamp
   const aTime = a.deletedAt ?? a.createdAt;
   const bTime = b.deletedAt ?? b.createdAt;
+  // Clock drift guard: if timestamps are very close, remote (b) wins
+  if (isWithinDriftThreshold(aTime, bTime)) return -1;
   return aTime.localeCompare(bTime);
 }
 
@@ -646,6 +591,7 @@ function compareNoteTimestamp(a: Note, b: Note): number {
   if (!a.deletedAt && b.deletedAt) return -1;
   const aTime = a.deletedAt ?? a.updatedAt;
   const bTime = b.deletedAt ?? b.updatedAt;
+  if (isWithinDriftThreshold(aTime, bTime)) return -1;
   return aTime.localeCompare(bTime);
 }
 
@@ -655,6 +601,7 @@ function compareGoalTimestamp(a: Goal, b: Goal): number {
   if (!a.deletedAt && b.deletedAt) return -1;
   const aTime = a.deletedAt ?? a.createdAt;
   const bTime = b.deletedAt ?? b.createdAt;
+  if (isWithinDriftThreshold(aTime, bTime)) return -1;
   return aTime.localeCompare(bTime);
 }
 
@@ -666,11 +613,7 @@ function hasChanges(a: AppData, b: AppData): boolean {
   );
 }
 
-/* ────────────────────────────────────────────
-   Helper: verify the auth session is ready before pushing.
-   On fresh registration the auth.users record may not have
-   propagated yet, causing all FK constraints to fail.
-   ──────────────────────────────────────────── */
+/* Verify auth session before pushing — fresh registrations may not have propagated yet */
 
 async function verifySessionReady(supabase: ReturnType<typeof createClient>): Promise<boolean> {
   const { data: { user } } = await supabase.auth.getUser();
@@ -681,10 +624,8 @@ async function verifySessionReady(supabase: ReturnType<typeof createClient>): Pr
   return true;
 }
 
-// Lightweight, network-free session check for the hot per-mutation push path.
-// Unlike getUser() (a round-trip to the auth server on every mark toggle), this
-// reads the locally-cached session. The heavier verifySessionReady() is still
-// used on fresh registration where server-side propagation must be confirmed.
+// Lightweight session check for per-mutation push path (reads cached session, no round-trip).
+// verifySessionReady() with server round-trip is reserved for fresh registration.
 async function hasLocalSession(
   supabase: ReturnType<typeof createClient>,
 ): Promise<boolean> {
@@ -692,20 +633,9 @@ async function hasLocalSession(
   return !!session;
 }
 
-/* ────────────────────────────────────────────
-   Push: send mutation changes to Supabase
-   ────────────────────────────────────────────
-   Called after every store mutation when the user is logged in.
-   Uses incremental save (only changed tables). On failure, enqueues
-   the mutation for retry.
-
-   ══ Sync-ready gate ══
-   pushMutation silently returns if _syncReady is false. This prevents
-   mount-time mutations (seedCelebrationsSeen, refreshDailyQuest,
-   claimDailyCheckIn, etc.) from EVER pushing empty/default data to
-   Supabase during the window before fullResync completes.
-   Mutation data is safely cached in localStorage and will be pushed
-   once the sync-ready gate opens. */
+/* pushMutation: called after every store mutation. Incremental save (only changed tables).
+   Silently returns if _syncReady is false (gate prevents mount-time mutations from
+   pushing empty/default data before fullResync completes). On failure, enqueues retry. */
 
 export async function pushMutation(
   userId: string,
@@ -759,9 +689,7 @@ export async function pushMutation(
   }
 }
 
-/* ────────────────────────────────────────────
-   Reset retry state (called on sign-out)
-   ──────────────────────────────────────────── */
+/* Reset retry state (called on sign-out) */
 
 export function resetSyncState(): void {
   _retryQueue = [];

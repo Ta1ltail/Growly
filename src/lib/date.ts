@@ -13,11 +13,10 @@ export function parseDateKey(key: string): Date {
   return new Date(y, (m ?? 1) - 1, d ?? 1);
 }
 
-export function prettyDate(d: Date): string {
-  return d.toLocaleDateString(undefined, {
-    weekday: "long",
-    month: "long",
-    day: "numeric",
+export function prettyDate(d: Date, locales?: string | string[]): string {
+  // Default to en-US to avoid Windows locale hang (30s+ on first call)
+  return d.toLocaleDateString(locales ?? "en-US", {
+    weekday: "long", month: "long", day: "numeric",
   });
 }
 

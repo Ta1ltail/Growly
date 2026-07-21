@@ -1,16 +1,7 @@
 "use client";
 
-// SyncProvider — wraps the authenticated app and:
-// 1. On mount (user logged in): full re-sync with Supabase
-// 2. Wires the store's sync callback to push mutations
-// 3. Periodically polls for remote changes (quiet mode, never pushes)
-//
-// Realtime subscriptions are NOT used for sync — the 15-second polling
-// interval catches changes from other devices with acceptable latency
-// for a habit tracker, without consuming Supabase Realtime message quota.
-// The notifications page has its own dedicated Realtime subscription
-// (see useNotifications.ts) since instant notification delivery is
-// genuinely valuable.
+// SyncProvider: handles initial full re-sync, wires mutation push, polls for remote changes.
+// Uses 15s polling (not Realtime) to avoid quota issues. Notifications have their own Realtime sub.
 
 import { createContext, useEffect, useRef, useState, startTransition } from "react";
 import { useAuth } from "@/hooks/useAuth";
@@ -27,20 +18,10 @@ import type { ChangedTables } from "@/lib/supabase/db";
 import type { AppData } from "@/lib/types";
 import { loadData, clearLocalAppData, getLastUserId, setLastUserId } from "@/lib/storage";
 
-// Interval for periodic polling (ms)
-// Set to 15s for responsive cross-device sync while keeping API calls
-// reasonable for a habit tracker. Combined with the Page Visibility pause
-// below (polling stops when tab is hidden), actual API usage is ~15 calls
-// per device per foreground-hour — well within the Supabase free tier limits.
-// Navigation-triggered syncs and foreground-polling ensure the UI always
-// shows the latest database state.
+// 15s polling interval. Combined with Page Visibility pause, ~15 calls/device/foreground-hour.
 const POLL_INTERVAL_MS = 15_000;
 
-// Compute a stable hash of AppData to detect changes across any table.
-// Covers all 9 sync tables so the polling interval can skip reloadCache()
-// when nothing changed — avoiding unnecessary re-renders every 15 seconds.
-// Uses summary statistics + selective JSON.stringify on small objects
-// rather than serializing the entire AppData (which could be large).
+// Stable hash of AppData to detect remote changes. Avoids unnecessary re-renders.
 export function computeDataHash(d: AppData): string {
   return JSON.stringify({
     // Habits: include all mutable fields so renames, archives, schedule changes,
@@ -91,12 +72,7 @@ export function computeDataHash(d: AppData): string {
   });
 }
 
-// ── Sync-ready context ──
-// Child components can check this to know if the initial sync has completed.
-// Mount-time effects (seedCelebrationsSeen, refreshDailyQuest, etc.) can use
-// this to defer their execution until data is loaded from Supabase.
-// syncRetrying is true when the initial sync failed and we're retrying.
-// syncRetryCount tracks how many retries have been attempted.
+// Sync-ready context: child components defer mount-time effects until sync completes.
 interface SyncContextValue {
   syncReady: boolean;
   syncRetrying: boolean;
@@ -109,7 +85,7 @@ export const SyncContext = createContext<SyncContextValue>({
   syncRetryCount: 0,
 });
 
-// Max delay for exponential backoff of initial sync retries (2 minutes).
+// Exponential backoff: base 10s, max 2 min.
 const MAX_RETRY_DELAY_MS = 120_000;
 const BASE_RETRY_DELAY_MS = 10_000;
 
@@ -143,10 +119,27 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
 
     fullResync(userId, true).then((result) => {
       if (result) reloadCache();
-    }).catch(() => {
-      // Silent — best-effort refresh on navigation
+    }).catch((e) => {
+      console.warn("[sync] Navigation re-sync failed:", e);
     });
   }, [pathname, userId, syncReady]);
+
+  // ── Cross-tab user switch detection ──
+  // When another tab logs in as a different user, it sets lastUserId in
+  // localStorage. This tab detects the change via the `storage` event and
+  // hard-reloads to pick up the new session — the safest approach since it
+  // clears all in-memory state and lets the auth flow redirect appropriately.
+  useEffect(() => {
+    function handleStorageChange(e: StorageEvent) {
+      if (e.key !== "growly.last_user_id") return;
+      if (!e.newValue || !userId) return;
+      if (e.newValue !== userId) {
+        window.location.reload();
+      }
+    }
+    window.addEventListener("storage", handleStorageChange);
+    return () => window.removeEventListener("storage", handleStorageChange);
+  }, [userId]);
 
   useEffect(() => {
     if (loading) return;
@@ -174,6 +167,9 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
     const lastUserId = getLastUserId();
     if (lastUserId && lastUserId !== userId) {
       clearLocalAppData();
+      // Reset the initialized flag so the new user's data is loaded from
+      // Supabase instead of being skipped by the early return below.
+      initialized.current = false;
     }
 
     if (initialized.current) return;
@@ -237,14 +233,18 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
     }
 
     function attemptSync() {
-      fullResync(uid).then((result) => {
+      fullResync(uid).then(() => {
         // Sync completed — cancel the timeout so timedOut stays false
         if (syncTimeoutRef.current) {
           clearTimeout(syncTimeoutRef.current);
           syncTimeoutRef.current = null;
         }
 
-        if (result) reloadCache();
+        // Always invalidate the in-memory store cache after a sync attempt,
+        // even if the sync returned null (failure). This prevents stale data
+        // from the previous user (or old session) from persisting in the store
+        // when clearLocalAppData() has already cleared localStorage.
+        reloadCache();
 
         // ── 2. Wire the sync callback — fullResync has restored data ──
         setSyncCallback(
@@ -344,8 +344,8 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
             reloadCache();
           }
         }
-      }).catch(() => {
-        // Silent — polling is a best-effort fallback
+      }).catch((e) => {
+        console.warn("[sync] Polling sync failed:", e);
       });
     }
 
