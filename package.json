@@ -41,8 +41,8 @@
     "postcss": "8.5.16"
   },
   "devDependencies": {
-    "@capacitor/cli": "^8.4.1",
-    "@next/bundle-analyzer": "^16.2.9",
+    "@capacitor/cli": "^8.4.2",
+    "@next/bundle-analyzer": "^16.2.11",
     "@playwright/test": "^1.61.1",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
@@ -50,8 +50,8 @@
     "@types/react-dom": "^19",
     "dotenv": "^17.4.2",
     "eslint": "^9",
-    "eslint-config-next": "16.2.9",
-    "knip": "^6.17.1",
+    "eslint-config-next": "16.2.11",
+    "knip": "^6.27.0",
     "tailwindcss": "^4",
     "typescript": "^5",
     "vitest": "^4.1.8"
