@@ -3,13 +3,16 @@ import type { CapacitorConfig } from "@capacitor/cli";
 const config: CapacitorConfig = {
   appId: "com.growly.app",
   appName: "Growly",
-  webDir: "public",
+  webDir: "cap-assets",
   server: {
     url: "https://growlybeta.vercel.app",
     cleartext: false,
   },
   android: {
     allowMixedContent: false,
+  },
+  ios: {
+    contentInset: "always",
   },
   plugins: {
     SplashScreen: {
