@@ -296,6 +296,7 @@ describe("loadData validation", () => {
             habitId: "h",
           },
         ],
+        bonuses: [],
         bonusCoins: 0,
         lastCheckIn: null,
         checkInStreak: 0,

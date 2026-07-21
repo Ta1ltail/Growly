@@ -3,6 +3,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type {
   AppData,
+  BonusEntry,
   Economy,
   Goal,
   Habit,
@@ -92,6 +93,7 @@ interface DbUserSettings {
   widget_order: string[] | null;
   onboarding_complete: boolean;
   custom_categories: string[];
+  auto_freeze_threshold: number | null;
 }
 
 interface DbUserProfile {
@@ -140,6 +142,15 @@ interface DbEconomyFreeze {
   at: string;
   date: string;
   habit_id: string;
+}
+
+interface DbEconomyBonus {
+  id: string;
+  user_id: string;
+  type: string;
+  date_key: string;
+  amount: number;
+  created_at: string;
 }
 
 interface DbProgressSeen {
@@ -285,6 +296,12 @@ function rowToSettings(row: DbUserSettings): AppData["settings"] {
     widgetOrder: row.widget_order ?? undefined,
     onboardingComplete: row.onboarding_complete ?? undefined,
     customCategories: row.custom_categories?.length ? row.custom_categories : undefined,
+    autoFreezeThreshold:
+      row.auto_freeze_threshold != null &&
+      Number.isFinite(row.auto_freeze_threshold) &&
+      row.auto_freeze_threshold > 0
+        ? row.auto_freeze_threshold
+        : undefined,
   };
 }
 
@@ -298,6 +315,7 @@ function settingsToRow(userId: string, s: AppData["settings"]): DbUserSettings {
     widget_order: s.widgetOrder ?? null,
     onboarding_complete: s.onboardingComplete ?? false,
     custom_categories: s.customCategories ?? [],
+    auto_freeze_threshold: s.autoFreezeThreshold && s.autoFreezeThreshold > 0 ? s.autoFreezeThreshold : null,
   };
 }
 
@@ -334,10 +352,22 @@ function rowToUnlocks(rows: DbUnlock[]): Unlocks {
   return unlocks;
 }
 
+function bonusToRow(userId: string, b: BonusEntry): DbEconomyBonus {
+  return {
+    id: b.id,
+    user_id: userId,
+    type: b.type,
+    date_key: b.dateKey,
+    amount: b.amount,
+    created_at: b.at,
+  };
+}
+
 function rowToEconomy(
   state: DbEconomyState,
   spent: DbEconomySpent[],
   freezes: DbEconomyFreeze[],
+  bonuses: DbEconomyBonus[],
 ): Economy {
   const equipped: Partial<Record<string, string>> = {};
   if (state.equipped && typeof state.equipped === "object") {
@@ -384,6 +414,13 @@ function rowToEconomy(
     owned: state.owned ?? [],
     equipped: equipped as Economy["equipped"],
     freezes: freezes.map((f) => ({ id: f.id, at: f.at, date: f.date, habitId: f.habit_id })),
+    bonuses: bonuses.map((b) => ({
+      id: b.id,
+      type: b.type as BonusEntry["type"],
+      dateKey: b.date_key,
+      amount: b.amount,
+      at: b.created_at,
+    })),
     bonusCoins: state.bonus_coins ?? 0,
     lastCheckIn: state.last_check_in ?? null,
     checkInStreak: state.check_in_streak ?? 0,
@@ -562,7 +599,14 @@ async function loadEconomy(
     .order("at", { ascending: true });
   if (freezeErr) throw freezeErr;
 
-  return state ? rowToEconomy(state, spent ?? [], freezes ?? []) : null;
+  const { data: bonuses, error: bonusErr } = await supabase
+    .from("economy_bonuses")
+    .select("*")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: true });
+  if (bonusErr) throw bonusErr;
+
+  return state ? rowToEconomy(state, spent ?? [], freezes ?? [], bonuses ?? []) : null;
 }
 
 async function loadProgressSeen(
@@ -727,6 +771,16 @@ async function saveEconomy(
     supabase, "economy_freezes", freezeRows,
     (r) => r,
     "id",
+  );
+
+  // Save bonuses — each bonus is a row with UNIQUE(user_id, type, date_key).
+  // When two devices claim the same bonus on the same day, the upsert silently
+  // overwrites with the most recent value, preventing duplicate rewards.
+  const bonusRows = economy.bonuses.map((b) => bonusToRow(userId, b));
+  await upsertTable(
+    supabase, "economy_bonuses", bonusRows,
+    (r) => r,
+    "user_id,type,date_key",
   );
 }
 

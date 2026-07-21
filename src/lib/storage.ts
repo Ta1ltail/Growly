@@ -2,6 +2,7 @@ import type {
   AppData,
   AuditAction,
   AuditEntry,
+  BonusEntry,
   CosmeticSlot,
   Economy,
   FreezeEntry,
@@ -40,7 +41,12 @@ import {
 import { CATEGORIES, type Category } from "./categories";
 import { ACCENTS, DEFAULT_THEME, type ThemeMode } from "./theme";
 
-export const STORAGE_KEY = "growly.data.v1";
+const STORAGE_KEY_BASE = "growly.data.v1";
+
+// Backward-compat alias — external code may import this directly.
+// For defense-in-depth, the effective key is now scoped per-user
+// via getEffectiveStorageKey() below.
+export const STORAGE_KEY = STORAGE_KEY_BASE;
 const STATS_SNAPSHOT_KEY = "growly.stats_snapshot.v1";
 
 // Key used for the "Remember Me" feature on login
@@ -48,6 +54,31 @@ export const REMEMBER_ME_KEY = "growly.remember_me";
 export const SAVED_EMAIL_KEY = "growly.saved_email";
 const LAST_AUTH_USER_KEY = "growly.last_auth_user";
 const LAST_USER_ID_KEY = "growly.last_user_id";
+
+// Current user ID for per-user storage key scoping (defense-in-depth).
+// When set, loadData/saveData use `growly.data.v1_{userId}` instead of
+// the shared base key, preventing data leaks across accounts on the same
+// device even if clearLocalAppData is somehow skipped.
+let _dataUserId: string | null = null;
+
+/**
+ * Set the current user ID so loadData/saveData use a user-scoped key.
+ * Call this from SyncProvider when the authenticated user changes.
+ * Pass null on sign-out to fall back to the shared base key.
+ */
+export function setDataUserId(userId: string | null): void {
+  _dataUserId = userId;
+}
+
+/**
+ * Get the effective storage key, scoped to the current user when available.
+ * Falls back to the shared base key when no user is set (backward compat).
+ */
+export function getEffectiveStorageKey(): string {
+  return _dataUserId
+    ? `${STORAGE_KEY_BASE}_${_dataUserId}`
+    : STORAGE_KEY_BASE;
+}
 
 // Schema version: bumped on data shape changes; loadData migrates older saves.
 // v3: profile+unlocks, v4: economy, v5: progressSeen, v6: engagement fields, v7: soft-delete
@@ -332,6 +363,16 @@ function cleanFreeze(v: unknown): FreezeEntry | null {
   return { id, at, date, habitId };
 }
 
+function cleanBonus(v: unknown): BonusEntry | null {
+  if (!isObject(v)) return null;
+  const { id, type, dateKey, amount, at } = v;
+  if (typeof id !== "string" || typeof type !== "string") return null;
+  if (typeof dateKey !== "string" || typeof amount !== "number") return null;
+  if (!Number.isFinite(amount) || amount < 0) return null;
+  if (typeof at !== "string") return null;
+  return { id, type: type as BonusEntry["type"], dateKey, amount: Math.floor(amount), at };
+}
+
 function cleanProgressSeen(v: unknown): ProgressSeen {
   if (!isObject(v)) return { ...DEFAULT_PROGRESS_SEEN };
   const streaks: Record<string, number> = {};
@@ -370,6 +411,7 @@ function cleanEconomyV5(v: unknown): Economy {
       owned: [],
       equipped: {},
       freezes: [],
+      bonuses: [],
       bonusCoins: 0,
       lastCheckIn: null,
       checkInStreak: 0,
@@ -464,11 +506,17 @@ function cleanEconomyV5(v: unknown): Economy {
     }
   }
 
+  // Clean bonuses array
+  const bonuses = Array.isArray(v.bonuses)
+    ? v.bonuses.map(cleanBonus).filter((b): b is BonusEntry => b !== null)
+    : [];
+
   return {
     spent,
     owned,
     equipped,
     freezes,
+    bonuses,
     bonusCoins,
     lastCheckIn,
     checkInStreak,
@@ -482,7 +530,16 @@ function cleanEconomyV5(v: unknown): Economy {
 export function loadData(): AppData {
   if (typeof window === "undefined") return emptyData;
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
+    const key = getEffectiveStorageKey();
+    let raw = window.localStorage.getItem(key);
+    // Fall back to the base key for migration if the scoped key doesn't exist.
+    // This allows existing users with data in `growly.data.v1` to seamlessly
+    // transition to `growly.data.v1_{userId}` on their first load with the
+    // new code. Once saveData writes to the scoped key, subsequent loads
+    // will find the scoped key first and skip this fallback.
+    if (!raw && _dataUserId) {
+      raw = window.localStorage.getItem(STORAGE_KEY_BASE);
+    }
     if (!raw) return emptyData;
     const parsed = JSON.parse(raw) as Record<string, unknown>;
     if (!isObject(parsed)) return emptyData;
@@ -587,7 +644,7 @@ export function loadData(): AppData {
 export function saveData(data: AppData): void {
   if (typeof window === "undefined") return;
   try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    window.localStorage.setItem(getEffectiveStorageKey(), JSON.stringify(data));
   } catch {
     // Storage can fail (private mode, quota). Safe to ignore for now.
   }
@@ -603,7 +660,11 @@ export function saveData(data: AppData): void {
 export function clearLocalAppData(): void {
   if (typeof window === "undefined") return;
   try {
-    window.localStorage.removeItem(STORAGE_KEY);
+    // Remove both the base key (shared) and the current user's scoped key
+    window.localStorage.removeItem(STORAGE_KEY_BASE);
+    if (_dataUserId) {
+      window.localStorage.removeItem(`${STORAGE_KEY_BASE}_${_dataUserId}`);
+    }
     window.localStorage.removeItem(STATS_SNAPSHOT_KEY);
     window.localStorage.removeItem(REMEMBER_ME_KEY);
     window.localStorage.removeItem(SAVED_EMAIL_KEY);

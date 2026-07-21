@@ -19,11 +19,12 @@ import type { ThemeSettings } from "./theme";
 import type { ChangedTables } from "./supabase/db";
 import {
   DEFAULT_GRACE_HOURS,
-  STORAGE_KEY,
   dateKey,
   emptyData,
   loadData,
   saveData,
+  setDataUserId,
+  getEffectiveStorageKey,
   addDays,
 } from "./storage";
 import { nextStatus } from "./marks";
@@ -75,7 +76,13 @@ export function setSyncCallback(
   userId?: string | null,
 ) {
   _onMutation = cb;
-  if (userId !== undefined) _userId = userId;
+  if (userId !== undefined) {
+    _userId = userId;
+    // Scope the localStorage key to this user so all subsequent reads/writes
+    // use `growly.data.v1_{userId}` instead of the shared `growly.data.v1`.
+    // This prevents data leaks across accounts on the same device.
+    setDataUserId(userId);
+  }
 }
 
 function getSnapshot(): AppData {
@@ -618,6 +625,7 @@ export function clearAllData(): void {
       owned: prev.economy.owned,
       equipped: prev.economy.equipped,
       freezes: [], // don't preserve orphaned freeze entries (marks are wiped)
+      bonuses: prev.economy.bonuses, // preserve immutable bonus history
     },
     progressSeen: {
       ...emptyData.progressSeen,
@@ -683,7 +691,7 @@ export function importRawData(text: string): string | null {
     // Bump generation BEFORE the localStorage write (reloadData triggers
     // listeners that could race with in-flight fullResync).
     bumpDataGeneration();
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed));
+    window.localStorage.setItem(getEffectiveStorageKey(), JSON.stringify(parsed));
     reloadData();
     // Fire sync callback — importRawData bypasses the normal update() path
     // which would have triggered _onMutation. Without this, imported JSON
@@ -817,10 +825,38 @@ export function acknowledgeCelebration(event: CelebrationEvent): void {
       next = { ...ps, completedGoals: [...ps.completedGoals, event.goalId] };
     }
     if (!next) return prev;
-    const economy =
-      bonus > 0
-        ? { ...prev.economy, bonusCoins: prev.economy.bonusCoins + bonus }
-        : prev.economy;
+    let economy = prev.economy;
+    if (bonus > 0) {
+      const now = new Date();
+      const todayKey = dateKey(now);
+      // Determine the bonus type for the per-row bonus entry
+      let bonusType: "level_up" | "streak_milestone";
+      if (event.kind === "levelup") {
+        bonusType = "level_up";
+      } else {
+        bonusType = "streak_milestone";
+      }
+      // Check for existing bonus row for this type+date to avoid duplication
+      const existingBonus = economy.bonuses.find(
+        (b) => b.type === bonusType && b.dateKey === todayKey,
+      );
+      const bonusEntry = existingBonus
+        ? { ...existingBonus, amount: existingBonus.amount + bonus }
+        : {
+            id: uid(),
+            type: bonusType,
+            dateKey: todayKey,
+            amount: bonus,
+            at: new Date().toISOString(),
+          };
+      economy = {
+        ...economy,
+        bonuses: existingBonus
+          ? economy.bonuses.map((b) => (b === existingBonus ? bonusEntry : b))
+          : [...economy.bonuses, bonusEntry],
+        bonusCoins: economy.bonusCoins + bonus,
+      };
+    }
     return { ...prev, progressSeen: next, economy };
   });
 }
@@ -947,6 +983,8 @@ function summarizeLevel(data: AppData, today: Date): number {
 /* ---------------- engagement features ---------------- */
 
 // Claim daily check-in bonus. Returns reward + streak (0/0 if already claimed).
+// Pushes a date-scoped bonus row (UNIQUE user_id + type + date_key in DB) so
+// multi-device offline sync cannot double-claim or lose rewards.
 export function claimDailyCheckIn(): { reward: number; streak: number } {
   let result: { reward: number; streak: number } = { reward: 0, streak: 0 };
   update((prev) => {
@@ -958,10 +996,26 @@ export function claimDailyCheckIn(): { reward: number; streak: number } {
     const streak = prev.economy.lastCheckIn === yesterday ? prevStreak + 1 : 1;
     const reward = checkInReward(streak);
     result = { reward, streak };
+    // Check if a bonus row for today+check_in already exists (from another device)
+    const existingBonus = prev.economy.bonuses.find(
+      (b) => b.type === "check_in" && b.dateKey === todayKey,
+    );
+    const bonusEntry = existingBonus ?? {
+      id: uid(),
+      type: "check_in" as const,
+      dateKey: todayKey,
+      amount: reward,
+      at: new Date().toISOString(),
+    };
     return {
       ...prev,
       economy: {
         ...prev.economy,
+        bonuses: existingBonus
+          ? prev.economy.bonuses.map((b) =>
+              b === existingBonus ? { ...b, amount: reward } : b,
+            )
+          : [...prev.economy.bonuses, bonusEntry],
         bonusCoins: prev.economy.bonusCoins + reward,
         lastCheckIn: todayKey,
         checkInStreak: streak,
@@ -1000,6 +1054,16 @@ export function claimDailyQuest(): void {
       ...prev,
       economy: {
         ...prev.economy,
+        bonuses: [
+          ...prev.economy.bonuses,
+          {
+            id: uid(),
+            type: "quest" as const,
+            dateKey: dateKey(now),
+            amount: q.reward,
+            at: new Date().toISOString(),
+          },
+        ],
         bonusCoins: prev.economy.bonusCoins + q.reward,
         // Keep the quest around in a claimed state so the card stays visible
         // until midnight instead of vanishing the moment it's collected.
@@ -1041,6 +1105,16 @@ export function doDailySpin(): {
       ...prev,
       economy: {
         ...prev.economy,
+        bonuses: [
+          ...prev.economy.bonuses,
+          {
+            id: uid(),
+            type: "spin" as const,
+            dateKey: todayKey,
+            amount: effectiveAmount,
+            at: new Date().toISOString(),
+          },
+        ],
         bonusCoins: prev.economy.bonusCoins + effectiveAmount,
         lastSpinDate: todayKey,
         lastSpinResult: result,

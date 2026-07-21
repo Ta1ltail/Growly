@@ -16,7 +16,7 @@ import { LoadingScreen } from "@/components/ui/LoadingScreen";
 import { setSyncCallback, reloadCache } from "@/lib/store";
 import type { ChangedTables } from "@/lib/supabase/db";
 import type { AppData } from "@/lib/types";
-import { loadData, clearLocalAppData, getLastUserId, setLastUserId } from "@/lib/storage";
+import { loadData, clearLocalAppData, getLastUserId, setLastUserId, setDataUserId } from "@/lib/storage";
 
 // 15s polling interval. Combined with Page Visibility pause, ~15 calls/device/foreground-hour.
 const POLL_INTERVAL_MS = 15_000;
@@ -174,6 +174,11 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
 
     if (initialized.current) return;
     initialized.current = true;
+
+    // Scope localStorage to this user — all subsequent data reads/writes
+    // will use `growly.data.v1_{userId}` instead of the shared `growly.data.v1`.
+    // This ensures data is never shared between accounts on the same device.
+    setDataUserId(userId);
 
     // Record this user for next time so we can detect switches
     setLastUserId(userId);
@@ -380,6 +385,13 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
     setupPoll();
 
     return () => {
+      // Reset the initialized flag so the effect re-runs if re-mounted.
+      // Without this, React Strict Mode double-mount (or any re-mount event)
+      // would skip the entire sync initialization, leaving the new user with
+      // stale data from the previous mount.
+      initialized.current = false;
+      timedOutRef.current = false;
+
       document.removeEventListener("visibilitychange", handleVisibilityChange);
       if (pollTimerRef.current) {
         clearInterval(pollTimerRef.current);

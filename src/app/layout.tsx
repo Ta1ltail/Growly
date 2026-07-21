@@ -25,8 +25,13 @@ export const viewport = {
 };
 
 // Applies the saved theme before first paint so there is no light/dark flash.
+// Tries the user-scoped key (`growly.data.v1_{userId}`) first, then falls back
+// to the shared base key (`growly.data.v1`) for backward compat during migration.
 const noFlash = `(function(){try{
-var raw=localStorage.getItem('growly.data.v1');
+var uid=localStorage.getItem('growly.last_user_id');
+var key=uid?'growly.data.v1_'+uid:'growly.data.v1';
+var raw=localStorage.getItem(key);
+if(!raw&&uid){raw=localStorage.getItem('growly.data.v1');}
 var mode='dark',accent='blue';
 if(raw){var d=JSON.parse(raw),t=d&&d.settings&&d.settings.theme;if(t){mode=t.mode||'dark';accent=t.accent||'blue';}}
 var resolved=mode==='system'?(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'):mode;

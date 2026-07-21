@@ -23,10 +23,11 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import {
-  STORAGE_KEY,
   SCHEMA_VERSION,
   SAVED_EMAIL_KEY,
   REMEMBER_ME_KEY,
+  setDataUserId,
+  getEffectiveStorageKey,
 } from "@/lib/storage";
 import { Button } from "@/components/ui/Button";
 import { PasswordRequirements } from "@/components/ui/PasswordRequirements";
@@ -188,9 +189,15 @@ export default function RegisterPage() {
     } = await supabase.auth.getUser();
 
     if (user) {
-      localStorage.removeItem(STORAGE_KEY);
+      // Scope storage to this user immediately so seed data goes directly to
+      // `growly.data.v1_{userId}` instead of the shared `growly.data.v1`.
+      setDataUserId(user.id);
+
+      // Clear any stale data — remove both the scoped key and the shared base key
+      localStorage.removeItem(getEffectiveStorageKey());
+      localStorage.removeItem("growly.data.v1");
       localStorage.removeItem(SAVED_EMAIL_KEY);
-      localStorage.removeItem("growly.last_auth_user");
+
       const seededData = {
         version: SCHEMA_VERSION,
         habits: [],
@@ -227,7 +234,7 @@ export default function RegisterPage() {
           tierUnlocks: [],
         },
       };
-      localStorage.setItem("growly.data.v1", JSON.stringify(seededData));
+      localStorage.setItem(getEffectiveStorageKey(), JSON.stringify(seededData));
       localStorage.setItem(REMEMBER_ME_KEY, "true");
       window.location.href = "/dashboard";
     } else {

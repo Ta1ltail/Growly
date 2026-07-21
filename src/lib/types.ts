@@ -171,6 +171,18 @@ export interface FreezeEntry {
   habitId: string; // the habit whose miss is protected
 }
 
+// A single engagement reward (check-in, quest, spin, level-up, streak milestone).
+// Stored as individual rows with UNIQUE(user_id, type, date_key) to prevent
+// multi-device offline duplicate rewards (economy_state.bonusCoins alone can
+// be overwritten by last-writer-wins on user_id).
+export interface BonusEntry {
+  id: string;
+  type: "check_in" | "quest" | "spin" | "level_up" | "streak_milestone";
+  dateKey: string; // YYYY-MM-DD
+  amount: number; // coins awarded
+  at: string; // ISO timestamp
+}
+
 // Persisted economy state.
 export interface Economy {
   spent: SpendEntry[]; // append-only ledger
@@ -178,7 +190,11 @@ export interface Economy {
   equipped: Partial<Record<CosmeticSlot, string>>; // slot -> equipped item id
   freezes: FreezeEntry[]; // streak-freeze use log
 
-  // Engagement features (schema v6)
+  // Per-day engagement rewards, each stored as a row with UNIQUE(user_id, type, date_key)
+  // so multi-device offline conflicts cannot double-claim or lose rewards.
+  bonuses: BonusEntry[];
+
+  // Engagement features (schema v6) — bonusCoins kept for backward compat during migration
   bonusCoins: number; // total bonus coins earned from engagement rewards
   lastCheckIn: string | null; // dateKey of last daily check-in
   checkInStreak: number; // consecutive daily check-in count
@@ -203,6 +219,7 @@ export const DEFAULT_ECONOMY: Economy = {
   owned: [],
   equipped: {},
   freezes: [],
+  bonuses: [],
   bonusCoins: 0,
   lastCheckIn: null,
   checkInStreak: 0,

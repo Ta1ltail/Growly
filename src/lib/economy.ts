@@ -178,6 +178,9 @@ export const RARITY_COINS: Record<Rarity, number> = {
 
 // Total lifetime coins EARNED from history-derived stats + unlocked
 // achievements + engagement bonuses. Pure history-derived base + stored bonuses.
+// Sums over both the legacy bonusCoins field (migration) and the new per-row
+// bonuses array (schema v8+). The per-row bonuses are date-scoped with a DB
+// UNIQUE constraint so multi-device offline sync cannot double-claim rewards.
 export function coinsEarned(
   stats: GameStats,
   unlockedRarities: Rarity[],
@@ -189,7 +192,12 @@ export function coinsEarned(
     (sum, r) => sum + RARITY_COINS[r],
     0,
   );
-  const fromBonuses = economy?.bonusCoins ?? 0;
+  // Sum per-row bonuses (new) + legacy bonusCoins (migration compat)
+  const fromPerRowBonuses = (economy?.bonuses ?? []).reduce(
+    (sum, b) => sum + b.amount,
+    0,
+  );
+  const fromBonuses = (economy?.bonusCoins ?? 0) + fromPerRowBonuses;
   return base + perfect + fromAchievements + fromBonuses;
 }
 
@@ -228,7 +236,11 @@ export function coinBreakdown(
     (sum, r) => sum + RARITY_COINS[r],
     0,
   );
-  const fromBonuses = economy.bonusCoins ?? 0;
+  const fromPerRowBonuses = (economy.bonuses ?? []).reduce(
+    (sum, b) => sum + b.amount,
+    0,
+  );
+  const fromBonuses = (economy.bonusCoins ?? 0) + fromPerRowBonuses;
   const earned =
     fromCompletions + fromPerfectDays + fromAchievements + fromBonuses;
   const spent = coinsSpent(economy);

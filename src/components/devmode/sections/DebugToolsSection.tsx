@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useAppData, replaceData } from "@/lib/store";
 import { ACHIEVEMENTS } from "@/lib/achievements";
 import { DEV_STORAGE_KEY, useDevSettings, setDev } from "@/lib/devmode";
-import { STORAGE_KEY } from "@/lib/storage";
+import { STORAGE_KEY, getEffectiveStorageKey } from "@/lib/storage";
 import type { Rarity } from "@/lib/types";
 import { DevGroup, DevRow, DevToggle, DevButton } from "../ui";
 
@@ -45,7 +45,10 @@ export function DebugToolsSection({ query }: { query: string }) {
       )
     )
       return;
+    // Remove both the base key and any user-scoped key (defense-in-depth).
+    // getEffectiveStorageKey() returns the scoped key if a user is set.
     window.localStorage.removeItem(STORAGE_KEY);
+    window.localStorage.removeItem(getEffectiveStorageKey());
     window.localStorage.removeItem(DEV_STORAGE_KEY);
     window.location.reload();
   }

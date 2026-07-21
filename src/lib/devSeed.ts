@@ -314,6 +314,7 @@ export function makeComprehensiveSeedData(base: AppData, today: Date): AppData {
       accent: "accent-violet",
     },
     freezes: [],
+    bonuses: [],
     bonusCoins: 5000,
     lastCheckIn: dateKey(today),
     checkInStreak: 7,

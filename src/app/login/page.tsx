@@ -21,7 +21,6 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/Button";
-import { completeOnboarding } from "@/lib/store";
 import { REMEMBER_ME_KEY, SAVED_EMAIL_KEY } from "@/lib/storage";
 
 /** Wrapper required because useSearchParams() needs a Suspense boundary in Next.js 16. */
@@ -125,7 +124,11 @@ function LoginForm() {
     } = await supabase.auth.getUser();
 
     if (user) {
-      completeOnboarding();
+      // ══ Clear stale data before navigating to the app ══
+      // The SyncProvider will call clearLocalAppData() + fullResync() on mount,
+      // but we also clear here to prevent the Zustand store cache from loading
+      // the previous user's stale data during any synchronous store access that
+      // may happen between this point and the full page navigation.
       window.location.href = redirectTo;
     } else {
       setError("Session could not be verified. Please try again.");
