@@ -4,7 +4,7 @@
 // Content is offset by the sidebar width on desktop and given a max width.
 // Uses safe-area variables for mobile compatibility.
 
-import { type ReactNode, lazy, Suspense } from "react";
+import { type ReactNode, lazy, Suspense, useEffect } from "react";
 import { Toaster } from "sonner";
 import { usePathname } from "next/navigation";
 import { Sidebar } from "./Sidebar";
@@ -13,10 +13,12 @@ import { CelebrationManager } from "@/components/celebrations/CelebrationManager
 import { AccentThemeApplier } from "@/components/economy/AccentThemeApplier";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { SyncIndicator } from "@/components/sync/SyncIndicator";
+import { StorageQuotaWarning } from "@/components/sync/StorageQuotaWarning";
 import { SyncWarningBanner } from "@/components/sync/SyncWarningBanner";
 import { usePullToRefresh } from "@/hooks/usePullToRefresh";
 import { PullToRefreshIndicator } from "@/components/ui/PullToRefreshIndicator";
 import { reloadCache } from "@/lib/store";
+import { startReminderService, stopReminderService } from "@/lib/reminderService";
 
 const DevModeLazy = lazy(() =>
   import("@/components/devmode/DevMode").then((m) => ({
@@ -39,6 +41,41 @@ const OnboardingWizardLazy = lazy(() =>
 export function AppShell({ children }: { children: ReactNode }) {
   useKeyboardShortcuts();
   const pathname = usePathname();
+
+  // Start the reminder service on mount; clean up on unmount
+  useEffect(() => {
+    startReminderService();
+    return () => stopReminderService();
+  }, []);
+
+  // Scroll position restoration: saves scroll position per route on every
+  // scroll event, and restores it when navigating back to a previously
+  // visited page. Uses sessionStorage so it survives soft navigations but
+  // not full page reloads (intentional — a reload should start at the top).
+  useEffect(() => {
+    const saved = sessionStorage.getItem(`scroll:${pathname}`);
+    if (saved) {
+      // Use requestAnimationFrame to wait for the DOM to settle after mount
+      const raf = requestAnimationFrame(() => {
+        window.scrollTo(0, parseInt(saved, 10));
+      });
+      return () => cancelAnimationFrame(raf);
+    }
+  }, [pathname]);
+
+  useEffect(() => {
+    const prevPathname = pathname;
+    const handleScroll = () => {
+      // Only save the current page's scroll position (ignore during navigation)
+      sessionStorage.setItem(`scroll:${prevPathname}`, String(window.scrollY));
+    };
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      // Save on cleanup (navigation away) to capture the last position
+      sessionStorage.setItem(`scroll:${prevPathname}`, String(window.scrollY));
+    };
+  }, [pathname]);
 
   // Pull-to-refresh: reloads app data cache from storage
   const ptrState = usePullToRefresh(async () => {
@@ -91,6 +128,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         <DevModeLazy />
       </Suspense>
       <SyncIndicator />
+      <StorageQuotaWarning />
       <SyncWarningBanner />
     </div>
   );

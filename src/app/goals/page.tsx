@@ -17,7 +17,7 @@ import {
 import { CATEGORY_COLORS } from "@/lib/categories";
 import type { Goal } from "@/lib/types";
 import { toast } from "sonner";
-import { addGoal, deleteGoal, updateGoal, useAppData, undoAction } from "@/lib/store";
+import { addGoal, deleteGoal, updateGoal, useAppDataSelector, undoAction } from "@/lib/store";
 import { parseDateKey } from "@/lib/date";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Card } from "@/components/ui/Card";
@@ -33,7 +33,8 @@ import {
 import { AppPageShell } from "@/components/layout/AppPageShell";
 
 export default function GoalsPage() {
-  const data = useAppData();
+  const goals = useAppDataSelector((d) => d.goals);
+  const habits = useAppDataSelector((d) => d.habits);
   const [adding, setAdding] = useState(false);
   const [editing, setEditing] = useState<Goal | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<Goal | null>(null);
@@ -66,7 +67,7 @@ export default function GoalsPage() {
         }
       />
 
-      {data.goals.length === 0 ? (
+      {goals.length === 0 ? (
         <EmptyState
           icon={Target}
           title="No goals yet"
@@ -82,7 +83,7 @@ export default function GoalsPage() {
         />
       ) : (
         <StaggerContainer className="grid gap-3 sm:grid-cols-2 max-h-[calc(100dvh-16rem)] md:max-h-[calc(100dvh-13rem)] overflow-y-auto pr-1">
-          {data.goals.map((goal) => {
+          {goals.map((goal) => {
             const pct = Math.round((goal.current / goal.target) * 100);
             const complete = goal.current >= goal.target;
             return (
@@ -204,7 +205,7 @@ export default function GoalsPage() {
       >
         <GoalForm
           initial={editing ?? undefined}
-          habits={data.habits.filter((h) => !h.archived)}
+          habits={habits.filter((h) => !h.archived)}
           onSave={save}
           onCancel={() => {
             setAdding(false);

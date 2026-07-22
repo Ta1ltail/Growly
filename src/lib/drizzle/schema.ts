@@ -179,6 +179,7 @@ export const userSettings = pgTable(
       .array()
       .notNull()
       .default(sql`'{}'::text[]`),
+    autoFreezeThreshold: integer("auto_freeze_threshold"),
   },
   (table) => [
     check(
@@ -307,6 +308,10 @@ export const progressSeen = pgTable(
       .array()
       .notNull()
       .default(sql`'{}'::text[]`),
+    completedGoals: text("completed_goals")
+      .array()
+      .notNull()
+      .default(sql`'{}'::text[]`),
   },
 );
 
@@ -408,6 +413,34 @@ export const userStatsSnapshots = pgTable(
     // — this is just a gap in schema.ts's coverage, not a missing DB
     // object. If you upgrade drizzle-orm to a version with covering-index
     // support, add them back with `.on(table.level.desc()).include(...)`.
+  ],
+);
+
+// ── Economy Bonuses (per-day engagement rewards) ────
+// Created in migration 011_economy_bonuses.sql. Stores check-in, quest,
+// spin, level-up, and streak-milestone coin rewards with a UNIQUE constraint
+// on (user_id, type, date_key) to prevent multi-device duplicate rewards.
+export const economyBonuses = pgTable(
+  "economy_bonuses",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => authUsers.id, { onDelete: "cascade" }),
+    type: text("type").notNull(),
+    dateKey: text("date_key").notNull(),
+    amount: integer("amount").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("unique_bonus_per_day").on(
+      table.userId,
+      table.type,
+      table.dateKey,
+    ),
+    index("idx_economy_bonuses_user").on(table.userId, table.dateKey.desc()),
   ],
 );
 

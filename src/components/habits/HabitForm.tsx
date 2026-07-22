@@ -9,7 +9,7 @@ import { Check, LayoutTemplate } from "lucide-react";
 import { CATEGORIES, CATEGORY_COLORS, type Category } from "@/lib/categories";
 import type { Habit, HabitFormValue, Priority, Recurrence } from "@/lib/types";
 import { effectiveRecurrence } from "@/lib/stats";
-import { dateKey } from "@/lib/storage";
+import { dateKey } from "@/lib/date";
 import { PRIORITY_LABEL } from "@/lib/format";
 import { WeekdayPicker } from "./WeekdayPicker";
 
@@ -101,6 +101,7 @@ export function HabitForm({
           onKeyDown={(e) => e.key === "Enter" && submit()}
           placeholder="e.g. Morning run"
           aria-label="Habit name"
+          maxLength={100}
           className="w-full rounded-xl border border-line bg-surface2 px-3.5 py-2.5 text-sm outline-none transition-colors placeholder:text-faint focus:border-accent"
         />
       </div>

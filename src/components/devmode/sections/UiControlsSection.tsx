@@ -1,6 +1,6 @@
 "use client";
 
-import { useAppData, setTheme } from "@/lib/store";
+import { useAppDataSelector, setTheme } from "@/lib/store";
 import { ACCENTS, type ThemeMode } from "@/lib/theme";
 import { useDevSettings, setDev } from "@/lib/devmode";
 import { DevGroup, DevRow, DevToggle } from "../ui";
@@ -11,9 +11,8 @@ export const UI_TERMS =
 const MODES: ThemeMode[] = ["light", "dark", "system"];
 
 export function UiControlsSection({ query }: { query: string }) {
-  const data = useAppData();
   const dev = useDevSettings();
-  const { mode, accent } = data.settings.theme;
+  const { mode, accent } = useAppDataSelector((d) => d.settings.theme);
 
   return (
     <>

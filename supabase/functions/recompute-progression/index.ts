@@ -627,8 +627,8 @@ Deno.serve(async (req: Request) => {
     });
 
   } catch (e) {
-    console.error("[recompute] Error:", e.message);
-    return new Response(JSON.stringify({ error: e.message }), {
+    console.error("[recompute] Error:", e instanceof Error ? e.message : e);
+    return new Response(JSON.stringify({ error: "Internal server error" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

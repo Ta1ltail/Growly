@@ -136,8 +136,14 @@ export function ProfileEditModal({
       }
     }
 
+    // Sanitize display name: strip control characters and invisible Unicode
+    const cleanDisplayName = draft.displayName
+      .trim()
+      .replace(/[\p{C}\p{Zl}\p{Zp}]/gu, "") // Control chars, line/paragraph separators
+      .slice(0, 40) || "Anonymous";
+
     updateProfile({
-      displayName: draft.displayName.trim() || "Anonymous",
+      displayName: cleanDisplayName,
       username: newUsername,
       bio: draft.bio?.trim() || undefined,
       motto: draft.motto?.trim() || undefined,

@@ -77,6 +77,7 @@ export function GoalForm({
           onChange={(e) => setTitle(e.target.value)}
           placeholder="e.g. Read 12 books this year"
           aria-label="Goal title"
+          maxLength={200}
           className="w-full rounded-xl border border-line bg-surface2 px-3.5 py-2.5 text-sm outline-none placeholder:text-faint focus:border-accent"
         />
       </div>
@@ -87,6 +88,7 @@ export function GoalForm({
           <input
             type="number"
             min={1}
+            max={999999}
             value={target}
             onChange={(e) => {
               const val = Number(e.target.value);

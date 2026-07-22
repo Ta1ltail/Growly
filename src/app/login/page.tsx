@@ -22,6 +22,7 @@ import {
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/Button";
 import { REMEMBER_ME_KEY, SAVED_EMAIL_KEY } from "@/lib/storage";
+import { mapAuthError } from "@/lib/auth";
 
 /** Wrapper required because useSearchParams() needs a Suspense boundary in Next.js 16. */
 export default function LoginPage() {
@@ -66,6 +67,8 @@ function LoginForm() {
   const [loading, setLoading] = useState(false);
   const [resetEmailSent, setResetEmailSent] = useState(false);
   const [sendingReset, setSendingReset] = useState(false);
+  const [failedAttempts, setFailedAttempts] = useState(0);
+  const [rateLimited, setRateLimited] = useState(false);
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get("redirect") || "/dashboard";
 
@@ -101,15 +104,36 @@ function LoginForm() {
     const supabase = createClient();
 
     const { error } = await supabase.auth.signInWithPassword({
-      email,
+      email: email.trim(),
       password,
     });
 
     if (error) {
+      // Progressive delay on failed attempts — increments delay per failure
+      const newCount = failedAttempts + 1;
+      setFailedAttempts(newCount);
+      if (newCount >= 5) {
+        // After 5 failed attempts, apply increasing delays
+        const delayMs = Math.min(Math.pow(2, newCount - 4) * 1000, 30000); // 2s, 4s, 8s, 16s, 30s max
+        setRateLimited(true);
+        setLoading(false);
+        setError(
+          `Too many attempts. Please wait ${Math.round(delayMs / 1000)} seconds before trying again.`,
+        );
+        setTimeout(() => {
+          setRateLimited(false);
+          setError(null);
+        }, delayMs);
+        return;
+      }
       setError(mapAuthError(error.message));
       setLoading(false);
       return;
     }
+
+    // On successful login, reset the failure counter
+    setFailedAttempts(0);
+    setRateLimited(false);
 
     if (rememberMe) {
       localStorage.setItem(REMEMBER_ME_KEY, "true");
@@ -383,7 +407,7 @@ function LoginForm() {
               )}
 
               {/* Submit */}
-              <Button type="submit" disabled={loading} className="w-full">
+              <Button type="submit" disabled={loading || rateLimited} className="w-full">
                 {loading ? (
                   <span className="flex items-center justify-center gap-2">
                     <span className="size-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
@@ -415,32 +439,4 @@ function LoginForm() {
   );
 }
 
-/** Maps Supabase error messages to user-friendly strings. */
-function mapAuthError(message: string): string {
-  const lower = message.toLowerCase();
 
-  if (
-    lower.includes("invalid login credentials") ||
-    lower.includes("invalid email or password")
-  ) {
-    return "Invalid email or password. Please check your credentials and try again.";
-  }
-  if (lower.includes("email not confirmed")) {
-    return "Please confirm your email address before signing in.";
-  }
-  if (lower.includes("rate limit") || lower.includes("too many")) {
-    return "Too many attempts. Please wait a moment and try again.";
-  }
-  if (lower.includes("user not found")) {
-    return "No account found with this email address.";
-  }
-  if (
-    lower.includes("network") ||
-    lower.includes("fetch") ||
-    lower.includes("timeout")
-  ) {
-    return "Connection error. Please check your internet and try again.";
-  }
-
-  return message.length > 120 ? message.slice(0, 120) + "…" : message;
-}

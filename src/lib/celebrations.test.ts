@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import type { AppData, Habit, Marks } from "./types";
-import { emptyData, addDays, dateKey } from "./storage";
+import { emptyData } from "./storage";
+import { addDays, dateKey } from "./date";
 import { summarizeProgress } from "./progress";
 import {
   achievementEvents,

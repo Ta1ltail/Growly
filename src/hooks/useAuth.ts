@@ -2,10 +2,16 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 import { clearLocalAppData, setDataUserId } from "@/lib/storage";
 
 import type { User } from "@supabase/supabase-js";
+
+// Module-level flag: set to true before supabase.auth.signOut() so the
+// SIGNED_OUT event handler skips the session-expiry toast (which is only
+// meaningful for passive expiry, not user-initiated sign-out).
+let _intentionalSignOut = false;
 
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
@@ -41,7 +47,19 @@ export function useAuth() {
         setDataUserId(null);
         clearLocalAppData();
         setUser(null);
-        window.location.href = "/";
+
+        if (_intentionalSignOut) {
+          _intentionalSignOut = false;
+          window.location.href = "/";
+        } else {
+          // Passive session expiry — show a brief notification before redirect
+          toast.info("Your session has ended. Redirecting to login...", {
+            duration: 3000,
+          });
+          setTimeout(() => {
+            window.location.href = "/";
+          }, 500);
+        }
       }
     });
 
@@ -55,6 +73,7 @@ export function useAuth() {
     const supabase = createClient();
     setDataUserId(null);
     clearLocalAppData();
+    _intentionalSignOut = true;
     await supabase.auth.signOut();
     // Hard navigation ensures the proxy runs and redirects to landing.
     // clearLocalAppData already ran above and will also run in SIGNED_OUT.
@@ -63,4 +82,3 @@ export function useAuth() {
 
   return { user, loading, signOut };
 }
-

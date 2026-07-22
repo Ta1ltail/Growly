@@ -23,7 +23,8 @@ import {
   reloadCache,
 } from "@/lib/store";
 import { useToday } from "@/hooks/useToday";
-import { dateKey, addDays, clearLocalAppData } from "@/lib/storage";
+import { dateKey, addDays } from "@/lib/date";
+import { clearLocalAppData } from "@/lib/storage";
 import {
   DEFAULT_ECONOMY,
   DEFAULT_PROFILE,

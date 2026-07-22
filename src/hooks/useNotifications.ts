@@ -79,6 +79,15 @@ function subscribeToUser(userId: string) {
   updateStore({ loading: true });
   fetchNotifications(userId);
 
+  // ── Register visibility listener (cleaned up in teardown) ──
+  const handleVisibility = () => {
+    if (document.visibilityState === "visible" && currentUserId) {
+      if (fetchTimer) clearTimeout(fetchTimer);
+      fetchTimer = setTimeout(() => fetchNotifications(currentUserId), 300);
+    }
+  };
+  document.addEventListener("visibilitychange", handleVisibility);
+
   // ── Realtime subscription ──
   const channel = supabase
     .channel(`notifications-singleton:${userId}`)
@@ -98,6 +107,7 @@ function subscribeToUser(userId: string) {
 
   channelCleanup = () => {
     supabase.removeChannel(channel);
+    document.removeEventListener("visibilitychange", handleVisibility);
   };
 }
 
@@ -159,19 +169,9 @@ function handleChange(payload: RealtimePostgresChangesPayload<Notification>) {
   });
 }
 
-/* ── Refresh on visibility change (shared) ── */
-function onVisibilityChange() {
-  if (document.visibilityState === "visible" && currentUserId) {
-    // Debounce rapid visibility toggles
-    if (fetchTimer) clearTimeout(fetchTimer);
-    fetchTimer = setTimeout(() => fetchNotifications(currentUserId), 300);
-  }
-}
-
-// Register visibility listener once at module level
-if (typeof window !== "undefined") {
-  document.addEventListener("visibilitychange", onVisibilityChange);
-}
+// Module-level visibility listener was removed — now registered inside
+// subscribeToUser() and torn down via teardown() on logout, preventing
+// leaked closure references and stale Realtime connections.
 
 /* ─────────────────────────────────────────
    Public hook — any component can call this
@@ -190,8 +190,8 @@ export function useNotifications() {
     if (userId) {
       subscribeToUser(userId);
     } else {
-      // No user — reset
-      currentUserId = null;
+      // No user — tear down realtime channel + visibility listener, then reset
+      teardown();
       updateStore({ notifications: [], loading: false, unreadCount: 0 });
     }
   }, [userId]);

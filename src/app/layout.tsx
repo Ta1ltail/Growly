@@ -24,9 +24,17 @@ export const viewport = {
   viewportFit: "cover",
 };
 
+// ── Theme anti-FOUC script ──
 // Applies the saved theme before first paint so there is no light/dark flash.
 // Tries the user-scoped key (`growly.data.v1_{userId}`) first, then falls back
 // to the shared base key (`growly.data.v1`) for backward compat during migration.
+//
+// ══ MAINTENANCE NOTE ══
+// The key resolution logic here (`growly.data.v1` / `growly.data.v1_${uid}`)
+// MUST match the logic in `src/lib/storage.ts`:
+//   - getEffectiveStorageKey() for the main data key
+//   - loadData() fallback from scoped key to base key
+// If you change the key pattern in storage.ts, update this script too.
 const noFlash = `(function(){try{
 var uid=localStorage.getItem('growly.last_user_id');
 var key=uid?'growly.data.v1_'+uid:'growly.data.v1';

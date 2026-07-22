@@ -67,8 +67,13 @@ AGENTS.md
 # Documentation (internal only)
 docs/
 
-# Capacitor native platforms
-android/
+# Capacitor native platforms (build outputs are gitignored; config files are tracked)
+android/.gradle
+android/build
+android/app/build
+android/capacitor-cordova-android-plugins
+android/capacitor.settings.gradle
+android/local.properties
 capacitor.config.json
 
 # Android keystore files

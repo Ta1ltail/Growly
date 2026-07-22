@@ -390,8 +390,7 @@ export default function SettingsPage() {
               disabled={deletingAccount}
             >
               Cancel
-            </Button>
-            <Button
+            </Button>              <Button
               variant="danger"
               onClick={async () => {
                 setDeletingAccount(true);
@@ -418,9 +417,11 @@ export default function SettingsPage() {
                   );
                   const json = await res.json();
                   if (!res.ok || json.error) {
+                    // Edge Function failed — offer fallback: delete local data + sign out
                     setDeleteError(
-                      json.error ?? "Failed to delete account. Please try again.",
+                      json.error ?? "Server deletion failed. You can still clear local data.",
                     );
+                    // Keep the error visible but offer a local-only fallback
                     setDeletingAccount(false);
                     return;
                   }
@@ -428,8 +429,9 @@ export default function SettingsPage() {
                   await supabase.auth.signOut();
                   window.location.href = "/?account_deleted=true";
                 } catch {
+                  // Network error — offer local-only fallback
                   setDeleteError(
-                    "Connection error. Please check your internet and try again.",
+                    "Connection error. Your local data can still be cleared.",
                   );
                   setDeletingAccount(false);
                 }
@@ -456,9 +458,29 @@ export default function SettingsPage() {
           goals, achievements, and settings. Your data cannot be recovered.
         </p>
         {deleteError && (
-          <div className="mt-3 flex items-start gap-2 rounded-xl bg-missed/8 px-3.5 py-2.5 text-xs text-missed">
-            <AlertTriangle className="mt-0.5 size-3.5 shrink-0" />
-            <span>{deleteError}</span>
+          <div className="mt-3 space-y-3">
+            <div className="flex items-start gap-2 rounded-xl bg-missed/8 px-3.5 py-2.5 text-xs text-missed">
+              <AlertTriangle className="mt-0.5 size-3.5 shrink-0" />
+              <span>{deleteError}</span>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="w-full"
+              onClick={async () => {
+                // Local-only fallback: clear data and sign out
+                const supabase = createClient();
+                try {
+                  localStorage.clear();
+                  await supabase.auth.signOut();
+                } catch {
+                  // Best effort
+                }
+                window.location.href = "/";
+              }}
+            >
+              Clear local data &amp; sign out
+            </Button>
           </div>
         )}
       </Modal>

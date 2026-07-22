@@ -6,14 +6,13 @@
 
 import { useEffect } from "react";
 import { Target, Coins, CheckCircle2, RotateCcw } from "lucide-react";
-import { useAppData, refreshDailyQuest, claimDailyQuest } from "@/lib/store";
+import { useAppDataSelector, refreshDailyQuest, claimDailyQuest } from "@/lib/store";
 import { Card } from "@/components/ui/Card";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { Button } from "@/components/ui/Button";
 
 export function DailyQuestCard() {
-  const data = useAppData();
-  const quest = data.economy.currentQuest;
+  const quest = useAppDataSelector((d) => d.economy.currentQuest);
 
   // Refresh quest if needed on mount — safe to call even without syncReady
   // because refreshDailyQuest is idempotent: it only generates a new quest

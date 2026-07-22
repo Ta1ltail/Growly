@@ -8,18 +8,23 @@ import { useAuth } from "@/hooks/useAuth";
 import { usePathname } from "next/navigation";
 import {
   fullResync,
+  getSyncStatus,
   pushMutation,
   resetSyncState,
   setSyncReady,
 } from "@/lib/supabase/sync";
 import { LoadingScreen } from "@/components/ui/LoadingScreen";
-import { setSyncCallback, reloadCache } from "@/lib/store";
+import { setSyncCallback, reloadCache, hasPendingSave } from "@/lib/store";
 import type { ChangedTables } from "@/lib/supabase/db";
 import type { AppData } from "@/lib/types";
 import { loadData, clearLocalAppData, getLastUserId, setLastUserId, setDataUserId } from "@/lib/storage";
 
-// 15s polling interval. Combined with Page Visibility pause, ~15 calls/device/foreground-hour.
-const POLL_INTERVAL_MS = 15_000;
+// 30s polling interval. Combined with Page Visibility pause, reduces API load by 50%
+// compared to 15s polling. At 10K+ users, this halves Supabase request volume without
+// noticeably impacting sync freshness — a habit tracker doesn't need sub-30s sync.
+// The notification Realtime subscription (useNotifications.ts) provides instant updates
+// for critical events (friend requests, achievement unlocks).
+const POLL_INTERVAL_MS = 30_000;
 
 // Stable hash of AppData to detect remote changes. Avoids unnecessary re-renders.
 export function computeDataHash(d: AppData): string {
@@ -123,6 +128,21 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
       console.warn("[sync] Navigation re-sync failed:", e);
     });
   }, [pathname, userId, syncReady]);
+
+  // ── E2: Warn on close during active sync ──
+  // If the sync status is "syncing" when the user tries to close the tab/window,
+  // show a browser warning. This prevents data from being lost if the retry queue
+  // hasn't been persisted yet. The warning only shows while a sync is in-flight.
+  useEffect(() => {
+    function handleBeforeUnload(e: BeforeUnloadEvent) {
+      if (getSyncStatus() === "syncing") {
+        e.preventDefault();
+        e.returnValue = "Sync in progress…";
+      }
+    }
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, []);
 
   // ── Cross-tab user switch detection ──
   // When another tab logs in as a different user, it sets lastUserId in
@@ -336,6 +356,21 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
     // Shared poll logic — runs once immediately on visibility restore and
     // repeatedly while the tab is visible (via setupPoll's interval).
     function doPoll() {
+      // ══ Skip if there's a pending debounced save ══
+      // When the user makes a local mutation (e.g., toggling a mark), the store
+      // debounces the localStorage write by 100ms. During that window:
+      //   - loadData() returns stale data (the mark isn't saved yet)
+      //   - fullResync(quiet) would merge remote data with stale local data
+      //   - The merge could briefly revert the user's change in localStorage
+      //   - The 100ms debounced save then overwrites the merged data back
+      //   - The net result is correct, but the UI may flicker if reloadCache
+      //     fires with the stale intermediate state
+      //
+      // By skipping the entire poll when there's a pending save, we avoid
+      // reading stale localStorage data. The poll will fire on the next
+      // interval (15s later) when the save has completed.
+      if (hasPendingSave()) return;
+
       // Capture a snapshot hash BEFORE the fullResync (which saves merged
       // data to localStorage). We compare this with the post-merge result
       // to detect actual remote changes and only then reload the cache.

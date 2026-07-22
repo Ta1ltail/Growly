@@ -6,7 +6,7 @@
 // A no-flash inline script in layout.tsx applies theme + accent before hydration.
 
 import { useEffect } from "react";
-import { useAppData } from "@/lib/store";
+import { useAppDataSelector } from "@/lib/store";
 import { accentById, resolveMode } from "@/lib/theme";
 import { isCapacitor } from "@/lib/capacitor";
 
@@ -61,7 +61,7 @@ async function syncCapacitorNavBar() {
 /* ── Component ── */
 
 export function ThemeApplier() {
-  const { mode, accent } = useAppData().settings.theme;
+  const { mode, accent } = useAppDataSelector((d) => d.settings.theme);
 
   useEffect(() => {
     const root = document.documentElement;

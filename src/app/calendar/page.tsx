@@ -20,7 +20,7 @@ import {
 import { CATEGORY_COLORS } from "@/lib/categories";
 import { addDays, dateKey, prettyDate } from "@/lib/date";
 import { DEFAULT_GRACE_HOURS } from "@/lib/storage";
-import { cycleMark, useAppData } from "@/lib/store";
+import { cycleMark, useAppDataSelector } from "@/lib/store";
 import { dayCompletion, isScheduled } from "@/lib/stats";
 import { frozenSet, isFrozen } from "@/lib/economy";
 import { canEditMark } from "@/lib/policy";
@@ -121,14 +121,19 @@ function shade(rate: number): string {
 }
 
 export default function CalendarPage() {
-  const data = useAppData();
+  const habits = useAppDataSelector((d) => d.habits);
+  const marks = useAppDataSelector((d) => d.marks);
+  const notes = useAppDataSelector((d) => d.notes);
+  const goals = useAppDataSelector((d) => d.goals);
+  const graceSetting = useAppDataSelector((d) => d.settings.graceHours);
+  const economy = useAppDataSelector((d) => d.economy);
   const today = useToday();
-  const grace = data.settings.graceHours ?? DEFAULT_GRACE_HOURS;
+  const grace = graceSetting ?? DEFAULT_GRACE_HOURS;
   const active = useMemo(
-    () => data.habits.filter((h) => !h.archived),
-    [data.habits],
+    () => habits.filter((h) => !h.archived),
+    [habits],
   );
-  const frozen = useMemo(() => frozenSet(data.economy), [data.economy]);
+  const frozen = useMemo(() => frozenSet(economy), [economy]);
   const [view, setView] = useState<"month" | "week">("month");
   const [anchor, setAnchor] = useState(
     () => new Date(today.getFullYear(), today.getMonth(), 1),
@@ -166,8 +171,8 @@ export default function CalendarPage() {
     [active, selected],
   );
   const hydrated = useHydrated();
-  const dayNotes = data.notes.filter((n) => n.links.date === selectedKey);
-  const deadlines = data.goals.filter((g) => g.deadline === selectedKey);
+  const dayNotes = notes.filter((n) => n.links.date === selectedKey);
+  const deadlines = goals.filter((g) => g.deadline === selectedKey);
   const editable = canEditMark(selectedKey, today, grace);
   const nowHHMM = `${String(today.getHours()).padStart(2, "0")}:${String(today.getMinutes()).padStart(2, "0")}`;
   const selectedIsToday = selectedKey === dateKey(today);
@@ -230,13 +235,13 @@ export default function CalendarPage() {
             <div className="grid grid-cols-7 gap-1">
               {(view === "month" ? monthCells : weekCells).map((d, i) => {
                 if (!d) return <div key={`b-${i}`} className="min-h-[56px]" />;
-                const rate = dayCompletion(active, data.marks, d);
+                const rate = dayCompletion(active, marks, d);
                 const isToday = dateKey(d) === dateKey(today);
                 const isSelected = dateKey(d) === selectedKey;
-                const hasNote = data.notes.some(
+                const hasNote = notes.some(
                   (n) => n.links.date === dateKey(d),
                 );
-                const hasDeadline = data.goals.some(
+                const hasDeadline = goals.some(
                   (g) => g.deadline === dateKey(d),
                 );
                 return (
@@ -257,9 +262,9 @@ export default function CalendarPage() {
                     </span>
                     <CircularProgress rate={rate} size={24} />
                     {(hasNote || hasDeadline) && (
-                      <span className="flex gap-0.5">
-                        {hasNote && <span className="size-1 rounded-full bg-current opacity-60" />}
-                        {hasDeadline && <span className="size-1 rounded-full bg-amber-500" />}
+                      <span className="flex gap-0.5" aria-label={hasNote && hasDeadline ? "Has notes and goal deadlines" : hasNote ? "Has notes" : "Has goal deadlines"}>
+                        {hasNote && <span className="size-1 rounded-full bg-current opacity-60" title="Has notes" />}
+                        {hasDeadline && <span className="size-1 rounded-full bg-amber-500" title="Has goal deadlines" />}
                       </span>
                     )}
                   </button>
@@ -302,7 +307,7 @@ export default function CalendarPage() {
             ) : (
               <Card className="divide-y divide-line overflow-hidden">
                 {selectedHabits.map((h) => {
-                  const status = data.marks[selectedKey]?.[h.id];
+                  const status = marks[selectedKey]?.[h.id];
                   const dayFrozen =
                     status === "missed" && isFrozen(frozen, h.id, selectedKey);
                   const showNowBefore =

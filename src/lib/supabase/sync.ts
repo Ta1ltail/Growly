@@ -50,6 +50,9 @@ export type SyncStatus = "idle" | "syncing" | "error" | "offline";
 let _status: SyncStatus = "idle";
 const _listeners = new Set<() => void>();
 
+// Debounce timer for idle status — prevents SyncIndicator flashing on rapid mutations
+let _idleDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+
 function notify() {
   for (const l of _listeners) l();
 }
@@ -64,11 +67,43 @@ export function subscribeToSyncStatus(listener: () => void): () => void {
 }
 
 function setStatus(s: SyncStatus, _error?: string) {
-  _status = s;
-  if (_error) {
-    console.debug("[sync]", _error);
+  // Debounce rapid status changes (e.g., sync → idle → sync → idle on
+  // rapid mark toggles). Only "syncing" transitions are immediate; other
+  // statuses are delayed slightly to prevent visual flicker.
+  if (s === "syncing") {
+    if (_idleDebounceTimer) {
+      clearTimeout(_idleDebounceTimer);
+      _idleDebounceTimer = null;
+    }
+    _status = s;
+    if (_error) console.debug("[sync]", _error);
+    notify();
+  } else {
+    // Delay non-syncing statuses (idle, error, offline) to coalesce rapid
+    // mutations into a single status transition
+    if (_idleDebounceTimer) clearTimeout(_idleDebounceTimer);
+    _idleDebounceTimer = setTimeout(() => {
+      _status = s;
+      _idleDebounceTimer = null;
+      if (_error) console.debug("[sync]", _error);
+      notify();
+    }, 400);
   }
-  notify();
+}
+
+/** Track whether marks have changed since last stats push. */
+let _marksChangedSinceStatsPush = true;
+
+/** Mark that marks have been mutated (called from pushMutation). */
+export function markMarksChanged(): void {
+  _marksChangedSinceStatsPush = true;
+}
+
+/** Check and reset dirty flag atomically. */
+export function consumeMarksChangedFlag(): boolean {
+  const dirty = _marksChangedSinceStatsPush;
+  _marksChangedSinceStatsPush = false;
+  return dirty;
 }
 
 /* Sync-ready gate: blocks pushMutation until initial fullResync completes. */
@@ -106,6 +141,60 @@ interface QueuedPush {
 let _retryQueue: QueuedPush[] = [];
 let _retryTimer: ReturnType<typeof setTimeout> | null = null;
 
+// Retry queue is persisted to localStorage so it survives app restart.
+// On module load, restore any pending retries from the previous session.
+const RETRY_QUEUE_KEY = "growly.sync_retry_queue";
+
+function loadPersistedRetryQueue(): void {
+  if (typeof window === "undefined") return;
+  try {
+    const raw = window.localStorage.getItem(RETRY_QUEUE_KEY);
+    if (!raw) return;
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return;
+    _retryQueue = parsed.filter(
+      (item): item is QueuedPush =>
+        item &&
+        typeof item.userId === "string" &&
+        typeof item.data === "object" &&
+        item.data !== null &&
+        typeof item.changed === "object" &&
+        item.changed !== null &&
+        typeof item.attempts === "number",
+    );
+    if (_retryQueue.length > 0) {
+      console.log(`[sync] Restored ${_retryQueue.length} pending retries from localStorage`);
+      // Defer processing — the retry queue will be processed on the next
+      // enqueueRetry() call (which happens when a pushMutation fails after
+      // the sync-ready gate opens). Processing at module load time would
+      // start a 5s timer even on the landing page (no active session),
+      // wasting resources until the user logs in. The persisted items are
+      // safe in memory and will be handled once sync is active.
+      // If the user never logs in, resetSyncState on the next login clears
+      // stale items.
+    }
+  } catch {
+    // Corrupted data — clear and start fresh
+    try { window.localStorage.removeItem(RETRY_QUEUE_KEY); } catch { /* ignore */ }
+  }
+}
+
+function persistRetryQueue(): void {
+  if (typeof window === "undefined") return;
+  try {
+    if (_retryQueue.length > 0) {
+      window.localStorage.setItem(RETRY_QUEUE_KEY, JSON.stringify(_retryQueue));
+    } else {
+      window.localStorage.removeItem(RETRY_QUEUE_KEY);
+    }
+  } catch {
+    // localStorage full or unavailable — not critical; data is still in memory
+  }
+}
+
+// Restore any retries from a previous session immediately
+loadPersistedRetryQueue();
+
 // Infinite retries — never silently drops mutations
 const MAX_RETRIES = Infinity;
 const RETRY_DELAY_MS = 5000;
@@ -115,7 +204,10 @@ function processRetryQueue() {
     clearTimeout(_retryTimer);
     _retryTimer = null;
   }
-  if (_retryQueue.length === 0) return;
+  if (_retryQueue.length === 0) {
+    persistRetryQueue();
+    return;
+  }
 
   _retryTimer = setTimeout(async () => {
     const batch = [..._retryQueue];
@@ -138,6 +230,16 @@ function processRetryQueue() {
         if (!verifiedUser) {
           console.warn("[sync] Retry: session still not ready, re-queuing");
           _retryQueue.push(item); // same attempts count, not incremented
+          persistRetryQueue();
+          continue;
+        }
+
+        // Discard retries from a previous session (account switch).
+        // Without this check, stale items accumulate in the queue with
+        // MAX_RETRIES = Infinity and a different user session, causing
+        // infinite RLS failures and wasted network calls.
+        if (verifiedUser.id !== item.userId) {
+          console.warn("[sync] Discarding stale retry from previous user:", item.userId);
           continue;
         }
 
@@ -150,6 +252,7 @@ function processRetryQueue() {
     }
 
     // If there are still items in the queue after processing, schedule another run
+    persistRetryQueue();
     if (_retryQueue.length > 0) {
       processRetryQueue();
     }
@@ -162,6 +265,7 @@ function enqueueRetry(
   changed: ChangedTables,
 ): void {
   _retryQueue.push({ userId, data, changed, attempts: 1 });
+  persistRetryQueue();
   processRetryQueue();
 }
 
@@ -246,44 +350,42 @@ export async function fullResync(
       }
 
       if (!quiet) {
-        // ══ Recompute stats snapshot from merged data ══
-        // The stats snapshot in Supabase may have been set by a one-time seed
-        // or the now-removed refreshStatsSnapshot function. Since marks may
-        // have changed during the merge, we must recompute stats from the
-        // merged data to keep the snapshot authoritative. Without this, the
-        // DB-level stats (level, streaks, completions) diverge permanently
-        // from what the UI computes from marks.
-        try {
-          const now = new Date();
-          const summary = summarizeProgress(merged, now);
-          const title = titleForLevel(summary.level.level);
-          const rankStyle = RANK_STYLE[title.current.rank];
-          const stats: StatsSnapshotData = {
-            level: summary.level.level,
-            currentStreak: summary.stats.maxCurrentStreak,
-            bestStreak: summary.stats.maxBestStreak,
-            totalCompletions: summary.stats.doneCount,
-            consistency14d: consistencyScore(merged.habits, merged.marks, now, 14),
-            achievementCount: summary.unlockedCount,
-            titleName: title.current.name,
-            rankIcon: rankStyle.icon,
-            updatedAt: new Date().toISOString(),
-          };
-          // Save to localStorage so the UI can read it even when offline
-          saveStatsSnapshot(stats);
-          // Write stats snapshot directly to Supabase so the public profile /
-          // leaderboard stays current. Migration 009 restored client INSERT/UPDATE
-          // on user_stats_snapshots after the recompute-progression Edge Function
-          // proved unreliable (503 errors).
+        // ══ Recompute stats snapshot from merged data (only if marks changed) ══
+        // Skips the full recomputation when no marks have been mutated since
+        // the last push — the stats snapshot in Supabase is already current.
+        if (consumeMarksChangedFlag()) {
           try {
-            await saveUserStatsSnapshot(supabase, userId, stats);
-          } catch (statsPushErr) {
-            console.warn("[sync] Failed to push stats snapshot:", statsPushErr);
+            const now = new Date();
+            const summary = summarizeProgress(merged, now);
+            const title = titleForLevel(summary.level.level);
+            const rankStyle = RANK_STYLE[title.current.rank];
+            const stats: StatsSnapshotData = {
+              level: summary.level.level,
+              currentStreak: summary.stats.maxCurrentStreak,
+              bestStreak: summary.stats.maxBestStreak,
+              totalCompletions: summary.stats.doneCount,
+              consistency14d: consistencyScore(merged.habits, merged.marks, now, 14),
+              achievementCount: summary.unlockedCount,
+              titleName: title.current.name,
+              rankIcon: rankStyle.icon,
+              updatedAt: new Date().toISOString(),
+            };
+            // Save to localStorage so the UI can read it even when offline
+            saveStatsSnapshot(stats);
+            // Write stats snapshot directly to Supabase so the public profile /
+            // leaderboard stays current. Migration 009 restored client INSERT/UPDATE
+            // on user_stats_snapshots after the recompute-progression Edge Function
+            // proved unreliable (503 errors).
+            try {
+              await saveUserStatsSnapshot(supabase, userId, stats);
+            } catch (statsPushErr) {
+              console.warn("[sync] Failed to push stats snapshot:", statsPushErr);
+            }
+          } catch (statsErr) {
+            // Non-critical — the merged data IS saved to localStorage and Supabase
+            // via the push above. The stats snapshot is derived data that can lag.
+            console.warn("[sync] Stats snapshot recompute failed:", statsErr);
           }
-        } catch (statsErr) {
-          // Non-critical — the merged data IS saved to localStorage and Supabase
-          // via the push above. The stats snapshot is derived data that can lag.
-          console.warn("[sync] Stats snapshot recompute failed:", statsErr);
         }
       }
 
@@ -607,10 +709,50 @@ function compareGoalTimestamp(a: Goal, b: Goal): number {
 
 /** Deep compare two AppData objects (excluding auditLog) */
 function hasChanges(a: AppData, b: AppData): boolean {
-  return (
-    JSON.stringify({ ...a, auditLog: [] }) !==
-    JSON.stringify({ ...b, auditLog: [] })
-  );
+  // Marks: iterative comparison avoids JSON.stringify on the entire marks map
+  // (the largest table — thousands of dateKey entries for long-time users).
+  const aMKeys = Object.keys(a.marks);
+  const bMKeys = Object.keys(b.marks);
+  if (aMKeys.length !== bMKeys.length) return true;
+  for (const dk of aMKeys) {
+    if (!marksDayEqual(a.marks[dk], b.marks[dk])) return true;
+  }
+
+  // Array tables: quick reference + length check first, then JSON for content
+  if (a.habits.length !== b.habits.length) return true;
+  if (JSON.stringify(a.habits) !== JSON.stringify(b.habits)) return true;
+  if (a.notes.length !== b.notes.length) return true;
+  if (JSON.stringify(a.notes) !== JSON.stringify(b.notes)) return true;
+  if (a.goals.length !== b.goals.length) return true;
+  if (JSON.stringify(a.goals) !== JSON.stringify(b.goals)) return true;
+
+  // Singleton tables — always small, JSON.stringify is fine
+  if (JSON.stringify(a.settings) !== JSON.stringify(b.settings)) return true;
+  if (JSON.stringify(a.profile) !== JSON.stringify(b.profile)) return true;
+  if (JSON.stringify(a.unlocks) !== JSON.stringify(b.unlocks)) return true;
+  if (JSON.stringify(a.economy) !== JSON.stringify(b.economy)) return true;
+  if (JSON.stringify(a.progressSeen) !== JSON.stringify(b.progressSeen)) return true;
+
+  return false;
+}
+
+/**
+ * Fast comparison of two day-mark objects ({ habitId: status }).
+ * Avoids JSON.stringify allocation and character-by-character comparison.
+ */
+function marksDayEqual(
+  a: Record<string, string> | undefined,
+  b: Record<string, string> | undefined,
+): boolean {
+  if (a === b) return true;
+  if (!a || !b) return false;
+  const aKeys = Object.keys(a);
+  const bKeys = Object.keys(b);
+  if (aKeys.length !== bKeys.length) return false;
+  for (const key of aKeys) {
+    if (a[key] !== b[key]) return false;
+  }
+  return true;
 }
 
 /* Verify auth session before pushing — fresh registrations may not have propagated yet */
@@ -662,12 +804,13 @@ export async function pushMutation(
     }
 
     await saveChanged(supabase, userId, data, changed);
-    // Stats snapshots are updated only by fullResync (on initial load and
-    // periodic polling), not by per-mutation pushes. Computing stats from
-    // `loadData()` inside a debounced timer that fires after as-yet-unknown
-    // state changes can write stale Level-11 data over the user's real Level
-    // 23 — races we can't win. The polling fallback ensures stats stay
-    // current without this corruption risk.
+
+    // Track whether marks changed so we can skip stats recomputation on
+    // polling cycles where nothing has changed.
+    if (changed.marks) {
+      markMarksChanged();
+    }
+
     setStatus("idle");
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Sync failed";
@@ -693,10 +836,17 @@ export async function pushMutation(
 
 export function resetSyncState(): void {
   _retryQueue = [];
+  persistRetryQueue();
   if (_retryTimer) {
     clearTimeout(_retryTimer);
     _retryTimer = null;
   }
-  setStatus("idle");
+  if (_idleDebounceTimer) {
+    clearTimeout(_idleDebounceTimer);
+    _idleDebounceTimer = null;
+  }
+  _status = "idle"; // skip debounce — reset is synchronous
+  notify();
+  _listeners.clear();
 }
 

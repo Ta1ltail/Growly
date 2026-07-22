@@ -1,17 +1,13 @@
 "use client";
 
 // NotificationBell — a compact bell icon that shows the unread count.
-// Fetches the count directly (no realtime subscription — avoids collisions
-// with the /notifications page which uses useNotifications).
+// Uses the shared useNotifications singleton store so the badge receives
+// Realtime updates instantly without a separate Supabase subscription.
 // Links to /notifications so the user can see all notifications.
-// Notification bell shown in the sidebar header area.
-// the notifications page via bottom nav.
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Bell } from "lucide-react";
-import { useAuth } from "@/hooks/useAuth";
-import { createClient } from "@/lib/supabase/client";
+import { useNotifications } from "@/hooks/useNotifications";
 import { cn } from "@/lib/util";
 
 interface Props {
@@ -20,35 +16,7 @@ interface Props {
 }
 
 export function NotificationBell({ className, size = 18 }: Props) {
-  const { user } = useAuth();
-  const [unreadCount, setUnreadCount] = useState(0);
-
-  useEffect(() => {
-    if (!user) {
-      queueMicrotask(() => setUnreadCount(0));
-      return;
-    }
-
-    const userId = user.id;
-    async function fetchCount() {
-      const supabase = createClient();
-      const { count } = await supabase
-        .from("notifications")
-        .select("*", { count: "exact", head: true })
-        .eq("user_id", userId)
-        .eq("is_read", false);
-      setUnreadCount(count ?? 0);
-    }
-
-    fetchCount();
-
-    // Refresh when tab becomes visible (catches notifications from other tabs/sessions)
-    const onVisible = () => {
-      if (document.visibilityState === "visible") fetchCount();
-    };
-    document.addEventListener("visibilitychange", onVisible);
-    return () => document.removeEventListener("visibilitychange", onVisible);
-  }, [user]);
+  const { unreadCount } = useNotifications();
 
   return (
     <Link

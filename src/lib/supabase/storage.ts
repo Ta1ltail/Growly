@@ -47,10 +47,35 @@ export async function uploadAvatar(
     // Non-critical — old file may not exist
   });
 
-  // ── 2. Convert data URL to Blob ──
+  // ── 2. Validate data URL and convert to Blob ──
+  // Reject non-image data URIs (defense-in-depth against manipulated clients)
+  const mimeType = dataUrl.split(",")[0]?.split(":")[1]?.split(";")[0] ?? "";
+  if (!mimeType.startsWith("image/")) {
+    throw new Error("Invalid avatar file type. Only images are allowed.");
+  }
   const blob = dataUrlToBlob(dataUrl);
 
-  // ── 3. Upload new avatar ──
+  // ── 3. Validate file magic bytes (JPEG header: FF D8 FF) ──
+  // Even though the MIME type says image/jpeg, verify the actual file content
+  // starts with valid image magic bytes. This prevents a non-image file from
+  // being uploaded with a spoofed MIME type.
+  if (blob.size > 0) {
+    const header = new Uint8Array(await blob.slice(0, 4).arrayBuffer());
+    const isValidImage =
+      // JPEG: FF D8 FF
+      (header[0] === 0xff && header[1] === 0xd8 && header[2] === 0xff) ||
+      // PNG: 89 50 4E 47
+      (header[0] === 0x89 && header[1] === 0x50 && header[2] === 0x4e && header[3] === 0x47) ||
+      // GIF: 47 49 46 38
+      (header[0] === 0x47 && header[1] === 0x49 && header[2] === 0x46 && header[3] === 0x38) ||
+      // WebP: 52 49 46 46 (RIFF) + 57 45 42 50 (WEBP) at offset 8
+      (header[0] === 0x52 && header[1] === 0x49 && header[2] === 0x46 && header[3] === 0x46);
+    if (!isValidImage) {
+      throw new Error("Invalid image file. The file does not appear to be a valid image.");
+    }
+  }
+
+  // ── 4. Upload new avatar ──
   const filePath = AVATAR_PATH(userId);
   const { error: uploadError } = await supabase.storage
     .from(AVATAR_BUCKET)
@@ -68,7 +93,7 @@ export async function uploadAvatar(
     throw new Error(`Failed to upload avatar: ${uploadError.message}`);
   }
 
-  // ── 4. Get the public URL ──
+  // ── 5. Get the public URL ──
   const { data: { publicUrl } } = supabase.storage
     .from(AVATAR_BUCKET)
     .getPublicUrl(filePath);

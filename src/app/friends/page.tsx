@@ -76,6 +76,7 @@ export default function FriendsPage() {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [friendsPage, setFriendsPage] = useState(0);
   const [totalFriends, setTotalFriends] = useState(0);
+  const [friendError, setFriendError] = useState<string | null>(null);
 
   // Load ALL friend user IDs (for search result matching, independent of pagination)
   const friendIdCache = useRef<Set<string> | null>(null);
@@ -215,6 +216,7 @@ export default function FriendsPage() {
     }
 
     const timer = setTimeout(async () => {
+      setFriendError(null);
       setSearching(true);
       const supabase = createClient();
       // Strip characters that are structural in a PostgREST .or() filter string
@@ -248,6 +250,7 @@ export default function FriendsPage() {
   const sendFriendRequest = async (friendUserId: string) => {
     if (!user) return;
     setActionLoading(friendUserId);
+    setFriendError(null);
     const supabase = createClient();
     const { error } = await supabase
       .from("friends")
@@ -255,6 +258,7 @@ export default function FriendsPage() {
 
     if (error) {
       console.error("[friends] Failed to send request:", error.message);
+      setFriendError("Could not send friend request. Please try again.");
     } else {
       setSentRequests((prev) => new Set(prev).add(friendUserId));
       await createNotification({
@@ -275,6 +279,7 @@ export default function FriendsPage() {
     requesterUserId?: string,
   ) => {
     setActionLoading(friendId);
+    setFriendError(null);
     const supabase = createClient();
     if (accept) {
       const { error } = await supabase
@@ -283,6 +288,7 @@ export default function FriendsPage() {
         .eq("id", friendId);
       if (error) {
         console.error("[friends] Failed to accept:", error.message);
+        setFriendError("Could not accept request. Please try again.");
       } else if (requesterUserId && user) {
         await createNotification({
           userId: requesterUserId,
@@ -295,7 +301,10 @@ export default function FriendsPage() {
       }
     } else {
       const { error } = await supabase.from("friends").delete().eq("id", friendId);
-      if (error) console.error("[friends] Failed to decline:", error.message);
+      if (error) {
+        console.error("[friends] Failed to decline:", error.message);
+        setFriendError("Could not decline request. Please try again.");
+      }
     }
     setActionLoading(null);
     // Invalidate friend ID cache so the next search picks up the change
@@ -313,6 +322,13 @@ export default function FriendsPage() {
   return (
     <AppPageShell>
         <PageHeader title="Friends" subtitle="Connect with other habit-trackers" />
+
+        {/* Error banner */}
+        {friendError && (
+          <div className="mb-4 rounded-xl bg-missed/10 px-4 py-2.5 text-xs font-medium text-missed ring-1 ring-missed/20 animate-fade-in">
+            {friendError}
+          </div>
+        )}
 
         {/* Search section */}
         <Card className="mb-6 p-4">

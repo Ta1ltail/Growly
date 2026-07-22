@@ -9,6 +9,7 @@
 // See: https://nextjs.org/docs/app/building-your-application/routing/error-handling
 
 import { useEffect } from "react";
+import { reportError } from "@/lib/errorTracking";
 
 export default function ErrorPage({
   error,
@@ -19,6 +20,7 @@ export default function ErrorPage({
 }) {
   useEffect(() => {
     console.error("[error.tsx] Page-level error:", error);
+    reportError(error, "error.tsx page-level boundary");
   }, [error]);
 
   return (
@@ -33,6 +35,17 @@ export default function ErrorPage({
         <p className="mb-2 text-sm text-muted">
           An unexpected error occurred on this page. Your data is safely stored
           locally.
+        </p>
+        <p className="mb-4 text-xs text-faint">
+          If this keeps happening, you can report it at{" "}
+          <a
+            href="https://github.com/justin-g0/growly/issues"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline hover:text-accent transition-colors"
+          >
+            github.com/justin-g0/growly
+          </a>
         </p>
         {error.digest && (
           <p className="mb-4 font-mono text-[10px] text-faint">

@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import type { Note } from "@/lib/types";
-import { addNote, updateNote, deleteNote, useAppData, undoAction } from "@/lib/store";
+import { addNote, updateNote, deleteNote, useAppDataSelector, undoAction } from "@/lib/store";
 import { parseDateKey } from "@/lib/date";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Card } from "@/components/ui/Card";
@@ -125,30 +125,32 @@ function NoteCard({
 }
 
 export default function NotesPage() {
-  const data = useAppData();
+  const notes = useAppDataSelector((d) => d.notes);
+  const habitNameMapRaw = useAppDataSelector((d) => d.habits);
+  const goalTitleMapRaw = useAppDataSelector((d) => d.goals);
   const [query, setQuery] = useState("");
   const [tagFilter, setTagFilter] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
   const [editing, setEditing] = useState<Note | null>(null);
 
   const habitName = useMemo(
-    () => new Map(data.habits.map((h) => [h.id, h.name])),
-    [data.habits],
+    () => new Map(habitNameMapRaw.map((h) => [h.id, h.name])),
+    [habitNameMapRaw],
   );
   const goalTitle = useMemo(
-    () => new Map(data.goals.map((g) => [g.id, g.title])),
-    [data.goals],
+    () => new Map(goalTitleMapRaw.map((g) => [g.id, g.title])),
+    [goalTitleMapRaw],
   );
 
   const allTags = useMemo(() => {
     const set = new Set<string>();
-    for (const n of data.notes) for (const t of n.tags) set.add(t);
+    for (const n of notes) for (const t of n.tags) set.add(t);
     return [...set].sort();
-  }, [data.notes]);
+  }, [notes]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return data.notes
+    return notes
       .filter((n) => (tagFilter ? n.tags.includes(tagFilter) : true))
       .filter((n) =>
         q
@@ -159,7 +161,7 @@ export default function NotesPage() {
       .sort((a, b) =>
         a.updatedAt < b.updatedAt ? 1 : b.updatedAt < a.updatedAt ? -1 : 0,
       );
-  }, [data.notes, query, tagFilter]);
+  }, [notes, query, tagFilter]);
 
   function save(draft: NoteDraft) {
     if (editing) updateNote(editing.id, draft);
@@ -173,7 +175,7 @@ export default function NotesPage() {
     <AppPageShell>
       <PageHeader
         title="Notes"
-        subtitle={`${data.notes.length} note${data.notes.length === 1 ? "" : "s"}`}
+        subtitle={`${notes.length} note${notes.length === 1 ? "" : "s"}`}
         action={
           <Button onClick={() => setAdding(true)}>
             <Plus className="size-4" strokeWidth={2.5} /> New note
@@ -181,7 +183,7 @@ export default function NotesPage() {
         }
       />
 
-      {data.notes.length === 0 ? (
+      {notes.length === 0 ? (
         <EmptyState
           icon={NotebookPen}
           title="No notes yet"
@@ -257,8 +259,8 @@ export default function NotesPage() {
       >
         <NoteEditor
           initial={editing ?? undefined}
-          habits={data.habits.filter((h) => !h.archived)}
-          goals={data.goals}
+          habits={habitNameMapRaw.filter((h) => !h.archived)}
+          goals={goalTitleMapRaw}
           onSave={save}
           onCancel={() => {
             setAdding(false);

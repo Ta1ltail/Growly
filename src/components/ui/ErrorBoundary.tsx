@@ -63,6 +63,17 @@ export class ErrorBoundary extends Component<Props, State> {
             >
               Reload app
             </button>
+            <p className="mt-4 text-xs text-faint">
+              If this keeps happening, report it at{" "}
+              <a
+                href="https://github.com/justin-g0/growly/issues"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline hover:text-accent transition-colors"
+              >
+                github.com/justin-g0/growly
+              </a>
+            </p>
           </div>
         </div>
       );

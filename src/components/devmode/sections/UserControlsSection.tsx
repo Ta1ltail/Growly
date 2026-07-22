@@ -1,11 +1,10 @@
 "use client";
 
 import {
-  useAppData,
+  useAppDataSelector,
   updateProfile,
   setGraceHours,
   mutateData,
-  markAchievementsSeen,
 } from "@/lib/store";
 import { ACHIEVEMENTS } from "@/lib/achievements";
 import { DEFAULT_GRACE_HOURS } from "@/lib/storage";
@@ -18,9 +17,10 @@ export const USER_TERMS =
 const GRACE_OPTIONS = [0, 3, 5, 8, 24];
 
 export function UserControlsSection({ query }: { query: string }) {
-  const data = useAppData();
-  const { profile } = data;
-  const grace = data.settings.graceHours ?? DEFAULT_GRACE_HOURS;
+  const profile = useAppDataSelector((d) => d.profile);
+  const grace = useAppDataSelector(
+    (d) => d.settings.graceHours ?? DEFAULT_GRACE_HOURS,
+  );
 
   function unlockAll() {
     const now = new Date().toISOString();
@@ -129,7 +129,15 @@ export function UserControlsSection({ query }: { query: string }) {
           terms="dismiss popups"
         >
           <DevButton
-            onClick={() => markAchievementsSeen(Object.keys(data.unlocks))}
+            onClick={() =>
+              mutateData((prev) => {
+                const unlocks: Record<string, { at: string; seen: boolean }> =
+                  {};
+                for (const [id, rec] of Object.entries(prev.unlocks))
+                  unlocks[id] = { ...rec, seen: true };
+                return { ...prev, unlocks };
+              })
+            }
           >
             Seen
           </DevButton>

@@ -165,6 +165,7 @@ export default function SuggestionsPage() {
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   aria-label="Suggestion title"
+                  maxLength={200}
                   className="w-full rounded-xl border border-line bg-bg px-4 py-2.5 text-sm text-ink placeholder:text-faint focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
                 />
               </div>

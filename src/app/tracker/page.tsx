@@ -22,12 +22,14 @@ import {
   Check,
   X,
   Minus,
+  Maximize2,
+  Minimize2,
 } from "lucide-react";
 import { StreakFlame } from "@/components/habits/StreakFlame";
 import { CATEGORIES, CATEGORY_COLORS, type Category } from "@/lib/categories";
 import { addDays, dateKey } from "@/lib/date";
 import { DEFAULT_GRACE_HOURS } from "@/lib/storage";
-import { cycleMark, useAppData } from "@/lib/store";
+import { cycleMark, useAppDataSelector } from "@/lib/store";
 import { habitStreaks, isScheduled } from "@/lib/stats";
 import { frozenSet, isFrozen } from "@/lib/economy";
 import { canEditMark, isFutureDay } from "@/lib/policy";
@@ -139,11 +141,15 @@ function LegendDot({ className }: { className: string }) {
 /* ── Main Page ────────────────────────────────────────────── */
 
 export default function TrackerPage() {
-  const data = useAppData();
+  const habits = useAppDataSelector((d) => d.habits);
+  const marks = useAppDataSelector((d) => d.marks);
+  const graceSetting = useAppDataSelector((d) => d.settings.graceHours);
+  const economy = useAppDataSelector((d) => d.economy);
   const today = useToday();
-  const grace = data.settings.graceHours ?? DEFAULT_GRACE_HOURS;
+  const grace = graceSetting ?? DEFAULT_GRACE_HOURS;
   const hydrated = useHydrated();
   const [filter, setFilter] = useState<Category | "All">("All");
+  const [fullscreen, setFullscreen] = useState(false);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const headerRowRef = useRef<HTMLTableRowElement>(null);
@@ -174,25 +180,25 @@ export default function TrackerPage() {
       el.scrollLeft = el.scrollWidth;
     });
     return () => cancelAnimationFrame(raf);
-  }, [columns, data.marks, data.habits]);
+  }, [columns, marks, habits]);
 
-  const habits = useMemo(
+  const active = useMemo(
     () =>
-      data.habits
+      habits
         .filter((h) => !h.archived)
         .filter((h) => filter === "All" || h.category === filter),
-    [data.habits, filter],
+    [habits, filter],
   );
 
-  const frozen = useMemo(() => frozenSet(data.economy), [data.economy]);
+  const frozen = useMemo(() => frozenSet(economy), [economy]);
 
   const handleCellMark = useCallback((key: string, habitId: string, category: string) => {
     cycleMark(key, habitId, category);
   }, []);
 
   const groupedHabits = useMemo(() => {
-    const map = new Map<string, typeof habits>();
-    for (const h of habits) {
+    const map = new Map<string, typeof active>();
+    for (const h of active) {
       const list = map.get(h.category) ?? [];
       list.push(h);
       map.set(h.category, list);
@@ -202,11 +208,11 @@ export default function TrackerPage() {
       color: CATEGORY_COLORS[c],
       habits: map.get(c)!,
     }));
-  }, [habits]);
+  }, [active]);
 
   const usedCategories = useMemo(
-    () => CATEGORIES.filter((c) => data.habits.some((h) => !h.archived && h.category === c)),
-    [data.habits],
+    () => CATEGORIES.filter((c) => habits.some((h) => !h.archived && h.category === c)),
+    [habits],
   );
 
   const filterOptions = useMemo(
@@ -221,16 +227,38 @@ export default function TrackerPage() {
 
   return (
     <AppPageShell>
-      <PageHeader title="Tracker" subtitle="Tap to mark · past days lock automatically" />
+      <PageHeader
+        title="Tracker"
+        subtitle="Tap to mark · past days lock automatically"
+        action={
+          <button
+            onClick={() => setFullscreen((f) => !f)}
+            className="hidden md:flex items-center gap-1.5 rounded-xl bg-surface2 px-3 py-2 text-xs font-semibold text-muted transition-all hover:bg-surface2/80 hover:text-ink active:scale-95"
+            aria-label={fullscreen ? "Exit full-screen" : "Full-screen view"}
+            title={fullscreen ? "Exit full-screen" : "Expand table to full height"}
+          >
+            {fullscreen ? (
+              <Minimize2 className="size-3.5" />
+            ) : (
+              <Maximize2 className="size-3.5" />
+            )}
+            {fullscreen ? "Normal" : "Full"}
+          </button>
+        }
+      />
 
-      {habits.length > 0 && (
+      {active.length > 0 && (
         <div className="mb-4">
           <Segmented options={filterOptions} value={filter} onChange={setFilter} />
         </div>
       )}
 
       {/* Single scrollable table — always rendered, even with no habits */}
-      <div className="h-[calc(100dvh-16rem)] min-h-[360px] md:h-[calc(100dvh-13rem)]">
+      {/* Normal: fitted to page. Full-screen: expands to full viewport height. */}
+      <div className={fullscreen
+        ? "fixed inset-x-0 top-0 z-40 h-screen bg-bg pt-4 md:pl-60"
+        : "h-[calc(100dvh-16rem)] min-h-[360px] md:h-[calc(100dvh-13rem)]"
+      }>
         <Card className="h-full overflow-hidden">
           <div ref={scrollRef} className="h-full w-full overflow-auto">
             <table className="border-collapse text-center font-mono text-xs">
@@ -258,7 +286,7 @@ export default function TrackerPage() {
                       </th>
                     );
                   })}
-                  <th className="sticky top-0 z-20 w-10 bg-surface px-1.5 py-2 shadow-sm">
+                  <th className="sticky top-0 z-20 w-10 bg-surface px-1.5 py-2 shadow-sm" aria-label="Current streak">
                     <Flame className="mx-auto size-3.5 text-amber-500/80" />
                   </th>
                 </tr>
@@ -293,7 +321,7 @@ export default function TrackerPage() {
 
                       {/* Habit rows */}
                       {group.habits.map((habit) => {
-                        const { current } = habitStreaks(habit, data.marks, today, frozen);
+                        const { current } = habitStreaks(habit, marks, today, frozen);
                         return (
                           <tr key={habit.id} className="border-t border-line/40 transition-colors hover:bg-surface2/30">
                             <td className="sticky left-0 z-10 border-r border-line/30 bg-surface px-2.5 py-2 text-left shadow-[2px_0_6px_-4px_hsl(var(--c-shadow)/0.08)]">
@@ -304,7 +332,7 @@ export default function TrackerPage() {
                             </td>
                             {columns.map((d) => {
                               const key = dateKey(d);
-                              const status = data.marks[key]?.[habit.id];
+                              const status = marks[key]?.[habit.id];
                               const scheduled = isScheduled(habit, d);
                               const editable = canEditMark(key, today, grace);
                               const future = isFutureDay(key, today);

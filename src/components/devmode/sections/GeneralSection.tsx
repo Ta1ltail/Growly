@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { useAppData } from "@/lib/store";
+import { useAppDataSelector } from "@/lib/store";
 import { SCHEMA_VERSION } from "@/lib/storage";
 import { disableDevMode, resetDevSettings } from "@/lib/devmode";
 import { DevGroup, DevRow, DevStat, DevButton } from "../ui";
@@ -10,7 +10,7 @@ export const GENERAL_TERMS =
   "general app version schema route reload reset disable developer mode status";
 
 export function GeneralSection({ query }: { query: string }) {
-  const data = useAppData();
+  const dataVersion = useAppDataSelector((d) => d.version);
   const pathname = usePathname();
 
   return (
@@ -23,7 +23,7 @@ export function GeneralSection({ query }: { query: string }) {
           <span className="font-mono text-xs">v{SCHEMA_VERSION}</span>
         </DevRow>
         <DevRow label="Data version" query={query} terms="schema">
-          <span className="font-mono text-xs">v{data.version}</span>
+          <span className="font-mono text-xs">v{dataVersion}</span>
         </DevRow>
         <DevRow label="Current route" query={query} terms="path url page">
           <span className="font-mono text-xs">{pathname}</span>

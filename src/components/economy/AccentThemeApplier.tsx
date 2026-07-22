@@ -12,14 +12,15 @@
 // default on every load.
 
 import { useEffect } from "react";
-import { useAppData } from "@/lib/store";
+import { useAppDataSelector } from "@/lib/store";
 import { equippedAccent } from "@/lib/economy";
 import { accentById } from "@/lib/theme";
 
 export function AccentThemeApplier() {
-  const data = useAppData();
-  const cosmetic = equippedAccent(data.economy);
-  const themed = accentById(data.settings.theme.accent);
+  const economy = useAppDataSelector((d) => d.economy);
+  const accent = useAppDataSelector((d) => d.settings.theme.accent);
+  const cosmetic = equippedAccent(economy);
+  const themed = accentById(accent);
   // Cosmetic accent wins; otherwise the user's chosen theme accent.
   const accentColor = cosmetic?.accent ?? themed.color;
   const glowColor = cosmetic?.glow ?? themed.glow;

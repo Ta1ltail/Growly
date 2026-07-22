@@ -16,6 +16,15 @@ import {
 const EARLY_BEFORE = "08:00";
 const NIGHT_AFTER = "21:00";
 
+// Cache for buildGameStats results. Keyed on the marks object reference.
+// Stores the date key so we don't return stale results across day boundaries.
+// Only caches when frozen is empty (the common case). Invalidated when marks
+// object reference changes (every cycleMark creates a new marks object).
+const _statsCache = new WeakMap<
+  Marks,
+  { result: GameStats; dateKey: string; habitsLength: number }
+>();
+
 export interface GameStats {
   doneCount: number;
   missedCount: number;
@@ -28,10 +37,10 @@ export interface GameStats {
   longestPerfectRun: number;
   weekendPerfectDays: number;
   habitsCreated: number;
-  // Track whether a miss was ever FOLLOWED by a 7+ streak (the "comeback"
-  // achievement). We walk backward from today: if we find a miss and later
-  // find a 7+ streak after it, this flag is set.
-  comebackAchieved: boolean;
+  // Number of separate recovery events (miss → 7+ streak) across all habits.
+  comebackCount: number;
+  // True when every non-archived habit has a current streak >= 7.
+  activeHabitsAllStreak7: boolean;
 }
 
 function zeroByCategory(): Record<Category, number> {
@@ -47,6 +56,14 @@ export function buildGameStats(
   today: Date,
   frozen?: Set<string>,
 ): GameStats {
+  // Quick cache hit: same marks reference + same day + same habits count + no frozen entries
+  if (!frozen || frozen.size === 0) {
+    const todayKey = dateKey(today);
+    const cached = _statsCache.get(marks);
+    if (cached && cached.dateKey === todayKey && cached.habitsLength === habits.length) {
+      return cached.result;
+    }
+  }
   const habitCat = new Map<string, Category>();
   const habitTime = new Map<string, string | undefined>();
   for (const h of habits) {
@@ -77,8 +94,7 @@ export function buildGameStats(
   }
 
   // Streaks across every habit (archived included — history is history).
-  // Computed once here and reused by the comeback check below (was recomputed
-  // per habit there — a full second streak walk on the hot render path).
+  // Computed once here and reused by the activeHabitsAllStreak7 check below.
   const streaksByHabit = new Map<string, { current: number; best: number }>();
   let maxBestStreak = 0;
   let maxCurrentStreak = 0;
@@ -87,6 +103,45 @@ export function buildGameStats(
     streaksByHabit.set(h.id, s);
     maxBestStreak = Math.max(maxBestStreak, s.best);
     maxCurrentStreak = Math.max(maxCurrentStreak, s.current);
+  }
+
+  // Comeback count: for each habit, walk forward and count every instance where
+  // a "missed" mark is immediately followed by a 7+ day streak of "done" marks.
+  let comebackCount = 0;
+  for (const h of habits) {
+    const start = habitStartDay(h);
+    const end = startOfDay(today);
+    const endMs = end.getTime();
+    let streak = 0;
+    let afterMiss = false;
+
+    for (let d = new Date(start); d.getTime() <= endMs; d = addDays(d, 1)) {
+      if (!isScheduled(h, d)) continue;
+      const key = dateKey(d);
+      const status = marks[key]?.[h.id];
+      const isNeutral =
+        status === "skipped" || (frozen?.has(`${h.id}@${key}`) ?? false);
+
+      if (status === "done") {
+        streak++;
+        if (streak >= 7 && afterMiss) {
+          comebackCount++;
+          afterMiss = false; // Don't count this streak again
+        }
+      } else if (status === "missed") {
+        streak = 0;
+        afterMiss = true;
+      } else if (isNeutral) {
+        // neutral — streak continues without incrementing
+      } else {
+        // undefined (unmarked) on a scheduled day — breaks streak unless it's today
+        if (d.getTime() < endMs) {
+          streak = 0;
+          // afterMiss remains true if a miss preceded this — the next streak
+          // that follows could still be a recovery from the original miss.
+        }
+      }
+    }
   }
 
   // Perfect-day walk over all habits (archived included — their marks
@@ -108,9 +163,6 @@ export function buildGameStats(
     ) {
       const scheduled = habits.filter((h) => isScheduled(h, d));
       if (scheduled.length === 0) continue; // neutral day, doesn't break a run
-      // A perfect day = every scheduled habit done. Reuse the `scheduled` list
-      // computed just above instead of calling dayCompletion (which re-runs
-      // isScheduled over all habits) — equivalent to its `=== 100` result.
       const dKey = dateKey(d);
       if (scheduled.every((h) => marks[dKey]?.[h.id] === "done")) {
         perfectDays += 1;
@@ -124,7 +176,15 @@ export function buildGameStats(
     }
   }
 
-  return {
+  // activeHabitsAllStreak7: every non-archived habit has a current streak >= 7.
+  const activeHabits = habits.filter((h) => !h.archived);
+  const activeHabitsAllStreak7 =
+    activeHabits.length > 0 &&
+    activeHabits.every(
+      (h) => (streaksByHabit.get(h.id)?.current ?? 0) >= 7,
+    );
+
+  const result: GameStats = {
     doneCount,
     missedCount,
     perCategoryDone,
@@ -136,52 +196,20 @@ export function buildGameStats(
     longestPerfectRun,
     weekendPerfectDays,
     habitsCreated: habits.length,
-    // Walk per-habit history backward: if we find a miss and later find a
-    // 7+ streak after it, the user *recovered* from a miss.
-    comebackAchieved: (() => {
-      for (const h of habits) {
-        const { current } = streaksByHabit.get(h.id) ?? { current: 0, best: 0 };
-        // We need the current streak AND a past miss *before* today's streak started.
-        // Simplified heuristic: if current streak >= 7 and there's any mark
-        // before the current streak began, check if that mark was a miss.
-        if (current < 7) continue;
-        const end = startOfDay(today);
-        const startMs = habitStartDay(h).getTime();
-        let streakStart: Date | null = null;
-        // Walk backward until we find the first non-done (that's where streak began)
-        for (
-          let d = new Date(end);
-          d.getTime() >= startMs;
-          d = addDays(d, -1)
-        ) {
-          if (!isScheduled(h, d)) continue;
-          const key = dateKey(d);
-          const status = marks[key]?.[h.id];
-          if (status === "done" && streakStart === null) continue; // in streak
-          if (status !== "done" && streakStart === null) {
-            streakStart = d; // day the current streak started from
-            break;
-          }
-        }
-        if (!streakStart) continue;
-        // The streak began the day after `streakStart`, so `streakStart` itself
-        // is the break it recovered from. Scan from there (inclusive) back up to
-        // 14 days for a real miss — otherwise the canonical "missed, then 7+ done"
-        // comeback is skipped entirely.
-        for (
-          let d = streakStart, check = 0;
-          check < 14;
-          d = addDays(d, -1), check++
-        ) {
-          if (d.getTime() < startMs) break;
-          if (!isScheduled(h, d)) continue;
-          const key = dateKey(d);
-          if (marks[key]?.[h.id] === "missed") return true;
-        }
-      }
-      return false;
-    })(),
+    comebackCount,
+    activeHabitsAllStreak7,
   };
+
+  // Cache the result (only when no frozen entries, which is the common case)
+  if (!frozen || frozen.size === 0) {
+    _statsCache.set(marks, {
+      result,
+      dateKey: dateKey(today),
+      habitsLength: habits.length,
+    });
+  }
+
+  return result;
 }
 
 // Internal definition adds a metric selector to the public AchievementDef.
@@ -465,12 +493,12 @@ const DEFS: Def[] = [
   def(
     "comeback-king",
     "Comeback King",
-    "Recover from a miss to a 7-day streak.",
+    "Recover from a missed day with a 7+ day streak.",
     "special",
     "epic",
     "👑",
     1,
-    (s) => (s.comebackAchieved ? 1 : 0),
+    (s) => Math.min(s.comebackCount, 1), // unlocks on first comeback
   ),
   def(
     "habit-collector",
@@ -712,10 +740,7 @@ const DEFS: Def[] = [
     "epic",
     "🔄",
     5,
-    (s) => (s.comebackAchieved ? 1 + s.missedCount * 0 : 1),
-    // Note: missedCount * 0 is a hack to keep this at 0/1 since we don't track
-    // multiple comebacks. For now, this achievement unlocks at the same time
-    // as Comeback King and represents the same milestone at epic tier.
+    (s) => s.comebackCount,
   ),
   def(
     "habit-creator-5",
@@ -765,10 +790,7 @@ const DEFS: Def[] = [
     "epic",
     "🃏",
     1,
-    (s) => (s.maxBestStreak >= 7 ? 1 : 0),
-    // Simplified: if the user's max best streak across any habit is >= 7,
-    // this counts as a "full house". A real per-habit check would require
-    // additional stats tracking, but this serves as a reasonable proxy.
+    (s) => (s.activeHabitsAllStreak7 ? 1 : 0),
   ),
 ];
 

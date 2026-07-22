@@ -19,7 +19,7 @@ import {
   addHabit,
   markTemplateUsed,
   resetTemplateUsage,
-  useAppData,
+  useAppDataSelector,
 } from "@/lib/store";
 import { dateKey } from "@/lib/date";
 import { uid } from "@/lib/util";
@@ -35,8 +35,10 @@ import { AppPageShell } from "@/components/layout/AppPageShell";
 const TEMPLATES_PER_PAGE = 6; // 3x2 grid
 
 export default function TemplatesPage() {
-  const data = useAppData();
-  const used = new Set(data.settings.usedTemplateIds ?? []);
+  const habits = useAppDataSelector((d) => d.habits);
+  const usedTemplateIds = useAppDataSelector((d) => d.settings.usedTemplateIds);
+  const activeHabits = habits.filter((h) => !h.archived);
+  const used = new Set(usedTemplateIds ?? []);
   const available = TEMPLATES.filter((t) => !used.has(t.id));
   const usedTemplates = TEMPLATES.filter((t) => used.has(t.id));
   const [preview, setPreview] = useState<
@@ -88,7 +90,7 @@ export default function TemplatesPage() {
     <AppPageShell>
       <PageHeader
         title="Templates"
-        subtitle={`${data.habits.filter((h) => !h.archived).length} active habits`}
+        subtitle={`${activeHabits.length} active habits`}
       />
 
       {available.length === 0 ? (

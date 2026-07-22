@@ -7,7 +7,7 @@ import { useState, useRef, useEffect } from "react";
 import { Sparkles, Coins, Snowflake, RotateCw, X } from "lucide-react";
 
 import { doDailySpin, useAppDataSelector } from "@/lib/store";
-import { dateKey } from "@/lib/storage";
+import { dateKey } from "@/lib/date";
 import { Button } from "@/components/ui/Button";
 
 export function DailySpinModal({

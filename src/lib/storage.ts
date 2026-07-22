@@ -47,7 +47,14 @@ const STORAGE_KEY_BASE = "growly.data.v1";
 // For defense-in-depth, the effective key is now scoped per-user
 // via getEffectiveStorageKey() below.
 export const STORAGE_KEY = STORAGE_KEY_BASE;
-const STATS_SNAPSHOT_KEY = "growly.stats_snapshot.v1";
+
+// Base stats snapshot key (shared fallback). Actual key used at runtime is
+// user-scoped via getStatsSnapshotKey() — see note on _dataUserId below.
+const STATS_SNAPSHOT_KEY_BASE = "growly.stats_snapshot.v1";
+
+// Dev mode key — cleaned on sign-out/switch so toggle state doesn't leak
+// between accounts on the same device.
+const DEV_MODE_STORAGE_KEY = "growly.devmode.v1";
 
 // Key used for the "Remember Me" feature on login
 export const REMEMBER_ME_KEY = "growly.remember_me";
@@ -657,6 +664,21 @@ export function saveData(data: AppData): void {
  * Call this on sign-out and on registration to ensure a new user on the
  * same device never inherits another user's habits, marks, unlocks, etc.
  */
+/**
+ * Get the stats snapshot storage key, scoped to the current user when available.
+ * Falls back to the shared base key when no user is set (backward compat).
+ */
+export function getStatsSnapshotKey(): string {
+  return _dataUserId
+    ? `${STATS_SNAPSHOT_KEY_BASE}_${_dataUserId}`
+    : STATS_SNAPSHOT_KEY_BASE;
+}
+
+/**
+ * Clear all locally persisted app data and auth preferences.
+ * Call this on sign-out and on registration to ensure a new user on the
+ * same device never inherits another user's habits, marks, unlocks, etc.
+ */
 export function clearLocalAppData(): void {
   if (typeof window === "undefined") return;
   try {
@@ -665,7 +687,13 @@ export function clearLocalAppData(): void {
     if (_dataUserId) {
       window.localStorage.removeItem(`${STORAGE_KEY_BASE}_${_dataUserId}`);
     }
-    window.localStorage.removeItem(STATS_SNAPSHOT_KEY);
+    // Remove the stats snapshot — both shared (backward compat) and user-scoped
+    window.localStorage.removeItem(STATS_SNAPSHOT_KEY_BASE);
+    if (_dataUserId) {
+      window.localStorage.removeItem(`${STATS_SNAPSHOT_KEY_BASE}_${_dataUserId}`);
+    }
+    // Remove dev mode settings so toggles don't leak between accounts
+    window.localStorage.removeItem(DEV_MODE_STORAGE_KEY);
     window.localStorage.removeItem(REMEMBER_ME_KEY);
     window.localStorage.removeItem(SAVED_EMAIL_KEY);
     window.localStorage.removeItem(LAST_AUTH_USER_KEY);
@@ -679,7 +707,7 @@ export function clearLocalAppData(): void {
 export function saveStatsSnapshot(stats: StatsSnapshotData): void {
   if (typeof window === "undefined") return;
   try {
-    window.localStorage.setItem(STATS_SNAPSHOT_KEY, JSON.stringify(stats));
+    window.localStorage.setItem(getStatsSnapshotKey(), JSON.stringify(stats));
   } catch {
     // non-critical
   }
@@ -706,5 +734,4 @@ export function getLastUserId(): string | null {
 }
 
 // Date helpers — canonical implementations live in ./date.
-// Keep dateKey and addDays here since some components still import from storage.
-export { dateKey, addDays } from "./date";
+// dateKey and addDays have been moved — import from ./date directly
