@@ -18,6 +18,7 @@ import { CATEGORY_COLORS } from "@/lib/categories";
 import type { Goal } from "@/lib/types";
 import { toast } from "sonner";
 import { addGoal, deleteGoal, updateGoal, useAppDataSelector, undoAction } from "@/lib/store";
+import { SoundManager } from "@/lib/sound/SoundManager";
 import { parseDateKey } from "@/lib/date";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Card } from "@/components/ui/Card";
@@ -122,7 +123,10 @@ export default function GoalsPage() {
                     </div>
                     <div className="flex gap-0.5">
                       <button
-                        onClick={() => setEditing(goal)}
+                        onClick={() => {
+                          SoundManager.instance.play("button:click");
+                          setEditing(goal);
+                        }}
                         className="rounded-lg p-1 text-muted transition-colors hover:bg-surface2 hover:text-ink"
                         aria-label="Edit goal"
                       >
@@ -130,7 +134,10 @@ export default function GoalsPage() {
                       </button>
                       <button
                         type="button"
-                        onClick={() => setConfirmDelete(goal)}
+                        onClick={() => {
+                          SoundManager.instance.play("button:delete");
+                          setConfirmDelete(goal);
+                        }}
                         className="rounded-lg p-1 text-muted transition-colors hover:bg-missed/10 hover:text-missed"
                         aria-label="Delete goal"
                       >
@@ -150,14 +157,20 @@ export default function GoalsPage() {
                     </span>
                     <div className="flex gap-1.5">
                       <button
-                        onClick={() => step(goal, -1)}
+                        onClick={() => {
+                          SoundManager.instance.play("button:cancel");
+                          step(goal, -1);
+                        }}
                         aria-label={`Decrease ${goal.title} progress`}
                         className="flex size-8 items-center justify-center rounded-lg border border-line text-muted transition-all hover:bg-surface2 active:scale-90"
                       >
                         <Minus className="size-4" />
                       </button>
                       <button
-                        onClick={() => step(goal, 1)}
+                        onClick={() => {
+                          SoundManager.instance.play("button:confirm");
+                          step(goal, 1);
+                        }}
                         aria-label={`Increase ${goal.title} progress`}
                         className="flex size-8 items-center justify-center rounded-lg bg-accent text-white transition-all hover:brightness-110 active:scale-90"
                       >

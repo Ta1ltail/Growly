@@ -1,9 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import Link from "next/link";
-import {
-  Pencil,
+import Link from "next/link";import { Pencil,
   Flame,
   Trophy,
   Medal,
@@ -17,6 +15,7 @@ import {
   Coins,
   LogOut,
 } from "lucide-react";
+import { SoundManager } from "@/lib/sound/SoundManager";
 import { useAppData } from "@/lib/store";
 import { useAuth } from "@/hooks/useAuth";
 import { useToday } from "@/hooks/useToday";
@@ -321,7 +320,7 @@ export default function ProfilePage() {
       {/* Sign out */}
       <section className="mt-6">
         <button
-          onClick={signOut}
+          onClick={() => { SoundManager.instance.play("button:click"); signOut(); }}
           className="flex w-full items-center gap-3 rounded-2xl border border-line bg-surface/80 px-4 py-3.5 text-sm font-medium text-muted shadow-[var(--shadow-sm)] backdrop-blur-sm transition-all hover:bg-missed/10 hover:text-missed"
         >
           <LogOut className="size-[18px]" />

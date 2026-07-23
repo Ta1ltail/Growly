@@ -7,7 +7,6 @@
 // Queue progress dots show how many events remain.
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Coins } from "lucide-react";
 import { toast } from "sonner";
 import {
   useAppData,
@@ -21,6 +20,7 @@ import type { SoundEvent } from "@/lib/sound/SoundManager";
 import { buildCelebrationQueue } from "@/lib/celebrations";
 import { CONFETTI_SKINS, equippedOrDefault } from "@/lib/economy";
 import { CelebrationCenter } from "./CelebrationCenter";
+import { RewardChips } from "./RewardChips";
 import { AchievementBadge } from "@/components/achievements/AchievementBadge";
 
 // Map celebration kinds to sound events
@@ -146,31 +146,7 @@ export function CelebrationManager() {
               {ev.eyebrow}
             </p>
             {ev.reward && (
-              <div className="mt-1.5 flex flex-wrap gap-1">
-                {ev.reward
-                  .split("·")
-                  .map((part) => part.trim())
-                  .filter(Boolean)
-                  .map((part, i) => {
-                    // Render the coin glyph as the lucide SVG instead of the
-                    // emoji so it can't fall back to a missing-glyph box.
-                    const isCoin = part.includes("🪙");
-                    const text = part.replace("🪙", "").trim();
-                    return (
-                      <span
-                        key={i}
-                        className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold"
-                        style={{
-                          background: `${ev.accent}15`,
-                          color: ev.accent,
-                        }}
-                      >
-                        {text}
-                        {isCoin && <Coins className="size-3" aria-hidden />}
-                      </span>
-                    );
-                  })}
-              </div>
+              <RewardChips reward={ev.reward} accent={ev.accent} size="sm" />
             )}
           </div>
         </div>

@@ -122,8 +122,21 @@ function teardown() {
     fetchTimer = null;
   }
   currentUserId = null;
-  _initialFetchDone = false; // Reset so the next user gets their notification sound
+  // Intentionally NOT resetting _initialFetchDone here.
+  // Resetting it would cause notification sounds to replay on every
+  // subscription re-creation when the auth user reference changes
+  // (e.g., Supabase session refresh causing a new object identity).
+  // The flag is only reset via the explicit check in subscribeToUser
+  // when the userId actually differs from the previous user.
 }
+
+// Notification type → SoundEvent mapping (used both in initial fetch and realtime INSERT handling)
+const NOTIF_SOUND_MAP: Partial<Record<string, SoundEvent>> = {
+  friend_request: "notification:friend",
+  friend_accept: "notification:friend",
+  achievement: "notification:generic",
+  system: "notification:generic",
+};
 
 // Tracks whether the initial fetch has completed — used to play a sound for
 // any pre-existing unread notifications on first load (not on re-fetches).
@@ -153,12 +166,6 @@ async function fetchNotifications(userId: string | null) {
     // previous session or received while offline). Only plays once per session.
     if (!_initialFetchDone && unread.length > 0) {
       const latest = unread[0];
-      const NOTIF_SOUND_MAP: Partial<Record<string, SoundEvent>> = {
-        friend_request: "notification:friend",
-        friend_accept: "notification:friend",
-        achievement: "notification:generic",
-        system: "notification:generic",
-      };
       const sound = NOTIF_SOUND_MAP[latest.type] ?? "notification:generic";
       SoundManager.instance.play(sound);
     }
@@ -184,12 +191,6 @@ function handleChange(payload: RealtimePostgresChangesPayload<Notification>) {
     // Play a notification sound for genuinely new notifications
     if (!notif.is_read && document.visibilityState !== "visible") {
       // Only play sound for background notifications (tab was hidden)
-      const NOTIF_SOUND_MAP: Partial<Record<string, SoundEvent>> = {
-        friend_request: "notification:friend",
-        friend_accept: "notification:friend",
-        achievement: "notification:generic",
-        system: "notification:generic",
-      };
       const sound = NOTIF_SOUND_MAP[notif.type] ?? "notification:generic";
       SoundManager.instance.play(sound);
     }

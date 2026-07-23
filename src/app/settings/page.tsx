@@ -28,6 +28,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { dateKey } from "@/lib/date";
+import { SoundManager } from "@/lib/sound/SoundManager";
 import { DEFAULT_GRACE_HOURS } from "@/lib/storage";
 import {
   clearAllData,
@@ -150,7 +151,7 @@ export default function SettingsPage() {
               return (
                 <button
                   key={id}
-                  onClick={() => setTheme({ mode: id })}
+                  onClick={() => { SoundManager.instance.play("button:click"); setTheme({ mode: id }); }}
                   className={`flex flex-col items-center gap-1.5 rounded-xl border py-3 text-xs font-medium transition-all ${
                     activeMode
                       ? "border-accent bg-accent/10 text-accent"
@@ -173,7 +174,7 @@ export default function SettingsPage() {
               return (
                 <button
                   key={a.id}
-                  onClick={() => setTheme({ accent: a.id })}
+                  onClick={() => { SoundManager.instance.play("button:click"); setTheme({ accent: a.id }); }}
                   aria-label={a.label}
                   title={a.label}
                   className="flex size-10 items-center justify-center rounded-full transition-transform hover:scale-110 active:scale-95"
@@ -221,10 +222,9 @@ export default function SettingsPage() {
             Grace window (hours after midnight)
           </p>
           <div className="inline-flex gap-1 rounded-xl border border-line bg-surface2 p-1">
-            {GRACE_OPTIONS.map((h) => (
-              <button
+            {GRACE_OPTIONS.map((h) => (                <button
                 key={h}
-                onClick={() => setGraceHours(h)}
+                onClick={() => { SoundManager.instance.play("button:click"); setGraceHours(h); }}
                 className={`rounded-lg px-3.5 py-1.5 text-xs font-medium transition-all ${
                   grace === h
                     ? "bg-accent text-white shadow-sm"
@@ -254,7 +254,7 @@ export default function SettingsPage() {
               {[0, 7, 14, 30].map((t) => (
                 <button
                   key={t}
-                  onClick={() => setAutoFreezeThreshold(t)}
+                  onClick={() => { SoundManager.instance.play("button:click"); setAutoFreezeThreshold(t); }}
                   className={`rounded-lg px-3.5 py-1.5 text-xs font-medium transition-all ${
                     (data.settings.autoFreezeThreshold ?? 0) === t
                       ? "bg-accent text-white shadow-sm"
@@ -276,7 +276,7 @@ export default function SettingsPage() {
             <input
               type="checkbox"
               checked={data.settings.soundEnabled !== false}
-              onChange={(e) => setSoundEnabled(e.target.checked)}
+              onChange={(e) => { SoundManager.instance.play("button:toggle"); setSoundEnabled(e.target.checked); }}
               className="size-4 accent-accent"
             />
             <div className="flex-1">
@@ -325,7 +325,7 @@ export default function SettingsPage() {
             <input
               type="checkbox"
               checked={data.settings.reducedMotion ?? false}
-              onChange={(e) => setReducedMotion(e.target.checked)}
+              onChange={(e) => { SoundManager.instance.play("button:toggle"); setReducedMotion(e.target.checked); }}
               className="size-4 accent-accent"
             />
             <div className="flex-1">
@@ -352,19 +352,19 @@ export default function SettingsPage() {
       {/* Data */}
       <Section icon={Download} title="Data">
         <Card className="divide-y divide-line overflow-hidden">
-          <Row onClick={exportCsv} icon={Download} label="Export marks (CSV)" />
+          <Row onClick={() => { SoundManager.instance.play("button:click"); exportCsv(); }} icon={Download} label="Export marks (CSV)" />
           <Row
-            onClick={exportJson}
+            onClick={() => { SoundManager.instance.play("button:click"); exportJson(); }}
             icon={Download}
             label="Download full backup (JSON)"
           />
           <Row
-            onClick={importJson}
+            onClick={() => { SoundManager.instance.play("button:click"); importJson(); }}
             icon={Upload}
             label="Import backup (JSON)"
           />
           <button
-            onClick={() => setConfirmReset(true)}
+            onClick={() => { SoundManager.instance.play("button:delete"); setConfirmReset(true); }}
             className="flex w-full items-center gap-3 px-4 py-3.5 text-left text-sm text-missed transition-colors hover:bg-missed/10"
           >
             <Trash2 className="size-[18px]" />
@@ -518,6 +518,7 @@ export default function SettingsPage() {
               size="sm"
               className="w-full"
               onClick={async () => {
+                SoundManager.instance.play("button:click");
                 // Local-only fallback: clear data and sign out
                 const supabase = createClient();
                 try {
@@ -589,7 +590,7 @@ function CustomCategoryEditor() {
             >
               {cat}
               <button
-                onClick={() => removeCustomCategory(cat)}
+                onClick={() => { SoundManager.instance.play("button:delete"); removeCustomCategory(cat); }}
                 className="ml-0.5 rounded-full p-0.5 text-faint hover:text-missed transition-colors"
                 aria-label={`Remove ${cat}`}
               >

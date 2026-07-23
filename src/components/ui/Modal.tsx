@@ -56,7 +56,8 @@ export function Modal({
         if (e.key === "Escape") {
           e.preventDefault();
           e.stopPropagation();
-          // Close sound is played on the open→false transition below
+          // Play close sound for Escape (no child button sound fires)
+          SoundManager.instance.play("button:modal-close");
           onCloseRef.current();
           return;
         }
@@ -92,49 +93,58 @@ export function Modal({
         window.dispatchEvent(new CustomEvent("modal:close"));
       };
     } else {
-      // Modal just closed — play close sound (only if we previously opened)
-      if (playedOpenRef.current) {
-        SoundManager.instance.play("button:modal-close");
-      }
+      // Reset open-sound guard on close.
+      // NOTE: Close sound is NOT played here — it would duplicate with sounds
+      // from child form buttons (button:cancel, button:confirm, etc.).
+      // Instead, close sounds are played explicitly by:
+      //   - The X close button (handles its own sound)
+      //   - The Escape key handler (above)
+      //   - The backdrop mouseDown handler (below)
       playedOpenRef.current = false;
     }
   }, [open]); // Intentionally NOT depending on onClose — stabilized via ref
 
   if (!open) return null;
 
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-0 backdrop-blur-sm animate-fade-in sm:items-center sm:p-4 md:ml-60"
-      role="dialog"
-      aria-modal="true"
-      aria-label={title}
-      onMouseDown={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
-    >
-      <div
-        ref={panelRef}
-        data-scrollable="true"
-        className="flex max-h-[92vh] w-full max-w-2xl flex-col overflow-hidden rounded-t-3xl border border-line bg-surface shadow-2xl animate-rise sm:rounded-2xl"
+  return (      <div
+        className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-0 backdrop-blur-sm animate-fade-in sm:items-center sm:p-4 md:ml-60"
+        role="dialog"
+        aria-modal="true"
+        aria-label={title}
+        onMouseDown={(e) => {
+          if (e.target === e.currentTarget) {
+            // Play close sound for backdrop click (no child button sound fires)
+            SoundManager.instance.play("button:modal-close");
+            onClose();
+          }
+        }}
       >
-        <div className="flex items-start justify-between gap-4 border-b border-line px-5 py-4">
-          <div className="min-w-0">
-            <h2 className="text-base font-semibold tracking-tight">{title}</h2>
-            {subtitle && (
-              <p className="mt-0.5 text-xs text-muted">{subtitle}</p>
-            )}
+        <div
+          ref={panelRef}
+          data-scrollable="true"
+          className="flex max-h-[92vh] w-full max-w-2xl flex-col overflow-hidden rounded-t-3xl border border-line bg-surface shadow-2xl animate-rise sm:rounded-2xl"
+        >
+          <div className="flex items-start justify-between gap-4 border-b border-line px-5 py-4">
+            <div className="min-w-0">
+              <h2 className="text-base font-semibold tracking-tight">{title}</h2>
+              {subtitle && (
+                <p className="mt-0.5 text-xs text-muted">{subtitle}</p>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              {headerActions}
+              <button
+                onClick={() => {
+                  SoundManager.instance.play("button:modal-close");
+                  onClose();
+                }}
+                aria-label="Close"
+                className="shrink-0 rounded-lg p-1.5 text-muted transition-colors hover:bg-surface2 hover:text-ink"
+              >
+                <X className="size-4" />
+              </button>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            {headerActions}
-            <button
-              onClick={onClose}
-              aria-label="Close"
-              className="shrink-0 rounded-lg p-1.5 text-muted transition-colors hover:bg-surface2 hover:text-ink"
-            >
-              <X className="size-4" />
-            </button>
-          </div>
-        </div>
 
         <div
           data-scrollable="true"

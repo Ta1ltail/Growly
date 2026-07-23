@@ -9,6 +9,7 @@
 
 import { useContext, useState } from "react";
 import { CloudOff, RefreshCw, X } from "lucide-react";
+import { SoundManager } from "@/lib/sound/SoundManager";
 import { SyncContext } from "./SyncProvider";
 import {
   fullResync,
@@ -78,7 +79,7 @@ export function SyncWarningBanner() {
         </p>
         <div className="flex items-center gap-2 shrink-0">
           <button
-            onClick={handleRetryNow}
+            onClick={() => { SoundManager.instance.play("button:click"); handleRetryNow(); }}
             disabled={retryingNow}
             className="inline-flex items-center gap-1.5 rounded-lg bg-amber-500/15 px-2.5 py-1 text-[11px] font-semibold text-amber-600 transition-colors hover:bg-amber-500/25 disabled:opacity-50 dark:text-amber-400"
           >
@@ -88,7 +89,7 @@ export function SyncWarningBanner() {
             Retry now
           </button>
           <button
-            onClick={() => setDismissed(true)}
+            onClick={() => { SoundManager.instance.play("button:cancel"); setDismissed(true); }}
             className="rounded-lg p-1 text-amber-500/60 transition-colors hover:text-amber-500"
             aria-label="Dismiss warning"
           >

@@ -114,11 +114,10 @@ export function HabitForm({
         <div className="flex flex-wrap gap-1.5">
           {CATEGORIES.map((c) => {
             const active = c === category;
-            return (
-              <button
+            return (                <button
                 key={c}
                 type="button"
-                onClick={() => setCategory(c)}
+                onClick={() => { SoundManager.instance.play("button:click"); setCategory(c); }}
                 className={`flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium transition-all ${
                   active
                     ? "border-transparent text-white"
@@ -149,7 +148,7 @@ export function HabitForm({
             <button
               key={k.value}
               type="button"
-              onClick={() => setKind(k.value)}
+              onClick={() => { SoundManager.instance.play("button:click"); setKind(k.value); }}
               className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-all ${
                 kind === k.value
                   ? "bg-accent text-white shadow-sm"
@@ -174,7 +173,7 @@ export function HabitForm({
                 <button
                   key={d}
                   type="button"
-                  onClick={() => toggleMonthDay(d)}
+                  onClick={() => { SoundManager.instance.play("button:toggle"); toggleMonthDay(d); }}
                   className={`flex h-8 items-center justify-center rounded-lg text-xs font-medium transition-all ${
                     active
                       ? "bg-accent text-white"
@@ -221,7 +220,7 @@ export function HabitForm({
             <button
               key={p}
               type="button"
-              onClick={() => setPriority(p)}
+              onClick={() => { SoundManager.instance.play("button:click"); setPriority(p); }}
               className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-all ${
                 priority === p
                   ? "bg-accent text-white shadow-sm"
@@ -240,7 +239,7 @@ export function HabitForm({
           <input
             type="checkbox"
             checked={reminderOn}
-            onChange={(e) => setReminderOn(e.target.checked)}
+            onChange={(e) => { SoundManager.instance.play("button:toggle"); setReminderOn(e.target.checked); }}
             className="size-4 accent-[var(--c-accent)]"
           />
           Reminder
@@ -261,7 +260,7 @@ export function HabitForm({
         {!initial && onViewTemplates ? (
           <button
             type="button"
-            onClick={onViewTemplates}
+            onClick={() => { SoundManager.instance.play("button:click"); onViewTemplates?.(); }}
             className="flex items-center gap-1.5 text-xs font-medium text-accent hover:underline"
           >
             <LayoutTemplate className="size-3.5" /> View templates

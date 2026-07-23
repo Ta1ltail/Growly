@@ -2,6 +2,7 @@
 
 import type { TitleInfo } from "@/lib/titles";
 import { RANK_STYLE } from "@/lib/ranks";
+import { SoundManager } from "@/lib/sound/SoundManager";
 
 export function TitleDisplay({
   title,
@@ -55,7 +56,10 @@ export function TitleDisplay({
     return (
       <button
         type="button"
-        onClick={onClick}
+        onClick={() => {
+          SoundManager.instance.play("button:click");
+          onClick();
+        }}
         aria-label="View all titles"
         className={`${base} rounded-lg text-left transition-transform hover:scale-[1.02] active:scale-95`}
       >

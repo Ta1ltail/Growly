@@ -30,33 +30,7 @@
  *   SoundManager.instance.play("habit:complete");
  */
 
-export type SoundEvent =
-  | "achievement:unlock"
-  | "achievement:celebrate"
-  | "button:click"
-  | "button:confirm"
-  | "button:cancel"
-  | "button:back"
-  | "button:delete"
-  | "button:toggle"
-  | "button:modal-open"
-  | "button:modal-close"
-  | "button:nav"
-  | "habit:complete"
-  | "habit:skip"
-  | "habit:miss"
-  | "reward:coin"
-  | "reward:quest"
-  | "reward:spin"
-  | "reward:levelup"
-  | "notification:generic"
-  | "notification:friend"
-  | "notification:reminder"
-  | "streak:milestone"
-  | "goal:complete"
-  | "note:save"
-  | "note:delete"
-  | "freeze:use";
+// SoundEvent type is derived from SOUND_MAP_ENTRIES keys below
 
 /**
  * Priority determines queue position when multiple sounds fire rapidly.
@@ -71,43 +45,59 @@ interface SoundConfig {
   priority: Priority;
 }
 
-const SOUND_MAP: Record<string, SoundConfig> = {
-  // Achievement sounds
-  "achievement:unlock": { path: "/sounds/achievement/unlock.mp3", priority: "high" },
-  "achievement:celebrate": { path: "/sounds/achievement/unlock.mp3", priority: "high" },
-  // Button sounds — all use click.mp3
-  "button:click": { path: "/sounds/button/click.mp3", priority: "low" },
-  "button:confirm": { path: "/sounds/button/click.mp3", priority: "low" },
-  "button:cancel": { path: "/sounds/button/click.mp3", priority: "low" },
-  "button:back": { path: "/sounds/button/click.mp3", priority: "low" },
-  "button:delete": { path: "/sounds/button/click.mp3", priority: "low" },
-  "button:toggle": { path: "/sounds/button/click.mp3", priority: "low" },
-  "button:modal-open": { path: "/sounds/button/click.mp3", priority: "low" },
-  "button:modal-close": { path: "/sounds/button/click.mp3", priority: "low" },
-  "button:nav": { path: "/sounds/button/click.mp3", priority: "low" },
-  // Habit status sounds
-  "habit:complete": { path: "/sounds/habit/complete.mp3", priority: "medium" },
-  "habit:skip": { path: "/sounds/habit/skip.mp3", priority: "medium" },
-  "habit:miss": { path: "/sounds/habit/miss.mp3", priority: "medium" },
-  // Reward sounds
-  "reward:coin": { path: "/sounds/reward/coin.mp3", priority: "medium" },
-  "reward:quest": { path: "/sounds/reward/coin.mp3", priority: "medium" },
-  "reward:spin": { path: "/sounds/reward/coin.mp3", priority: "medium" },
-  "reward:levelup": { path: "/sounds/reward/levelup.mp3", priority: "high" },
-  // Notification sounds — all use generic.mp3
-  "notification:generic": { path: "/sounds/notification/generic.mp3", priority: "medium" },
-  "notification:friend": { path: "/sounds/notification/generic.mp3", priority: "medium" },
-  "notification:reminder": { path: "/sounds/notification/generic.mp3", priority: "medium" },
-  // Streak milestone
-  "streak:milestone": { path: "/sounds/achievement/unlock.mp3", priority: "high" },
-  // Goal completed
-  "goal:complete": { path: "/sounds/achievement/unlock.mp3", priority: "high" },
-  // Note actions
-  "note:save": { path: "/sounds/button/click.mp3", priority: "low" },
-  "note:delete": { path: "/sounds/button/click.mp3", priority: "low" },
-  // Freeze
-  "freeze:use": { path: "/sounds/reward/coin.mp3", priority: "medium" },
-};
+// Derive the public SoundEvent type from the SOUND_MAP keys to keep them in sync.
+export type SoundEvent = keyof typeof SOUND_MAP_ENTRIES;
+
+const SOUND_MAP_ENTRIES = {
+  // ── Achievement / Progression (high priority) ──
+  // These are celebratory events — use the bright major-triad success chime
+  "achievement:unlock": { path: "/sounds/ui/success.wav", priority: "high" },
+  "achievement:celebrate": { path: "/sounds/ui/success.wav", priority: "high" },
+  "streak:milestone": { path: "/sounds/ui/success.wav", priority: "high" },
+  "goal:complete": { path: "/sounds/ui/success.wav", priority: "high" },
+  "reward:levelup": { path: "/sounds/ui/success.wav", priority: "high" },
+
+  // ── Button / UI clicks (low priority) ──
+  // Each button action has a distinct tonal character
+  "button:click": { path: "/sounds/button/click.wav", priority: "low" },
+  "button:confirm": { path: "/sounds/button/confirm.wav", priority: "low" },
+  "button:cancel": { path: "/sounds/button/cancel.wav", priority: "low" },
+  "button:back": { path: "/sounds/button/back.wav", priority: "low" },
+  "button:delete": { path: "/sounds/button/delete.wav", priority: "low" },
+  "button:nav": { path: "/sounds/button/click.wav", priority: "low" },
+
+  // ── Modal / Drawer (low priority) ──
+  "button:modal-open": { path: "/sounds/ui/drawer-open.wav", priority: "low" },
+  "button:modal-close": { path: "/sounds/ui/drawer-close.wav", priority: "low" },
+
+  // ── Toggle / Switch (low priority) ──
+  "button:toggle": { path: "/sounds/ui/toggle-on.wav", priority: "low" },
+
+  // ── UI Feedback (medium priority) ──
+  "ui:success": { path: "/sounds/ui/success.wav", priority: "medium" },
+  "ui:error": { path: "/sounds/ui/error.wav", priority: "medium" },
+  "ui:warning": { path: "/sounds/ui/warning.wav", priority: "medium" },
+
+  // ── Habit status (medium priority) ──
+  "habit:complete": { path: "/sounds/ui/success.wav", priority: "medium" },
+  "habit:skip": { path: "/sounds/button/back.wav", priority: "medium" },
+  "habit:miss": { path: "/sounds/ui/error.wav", priority: "medium" },
+
+  // ── Rewards (medium priority) ──
+  "reward:coin": { path: "/sounds/button/confirm.wav", priority: "medium" },
+  "reward:quest": { path: "/sounds/button/confirm.wav", priority: "medium" },
+  "reward:spin": { path: "/sounds/button/confirm.wav", priority: "medium" },
+  "freeze:use": { path: "/sounds/button/confirm.wav", priority: "medium" },
+
+  // ── Notifications (medium priority) ──
+  "notification:generic": { path: "/sounds/notification/generic.wav", priority: "medium" },
+  "notification:friend": { path: "/sounds/notification/friend.wav", priority: "medium" },
+  "notification:reminder": { path: "/sounds/notification/generic.wav", priority: "medium" },
+
+  // ── Note actions (low priority) ──
+  "note:save": { path: "/sounds/button/click.wav", priority: "low" },
+  "note:delete": { path: "/sounds/button/delete.wav", priority: "low" },
+} satisfies Record<string, SoundConfig>;
 
 // ── Queue item ──
 
@@ -166,7 +156,7 @@ export class SoundManager {
     if (this._disposed) return;
     if (!this._enabled) return;
 
-    const config = SOUND_MAP[event];
+    const config = SOUND_MAP_ENTRIES[event];
     if (!config) {
       if (process.env.NODE_ENV === "development") {
         console.warn(`[SoundManager] Unknown sound event: "${event}"`);
@@ -250,7 +240,7 @@ export class SoundManager {
     this._initAttempted = true;
 
     const uniquePaths = new Set(
-      Object.values(SOUND_MAP).map((c) => c.path),
+      Object.values(SOUND_MAP_ENTRIES).map((c) => c.path),
     );
 
     // Try Web Audio API first
@@ -280,7 +270,7 @@ export class SoundManager {
    */
   preloadEvent(event: SoundEvent): void {
     if (typeof window === "undefined") return;
-    const config = SOUND_MAP[event];
+    const config = SOUND_MAP_ENTRIES[event];
     if (!config) return;
 
     if (this._ctx) {

@@ -100,6 +100,10 @@ function generateButtonSounds() {
   const dir = path.join(SOUNDS_DIR, "button");
   console.log("\n  Button sounds:");
 
+  // click: quick neutral tap (A4, 50ms) — for generic button clicks
+  const click = sineWave(440, 0.05, 0.35);
+  writeWav(path.join(dir, "click.wav"), applyEnvelope(click, 0.002, 0.03));
+
   // confirm: pleasant ascending tone (C5→E5, 200ms)
   const confirm = sineWave(523, 0.2);
   // Apply an ascending sweep for the first half, then hold
@@ -125,31 +129,8 @@ function generateButtonSounds() {
   const back = sineWave(350, 0.12);
   writeWav(path.join(dir, "back.wav"), applyEnvelope(back, 0.005, 0.06));
 
-  // toggle: bright short click (A5, 60ms)
-  const toggle = sineWave(880, 0.06);
-  writeWav(path.join(dir, "toggle.wav"), applyEnvelope(toggle, 0.003, 0.04));
-
-  // modal-open: rising whoosh (300→900Hz, 250ms)
-  const modalOpenLen = Math.floor(SAMPLE_RATE * 0.25);
-  const modalOpen = new Float32Array(modalOpenLen);
-  for (let i = 0; i < modalOpenLen; i++) {
-    const t = i / SAMPLE_RATE;
-    const progress = i / modalOpenLen;
-    const freq = 300 + progress * 600;
-    modalOpen[i] = Math.sin(2 * Math.PI * freq * t) * 0.3;
-  }
-  writeWav(path.join(dir, "modal-open.wav"), applyEnvelope(modalOpen, 0.01, 0.1));
-
-  // modal-close: falling whoosh (600→200Hz, 200ms)
-  const modalCloseLen = Math.floor(SAMPLE_RATE * 0.2);
-  const modalClose = new Float32Array(modalCloseLen);
-  for (let i = 0; i < modalCloseLen; i++) {
-    const t = i / SAMPLE_RATE;
-    const progress = i / modalCloseLen;
-    const freq = 600 - progress * 400;
-    modalClose[i] = Math.sin(2 * Math.PI * freq * t) * 0.3;
-  }
-  writeWav(path.join(dir, "modal-close.wav"), applyEnvelope(modalClose, 0.005, 0.08));
+  // Note: toggle, modal-open, modal-close were moved to ui/ directory
+  // See generateFeedbackSounds() for their replacements
 }
 
 // ── Notification sounds ──
@@ -182,7 +163,107 @@ function generateNotificationSounds() {
     const tone2 = t >= 0.12 ? Math.sin(2 * Math.PI * 523 * (t - 0.12)) * 0.25 : 0;
     reminderSamples[i] = tone1 + tone2;
   }
-  writeWav(path.join(dir, "reminder.wav"), applyEnvelope(reminderSamples, 0.005, 0.08));
+  writeWav(path.join(dir, "generic.wav"), applyEnvelope(reminderSamples, 0.005, 0.08));
+}
+
+// ── New UI / Feedback sounds ──
+
+function generateFeedbackSounds() {
+  const dir = path.join(SOUNDS_DIR, "ui");
+  console.log("\n  UI / Feedback sounds:");
+
+  // toggle-on: bright rising click (C6→E6, 80ms)
+  const toggleOnLen = Math.floor(SAMPLE_RATE * 0.08);
+  const toggleOn = new Float32Array(toggleOnLen);
+  for (let i = 0; i < toggleOnLen; i++) {
+    const t = i / SAMPLE_RATE;
+    const progress = i / toggleOnLen;
+    const freq = 1047 + progress * 330; // C6 → E6
+    toggleOn[i] = Math.sin(2 * Math.PI * freq * t) * 0.25;
+  }
+  writeWav(path.join(dir, "toggle-on.wav"), applyEnvelope(toggleOn, 0.003, 0.04));
+
+  // toggle-off: soft falling click (E6→C6, 70ms)
+  const toggleOffLen = Math.floor(SAMPLE_RATE * 0.07);
+  const toggleOff = new Float32Array(toggleOffLen);
+  for (let i = 0; i < toggleOffLen; i++) {
+    const t = i / SAMPLE_RATE;
+    const progress = i / toggleOffLen;
+    const freq = 1319 - progress * 330; // E6 → C6
+    toggleOff[i] = Math.sin(2 * Math.PI * freq * t) * 0.2;
+  }
+  writeWav(path.join(dir, "toggle-off.wav"), applyEnvelope(toggleOff, 0.003, 0.04));
+
+  // success: bright ascending major triad (C5→E5→G5, 400ms)
+  const successLen = Math.floor(SAMPLE_RATE * 0.4);
+  const successSamples = new Float32Array(successLen);
+  for (let i = 0; i < successLen; i++) {
+    const t = i / SAMPLE_RATE;
+    // Staggered tones: C5 at 0ms, E5 at 120ms, G5 at 240ms
+    const tone1 = t < 0.12 ? Math.sin(2 * Math.PI * 523 * t) * 0.25 : 0;
+    const tone2 = t >= 0.12 && t < 0.24 ? Math.sin(2 * Math.PI * 659 * (t - 0.12)) * 0.25 : 0;
+    const tone3 = t >= 0.24 ? Math.sin(2 * Math.PI * 784 * (t - 0.24)) * 0.25 : 0;
+    // Overlapping sustain for richness
+    const sustain = t >= 0.12 && t < 0.24
+      ? Math.sin(2 * Math.PI * 523 * t) * 0.12
+      : t >= 0.24
+        ? (Math.sin(2 * Math.PI * 523 * t) + Math.sin(2 * Math.PI * 659 * (t - 0.12))) * 0.08
+        : 0;
+    successSamples[i] = tone1 + tone2 + tone3 + sustain;
+  }
+  writeWav(path.join(dir, "success.wav"), applyEnvelope(successSamples, 0.008, 0.12));
+
+  // error: short descending buzz (C5→G4, 250ms) with slight dissonance
+  const errorLen = Math.floor(SAMPLE_RATE * 0.25);
+  const errorSamples = new Float32Array(errorLen);
+  for (let i = 0; i < errorLen; i++) {
+    const t = i / SAMPLE_RATE;
+    const progress = i / errorLen;
+    const freq = 523 - progress * 130; // C5 → G4
+    // Add a minor second overtone for slight dissonance
+    const overtone = Math.sin(2 * Math.PI * (freq * 1.06) * t) * 0.12;
+    errorSamples[i] = (Math.sin(2 * Math.PI * freq * t) * 0.3) + overtone;
+  }
+  writeWav(path.join(dir, "error.wav"), applyEnvelope(errorSamples, 0.005, 0.1));
+
+  // warning: alternating two-tone (A4→D5→A4→D5, 100ms per tone, 400ms total)
+  const warningLen = Math.floor(SAMPLE_RATE * 0.4);
+  const warningSamples = new Float32Array(warningLen);
+  for (let i = 0; i < warningLen; i++) {
+    const t = i / SAMPLE_RATE;
+    const cycle = t % 0.1; // alternating every 100ms
+    const freq = cycle < 0.05 ? 440 : 587; // A4 → D5
+    warningSamples[i] = Math.sin(2 * Math.PI * freq * t) * 0.2;
+  }
+  writeWav(path.join(dir, "warning.wav"), applyEnvelope(warningSamples, 0.008, 0.1));
+
+  // drawer-open: spacious rising whoosh (200→500Hz with harmonics, 300ms)
+  const drawerOpenLen = Math.floor(SAMPLE_RATE * 0.3);
+  const drawerOpen = new Float32Array(drawerOpenLen);
+  for (let i = 0; i < drawerOpenLen; i++) {
+    const t = i / SAMPLE_RATE;
+    const progress = i / drawerOpenLen;
+    const freq = 200 + progress * 300;
+    // Combined fundamental + 2nd harmonic + subtle noise-like 3rd partial
+    const fund = Math.sin(2 * Math.PI * freq * t) * 0.2;
+    const harm2 = Math.sin(2 * Math.PI * freq * 2 * t) * 0.08;
+    const harm3 = Math.sin(2 * Math.PI * freq * 3 * t) * 0.03;
+    drawerOpen[i] = fund + harm2 + harm3;
+  }
+  writeWav(path.join(dir, "drawer-open.wav"), applyEnvelope(drawerOpen, 0.015, 0.1));
+
+  // drawer-close: soft falling whoosh (400→150Hz, 250ms)
+  const drawerCloseLen = Math.floor(SAMPLE_RATE * 0.25);
+  const drawerClose = new Float32Array(drawerCloseLen);
+  for (let i = 0; i < drawerCloseLen; i++) {
+    const t = i / SAMPLE_RATE;
+    const progress = i / drawerCloseLen;
+    const freq = 400 - progress * 250;
+    const fund = Math.sin(2 * Math.PI * freq * t) * 0.18;
+    const harm2 = Math.sin(2 * Math.PI * freq * 2 * t) * 0.06;
+    drawerClose[i] = fund + harm2;
+  }
+  writeWav(path.join(dir, "drawer-close.wav"), applyEnvelope(drawerClose, 0.01, 0.08));
 }
 
 // ── Main ──
@@ -190,4 +271,5 @@ function generateNotificationSounds() {
 console.log("Generating sound effects...");
 generateButtonSounds();
 generateNotificationSounds();
+generateFeedbackSounds();
 console.log("\nDone! All sounds generated.");

@@ -6,10 +6,11 @@
 // next queued event. Legendary achievements get the confetti burst.
 
 import { useEffect, useRef, lazy, Suspense } from "react";
-import { Coins } from "lucide-react";
+import { useScrollLock } from "@/hooks/useScrollLock";
 import type { CelebrationEvent } from "@/lib/celebrations";
 import { RARITY_STYLE } from "@/lib/rarity";
 import { AchievementBadge } from "@/components/achievements/AchievementBadge";
+import { RewardChips } from "./RewardChips";
 
 const Confetti = lazy(() =>
   import("@/components/celebrations/Confetti").then((m) => ({
@@ -37,9 +38,12 @@ export function CelebrationCenter({
   onDismiss: () => void;
   queueIndex?: number;
   queueTotal?: number;
-  // Equipped confetti cosmetic — overrides the default rarity/accent colors.
   confettiPalette?: string[];
 }) {
+  // Lock background scroll while the celebration is shown.
+  // Scroll is released when the component unmounts (user dismisses all events).
+  useScrollLock(true);
+
   // Keep the latest onDismiss in a ref (updated in an effect, not during
   // render) so the keydown listener below can stay subscribed once with [].
   const onDismissRef = useRef(onDismiss);
@@ -119,31 +123,7 @@ export function CelebrationCenter({
         <p className="mt-1 text-sm text-muted">{event.description}</p>
 
         {event.reward && (
-          <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
-            {event.reward
-              .split("·")
-              .map((part) => part.trim())
-              .filter(Boolean)
-              .map((part, i) => {
-                // The coin glyph is an emoji in the reward string; render the
-                // lucide SVG instead so it can't fall back to a missing-glyph box.
-                const isCoin = part.includes("🪙");
-                const text = part.replace("🪙", "").trim();
-                return (
-                  <span
-                    key={i}
-                    className="inline-flex items-center gap-1 rounded-full px-3 py-1 font-mono text-sm font-bold"
-                    style={{
-                      background: `${event.accent}1f`,
-                      color: event.accent,
-                    }}
-                  >
-                    {text}
-                    {isCoin && <Coins className="size-3.5" aria-hidden />}
-                  </span>
-                );
-              })}
-          </div>
+          <RewardChips reward={event.reward} accent={event.accent} size="md" />
         )}
 
         {/* Queue progress */}

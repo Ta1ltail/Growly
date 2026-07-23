@@ -4,6 +4,7 @@
 // doesn't match its label/hint/terms.
 
 import type { ReactNode } from "react";
+import { SoundManager } from "@/lib/sound/SoundManager";
 
 // True when every whitespace token of `query` appears in `terms`.
 export function matchQuery(query: string, terms: string): boolean {
@@ -100,7 +101,7 @@ export function DevToggle({
       role="switch"
       aria-checked={checked}
       aria-label={label}
-      onClick={() => onChange(!checked)}
+      onClick={() => { SoundManager.instance.play("button:toggle"); onChange(!checked); }}
       className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${checked ? "bg-accent" : "bg-surface2 border border-line"}`}
     >
       <span
@@ -133,7 +134,7 @@ export function DevButton({
   return (
     <button
       type="button"
-      onClick={onClick}
+      onClick={() => { SoundManager.instance.play("button:click"); onClick(); }}
       disabled={disabled}
       title={title}
       className={`rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-all active:scale-95 disabled:pointer-events-none disabled:opacity-50 ${tones[tone]}`}

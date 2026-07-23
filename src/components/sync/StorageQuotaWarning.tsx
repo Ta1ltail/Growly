@@ -10,6 +10,7 @@
 
 import { useEffect, useState } from "react";
 import { HardDrive, X } from "lucide-react";
+import { SoundManager } from "@/lib/sound/SoundManager";
 import { getEffectiveStorageKey } from "@/lib/storage";
 
 const WARN_THRESHOLD = 0.75; // 75% used → show warning
@@ -86,6 +87,7 @@ export function StorageQuotaWarning() {
         </p>
         <button
           onClick={() => {
+            SoundManager.instance.play("button:cancel");
             setDismissed(true);
             try { sessionStorage.setItem(DISMISS_KEY, "1"); } catch { /* ignore */ }
           }}

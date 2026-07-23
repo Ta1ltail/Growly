@@ -4,6 +4,7 @@
 // instead of crashing the entire page. Wraps the app in RootLayout.
 
 import { Component, type ReactNode, type ErrorInfo } from "react";
+import { SoundManager } from "@/lib/sound/SoundManager";
 import { reportError } from "@/lib/errorTracking";
 
 interface Props {
@@ -56,6 +57,7 @@ export class ErrorBoundary extends Component<Props, State> {
             )}
             <button
               onClick={() => {
+                SoundManager.instance.play("button:click");
                 this.setState({ hasError: false, error: null });
                 window.location.reload();
               }}

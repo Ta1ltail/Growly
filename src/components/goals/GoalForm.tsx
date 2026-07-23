@@ -118,7 +118,7 @@ export function GoalForm({
         <div className="flex flex-wrap gap-1.5">
           <button
             type="button"
-            onClick={() => setCategory("")}
+            onClick={() => { SoundManager.instance.play("button:cancel"); setCategory(""); }}
             className={`rounded-full border px-2.5 py-1 text-xs font-medium transition-all ${
               category === ""
                 ? "border-accent bg-accent/10 text-accent"
@@ -129,11 +129,10 @@ export function GoalForm({
           </button>
           {CATEGORIES.map((c) => {
             const active = c === category;
-            return (
-              <button
+            return (                <button
                 key={c}
                 type="button"
-                onClick={() => setCategory(c)}
+                onClick={() => { SoundManager.instance.play("button:click"); setCategory(c); }}
                 className={`flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium transition-all ${
                   active
                     ? "border-transparent text-white"
@@ -166,7 +165,7 @@ export function GoalForm({
                 <button
                   key={h.id}
                   type="button"
-                  onClick={() => toggleLinked(h.id)}
+                  onClick={() => { SoundManager.instance.play("button:click"); toggleLinked(h.id); }}
                   className={`rounded-full border px-2.5 py-1 text-xs font-medium transition-all ${
                     active
                       ? "border-accent bg-accent/10 text-accent"
@@ -196,9 +195,10 @@ export function GoalForm({
                 </span>
                 <button
                   type="button"
-                  onClick={() =>
-                    setMilestones((prev) => prev.filter((x) => x.id !== m.id))
-                  }
+                  onClick={() => {
+                    SoundManager.instance.play("button:delete");
+                    setMilestones((prev) => prev.filter((x) => x.id !== m.id));
+                  }}
                   className="text-muted hover:text-missed"
                   aria-label="Remove milestone"
                 >

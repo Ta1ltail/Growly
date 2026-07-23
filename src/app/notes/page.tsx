@@ -18,6 +18,7 @@ import {
 import { toast } from "sonner";
 import type { Note } from "@/lib/types";
 import { addNote, updateNote, deleteNote, useAppDataSelector, undoAction } from "@/lib/store";
+import { SoundManager } from "@/lib/sound/SoundManager";
 import { parseDateKey } from "@/lib/date";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Card } from "@/components/ui/Card";
@@ -76,7 +77,7 @@ function NoteCard({
 
   return (
     <button
-      onClick={onClick}
+      onClick={() => { SoundManager.instance.play("button:click"); onClick(); }}
       className="mb-3 block w-full break-inside-avoid text-left"
     >
       <div className="rounded-2xl border border-line bg-surface p-4 transition-all hover:-translate-y-0.5 hover:border-accent/40 hover:shadow-md">
@@ -298,7 +299,7 @@ function TagChip({
 }) {
   return (
     <button
-      onClick={onClick}
+      onClick={() => { SoundManager.instance.play("button:click"); onClick(); }}
       aria-pressed={active}
       className={`rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors ${
         active

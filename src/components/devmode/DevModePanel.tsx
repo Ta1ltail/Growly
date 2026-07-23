@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { useDevSettings, setDev } from "@/lib/devmode";
 import { matchQuery } from "./ui";
+import { SoundManager } from "@/lib/sound/SoundManager";
 import { GeneralSection, GENERAL_TERMS } from "./sections/GeneralSection";
 import { UiControlsSection, UI_TERMS } from "./sections/UiControlsSection";
 import { PerformanceSection, PERF_TERMS } from "./sections/PerformanceSection";
@@ -121,7 +122,7 @@ export function DevModePanel({ onClose }: { onClose: () => void }) {
       <button
         aria-label="Close developer mode"
         className="absolute inset-0 bg-black/40 backdrop-blur-[2px]"
-        onClick={onClose}
+        onClick={() => { SoundManager.instance.play("button:back"); onClose(); }}
       />
 
       <aside className="relative flex h-full w-full max-w-[26rem] flex-col border-l border-line bg-surface shadow-2xl animate-rise">
@@ -140,7 +141,7 @@ export function DevModePanel({ onClose }: { onClose: () => void }) {
             </div>
           </div>
           <button
-            onClick={onClose}
+            onClick={() => { SoundManager.instance.play("button:modal-close"); onClose(); }}
             aria-label="Close"
             className="rounded-lg p-1.5 text-muted transition-colors hover:bg-surface2 hover:text-ink"
           >
@@ -168,7 +169,7 @@ export function DevModePanel({ onClose }: { onClose: () => void }) {
               return (
                 <button
                   key={s.id}
-                  onClick={() => setDev({ section: s.id })}
+                  onClick={() => { SoundManager.instance.play("button:click"); setDev({ section: s.id }); }}
                   className={`flex shrink-0 items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-all ${
                     on
                       ? "bg-accent/15 text-accent"

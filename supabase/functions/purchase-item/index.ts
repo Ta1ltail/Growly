@@ -16,6 +16,7 @@
 
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import { corsHeaders } from "../_shared/cors.ts";
+import { startOfDay, addDays, dateKey, parseDateKey } from "../_shared/date.ts";
 
 // ── Shop catalog (mirrors src/lib/economy.ts) ──
 
@@ -87,25 +88,6 @@ function coinsEarned(
 }
 
 // ── Schedule helpers (for proper perfect-days computation) ──
-
-function startOfDay(d: Date): Date {
-  return new Date(d.getFullYear(), d.getMonth(), d.getDate());
-}
-
-function addDays(d: Date, n: number): Date {
-  const out = new Date(d);
-  out.setDate(out.getDate() + n);
-  return out;
-}
-
-function dateKey(d: Date): string {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-}
-
-function parseDateKey(key: string): Date {
-  const [y, m, d] = key.split("-").map(Number);
-  return new Date(y, m - 1, d);
-}
 
 function effectiveRecurrence(habit: {
   recurrence?: { kind: "daily" | "weekly" | "monthly"; weekdays?: number[]; monthDays?: number[] } | null;
