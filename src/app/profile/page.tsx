@@ -259,6 +259,7 @@ export default function ProfilePage() {
           </h2>
           <Link
             href="/achievements"
+            onClick={() => SoundManager.instance.play("button:nav")}
             className="flex items-center gap-1 text-xs font-semibold text-accent hover:underline"
           >
             View all <ChevronRight className="size-3.5" />
@@ -392,6 +393,7 @@ function LinkRow({
   return (
     <Link
       href={href}
+      onClick={() => SoundManager.instance.play("button:nav")}
       className="flex items-center gap-3 px-4 py-3.5 text-sm transition-colors hover:bg-surface2/50"
     >
       <Icon className={`size-[18px] ${iconColor}`} />

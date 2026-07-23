@@ -256,7 +256,10 @@ export function ProfileEditModal({
                 <button
                   key={p.id}
                   type="button"
-                  onClick={() => set("avatar", p.id)}
+                  onClick={() => {
+                    SoundManager.instance.play("button:click");
+                    set("avatar", p.id);
+                  }}
                   aria-label={p.id}
                   aria-pressed={active}
                   className={`grid size-11 place-items-center rounded-xl border text-xl transition-colors ${
@@ -297,7 +300,10 @@ export function ProfileEditModal({
                 <button
                   key={b.id}
                   type="button"
-                  onClick={() => set("banner", b.id)}
+                  onClick={() => {
+                    SoundManager.instance.play("button:click");
+                    set("banner", b.id);
+                  }}
                   aria-label={b.id}
                   aria-pressed={active}
                   className={`h-9 w-16 rounded-lg ring-2 ring-offset-2 ring-offset-surface transition-all ${

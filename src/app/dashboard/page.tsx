@@ -18,6 +18,7 @@ import {
   Bell,
   MessageSquare,
 } from "lucide-react";
+import { SoundManager } from "@/lib/sound/SoundManager";
 import { useAppData } from "@/lib/store";
 import { useToday } from "@/hooks/useToday";
 import { useHydrated } from "@/hooks/useHydrated";
@@ -220,6 +221,7 @@ export default function DashboardPage() {
               </h3>
               <Link
                 href="/achievements"
+                onClick={() => SoundManager.instance.play("button:nav")}
                 className="text-[10px] font-semibold text-accent hover:underline shrink-0"
               >
                 All
@@ -432,6 +434,7 @@ export default function DashboardPage() {
             </Link>
             <Link
               href="/profile"
+              onClick={() => SoundManager.instance.play("button:nav")}
               className="flex items-center gap-1 text-xs font-semibold text-accent hover:underline"
             >
               Character page <ChevronRight className="size-3.5" />
@@ -455,6 +458,7 @@ export default function DashboardPage() {
             </h2>
             <Link
               href="/notifications"
+              onClick={() => SoundManager.instance.play("button:nav")}
               className="text-xs font-semibold text-accent hover:underline"
             >
               View all

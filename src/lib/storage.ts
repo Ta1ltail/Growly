@@ -637,6 +637,17 @@ export function loadData(): AppData {
       typeof settingsRaw.reducedMotion === "boolean"
         ? settingsRaw.reducedMotion
         : undefined,
+    soundEnabled:
+      typeof settingsRaw.soundEnabled === "boolean"
+        ? settingsRaw.soundEnabled
+        : undefined,
+    soundVolume:
+      typeof settingsRaw.soundVolume === "number" &&
+      Number.isFinite(settingsRaw.soundVolume) &&
+      settingsRaw.soundVolume >= 0 &&
+      settingsRaw.soundVolume <= 1
+        ? settingsRaw.soundVolume
+        : undefined,
   },
   profile: cleanProfile(parsed.profile),
       unlocks: cleanUnlocks(parsed.unlocks),

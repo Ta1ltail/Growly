@@ -252,7 +252,10 @@ export function MorePage({
         </div>
 
         {/* Scrollable categories */}
-        <div className="flex-1 overflow-y-auto px-4 pb-[calc(env(safe-area-inset-bottom,0px)+1rem)]">
+        <div
+          data-scrollable="true"
+          className="flex-1 overflow-y-auto px-4 pb-[calc(env(safe-area-inset-bottom,0px)+1rem)]"
+        >
           <div className="space-y-6">
             {MORE_CATEGORIES.map((category) => (
               <div key={category.title}>
