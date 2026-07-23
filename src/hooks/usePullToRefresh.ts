@@ -10,6 +10,11 @@ import { useState, useRef, useCallback, useEffect } from "react";
 const PULL_THRESHOLD = 150;
 const MAX_PULL = 200;
 
+// Module-level modal counter — incremented/decremented by modal:open/close
+// custom events dispatched from the Modal component. When > 0, pull-to-refresh
+// is completely disabled so scrolling inside a modal never triggers a refresh.
+let _openModalCount = 0;
+
 export interface PullToRefreshState {
   pulling: boolean;
   progress: number;
@@ -28,10 +33,25 @@ export function usePullToRefresh(onRefresh: () => Promise<void> | void): PullToR
   const refreshingRef = useRef(false);
   const refreshRef = useRef(onRefresh);
 
+  // Track modal open/close events so pull-to-refresh is disabled whenever
+  // any modal is visible — prevents the gesture from firing behind a dialog.
+  useEffect(() => {
+    const onModalOpen = () => { _openModalCount++; };
+    const onModalClose = () => { _openModalCount = Math.max(0, _openModalCount - 1); };
+    window.addEventListener("modal:open", onModalOpen);
+    window.addEventListener("modal:close", onModalClose);
+    return () => {
+      window.removeEventListener("modal:open", onModalOpen);
+      window.removeEventListener("modal:close", onModalClose);
+    };
+  }, []);
+
   const handleTouchStart = useCallback((e: TouchEvent) => {
+    // Disabled entirely when any modal is open
+    if (_openModalCount > 0) return;
     if (window.scrollY > 0) return;
     if (refreshingRef.current) return;
-    // Skip if touch is inside a modal/dialog
+    // Also skip if touch is inside a native dialog element
     const target = e.target as HTMLElement;
     if (target.closest('[role="dialog"], [role="alertdialog"]')) return;
     startY.current = e.touches[0].clientY;
@@ -39,6 +59,7 @@ export function usePullToRefresh(onRefresh: () => Promise<void> | void): PullToR
   }, []);
 
   const handleTouchMove = useCallback((e: TouchEvent) => {
+    if (_openModalCount > 0) return;
     if (refreshingRef.current) return;
     currentY.current = e.touches[0].clientY;
     const diff = currentY.current - startY.current;
@@ -61,6 +82,7 @@ export function usePullToRefresh(onRefresh: () => Promise<void> | void): PullToR
   }, []);
 
   const handleTouchEnd = useCallback(() => {
+    if (_openModalCount > 0) return;
     if (refreshingRef.current) return;
     if (!pullingRef.current) return;
 

@@ -122,7 +122,12 @@ function teardown() {
     fetchTimer = null;
   }
   currentUserId = null;
+  _initialFetchDone = false; // Reset so the next user gets their notification sound
 }
+
+// Tracks whether the initial fetch has completed — used to play a sound for
+// any pre-existing unread notifications on first load (not on re-fetches).
+let _initialFetchDone = false;
 
 /* ── Fetch notifications from Supabase ── */
 async function fetchNotifications(userId: string | null) {
@@ -141,12 +146,31 @@ async function fetchNotifications(userId: string | null) {
       .limit(50);
 
     const notifications = (data ?? []) as Notification[];
+    const unread = notifications.filter((n) => !n.is_read);
+
+    // Play notification sound on FIRST fetch if there are unread notifications
+    // that weren't shown by the Realtime subscription (i.e., persisted from a
+    // previous session or received while offline). Only plays once per session.
+    if (!_initialFetchDone && unread.length > 0) {
+      const latest = unread[0];
+      const NOTIF_SOUND_MAP: Partial<Record<string, SoundEvent>> = {
+        friend_request: "notification:friend",
+        friend_accept: "notification:friend",
+        achievement: "notification:generic",
+        system: "notification:generic",
+      };
+      const sound = NOTIF_SOUND_MAP[latest.type] ?? "notification:generic";
+      SoundManager.instance.play(sound);
+    }
+    _initialFetchDone = true;
+
     updateStore({
       notifications,
       loading: false,
-      unreadCount: notifications.filter((n) => !n.is_read).length,
+      unreadCount: unread.length,
     });
   } catch {
+    _initialFetchDone = true;
     updateStore({ notifications: [], loading: false, unreadCount: 0 });
   }
 }

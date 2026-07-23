@@ -60,16 +60,16 @@ const SOUND_MAP: Record<string, SoundConfig> = {
   // Achievement sounds
   "achievement:unlock": { path: "/sounds/achievement/unlock.mp3", priority: "high" },
   "achievement:celebrate": { path: "/sounds/achievement/unlock.mp3", priority: "high" },
-  // Button sounds — each subtype now has its own distinct WAV tone
+  // Button sounds — all use click.mp3
   "button:click": { path: "/sounds/button/click.mp3", priority: "low" },
-  "button:confirm": { path: "/sounds/button/confirm.wav", priority: "low" },
-  "button:cancel": { path: "/sounds/button/cancel.wav", priority: "low" },
-  "button:back": { path: "/sounds/button/back.wav", priority: "low" },
-  "button:delete": { path: "/sounds/button/delete.wav", priority: "low" },
-  "button:toggle": { path: "/sounds/button/toggle.wav", priority: "low" },
-  "button:modal-open": { path: "/sounds/button/modal-open.wav", priority: "low" },
-  "button:modal-close": { path: "/sounds/button/modal-close.wav", priority: "low" },
-  // Habit status sounds (distinct files)
+  "button:confirm": { path: "/sounds/button/click.mp3", priority: "low" },
+  "button:cancel": { path: "/sounds/button/click.mp3", priority: "low" },
+  "button:back": { path: "/sounds/button/click.mp3", priority: "low" },
+  "button:delete": { path: "/sounds/button/click.mp3", priority: "low" },
+  "button:toggle": { path: "/sounds/button/click.mp3", priority: "low" },
+  "button:modal-open": { path: "/sounds/button/click.mp3", priority: "low" },
+  "button:modal-close": { path: "/sounds/button/click.mp3", priority: "low" },
+  // Habit status sounds
   "habit:complete": { path: "/sounds/habit/complete.mp3", priority: "medium" },
   "habit:skip": { path: "/sounds/habit/skip.mp3", priority: "medium" },
   "habit:miss": { path: "/sounds/habit/miss.mp3", priority: "medium" },
@@ -78,10 +78,10 @@ const SOUND_MAP: Record<string, SoundConfig> = {
   "reward:quest": { path: "/sounds/reward/coin.mp3", priority: "medium" },
   "reward:spin": { path: "/sounds/reward/coin.mp3", priority: "medium" },
   "reward:levelup": { path: "/sounds/reward/levelup.mp3", priority: "high" },
-  // Notification sounds — each subtype now has its own distinct tone
-  "notification:generic": { path: "/sounds/notification/generic.mp3", priority: "medium" },
-  "notification:friend": { path: "/sounds/notification/friend.wav", priority: "medium" },
-  "notification:reminder": { path: "/sounds/notification/reminder.wav", priority: "medium" },
+  // Notification sounds — all use click.mp3
+  "notification:generic": { path: "/sounds/button/click.mp3", priority: "medium" },
+  "notification:friend": { path: "/sounds/button/click.mp3", priority: "medium" },
+  "notification:reminder": { path: "/sounds/button/click.mp3", priority: "medium" },
   // Streak milestone
   "streak:milestone": { path: "/sounds/achievement/unlock.mp3", priority: "high" },
   // Goal completed
