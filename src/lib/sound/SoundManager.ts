@@ -65,8 +65,8 @@ const SOUND_MAP_ENTRIES = {
   "button:nav": { path: "/sounds/button/click.wav", priority: "low" },
 
   // ── Modal / Drawer (low priority) ──
-  "button:modal-open": { path: "/sounds/ui/maximize.wav", priority: "low" },
-  "button:modal-close": { path: "/sounds/ui/minimize.wav", priority: "low" },
+  "button:modal-open": { path: "/sounds/ui/toggle-on.wav", priority: "low" },
+  "button:modal-close": { path: "/sounds/ui/toggle-off.wav", priority: "low" },
 
   // ── Toggle / Switch (low priority) ──
   "button:toggle": { path: "/sounds/ui/toggle-on.wav", priority: "low" },

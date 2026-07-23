@@ -170,33 +170,6 @@ function generateFeedbackSounds() {
   }
   writeWav(path.join(dir, "toggle-off.wav"), applyEnvelope(toggleOff, 0.003, 0.04));
 
-  // maximize: spacious rising whoosh (200→500Hz with harmonics, 300ms)
-  const maximizeLen = Math.floor(SAMPLE_RATE * 0.3);
-  const maximize = new Float32Array(maximizeLen);
-  for (let i = 0; i < maximizeLen; i++) {
-    const t = i / SAMPLE_RATE;
-    const progress = i / maximizeLen;
-    const freq = 200 + progress * 300;
-    const fund = Math.sin(2 * Math.PI * freq * t) * 0.2;
-    const harm2 = Math.sin(2 * Math.PI * freq * 2 * t) * 0.08;
-    const harm3 = Math.sin(2 * Math.PI * freq * 3 * t) * 0.03;
-    maximize[i] = fund + harm2 + harm3;
-  }
-  writeWav(path.join(dir, "maximize.wav"), applyEnvelope(maximize, 0.015, 0.1));
-
-  // minimize: soft falling whoosh (400→150Hz, 250ms)
-  const minimizeLen = Math.floor(SAMPLE_RATE * 0.25);
-  const minimize = new Float32Array(minimizeLen);
-  for (let i = 0; i < minimizeLen; i++) {
-    const t = i / SAMPLE_RATE;
-    const progress = i / minimizeLen;
-    const freq = 400 - progress * 250;
-    const fund = Math.sin(2 * Math.PI * freq * t) * 0.18;
-    const harm2 = Math.sin(2 * Math.PI * freq * 2 * t) * 0.06;
-    minimize[i] = fund + harm2;
-  }
-  writeWav(path.join(dir, "minimize.wav"), applyEnvelope(minimize, 0.01, 0.08));
-
   // drop: short satisfying thud (A2→D3, 150ms) — for habit complete, success feedback
   const dropLen = Math.floor(SAMPLE_RATE * 0.15);
   const dropSamples = new Float32Array(dropLen);
