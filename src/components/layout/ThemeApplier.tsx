@@ -62,6 +62,7 @@ async function syncCapacitorNavBar() {
 
 export function ThemeApplier() {
   const { mode, accent } = useAppDataSelector((d) => d.settings.theme);
+  const reducedMotion = useAppDataSelector((d) => d.settings.reducedMotion);
 
   useEffect(() => {
     const root = document.documentElement;
@@ -93,6 +94,18 @@ export function ThemeApplier() {
     root.style.setProperty("--c-accent", a.color);
     root.style.setProperty("--c-accent-glow", a.glow);
   }, [accent]);
+
+  // Sync the reduced-motion data attribute on mount and whenever the
+  // preference changes. This is set by setReducedMotion() on toggle, but
+  // on full page load / hard navigation it needs to be re-applied from the
+  // persisted store value — otherwise the CSS [data-reduced-motion="true"]
+  // selectors in globals.css would not take effect.
+  useEffect(() => {
+    document.documentElement.setAttribute(
+      "data-reduced-motion",
+      reducedMotion ? "true" : "false",
+    );
+  }, [reducedMotion]);
 
   return null;
 }
