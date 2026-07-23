@@ -36,7 +36,9 @@ let savedOverflow = "";
 let savedPosition = "";
 let savedTop = "";
 let savedWidth = "";
+let touchStartY = 0;
 let touchMoveHandler: ((e: TouchEvent) => void) | null = null;
+let touchStartHandler: ((e: TouchEvent) => void) | null = null;
 let wheelHandler: ((e: WheelEvent) => void) | null = null;
 
 /**
@@ -87,11 +89,19 @@ function applyLock() {
     document.body.style.paddingRight = `${scrollbarWidth}px`;
   }
 
+  // Track touch start position so we can determine scroll direction
+  // and only prevent scrolling at boundaries when the finger is moving
+  // in the overscroll direction (not on every touch from a boundary).
+  if (!touchStartHandler) {
+    touchStartHandler = (e: TouchEvent) => {
+      touchStartY = e.touches[0]?.clientY ?? 0;
+    };
+    document.addEventListener("touchstart", touchStartHandler, { passive: true });
+  }
+
   // Prevent touch scrolling on mobile
   if (!touchMoveHandler) {
     touchMoveHandler = (e: TouchEvent) => {
-      // Only prevent if the touch target is inside a scrollable element
-      // that isn't a modal/dialog content area
       const target = e.target as HTMLElement | null;
       if (target && target.closest('[data-scrollable="true"]')) {
         // Allow scrolling inside scrollable modal content
@@ -100,10 +110,14 @@ function applyLock() {
           const { scrollTop, scrollHeight, clientHeight } = scrollable;
           const atTop = scrollTop <= 0;
           const atBottom = scrollTop + clientHeight >= scrollHeight;
-          // Prevent overscroll past boundaries
+          // Only prevent overscroll when finger is moving in the
+          // overscroll direction. This allows normal scrolling to
+          // start from a boundary (e.g., swiping up from the top).
+          const currentY = e.touches[0]?.clientY ?? touchStartY;
+          const isMovingDown = currentY > touchStartY;
           if (
-            (atTop && e.touches[0] && scrollTop <= 0) ||
-            (atBottom && scrollTop + clientHeight >= scrollHeight)
+            (atTop && isMovingDown) ||
+            (atBottom && !isMovingDown)
           ) {
             e.preventDefault();
           }
@@ -146,6 +160,10 @@ function releaseLock() {
   window.scrollTo(0, savedScrollY);
 
   // Remove event listeners
+  if (touchStartHandler) {
+    document.removeEventListener("touchstart", touchStartHandler);
+    touchStartHandler = null;
+  }
   if (touchMoveHandler) {
     document.removeEventListener("touchmove", touchMoveHandler);
     touchMoveHandler = null;
