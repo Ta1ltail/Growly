@@ -7,16 +7,50 @@
 //   reportError(error, { context: "dashboard" });
 
 /**
+ * Whether @sentry/nextjs is available and configured.
+ * Auto-detected via NEXT_PUBLIC_SENTRY_DSN env var.
+ * To enable Sentry:
+ *   1. npm install @sentry/nextjs
+ *   2. Set NEXT_PUBLIC_SENTRY_DSN in your environment
+ *   3. Sentry is auto-detected on the next app build
+ */
+const SENTRY_AVAILABLE =
+  typeof process !== "undefined" &&
+  typeof process.env?.NEXT_PUBLIC_SENTRY_DSN === "string" &&
+  process.env.NEXT_PUBLIC_SENTRY_DSN.length > 0;
+
+/**
+ * Lazily imported Sentry instance — null until first use.
+ * The type is `any` to avoid a compile-time TS2307 when @sentry/nextjs
+ * isn't installed (it's an optional dependency detected at runtime).
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let _sentry: any = null;
+
+async function getSentry(): Promise<any> {
+  if (!SENTRY_AVAILABLE) return null;
+  if (_sentry) return _sentry;
+  try {
+    // @ts-expect-error — @sentry/nextjs is optional; auto-detected at runtime
+    // via NEXT_PUBLIC_SENTRY_DSN. TypeScript can't resolve the module when
+    // the package isn't installed, but the try/catch handles it gracefully.
+    _sentry = await import("@sentry/nextjs");
+    return _sentry;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Report an error to the monitoring system.
  *
- * In production, this can be extended to send errors to Sentry, Datadog, etc.
- * Currently logs to console.error and optionally sends to a server-side
- * logging endpoint for persistent capture.
+ * In production, this sends errors to Sentry (when configured) or falls back
+ * to the server-side /api/log-error endpoint for persistent capture.
  *
- * To integrate a production monitoring service (Sentry, Datadog, LogRocket):
- *   1. Install the SDK (e.g. @sentry/nextjs)
- *   2. Import and call Sentry.captureException() here
- *   3. Configure the DSN via NEXT_PUBLIC_SENTRY_DSN
+ * To configure Sentry:
+ *   1. Install: npm install @sentry/nextjs
+ *   2. Set NEXT_PUBLIC_SENTRY_DSN in your environment
+ *   3. Sentry is auto-detected and used on the next app build
  *
  * @param error The error to report
  * @param context Optional context about where the error occurred
@@ -40,9 +74,22 @@ export function reportError(
     },
   );
 
-  // Send to server-side logging endpoint for persistent capture.
-  // This uses sendBeacon which is non-blocking and works even during page
-  // unload. If the endpoint is not set up, the fetch will silently fail.
+  // Sentry path — fire-and-forget (no await to keep the API synchronous)
+  if (SENTRY_AVAILABLE) {
+    getSentry().then((sentry) => {
+      if (sentry) {
+        sentry.captureException(errorObj, {
+          tags: { context: context ?? "unknown" },
+          extra: { ...(metadata as Record<string, unknown>) },
+        });
+      }
+    });
+    return;
+  }
+
+  // Fallback: send to server-side /api/log-error endpoint.
+  // Uses fetch() with keepalive for reliability (works during page unload)
+  // and better error handling than sendBeacon.
   try {
     const payload = {
       message: errorObj.message,
@@ -54,12 +101,15 @@ export function reportError(
       timestamp: new Date().toISOString(),
     };
 
-    if (typeof navigator !== "undefined" && navigator.sendBeacon) {
-      navigator.sendBeacon(
-        "/api/log-error",
-        new Blob([JSON.stringify(payload)], { type: "application/json" }),
-      );
-    }
+    fetch("/api/log-error", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+      keepalive: true, // Ensures request completes even during page unload
+    }).catch(() => {
+      // Silent — logging should never throw; network errors are expected in
+      // offline scenarios and don't warrant user-visible feedback.
+    });
   } catch {
     // Silent — logging should never throw
   }

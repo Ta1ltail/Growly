@@ -576,7 +576,15 @@ Deno.serve(async (req: Request) => {
       if (unlockErr) console.error("[recompute] Failed to write unlocks:", unlockErr.message);
     }
 
-    // ══ Write stats snapshot ══
+    // ══ Write stats snapshot (with conflict detection) ══
+    // Read the current updated_at before computing so we can detect if another
+    // process (e.g., another device sync) modified the stats while we computed.
+    const { data: existingStats } = await serviceClient
+      .from("user_stats_snapshots")
+      .select("updated_at")
+      .eq("user_id", userId)
+      .maybeSingle();
+
     const statsSnapshot = {
       user_id: userId,
       level: level.level,
@@ -590,10 +598,30 @@ Deno.serve(async (req: Request) => {
       updated_at: today.toISOString(),
     };
 
-    const { error: statsErr } = await serviceClient
-      .from("user_stats_snapshots")
-      .upsert(statsSnapshot, { onConflict: "user_id" });
-    if (statsErr) console.error("[recompute] Failed to write stats:", statsErr.message);
+    const existingUpdatedAt = existingStats?.updated_at;
+    if (existingUpdatedAt) {
+      // Conditional update: only apply if no one else wrote since we read.
+      // The `.eq("updated_at", existingUpdatedAt)` WHERE clause ensures the
+      // write only succeeds when the stats haven't been modified by another
+      // process (e.g., another device sync). If the clause doesn't match
+      // (conflict), no rows are affected — the other process's data stays
+      // intact and this write is silently skipped.
+      const { error: statsErr } = await serviceClient
+        .from("user_stats_snapshots")
+        .update(statsSnapshot)
+        .eq("user_id", userId)
+        .eq("updated_at", existingUpdatedAt);
+      if (statsErr) {
+        console.error("[recompute] Failed to write stats:", statsErr.message);
+      }
+    } else {
+      // No existing snapshot — first time or table cleaned. Use upsert to
+      // create the initial record.
+      const { error: statsErr } = await serviceClient
+        .from("user_stats_snapshots")
+        .upsert(statsSnapshot, { onConflict: "user_id" });
+      if (statsErr) console.error("[recompute] Failed to write stats:", statsErr.message);
+    }
 
     return new Response(JSON.stringify({
       success: true,

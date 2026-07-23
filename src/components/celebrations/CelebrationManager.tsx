@@ -41,6 +41,12 @@ export function CelebrationManager() {
   const [ready, setReady] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
 
+  // Track which celebration events have been dismissed this session so they
+  // never re-appear regardless of queue rebuilds, re-renders, or Zustand state
+  // updates. This is a client-side safety net — the store's seen-markers
+  // (set by acknowledgeCelebration) are the persistent source of truth.
+  const dismissedRef = useRef(new Set<string>());
+
   useEffect(() => {
     // Baseline both the achievement seen-flags and the progress markers once on
     // mount so a returning/migrating user isn't flooded with celebrations for
@@ -56,18 +62,26 @@ export function CelebrationManager() {
     [data, today],
   );
 
-  // Reset index when the queue changes (new achievements, etc.). Done during
-  // render — the documented React pattern — rather than in an effect, which
-  // would trigger a cascading re-render.
-  const [prevLen, setPrevLen] = useState(queue.length);
-  if (prevLen !== queue.length) {
-    setPrevLen(queue.length);
-    setCurrentIndex(0);
-  }
+  // Filter out events dismissed this session to prevent re-shows. The ref-based
+  // check is instant and survives re-renders without waiting for the store to
+  // propagate — eliminates the race where a shrinking queue resets currentIndex.
+  const visibleQueue = useMemo(
+    () => queue.filter((ev) => !dismissedRef.current.has(ev.key)),
+    [queue],
+  );
+
+  // Safely reset index when the visible queue empties or new events arrive.
+  // Using an effect here is safe because visibleQueue changes are infrequent
+  // and the reset only fires when the current index is out of bounds.
+  useEffect(() => {
+    if (currentIndex >= visibleQueue.length && visibleQueue.length > 0) {
+      setCurrentIndex(0);
+    }
+  }, [visibleQueue.length]);
 
   const center =
-    ready && queue.length > 0 && currentIndex < queue.length
-      ? queue[currentIndex]
+    ready && visibleQueue.length > 0 && currentIndex < visibleQueue.length
+      ? visibleQueue[currentIndex]
       : null;
 
   // Track which celebration events have already triggered a sound so we never
@@ -168,13 +182,14 @@ export function CelebrationManager() {
       },
     );
 
-    // Advance to next event or close
-    if (currentIndex < queue.length - 1) {
+    // Advance to next event or close. Uses visibleQueue (which excludes
+    // dismissed events) to determine if there are more events to show.
+    if (currentIndex < visibleQueue.length - 1) {
       setCurrentIndex((i) => i + 1);
     }
   }
 
-  if (!ready || !center) return null;
+  if (!ready || !center || dismissedRef.current.has(center.key)) return null;
 
   return (
     <CelebrationCenter

@@ -131,6 +131,7 @@ export function duplicateHabit(id: string): void {
 import { nextStatus } from "../marks";
 import { canEditMark } from "../policy";
 import { habitStreaks } from "../stats";
+import { getSnapshot } from "./core";
 import {
   canUseFreeze,
   coinBalance,
@@ -191,8 +192,9 @@ export function cycleMark(
       } else if (next === "missed") {
         SoundManager.instance.play("habit:miss");
       }
-      // Marking can satisfy achievements — persist any new unlocks for popups.
-      const { unlocks } = reconcileUnlocks(updated, now, now.toISOString());
+      // Achievement reconciliation is deferred to a microtask to avoid blocking
+      // the UI on every mark toggle (the achievement pipeline iterates all
+      // achievements and streaks, which can jank on large datasets).
       // Progress daily quest if marking done today
       let eco = updated.economy;
 
@@ -271,10 +273,33 @@ export function cycleMark(
           );
         }
       }
-      return unlocks === updated.unlocks
-        ? { ...updated, economy: eco }
-        : { ...updated, unlocks, economy: eco };
+      return { ...updated, economy: eco };
     },
     false,
   ); // recordHistory = false for performance
+
+  // Deferred achievement reconciliation — runs after the mark update is
+  // committed, so reconcileUnlocks sees the latest marks. Non-critical for
+  // UI responsiveness, so queueMicrotask prevents jank on rapid toggles.
+  queueMicrotask(() => {
+    const snapshot = getSnapshot();
+    const { unlocks, newlyUnlocked } = reconcileUnlocks(
+      snapshot,
+      new Date(),
+      new Date().toISOString(),
+    );
+    if (unlocks !== snapshot.unlocks) {
+      update((prev) => {
+        // Guard: only apply if nothing else modified unlocks since we read
+        if (prev.unlocks === snapshot.unlocks) {
+          return { ...prev, unlocks };
+        }
+        return prev;
+      });
+      // The achievement popup sound is handled by CelebrationManager when it
+      // shows the event via CELEBRATION_SOUND_MAP. Playing it here would
+      // cause a double-playback because the popup plays "achievement:unlock"
+      // via its own useEffect when the event becomes visible.
+    }
+  });
 }
