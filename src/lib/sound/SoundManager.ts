@@ -50,15 +50,13 @@ export type SoundEvent = keyof typeof SOUND_MAP_ENTRIES;
 
 const SOUND_MAP_ENTRIES = {
   // ── Achievement / Progression (high priority) ──
-  // These are celebratory events — use the bright major-triad success chime
-  "achievement:unlock": { path: "/sounds/ui/success.wav", priority: "high" },
-  "achievement:celebrate": { path: "/sounds/ui/success.wav", priority: "high" },
-  "streak:milestone": { path: "/sounds/ui/success.wav", priority: "high" },
-  "goal:complete": { path: "/sounds/ui/success.wav", priority: "high" },
-  "reward:levelup": { path: "/sounds/ui/success.wav", priority: "high" },
+  "achievement:unlock": { path: "/sounds/achievement/sound_achievements.wav", priority: "high" },
+  "achievement:celebrate": { path: "/sounds/achievement/sound_achievements.wav", priority: "high" },
+  "streak:milestone": { path: "/sounds/achievement/sound_achievements.wav", priority: "high" },
+  "goal:complete": { path: "/sounds/achievement/sound_achievements.wav", priority: "high" },
+  "reward:levelup": { path: "/sounds/achievement/sound_levelup.wav", priority: "high" },
 
   // ── Button / UI clicks (low priority) ──
-  // Each button action has a distinct tonal character
   "button:click": { path: "/sounds/button/click.wav", priority: "low" },
   "button:confirm": { path: "/sounds/button/confirm.wav", priority: "low" },
   "button:cancel": { path: "/sounds/button/cancel.wav", priority: "low" },
@@ -67,26 +65,26 @@ const SOUND_MAP_ENTRIES = {
   "button:nav": { path: "/sounds/button/click.wav", priority: "low" },
 
   // ── Modal / Drawer (low priority) ──
-  "button:modal-open": { path: "/sounds/ui/drawer-open.wav", priority: "low" },
-  "button:modal-close": { path: "/sounds/ui/drawer-close.wav", priority: "low" },
+  "button:modal-open": { path: "/sounds/ui/maximize.wav", priority: "low" },
+  "button:modal-close": { path: "/sounds/ui/minimize.wav", priority: "low" },
 
   // ── Toggle / Switch (low priority) ──
   "button:toggle": { path: "/sounds/ui/toggle-on.wav", priority: "low" },
 
   // ── UI Feedback (medium priority) ──
-  "ui:success": { path: "/sounds/ui/success.wav", priority: "medium" },
+  "ui:success": { path: "/sounds/ui/drop.wav", priority: "medium" },
   "ui:error": { path: "/sounds/ui/error.wav", priority: "medium" },
-  "ui:warning": { path: "/sounds/ui/warning.wav", priority: "medium" },
+  "ui:warning": { path: "/sounds/ui/error.wav", priority: "medium" },
 
   // ── Habit status (medium priority) ──
-  "habit:complete": { path: "/sounds/ui/success.wav", priority: "medium" },
+  "habit:complete": { path: "/sounds/ui/drop.wav", priority: "medium" },
   "habit:skip": { path: "/sounds/button/back.wav", priority: "medium" },
   "habit:miss": { path: "/sounds/ui/error.wav", priority: "medium" },
 
   // ── Rewards (medium priority) ──
-  "reward:coin": { path: "/sounds/button/confirm.wav", priority: "medium" },
-  "reward:quest": { path: "/sounds/button/confirm.wav", priority: "medium" },
-  "reward:spin": { path: "/sounds/button/confirm.wav", priority: "medium" },
+  "reward:coin": { path: "/sounds/reward/sound_coin.wav", priority: "medium" },
+  "reward:quest": { path: "/sounds/reward/sound_coin.wav", priority: "medium" },
+  "reward:spin": { path: "/sounds/reward/sound_coin.wav", priority: "medium" },
   "freeze:use": { path: "/sounds/button/confirm.wav", priority: "medium" },
 
   // ── Notifications (medium priority) ──
