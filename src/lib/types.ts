@@ -120,6 +120,8 @@ interface Settings {
   customCategories?: string[]; // user-defined habit categories
   autoFreezeThreshold?: number; // auto-apply streak freeze when streak >= this (0=off)
   reducedMotion?: boolean; // disable animations for better mobile performance
+  soundEnabled?: boolean; // master sound toggle (default: true)
+  soundVolume?: number; // sound volume 0-1 (default: 0.5)
 }
 
 /* Gamification is derived from history, never stored (anti-cheat).

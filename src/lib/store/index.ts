@@ -47,6 +47,8 @@ export {
   setGraceHours,
   setAutoFreezeThreshold,
   setReducedMotion,
+  setSoundEnabled,
+  setSoundVolume,
   markTemplateUsed,
   completeOnboarding,
   addCustomCategory,

@@ -19,6 +19,7 @@ import { usePullToRefresh } from "@/hooks/usePullToRefresh";
 import { PullToRefreshIndicator } from "@/components/ui/PullToRefreshIndicator";
 import { reloadCache } from "@/lib/store";
 import { startReminderService, stopReminderService } from "@/lib/reminderService";
+import { SoundManager } from "@/lib/sound/SoundManager";
 
 const DevModeLazy = lazy(() =>
   import("@/components/devmode/DevMode").then((m) => ({
@@ -42,8 +43,9 @@ export function AppShell({ children }: { children: ReactNode }) {
   useKeyboardShortcuts();
   const pathname = usePathname();
 
-  // Start the reminder service on mount; clean up on unmount
+  // Preload sounds and start the reminder service on mount
   useEffect(() => {
+    SoundManager.instance.preload();
     startReminderService();
     return () => stopReminderService();
   }, []);

@@ -3,6 +3,8 @@
 // Small icon button with a hover tooltip label. Used in habit rows and action
 // lists. Touch target is at least 44px for WCAG compliance via pseudo-element.
 
+import { SoundManager } from "@/lib/sound/SoundManager";
+
 export function IconBtn({
   children,
   label,
@@ -14,10 +16,15 @@ export function IconBtn({
   onClick: () => void;
   danger?: boolean;
 }) {
+  const handleClick = () => {
+    SoundManager.instance.play(danger ? "button:delete" : "button:click");
+    onClick();
+  };
+
   return (
     <button
       type="button"
-      onClick={onClick}
+      onClick={handleClick}
       aria-label={label}
       title={label}
       className={`group relative rounded-lg p-1.5 text-muted transition-all duration-200 hover:scale-110 ${

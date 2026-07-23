@@ -23,6 +23,8 @@ import {
   Zap,
   UserX,
   AlertTriangle,
+  Volume2,
+  VolumeX,
 } from "lucide-react";
 import { toast } from "sonner";
 import { dateKey } from "@/lib/date";
@@ -33,6 +35,8 @@ import {
   setTheme,
   setAutoFreezeThreshold,
   setReducedMotion,
+  setSoundEnabled,
+  setSoundVolume,
   useAppData,
   replaceData,
   addCustomCategory,
@@ -262,6 +266,52 @@ export default function SettingsPage() {
               ))}
             </div>
           </div>
+        </Card>
+      </Section>
+
+      {/* Sound */}
+      <Section icon={data.settings.soundEnabled !== false ? Volume2 : VolumeX} title="Sound">
+        <Card className="p-5">
+          <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-line p-3 transition-colors hover:bg-surface2/50">
+            <input
+              type="checkbox"
+              checked={data.settings.soundEnabled !== false}
+              onChange={(e) => setSoundEnabled(e.target.checked)}
+              className="size-4 accent-accent"
+            />
+            <div className="flex-1">
+              <p className="text-sm font-medium">Sound effects</p>
+              <p className="text-xs text-muted">
+                Play sounds for achievements, rewards, button clicks, and habit
+                interactions.
+              </p>
+            </div>
+          </label>
+
+          {data.settings.soundEnabled !== false && (
+            <div className="mt-4">
+              <label className="mb-2 flex items-center justify-between text-xs font-medium text-muted">
+                <span>Volume</span>
+                <span className="font-mono">
+                  {Math.round((data.settings.soundVolume ?? 0.5) * 100)}%
+                </span>
+              </label>
+              <input
+                type="range"
+                min={0}
+                max={1}
+                step={0.05}
+                value={data.settings.soundVolume ?? 0.5}
+                onChange={(e) => setSoundVolume(parseFloat(e.target.value))}
+                className="w-full accent-[var(--c-accent)]"
+                aria-label="Sound volume"
+              />
+              <div className="mt-1 flex justify-between text-[10px] text-faint">
+                <span>Off</span>
+                <span>Max</span>
+              </div>
+            </div>
+          )}
         </Card>
       </Section>
 

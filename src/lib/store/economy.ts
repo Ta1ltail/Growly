@@ -22,6 +22,7 @@ import {
 import { buildGameStats, evaluateAchievements } from "../achievements";
 import { summarizeProgress } from "../progress";
 import { dateKey, addDays } from "../date";
+import { SoundManager } from "../sound/SoundManager";
 
 /* ---------------- helpers ---------------- */
 
@@ -215,6 +216,8 @@ export function claimDailyQuest(): void {
     const now = new Date();
     const q = prev.economy.currentQuest;
     if (!q || q.current < q.target || q.claimed) return prev;
+    // Play reward sound before returning the updated data
+    SoundManager.instance.play("reward:quest");
     return {
       ...prev,
       economy: {
@@ -270,6 +273,8 @@ export function doDailySpin(): {
       isFreeze,
       originalLabel: reward.label,
     };
+    // Play reward sound on successful spin
+    SoundManager.instance.play("reward:spin");
     return {
       ...prev,
       economy: {

@@ -6,6 +6,7 @@
 
 import { useEffect, useRef, type ReactNode } from "react";
 import { X } from "lucide-react";
+import { SoundManager } from "@/lib/sound/SoundManager";
 
 export function Modal({
   open,
@@ -28,10 +29,14 @@ export function Modal({
 
   useEffect(() => {
     if (!open) return;
+    // Play modal open sound
+    SoundManager.instance.play("button:modal-open");
     const FOCUSABLE =
       'input, textarea, select, button, a[href], [tabindex]:not([tabindex="-1"])';
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
+        // Close sound is handled by the cleanup effect — don't play it here
+        // to avoid double playback.
         onClose();
         return;
       }
@@ -67,6 +72,7 @@ export function Modal({
     return () => {
       document.removeEventListener("keydown", onKey);
       document.body.style.overflow = prevOverflow;
+      SoundManager.instance.play("button:modal-close");
       window.dispatchEvent(new CustomEvent("modal:close"));
     };
   }, [open, onClose]);

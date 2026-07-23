@@ -1,5 +1,6 @@
 import type { ButtonHTMLAttributes, ReactNode } from "react";
 import { cn } from "@/lib/util";
+import { SoundManager, type SoundEvent } from "@/lib/sound/SoundManager";
 
 export type ButtonVariant = "primary" | "soft" | "outline" | "ghost" | "danger";
 export type ButtonSize = "sm" | "md" | "icon";
@@ -21,6 +22,12 @@ const SIZES: Record<ButtonSize, string> = {
   icon: "size-9 p-0",
 };
 
+// Default sound mapping by variant — danger/delete gets the "delete" sound.
+function variantSound(variant: ButtonVariant): SoundEvent | undefined {
+  if (variant === "danger") return "button:delete";
+  return "button:click";
+}
+
 function buttonClasses(
   variant: ButtonVariant = "primary",
   size: ButtonSize = "md",
@@ -29,22 +36,46 @@ function buttonClasses(
   return cn(BASE, VARIANTS[variant], SIZES[size], className);
 }
 
+type ButtonSound = SoundEvent | false | undefined;
+
 export function Button({
   variant = "primary",
   size = "md",
   className = "",
   children,
+  sound: soundProp,
+  onClick,
   ...props
 }: {
   variant?: ButtonVariant;
   size?: ButtonSize;
   className?: string;
   children: ReactNode;
+  /**
+   * Sound event to play on click. Defaults based on variant.
+   * Set to `false` to disable sound for this button.
+   */
+  sound?: ButtonSound;
 } & ButtonHTMLAttributes<HTMLButtonElement>) {
+  const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+    // Play sound if not disabled
+    if (!props.disabled) {
+      const event =
+        soundProp !== undefined
+          ? soundProp
+          : variantSound(variant);
+      if (event) {
+        SoundManager.instance.play(event);
+      }
+    }
+    onClick?.(e);
+  };
+
   return (
     <button
       type="button"
       className={buttonClasses(variant, size, className)}
+      onClick={handleClick}
       {...props}
     >
       {children}

@@ -4,6 +4,7 @@
 
 import { update } from "./core";
 import type { ThemeSettings } from "../theme";
+import { SoundManager } from "../sound/SoundManager";
 
 /* ---------------- settings ---------------- */
 
@@ -46,6 +47,25 @@ export function setReducedMotion(reduced: boolean): void {
       reduced ? "true" : "false",
     );
   }
+}
+
+export function setSoundEnabled(enabled: boolean): void {
+  update((prev) => ({
+    ...prev,
+    settings: { ...prev.settings, soundEnabled: enabled },
+  }));
+  // Apply immediately to the SoundManager singleton
+  SoundManager.instance.setEnabled(enabled);
+}
+
+export function setSoundVolume(volume: number): void {
+  const clamped = Math.max(0, Math.min(1, volume));
+  update((prev) => ({
+    ...prev,
+    settings: { ...prev.settings, soundVolume: clamped },
+  }));
+  // Apply immediately to the SoundManager singleton
+  SoundManager.instance.setVolume(clamped);
 }
 
 export function markTemplateUsed(templateId: string): void {

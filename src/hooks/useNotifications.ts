@@ -9,6 +9,7 @@
 import { useEffect, useCallback, useSyncExternalStore } from "react";
 import { useAuth } from "./useAuth";
 import { createClient } from "@/lib/supabase/client";
+import { SoundManager, type SoundEvent } from "@/lib/sound/SoundManager";
 import type { RealtimePostgresChangesPayload } from "@supabase/supabase-js";
 
 interface Notification {
@@ -155,7 +156,20 @@ function handleChange(payload: RealtimePostgresChangesPayload<Notification>) {
   let next = [...store.notifications];
 
   if (payload.eventType === "INSERT") {
-    next = [payload.new as Notification, ...next].slice(0, 50);
+    const notif = payload.new as Notification;
+    // Play a notification sound for genuinely new notifications
+    if (!notif.is_read && document.visibilityState !== "visible") {
+      // Only play sound for background notifications (tab was hidden)
+      const NOTIF_SOUND_MAP: Partial<Record<string, SoundEvent>> = {
+        friend_request: "notification:friend",
+        friend_accept: "notification:friend",
+        achievement: "notification:generic",
+        system: "notification:generic",
+      };
+      const sound = NOTIF_SOUND_MAP[notif.type] ?? "notification:generic";
+      SoundManager.instance.play(sound);
+    }
+    next = [notif, ...next].slice(0, 50);
   } else if (payload.eventType === "UPDATE") {
     const updated = payload.new as Notification;
     next = next.map((n) => (n.id === updated.id ? updated : n));

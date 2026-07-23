@@ -6,7 +6,7 @@
 // same rarity accent colors, gradient accents, and badge icon consistency.
 // Queue progress dots show how many events remain.
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Coins } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -16,14 +16,28 @@ import {
   acknowledgeCelebration,
 } from "@/lib/store";
 import { useToday } from "@/hooks/useToday";
+import { useSound } from "@/hooks/useSound";
+import type { SoundEvent } from "@/lib/sound/SoundManager";
 import { buildCelebrationQueue } from "@/lib/celebrations";
 import { CONFETTI_SKINS, equippedOrDefault } from "@/lib/economy";
 import { CelebrationCenter } from "./CelebrationCenter";
 import { AchievementBadge } from "@/components/achievements/AchievementBadge";
 
+// Map celebration kinds to sound events
+const CELEBRATION_SOUND_MAP: Partial<Record<string, SoundEvent>> = {
+  achievement: "achievement:unlock",
+  levelup: "reward:levelup",
+  title: "reward:levelup",
+  streak: "streak:milestone",
+  goal: "goal:complete",
+  tier: "achievement:unlock",
+  shop: "reward:coin",
+};
+
 export function CelebrationManager() {
   const data = useAppData();
   const today = useToday();
+  const { play } = useSound();
   const [ready, setReady] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
 
@@ -55,6 +69,25 @@ export function CelebrationManager() {
     ready && queue.length > 0 && currentIndex < queue.length
       ? queue[currentIndex]
       : null;
+
+  // Track which celebration events have already triggered a sound so we never
+  // replay a sound from the same event — handles re-renders and duplicate
+  // subscriptions safely.
+  const playedSoundsRef = useRef(new Set<string>());
+
+  // Play the appropriate sound when a new celebration event is shown.
+  // Only plays once per unique event key — guarantees no duplicate playback
+  // from hydration, re-renders, sync, or state updates.
+  useEffect(() => {
+    if (!center) return;
+    if (playedSoundsRef.current.has(center.key)) return;
+    playedSoundsRef.current.add(center.key);
+
+    const soundEvent = CELEBRATION_SOUND_MAP[center.kind];
+    if (soundEvent) {
+      play(soundEvent);
+    }
+  }, [center, play]);
 
   // Equipped confetti cosmetic — override the default colors only when the user
   // has bought and equipped a non-default palette.

@@ -143,6 +143,7 @@ import { buildGameStats, evaluateAchievements } from "../achievements";
 import { reconcileUnlocks } from "../progress";
 import { dateKey } from "../date";
 import { DEFAULT_GRACE_HOURS } from "../storage";
+import { SoundManager } from "../sound/SoundManager";
 
 // Track last toggle time per (dateKey, habitId) to suppress rapid double-clicks.
 const _lastToggle = new Map<string, number>();
@@ -181,6 +182,15 @@ export function cycleMark(
       if (next === undefined) delete day[habitId];
       else day[habitId] = next;
       const updated = { ...prev, marks: { ...prev.marks, [dateK]: day } };
+
+      // Play habit status sound (only for today's marks, not past edits)
+      if (next === "done") {
+        SoundManager.instance.play("habit:complete");
+      } else if (next === "skipped") {
+        SoundManager.instance.play("habit:skip");
+      } else if (next === "missed") {
+        SoundManager.instance.play("habit:miss");
+      }
       // Marking can satisfy achievements — persist any new unlocks for popups.
       const { unlocks } = reconcileUnlocks(updated, now, now.toISOString());
       // Progress daily quest if marking done today
