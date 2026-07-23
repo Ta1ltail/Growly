@@ -12,6 +12,7 @@ import { effectiveRecurrence } from "@/lib/stats";
 import { dateKey } from "@/lib/date";
 import { PRIORITY_LABEL } from "@/lib/format";
 import { WeekdayPicker } from "./WeekdayPicker";
+import { SoundManager } from "@/lib/sound/SoundManager";
 
 type Kind = Recurrence["kind"];
 const KINDS: { value: Kind; label: string }[] = [
@@ -69,6 +70,7 @@ export function HabitForm({
   function submit() {
     const trimmed = name.trim();
     if (!trimmed) return;
+    SoundManager.instance.play("button:confirm");
     const recurrence = buildRecurrence();
     onSave({
       name: trimmed,
@@ -270,7 +272,10 @@ export function HabitForm({
         <div className="flex gap-2">
           <button
             type="button"
-            onClick={onCancel}
+            onClick={() => {
+              SoundManager.instance.play("button:cancel");
+              onCancel();
+            }}
             className="rounded-xl px-4 py-2 text-sm font-medium text-muted transition-colors hover:text-ink"
           >
             Cancel

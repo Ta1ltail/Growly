@@ -1,5 +1,6 @@
-import { memo } from "react";
+import { memo, useCallback } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { SoundManager } from "@/lib/sound/SoundManager";
 
 export const Pagination = memo(function Pagination({
   page,
@@ -58,9 +59,16 @@ function PageBtn({
   disabled: boolean;
   onClick: () => void;
 }) {
+  const handleClick = useCallback(() => {
+    if (!disabled) {
+      SoundManager.instance.play("button:click");
+    }
+    onClick();
+  }, [disabled, onClick]);
+
   return (
     <button
-      onClick={onClick}
+      onClick={handleClick}
       disabled={disabled}
       aria-label={label}
       className="flex size-8 items-center justify-center rounded-lg border border-line text-muted transition-colors hover:bg-surface2 hover:text-ink disabled:pointer-events-none disabled:opacity-40"

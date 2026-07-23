@@ -20,6 +20,7 @@ import {
 } from "react";
 import { ConnectivityBanner } from "./ConnectivityBanner";
 import { isCapacitor, subscribeToConnectivity } from "@/lib/capacitor";
+import { SoundManager } from "@/lib/sound/SoundManager";
 
 interface CapacitorContextValue {
   isNative: boolean;
@@ -91,6 +92,40 @@ export function CapacitorProvider({ children }: { children: ReactNode }) {
     return () => {
       window.removeEventListener("modal:open", inc);
       window.removeEventListener("modal:close", dec);
+    };
+  }, [native]);
+
+  // Resume the AudioContext when the app is resumed from background.
+  // On Android, the AudioContext may be suspended when the app goes to
+  // the background and needs to be explicitly resumed.
+  useEffect(() => {
+    if (!native) return;
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const appPlugin = (window as any).Capacitor?.Plugins?.App;
+    if (!appPlugin) return;
+
+    let cancelled = false;
+    let removeListener: (() => void) | null = null;
+
+    appPlugin
+      .addListener("appStateChange", (state: { isActive: boolean }) => {
+        if (cancelled) return;
+        if (state.isActive) {
+          SoundManager.instance.resume();
+        }
+      })
+      .then((handle: { remove: () => void }) => {
+        if (cancelled) {
+          handle.remove();
+          return;
+        }
+        removeListener = () => handle.remove();
+      });
+
+    return () => {
+      cancelled = true;
+      removeListener?.();
     };
   }, [native]);
 

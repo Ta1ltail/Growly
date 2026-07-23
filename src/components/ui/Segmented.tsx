@@ -1,6 +1,7 @@
 "use client";
 
-import { memo } from "react";
+import { memo, useCallback } from "react";
+import { SoundManager } from "@/lib/sound/SoundManager";
 
 // A segmented control / pill group for filters and toggles.
 
@@ -23,7 +24,12 @@ function SegmentedInner<T extends string>({
         return (
           <button
             key={opt.value}
-            onClick={() => onChange(opt.value)}
+            onClick={() => {
+              if (opt.value !== value) {
+                SoundManager.instance.play("button:toggle");
+              }
+              onChange(opt.value);
+            }}
             aria-pressed={active}
             className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 ${
               active

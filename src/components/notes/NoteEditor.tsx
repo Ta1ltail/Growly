@@ -7,6 +7,7 @@ import { useState } from "react";
 import { Check, Trash2, Eye, Edit3 } from "lucide-react";
 import type { Habit, Goal, Note, NoteLinks } from "@/lib/types";
 import { renderMarkdown } from "@/lib/markdown";
+import { SoundManager } from "@/lib/sound/SoundManager";
 
 export interface NoteDraft {
   body: string;
@@ -38,6 +39,7 @@ export function NoteEditor({
 
   function submit() {
     if (!body.trim()) return;
+    SoundManager.instance.play("note:save");
     onSave({
       body: body.trim(),
       tags: tags
@@ -61,7 +63,10 @@ export function NoteEditor({
         </label>
         <button
           type="button"
-          onClick={() => setPreview((p) => !p)}
+          onClick={() => {
+            SoundManager.instance.play("button:toggle");
+            setPreview((p) => !p);
+          }}
           className="flex items-center gap-1 rounded-lg border border-line px-2 py-1 text-[11px] font-medium text-muted transition-colors hover:bg-surface2 hover:text-ink"
           aria-label={preview ? "Edit mode" : "Preview mode"}
         >
@@ -163,7 +168,10 @@ export function NoteEditor({
           ) : (
             <button
               type="button"
-              onClick={() => setConfirmDelete(true)}
+              onClick={() => {
+                SoundManager.instance.play("button:delete");
+                setConfirmDelete(true);
+              }}
               className="flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-medium text-missed transition-colors hover:bg-missed/10"
             >
               <Trash2 className="size-4" /> Delete
@@ -175,7 +183,10 @@ export function NoteEditor({
         <div className="flex gap-2">
           <button
             type="button"
-            onClick={onCancel}
+            onClick={() => {
+              SoundManager.instance.play("button:cancel");
+              onCancel();
+            }}
             className="rounded-xl px-4 py-2 text-sm font-medium text-muted transition-colors hover:text-ink"
           >
             Cancel

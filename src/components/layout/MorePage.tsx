@@ -2,7 +2,7 @@
 
 // Full-screen "More" page overlay — shows every app route in organised categories.
 
-import { useEffect } from "react";
+import { useEffect, useCallback } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -28,6 +28,8 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { isActive, routeIconColors } from "./navItems";
+import { SoundManager } from "@/lib/sound/SoundManager";
+import { useScrollLock } from "@/hooks/useScrollLock";
 
 /* ─── Categories ─── */
 
@@ -186,19 +188,23 @@ export function MorePage({
 }) {
   const pathname = usePathname();
 
-  // Prevent body scroll when open, close on Escape
+  // Use centralized scroll lock
+  useScrollLock(open);
+
+  // Notify Capacitor back-button handler, close on Escape
   useEffect(() => {
     if (!open) return;
-    document.body.style.overflow = "hidden";
     window.dispatchEvent(new CustomEvent("modal:open"));
 
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") {
+        SoundManager.instance.play("button:back");
+        onClose();
+      }
     };
     window.addEventListener("keydown", onKey);
 
     return () => {
-      document.body.style.overflow = "";
       window.dispatchEvent(new CustomEvent("modal:close"));
       window.removeEventListener("keydown", onKey);
     };
@@ -234,7 +240,10 @@ export function MorePage({
             <p className="text-xs text-faint">Everything in one place</p>
           </div>
           <button
-            onClick={onClose}
+            onClick={() => {
+              SoundManager.instance.play("button:cancel");
+              onClose();
+            }}
             className="flex size-10 items-center justify-center rounded-xl bg-surface2 text-muted transition-colors hover:bg-surface2/80 hover:text-ink active:scale-95"
             aria-label="Close"
           >
@@ -258,7 +267,10 @@ export function MorePage({
                         <Link
                           key={href}
                           href={href}
-                          onClick={onClose}
+                          onClick={() => {
+                            SoundManager.instance.play("button:nav");
+                            onClose();
+                          }}
                           aria-current={active ? "page" : undefined}
                           className={`flex items-center gap-4 rounded-2xl px-4 py-3.5 transition-all active:scale-[0.98] ${
                             active
@@ -307,6 +319,7 @@ export function MorePage({
             <div className="border-t border-line/50 pt-4">
               <button
                 onClick={() => {
+                  SoundManager.instance.play("button:cancel");
                   onClose();
                   onSignOut();
                 }}

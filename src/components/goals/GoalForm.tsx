@@ -8,6 +8,7 @@ import { Check, Plus, X } from "lucide-react";
 import { CATEGORIES, CATEGORY_COLORS, type Category } from "@/lib/categories";
 import type { Goal, Habit, Milestone } from "@/lib/types";
 import { uid } from "@/lib/util";
+import { SoundManager } from "@/lib/sound/SoundManager";
 
 export function GoalForm({
   initial,
@@ -41,6 +42,7 @@ export function GoalForm({
 
   function addMilestone() {
     if (!msTitle.trim() || msAt <= 0) return;
+    SoundManager.instance.play("button:click");
     setMilestones((prev) =>
       [
         ...prev,
@@ -54,6 +56,7 @@ export function GoalForm({
   function submit() {
     const trimmed = title.trim();
     if (!trimmed || target < 1) return;
+    SoundManager.instance.play("button:confirm");
     onSave({
       id: initial?.id ?? uid(),
       title: trimmed,
@@ -236,7 +239,10 @@ export function GoalForm({
       <div className="flex justify-end gap-2">
         <button
           type="button"
-          onClick={onCancel}
+          onClick={() => {
+            SoundManager.instance.play("button:cancel");
+            onCancel();
+          }}
           className="rounded-xl px-4 py-2 text-sm font-medium text-muted transition-colors hover:text-ink"
         >
           Cancel

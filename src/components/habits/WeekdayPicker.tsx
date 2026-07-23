@@ -5,6 +5,7 @@
 // "TWTFSS" text indicators.
 
 import { WEEKDAYS_MON_FIRST, WEEKDAY_LETTER, WEEKDAY_LONG } from "@/lib/format";
+import { SoundManager } from "@/lib/sound/SoundManager";
 
 const WEEKDAYS = [1, 2, 3, 4, 5];
 const WEEKENDS = [0, 6];
@@ -17,6 +18,7 @@ export function WeekdayPicker({
   onChange: (days: number[]) => void;
 }) {
   function toggle(day: number) {
+    SoundManager.instance.play("button:toggle");
     onChange(
       value.includes(day) ? value.filter((d) => d !== day) : [...value, day],
     );
@@ -56,17 +58,26 @@ export function WeekdayPicker({
         <Shortcut
           label="Every day"
           active={isEveryDay}
-          onClick={() => onChange([0, 1, 2, 3, 4, 5, 6])}
+          onClick={() => {
+            SoundManager.instance.play("button:toggle");
+            onChange([0, 1, 2, 3, 4, 5, 6]);
+          }}
         />
         <Shortcut
           label="Weekdays"
           active={isWeekdays}
-          onClick={() => onChange([1, 2, 3, 4, 5])}
+          onClick={() => {
+            SoundManager.instance.play("button:toggle");
+            onChange([1, 2, 3, 4, 5]);
+          }}
         />
         <Shortcut
           label="Weekends"
           active={isWeekends}
-          onClick={() => onChange([0, 6])}
+          onClick={() => {
+            SoundManager.instance.play("button:toggle");
+            onChange([0, 6]);
+          }}
         />
       </div>
     </div>

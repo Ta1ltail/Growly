@@ -73,6 +73,7 @@ export function DailyQuestCard() {
             onClick={() => claimDailyQuest()}
             className="mt-3 w-full"
             size="sm"
+            sound="reward:quest"
           >
             <Coins className="size-3.5" aria-hidden />
             Claim {quest.reward} coins

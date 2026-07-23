@@ -236,45 +236,53 @@ describe("Modal", () => {
 
   // ── Body scroll lock ─────────────────────────────────────────
 
-  it("locks body scroll when modal is open", () => {
+  it("locks body scroll when modal is open", async () => {
     render(
       <Modal open={true} onClose={() => {}} title="Test">
         Content
       </Modal>,
     );
-    expect(document.body.style.overflow).toBe("hidden");
+    // Flush effects so useScrollLock applies
+    await act(async () => {});
+    // useScrollLock uses position:fixed to prevent scrolling
+    expect(document.body.style.position).toBe("fixed");
   });
 
-  it("restores body scroll when modal is closed", () => {
+  it("restores body scroll when modal is closed", async () => {
     document.body.style.overflow = "auto";
     const { rerender } = render(
       <Modal open={true} onClose={() => {}} title="Test">
         Content
       </Modal>,
     );
-    expect(document.body.style.overflow).toBe("hidden");
+    await act(async () => {});
+    expect(document.body.style.position).toBe("fixed");
 
-    rerender(
-      <Modal open={false} onClose={() => {}} title="Test">
-        Content
-      </Modal>,
-    );
-    // After cleanup effect runs, overflow should be restored
-    expect(document.body.style.overflow).toBe("auto");
+    await act(async () => {
+      rerender(
+        <Modal open={false} onClose={() => {}} title="Test">
+          Content
+        </Modal>,
+      );
+    });
+    // After cleanup, scroll lock should be released
+    expect(document.body.style.position).toBe("");
   });
 
-  it("restores previous overflow value when closed", () => {
+  it("restores previous overflow value when closed", async () => {
     document.body.style.overflow = "scroll";
     const { unmount } = render(
       <Modal open={true} onClose={() => {}} title="Test">
         Content
       </Modal>,
     );
-    expect(document.body.style.overflow).toBe("hidden");
+    await act(async () => {});
+    expect(document.body.style.position).toBe("fixed");
 
-    unmount();
-
-    // After unmount, the cleanup effect restores the original overflow
+    await act(async () => {
+      unmount();
+    });
+    // After unmount, the original overflow should be restored
     expect(document.body.style.overflow).toBe("scroll");
   });
 

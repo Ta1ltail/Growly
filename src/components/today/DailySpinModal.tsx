@@ -9,6 +9,8 @@ import { Sparkles, Coins, Snowflake, RotateCw, X } from "lucide-react";
 import { doDailySpin, useAppDataSelector } from "@/lib/store";
 import { dateKey } from "@/lib/date";
 import { Button } from "@/components/ui/Button";
+import { useScrollLock } from "@/hooks/useScrollLock";
+import { SoundManager } from "@/lib/sound/SoundManager";
 
 export function DailySpinModal({
   open,
@@ -30,6 +32,9 @@ export function DailySpinModal({
 
   // Derive from reactive data so it updates properly
   const alreadySpun = lastSpinDate === dateKey(new Date());
+
+  // Use centralized scroll lock
+  useScrollLock(open);
 
   // Notify the back-button handler and bottom nav that this modal is open
   useEffect(() => {
@@ -76,7 +81,10 @@ export function DailySpinModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-fade-in">
       <div className="relative mx-4 w-full max-w-sm rounded-2xl bg-surface p-6 shadow-2xl ring-1 ring-line">
         <button
-          onClick={onClose}
+          onClick={() => {
+            SoundManager.instance.play("button:modal-close");
+            onClose();
+          }}
           className="absolute right-3 top-3 rounded-lg p-1 text-muted transition-colors hover:bg-surface2 hover:text-ink"
           aria-label="Close"
         >

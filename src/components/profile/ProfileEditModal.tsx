@@ -14,6 +14,7 @@ import { uploadAvatar } from "@/lib/supabase/storage";
 import { AVATAR_PRESETS, BANNER_PRESETS, resolveAvatar } from "@/lib/cosmetics";
 import { RARITY_STYLE } from "@/lib/rarity";
 import { Modal } from "@/components/ui/Modal";
+import { SoundManager } from "@/lib/sound/SoundManager";
 
 export function ProfileEditModal({
   open,
@@ -167,14 +168,20 @@ export function ProfileEditModal({
         <div className="flex items-center gap-2">
           <button
             type="button"
-            onClick={onClose}
+            onClick={() => {
+              SoundManager.instance.play("button:cancel");
+              onClose();
+            }}
             className="rounded-lg px-3 py-1.5 text-sm font-medium text-muted transition-colors hover:bg-surface2 hover:text-ink"
           >
             Cancel
           </button>
           <button
             type="button"
-            onClick={save}
+            onClick={() => {
+              SoundManager.instance.play("button:confirm");
+              save();
+            }}
             disabled={saving || uploadingAvatar}
             className="rounded-lg bg-accent px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-accent/90 disabled:opacity-50"
           >

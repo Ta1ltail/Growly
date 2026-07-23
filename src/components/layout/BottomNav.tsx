@@ -22,6 +22,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { resolveAvatar } from "@/lib/cosmetics";
 import { isActive } from "./navItems";
 import { MorePage } from "./MorePage";
+import { SoundManager } from "@/lib/sound/SoundManager";
 
 /* ─────────────────────────────────────────
    Nav items (5 shown in the bar)
@@ -164,21 +165,8 @@ export function BottomNav() {
     return () => observer.disconnect();
   }, []);
 
-  // Prevent body scroll when the More page is open
-  useEffect(() => {
-    if (moreOpen) {
-      document.body.style.overflow = "hidden";
-      window.dispatchEvent(new CustomEvent("modal:open"));
-    } else {
-      document.body.style.overflow = "";
-      window.dispatchEvent(new CustomEvent("modal:close"));
-    }
-    return () => {
-      document.body.style.overflow = "";
-    };
-  }, [moreOpen]);
-
-  // Close on Escape
+  // Close on Escape — MorePage handles scroll lock via useScrollLock,
+  // so we only need to close the page here.
   useEffect(() => {
     if (!moreOpen) return;
     const onKey = (e: KeyboardEvent) => {
@@ -211,7 +199,10 @@ export function BottomNav() {
               return (
                 <button
                   key="more"
-                  onClick={() => setMoreOpen(true)}
+                  onClick={() => {
+                    SoundManager.instance.play("button:nav");
+                    setMoreOpen(true);
+                  }}
                   aria-label="Open all sections"
                   aria-expanded={isOpen}
                   className="group relative flex flex-1 flex-col items-center gap-0.5 py-2 text-[10px] font-medium text-muted transition-colors hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40"
@@ -233,6 +224,7 @@ export function BottomNav() {
                 <Link
                   key={href}
                   href={href}
+                  onClick={() => SoundManager.instance.play("button:nav")}
                   aria-current={active ? "page" : undefined}
                   className={`relative flex flex-1 flex-col items-center gap-0.5 py-2 text-[10px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40 ${
                     active ? "text-accent" : "text-muted hover:text-ink"
@@ -280,6 +272,7 @@ export function BottomNav() {
                 <Link
                   key={href}
                   href={href}
+                  onClick={() => SoundManager.instance.play("button:nav")}
                   aria-current={active ? "page" : undefined}
                   className={`relative flex flex-1 flex-col items-center gap-0.5 py-2 text-[10px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40 ${
                     active ? "text-accent" : "text-muted hover:text-ink"
@@ -316,6 +309,7 @@ export function BottomNav() {
               <Link
                 key={href}
                 href={href}
+                onClick={() => SoundManager.instance.play("button:nav")}
                 aria-current={active ? "page" : undefined}
                 className={`relative flex flex-1 flex-col items-center gap-0.5 py-2 text-[10px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40 ${
                   active ? "text-accent" : "text-muted hover:text-ink"

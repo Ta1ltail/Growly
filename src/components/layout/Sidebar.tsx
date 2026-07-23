@@ -11,6 +11,7 @@ import { usePathname } from "next/navigation";
 import { Activity } from "lucide-react";
 import { NAV_GROUPS, isActive, routeIconColors } from "./navItems";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
+import { SoundManager } from "@/lib/sound/SoundManager";
 
 // Module-level scroll position persists across component mount/unmount cycles
 // that may occur during client-side navigation.
@@ -67,6 +68,7 @@ export function Sidebar() {
                 <Link
                   key={href}
                   href={href}
+                  onClick={() => SoundManager.instance.play("button:nav")}
                   aria-current={active ? "page" : undefined}
                   className={`group flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-all duration-200 ${
                     active

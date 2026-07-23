@@ -35,6 +35,8 @@ import { CATEGORIES, type Category } from "@/lib/categories";
 import { Button } from "./Button";
 import { Card } from "./Card";
 import { ProgressBar } from "./ProgressBar";
+import { useScrollLock } from "@/hooks/useScrollLock";
+import { SoundManager } from "@/lib/sound/SoundManager";
 
 const STEPS = ["Welcome", "Profile", "First Habit", "Tour", "Ready"];
 
@@ -73,22 +75,25 @@ export function OnboardingWizard() {
     "daily",
   );
   const [habitWeekdays] = useState<number[]>([1, 2, 3, 4, 5]); // Mon-Fri
-  const [completing, setCompleting] = useState(false);
+  const [completing, setCompleting] = useState(false);  // Must be called before any early return (Rules of Hooks).
+  // Compute lock state from store data (default-safe: SSR data has
+  // empty arrays and default settings, so `visible` is false on server).
+  useScrollLock(hydrated && !data.settings.onboardingComplete && data.habits.filter((h) => !h.archived).length === 0);
 
-  // All hooks must come BEFORE any early return to keep hook count consistent
-  // across SSR (emptyData → no habits → renders fully) and client hydration
-  // (localStorage data → habits exist → returns null).
   const handleNext = useCallback(() => {
+    SoundManager.instance.play("button:click");
     setStep((s) => Math.min(s + 1, STEPS.length - 1));
   }, []);
 
   const handleBack = useCallback(() => {
+    SoundManager.instance.play("button:back");
     setStep((s) => Math.max(s - 1, 0));
   }, []);
 
   const handleFinish = useCallback(() => {
     if (completing) return;
     setCompleting(true);
+    SoundManager.instance.play("button:confirm");
 
     // Save profile name
     if (displayName.trim()) {
@@ -127,8 +132,7 @@ export function OnboardingWizard() {
   // emptyData makes it look like onboarding hasn't run yet.
   if (!hydrated) return null;
 
-  // Check if onboarding should show — AFTER all hooks so hook count never
-  // changes between SSR and client renders.
+  // Check if onboarding should show
   const activeHabits = data.habits.filter((h) => !h.archived);
   const onboardingComplete = data.settings.onboardingComplete;
   if (onboardingComplete || activeHabits.length > 0) return null;

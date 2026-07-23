@@ -9,6 +9,7 @@ import Link from "next/link";
 import { Bell } from "lucide-react";
 import { useNotifications } from "@/hooks/useNotifications";
 import { cn } from "@/lib/util";
+import { SoundManager } from "@/lib/sound/SoundManager";
 
 interface Props {
   className?: string;
@@ -21,6 +22,7 @@ export function NotificationBell({ className, size = 18 }: Props) {
   return (
     <Link
       href="/notifications"
+      onClick={() => SoundManager.instance.play("button:nav")}
       className={cn("relative inline-flex items-center justify-center", className)}
       aria-label={`Notifications${unreadCount > 0 ? ` (${unreadCount} unread)` : ""}`}
     >

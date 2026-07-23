@@ -7,6 +7,8 @@ import { useEffect, useRef, useState } from "react";
 import { Coins, Flame, X } from "lucide-react";
 import { claimDailyCheckIn } from "@/lib/store";
 import { AnimatedCounter } from "@/components/ui/AnimatedCounter";
+import { useScrollLock } from "@/hooks/useScrollLock";
+import { SoundManager } from "@/lib/sound/SoundManager";
 
 export function CheckInPopup() {
   const [result, setResult] = useState<{
@@ -33,13 +35,19 @@ export function CheckInPopup() {
     return () => clearTimeout(timer);
   }, []);
 
+  // Lock body scroll when popup is visible
+  useScrollLock(!dismissed && result !== null);
+
   if (!result || dismissed) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-fade-in">
       <div className="relative mx-4 w-full max-w-sm animate-pop rounded-2xl bg-gradient-to-br from-amber-500/20 via-surface to-orange-500/20 p-6 shadow-2xl ring-1 ring-amber-500/30">
         <button
-          onClick={() => setDismissed(true)}
+          onClick={() => {
+            SoundManager.instance.play("button:cancel");
+            setDismissed(true);
+          }}
           className="absolute right-3 top-3 rounded-lg p-1 text-muted transition-colors hover:bg-surface2 hover:text-ink"
           aria-label="Dismiss"
         >
@@ -115,7 +123,10 @@ export function CheckInPopup() {
         </div>
 
         <button
-          onClick={() => setDismissed(true)}
+          onClick={() => {
+            SoundManager.instance.play("button:confirm");
+            setDismissed(true);
+          }}
           className="mx-auto mt-5 block rounded-xl bg-amber-500 px-6 py-2 text-sm font-semibold text-white transition-all hover:bg-amber-400 active:scale-95"
         >
           Let&apos;s go!
