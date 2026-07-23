@@ -185,7 +185,7 @@ export default function TrackerPage() {
   const active = useMemo(
     () =>
       habits
-        .filter((h) => !h.archived)
+        .filter((h) => !h.archived && !h.deletedAt)
         .filter((h) => filter === "All" || h.category === filter),
     [habits, filter],
   );
@@ -211,7 +211,7 @@ export default function TrackerPage() {
   }, [active]);
 
   const usedCategories = useMemo(
-    () => CATEGORIES.filter((c) => habits.some((h) => !h.archived && h.category === c)),
+    () => CATEGORIES.filter((c) => habits.some((h) => !h.archived && !h.deletedAt && h.category === c)),
     [habits],
   );
 

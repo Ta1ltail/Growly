@@ -66,7 +66,7 @@ export default function StatsPage() {
   const [period, setPeriod] = useState<"7" | "30" | "90">("30");
   const days = Number(period);
   const active = useMemo(
-    () => data.habits.filter((h) => !h.archived),
+    () => data.habits.filter((h) => !h.archived && !h.deletedAt),
     [data.habits],
   );
   const from = useMemo(() => addDays(today, -(days - 1)), [today, days]);

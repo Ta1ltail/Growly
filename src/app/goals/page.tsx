@@ -218,7 +218,7 @@ export default function GoalsPage() {
       >
         <GoalForm
           initial={editing ?? undefined}
-          habits={habits.filter((h) => !h.archived)}
+          habits={habits.filter((h) => !h.archived && !h.deletedAt)}
           onSave={save}
           onCancel={() => {
             setAdding(false);

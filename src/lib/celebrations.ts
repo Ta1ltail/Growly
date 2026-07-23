@@ -206,7 +206,7 @@ export function progressEvents(data: AppData, today: Date): CelebrationEvent[] {
   // Per-habit streak milestones.
   const frozen = frozenSet(data.economy);
   for (const h of data.habits) {
-    if (h.archived) continue;
+    if (h.archived || h.deletedAt) continue;
     const current = habitStreaks(h, data.marks, today, frozen).current;
     const tier = streakTier(current);
     if (tier > (seen.streaks[h.id] ?? 0)) {
@@ -337,7 +337,7 @@ export function baselineProgressSeen(data: AppData, today: Date): ProgressSeen {
   const frozen = frozenSet(data.economy);
   const streaks: Record<string, number> = {};
   for (const h of data.habits) {
-    if (h.archived) continue;
+    if (h.archived || h.deletedAt) continue;
     const tier = streakTier(habitStreaks(h, data.marks, today, frozen).current);
     if (tier > 0) streaks[h.id] = tier;
   }

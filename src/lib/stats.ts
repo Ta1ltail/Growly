@@ -256,7 +256,7 @@ export function habitCorrelations(
   totalShared: number;
   strength: number;
 }[] {
-  const active = habits.filter((h) => !h.archived);
+  const active = habits.filter((h) => !h.archived && !h.deletedAt);
   if (active.length < 2) return [];
 
   // Build a map of habitId → set of dates where it was done

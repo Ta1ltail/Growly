@@ -55,7 +55,7 @@ const ImportSchema = z.strictObject({
 // Export habit marks as CSV text.
 // Rows: one per habit per day for the last `days` days.
 export function exportMarksCSV(data: AppData, days = 90): string {
-  const active = data.habits.filter((h) => !h.archived);
+  const active = data.habits.filter((h) => !h.archived && !h.deletedAt);
   const rows: string[][] = [CSV_HEADERS];
   const today = new Date();
 

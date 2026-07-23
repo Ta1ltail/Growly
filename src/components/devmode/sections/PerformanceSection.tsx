@@ -67,7 +67,7 @@ export function PerformanceSection({ query }: { query: string }) {
         <DevRow label="Habits" query={query} terms="count total">
           <span className="font-mono text-xs">
             {data.habits.length} (
-            {data.habits.filter((h) => !h.archived).length} active)
+            {data.habits.filter((h) => !h.archived && !h.deletedAt).length} active)
           </span>
         </DevRow>
         <DevRow

@@ -115,9 +115,9 @@ export function randomSpinReward(): SpinReward {
 // Generate a random daily quest based on the user's habits. Expects unarchived
 // habits — the caller (store.refreshDailyQuest) passes the full list from AppData.
 export function generateDailyQuest(
-  habits: { id: string; category: Category; archived?: boolean }[],
+  habits: { id: string; category: Category; archived?: boolean; deletedAt?: string }[],
 ): DailyQuest | null {
-  const active = habits.filter((h) => !h.archived);
+  const active = habits.filter((h) => !h.archived && !h.deletedAt);
   if (active.length === 0) return null;
 
   const questTypes = [

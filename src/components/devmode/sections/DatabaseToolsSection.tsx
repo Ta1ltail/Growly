@@ -167,14 +167,14 @@ export function DatabaseToolsSection({ query }: { query: string }) {
   // XP, and achievement progress.
   function markAllHabitsCompleted() {
     const DAYS = 55;
-    const activeHabits = data.habits.filter((h) => !h.archived);
+    const activeHabits = data.habits.filter((h) => !h.archived && !h.deletedAt);
     if (activeHabits.length === 0) {
       toast.error("Create at least one active habit first.");
       return;
     }
     mutateData(
       (prev) => {
-        const active = prev.habits.filter((h) => !h.archived);
+        const active = prev.habits.filter((h) => !h.archived && !h.deletedAt);
         if (active.length === 0) return prev;
         const newMarks: Record<string, Record<string, MarkStatus>> = {
           ...prev.marks,
@@ -253,7 +253,7 @@ export function DatabaseToolsSection({ query }: { query: string }) {
     // level slightly higher than the target, which is acceptable.
     const completionsNeeded = Math.ceil(xpGap / 10);
 
-    const activeHabits = data.habits.filter((h) => !h.archived);
+    const activeHabits = data.habits.filter((h) => !h.archived && !h.deletedAt);
     if (activeHabits.length === 0) {
       toast.error("Create at least one active habit first.");
       return;
@@ -265,7 +265,7 @@ export function DatabaseToolsSection({ query }: { query: string }) {
 
     mutateData(
       (prev) => {
-        const active = prev.habits.filter((h) => !h.archived);
+        const active = prev.habits.filter((h) => !h.archived && !h.deletedAt);
         if (active.length === 0) return prev;
         const newMarks: Record<string, Record<string, MarkStatus>> = {
           ...prev.marks,
@@ -388,7 +388,7 @@ export function DatabaseToolsSection({ query }: { query: string }) {
     const now = new Date().toISOString();
     const d = new Date();
     mutateData((prev) => {
-      const active = prev.habits.filter((h) => !h.archived);
+      const active = prev.habits.filter((h) => !h.archived && !h.deletedAt);
       const habitIds = active.map((h) => h.id);
 
       const newMarks: Record<string, Record<string, MarkStatus>> = {
@@ -423,7 +423,7 @@ export function DatabaseToolsSection({ query }: { query: string }) {
         progressSeen,
       };
     }, false);
-    const habitsCount = data.habits.filter((h) => !h.archived).length;
+    const habitsCount = data.habits.filter((h) => !h.archived && !h.deletedAt).length;
     toast.success(
       `Max level achieved! (${habitsCount} habits × 3650 days of completions)`,
     );
@@ -441,7 +441,7 @@ export function DatabaseToolsSection({ query }: { query: string }) {
     const now = new Date().toISOString();
     const d = new Date();
     mutateData((prev) => {
-      const active = prev.habits.filter((h) => !h.archived);
+      const active = prev.habits.filter((h) => !h.archived && !h.deletedAt);
       const habitIds = active.map((h) => h.id);
 
       const newMarks: Record<string, Record<string, MarkStatus>> = {

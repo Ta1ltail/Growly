@@ -177,7 +177,7 @@ export function buildGameStats(
   }
 
   // activeHabitsAllStreak7: every non-archived habit has a current streak >= 7.
-  const activeHabits = habits.filter((h) => !h.archived);
+  const activeHabits = habits.filter((h) => !h.archived && !h.deletedAt);
   const activeHabitsAllStreak7 =
     activeHabits.length > 0 &&
     activeHabits.every(

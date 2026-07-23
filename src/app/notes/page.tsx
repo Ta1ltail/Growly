@@ -260,7 +260,7 @@ export default function NotesPage() {
       >
         <NoteEditor
           initial={editing ?? undefined}
-          habits={habitNameMapRaw.filter((h) => !h.archived)}
+          habits={habitNameMapRaw.filter((h) => !h.archived && !h.deletedAt)}
           goals={goalTitleMapRaw}
           onSave={save}
           onCancel={() => {

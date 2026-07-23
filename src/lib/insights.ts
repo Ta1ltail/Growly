@@ -33,7 +33,7 @@ export function buildInsights(
   today: Date,
   limit = 4,
 ): Insight[] {
-  const active = habits.filter((h) => !h.archived);
+  const active = habits.filter((h) => !h.archived && !h.deletedAt);
   if (active.length === 0) return [];
 
   const out: Insight[] = [];

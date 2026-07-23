@@ -121,7 +121,7 @@ export default function HabitsPage() {
     <AppPageShell>
       <PageHeader
         title="Manage Habits"
-        subtitle={`${data.habits.filter((h) => !h.archived).length} active`}
+        subtitle={`${data.habits.filter((h) => !h.archived && !h.deletedAt).length} active`}
         action={
           <Button onClick={() => setAdding(true)}>
             <Plus className="size-4" strokeWidth={2.5} /> New habit

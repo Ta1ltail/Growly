@@ -78,7 +78,7 @@ export function OnboardingWizard() {
   const [completing, setCompleting] = useState(false);  // Must be called before any early return (Rules of Hooks).
   // Compute lock state from store data (default-safe: SSR data has
   // empty arrays and default settings, so `visible` is false on server).
-  useScrollLock(hydrated && !data.settings.onboardingComplete && data.habits.filter((h) => !h.archived).length === 0);
+  useScrollLock(hydrated && !data.settings.onboardingComplete && data.habits.filter((h) => !h.archived && !h.deletedAt).length === 0);
 
   const handleNext = useCallback(() => {
     SoundManager.instance.play("button:click");
@@ -133,7 +133,7 @@ export function OnboardingWizard() {
   if (!hydrated) return null;
 
   // Check if onboarding should show
-  const activeHabits = data.habits.filter((h) => !h.archived);
+  const activeHabits = data.habits.filter((h) => !h.archived && !h.deletedAt);
   const onboardingComplete = data.settings.onboardingComplete;
   if (onboardingComplete || activeHabits.length > 0) return null;
 

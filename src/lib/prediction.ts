@@ -16,7 +16,7 @@ function predictedCompletion(
   today: Date,
   days = 7,
 ): number {
-  const active = habits.filter((h) => !h.archived);
+  const active = habits.filter((h) => !h.archived && !h.deletedAt);
   if (active.length === 0) return 0;
 
   // Get last N days of completion rates

@@ -37,7 +37,7 @@ const TEMPLATES_PER_PAGE = 6; // 3x2 grid
 export default function TemplatesPage() {
   const habits = useAppDataSelector((d) => d.habits);
   const usedTemplateIds = useAppDataSelector((d) => d.settings.usedTemplateIds);
-  const activeHabits = habits.filter((h) => !h.archived);
+  const activeHabits = habits.filter((h) => !h.archived && !h.deletedAt);
   const used = new Set(usedTemplateIds ?? []);
   const available = TEMPLATES.filter((t) => !used.has(t.id));
   const usedTemplates = TEMPLATES.filter((t) => used.has(t.id));

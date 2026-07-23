@@ -69,7 +69,7 @@ export default function TodayPage() {
   }, []);
 
   const todaysHabits = useMemo(
-    () => data.habits.filter((h) => !h.archived && isScheduled(h, today)),
+    () => data.habits.filter((h) => !h.archived && !h.deletedAt && isScheduled(h, today)),
     [data.habits, today],
   );
 

@@ -130,7 +130,7 @@ export default function CalendarPage() {
   const today = useToday();
   const grace = graceSetting ?? DEFAULT_GRACE_HOURS;
   const active = useMemo(
-    () => habits.filter((h) => !h.archived),
+    () => habits.filter((h) => !h.archived && !h.deletedAt),
     [habits],
   );
   const frozen = useMemo(() => frozenSet(economy), [economy]);

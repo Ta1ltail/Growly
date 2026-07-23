@@ -75,7 +75,7 @@ export default function DashboardPage() {
   const hydrated = useHydrated();
   const todayKey = dateKey(today);
   const active = useMemo(
-    () => data.habits.filter((h) => !h.archived),
+    () => data.habits.filter((h) => !h.archived && !h.deletedAt),
     [data.habits],
   );
 

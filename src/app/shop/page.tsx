@@ -200,7 +200,7 @@ function FreezeSection({ balance }: { balance: number }) {
   const [habitId, setHabitId] = useState<string>("");
 
   const active = useMemo(
-    () => data.habits.filter((h) => !h.archived),
+    () => data.habits.filter((h) => !h.archived && !h.deletedAt),
     [data.habits],
   );
   const allowed = canUseFreeze(data.economy, today);
