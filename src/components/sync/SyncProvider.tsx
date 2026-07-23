@@ -8,7 +8,6 @@ import { useAuth } from "@/hooks/useAuth";
 import { usePathname } from "next/navigation";
 import {
   fullResync,
-  getSyncStatus,
   pushMutation,
   resetSyncState,
   setSyncReady,
@@ -128,21 +127,6 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
       console.warn("[sync] Navigation re-sync failed:", e);
     });
   }, [pathname, userId, syncReady]);
-
-  // ── E2: Warn on close during active sync ──
-  // If the sync status is "syncing" when the user tries to close the tab/window,
-  // show a browser warning. This prevents data from being lost if the retry queue
-  // hasn't been persisted yet. The warning only shows while a sync is in-flight.
-  useEffect(() => {
-    function handleBeforeUnload(e: BeforeUnloadEvent) {
-      if (getSyncStatus() === "syncing") {
-        e.preventDefault();
-        e.returnValue = "Sync in progress…";
-      }
-    }
-    window.addEventListener("beforeunload", handleBeforeUnload);
-    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
-  }, []);
 
   // ── Cross-tab user switch detection ──
   // When another tab logs in as a different user, it sets lastUserId in
