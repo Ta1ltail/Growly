@@ -64,6 +64,9 @@ export interface DbUserSettings {
   onboarding_complete: boolean;
   custom_categories: string[];
   auto_freeze_threshold: number | null;
+  sound_enabled: boolean | null;
+  sound_volume: number | null;
+  reduced_motion: boolean | null;
 }
 
 export interface DbUserProfile {

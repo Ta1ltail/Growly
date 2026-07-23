@@ -25,6 +25,21 @@ export function rowToSettings(row: DbUserSettings): AppData["settings"] {
       row.auto_freeze_threshold > 0
         ? row.auto_freeze_threshold
         : undefined,
+    soundEnabled:
+      row.sound_enabled != null
+        ? row.sound_enabled
+        : undefined,
+    soundVolume:
+      row.sound_volume != null &&
+      Number.isFinite(row.sound_volume) &&
+      row.sound_volume >= 0 &&
+      row.sound_volume <= 1
+        ? row.sound_volume
+        : undefined,
+    reducedMotion:
+      row.reduced_motion != null
+        ? row.reduced_motion
+        : undefined,
   };
 }
 
@@ -45,6 +60,17 @@ export function settingsToRow(
       s.autoFreezeThreshold && s.autoFreezeThreshold > 0
         ? s.autoFreezeThreshold
         : null,
+    sound_enabled:
+      s.soundEnabled != null ? s.soundEnabled : null,
+    sound_volume:
+      s.soundVolume != null &&
+      Number.isFinite(s.soundVolume) &&
+      s.soundVolume >= 0 &&
+      s.soundVolume <= 1
+        ? s.soundVolume
+        : null,
+    reduced_motion:
+      s.reducedMotion != null ? s.reducedMotion : null,
   };
 }
 

@@ -243,6 +243,7 @@ describe("settings", () => {
     user_id: "u-1", theme_mode: "dark", theme_accent: "blue",
     grace_hours: 5, used_template_ids: [], widget_order: null,
     onboarding_complete: false, custom_categories: [], auto_freeze_threshold: null,
+    sound_enabled: null, sound_volume: null, reduced_motion: null,
   };
 
   it("rowToSettings converts minimal row", () => {

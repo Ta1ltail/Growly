@@ -554,6 +554,25 @@ export function mergeSettings(
     widgetOrder: remote.widgetOrder,
     onboardingComplete: remote.onboardingComplete,
     customCategories: remote.customCategories ?? [],
+    autoFreezeThreshold:
+      remote.autoFreezeThreshold != null && remote.autoFreezeThreshold > 0
+        ? remote.autoFreezeThreshold
+        : local.autoFreezeThreshold,
+    soundEnabled:
+      remote.soundEnabled != null
+        ? remote.soundEnabled
+        : local.soundEnabled,
+    soundVolume:
+      remote.soundVolume != null &&
+      Number.isFinite(remote.soundVolume) &&
+      remote.soundVolume >= 0 &&
+      remote.soundVolume <= 1
+        ? remote.soundVolume
+        : local.soundVolume,
+    reducedMotion:
+      remote.reducedMotion != null
+        ? remote.reducedMotion
+        : local.reducedMotion,
   };
 }
 
