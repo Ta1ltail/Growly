@@ -331,7 +331,7 @@ export default function ProfilePage() {
       </section>
 
       <p className="mt-8 text-center font-mono text-[10px] text-faint">
-        Growly · v2.2.5 · Synced securely across your devices
+        Growly · v2.5.5 · Synced securely across your devices
       </p>
 
       <ProfileEditModal

@@ -34,7 +34,7 @@ export function DownloadApkSection() {
 
         <span className="mx-auto mt-3 inline-flex items-center gap-1.5 rounded-full border border-accent/15 bg-accent/6 px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-accent">
           <Smartphone className="size-3" />
-          v2.2.5
+          v2.5.5
         </span>
 
         <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
@@ -56,7 +56,7 @@ export function DownloadApkSection() {
                 <polyline points="7 10 12 15 17 10" />
                 <line x1="12" y1="15" x2="12" y2="3" />
               </svg>
-              Download APK (3.1 MB)
+              Download APK (3.2 MB)
               <ArrowRight className="size-4 transition-transform duration-200 group-hover:translate-x-0.5" />
             </span>
             <span className="absolute inset-0 -z-0 bg-gradient-to-r from-accent via-accent-glow to-accent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />

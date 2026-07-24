@@ -4,7 +4,7 @@ import path from "path";
 
 export const dynamic = "force-dynamic";
 
-const APK_PATH = path.join(process.cwd(), "public", "growly-v2.2.5.apk");
+const APK_PATH = path.join(process.cwd(), "public", "growly-v2.5.5.apk");
 const APK_MIME = "application/vnd.android.package-archive";
 
 export async function GET() {
@@ -21,7 +21,7 @@ export async function GET() {
       headers: {
         "Content-Type": APK_MIME,
         "Content-Length": String(stat.size),
-        "Content-Disposition": 'attachment; filename="growly-v2.2.5.apk"',
+        "Content-Disposition": 'attachment; filename="growly-v2.5.5.apk"',
         "Cache-Control": "public, max-age=86400, immutable",
       },
     });

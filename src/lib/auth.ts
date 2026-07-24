@@ -21,7 +21,7 @@ export function mapAuthError(message: string): string {
 
   // Registration errors
   if (lower.includes("weak password")) {
-    return "Password is too weak. Use at least 6 characters with a mix of letters and numbers.";
+    return "Password is too weak. Use at least 8 characters with uppercase, lowercase, numbers, and symbols.";
   }
   if (
     lower.includes("already registered") ||

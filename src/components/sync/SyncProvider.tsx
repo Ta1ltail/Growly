@@ -77,16 +77,18 @@ export function computeDataHash(d: AppData): string {
 }
 
 // Sync-ready context: child components defer mount-time effects until sync completes.
-interface SyncContextValue {
+export interface SyncContextValue {
   syncReady: boolean;
   syncRetrying: boolean;
   syncRetryCount: number;
+  timedOut: boolean;
 }
 
 export const SyncContext = createContext<SyncContextValue>({
   syncReady: false,
   syncRetrying: false,
   syncRetryCount: 0,
+  timedOut: false,
 });
 
 // Exponential backoff: base 10s, max 2 min.
@@ -436,7 +438,7 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
   // Public pages (landing, login, register) don't need sync.
   if (!user) {
     return (
-      <SyncContext.Provider value={{ syncReady: false, syncRetrying: false, syncRetryCount: 0 }}>
+      <SyncContext.Provider value={{ syncReady: false, syncRetrying: false, syncRetryCount: 0, timedOut: false }}>
         {children}
       </SyncContext.Provider>
     );
@@ -465,7 +467,7 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
 
   // ── Authenticated and sync complete: render the app ──
   return (
-    <SyncContext.Provider value={{ syncReady, syncRetrying, syncRetryCount }}>
+    <SyncContext.Provider value={{ syncReady, syncRetrying, syncRetryCount, timedOut }}>
       {children}
     </SyncContext.Provider>
   );

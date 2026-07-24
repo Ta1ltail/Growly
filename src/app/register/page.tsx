@@ -42,8 +42,8 @@ function evaluateStrength(pw: string): {
 } {
   if (!pw) return { score: 0, label: "", color: "", bars: 0 };
   let score = 0;
-  if (pw.length >= 6) score++;
-  if (pw.length >= 10) score++;
+  if (pw.length >= 8) score++;
+  if (pw.length >= 12) score++;
   if (/[a-z]/.test(pw) && /[A-Z]/.test(pw)) score++;
   if (/\d/.test(pw)) score++;
   if (/[^a-zA-Z0-9]/.test(pw)) score++;
@@ -57,7 +57,7 @@ function evaluateStrength(pw: string): {
 
 /* ── Password requirements checklist ── */
 const REQUIREMENTS = [
-  { label: "At least 6 characters", test: (pw: string) => pw.length >= 6 },
+  { label: "At least 8 characters", test: (pw: string) => pw.length >= 8 },
   {
     label: "Uppercase & lowercase",
     test: (pw: string) => /[a-z]/.test(pw) && /[A-Z]/.test(pw),
@@ -148,8 +148,8 @@ export default function RegisterPage() {
       setError("Passwords do not match.");
       return;
     }
-    if (password.length < 6) {
-      setError("Password must be at least 6 characters.");
+    if (password.length < 8) {
+      setError("Password must be at least 8 characters.");
       return;
     }
 
@@ -460,7 +460,7 @@ export default function RegisterPage() {
                     onBlur={() => setPasswordFocused(false)}
                     placeholder="Create a strong password"
                     required
-                    minLength={6}
+                    minLength={8}
                     autoComplete="new-password"
                     className="w-full rounded-xl border border-line/70 bg-surface/50 px-10 py-2.5 text-sm outline-none backdrop-blur-sm transition-all duration-200 placeholder:text-faint/70 hover:border-line focus:border-accent focus:bg-surface focus:ring-2 focus:ring-accent/15"
                   />

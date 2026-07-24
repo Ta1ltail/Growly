@@ -4,7 +4,29 @@
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
+import type { ReactNode } from "react";
 import { DailyQuestCard } from "../DailyQuestCard";
+import { SyncContext, type SyncContextValue } from "@/components/sync/SyncProvider";
+
+// Default sync context for tests — simulates sync having completed (the
+// realistic state when DailyQuestCard renders in production).
+const DEFAULT_SYNC_VALUE: SyncContextValue = {
+  syncReady: true,
+  syncRetrying: false,
+  syncRetryCount: 0,
+  timedOut: false,
+};
+
+function renderWithSync(
+  ui: ReactNode,
+  syncValue: SyncContextValue = DEFAULT_SYNC_VALUE,
+) {
+  return render(
+    <SyncContext.Provider value={syncValue}>
+      {ui}
+    </SyncContext.Provider>,
+  );
+}
 
 // Mock store dependencies
 const mockClaimDailyQuest = vi.fn();
@@ -55,94 +77,116 @@ describe("DailyQuestCard", () => {
 
   it("renders null when there is no quest", () => {
     mockUseAppDataSelector.mockReturnValue(undefined);
-    const { container } = render(<DailyQuestCard />);
+    const { container } = renderWithSync(<DailyQuestCard />);
     expect(container.innerHTML).toBe("");
+  });
+
+  it("does not call refreshDailyQuest when sync is not ready", () => {
+    mockUseAppDataSelector.mockReturnValue(undefined);
+    renderWithSync(<DailyQuestCard />, {
+      syncReady: false,
+      syncRetrying: false,
+      syncRetryCount: 0,
+      timedOut: false,
+    });
+    expect(mockRefreshDailyQuest).not.toHaveBeenCalled();
+  });
+
+  it("does call refreshDailyQuest when sync has timed out", () => {
+    mockUseAppDataSelector.mockReturnValue(undefined);
+    renderWithSync(<DailyQuestCard />, {
+      syncReady: false,
+      syncRetrying: true,
+      syncRetryCount: 1,
+      timedOut: true,
+    });
+    expect(mockRefreshDailyQuest).toHaveBeenCalledTimes(1);
   });
 
   it("renders quest title 'Daily Quest'", () => {
     setQuest();
-    render(<DailyQuestCard />);
+    renderWithSync(<DailyQuestCard />);
     expect(screen.getByText("Daily Quest")).toBeTruthy();
   });
 
   it("renders quest description", () => {
     setQuest({ description: "Read for 30 minutes" });
-    render(<DailyQuestCard />);
+    renderWithSync(<DailyQuestCard />);
     expect(screen.getByText("Read for 30 minutes")).toBeTruthy();
   });
 
   it("shows progress current/target", () => {
     setQuest({ current: 1, target: 3 });
-    render(<DailyQuestCard />);
+    renderWithSync(<DailyQuestCard />);
     expect(screen.getByText("1")).toBeTruthy();
     expect(screen.getByText("/3")).toBeTruthy();
   });
 
   it("shows reward amount", () => {
     setQuest({ reward: 15 });
-    render(<DailyQuestCard />);
+    renderWithSync(<DailyQuestCard />);
     expect(screen.getByText("+15")).toBeTruthy();
   });
 
   it("shows category badge when category is provided", () => {
     setQuest({ category: "Workout" });
-    render(<DailyQuestCard />);
+    renderWithSync(<DailyQuestCard />);
     expect(screen.getByText("Workout")).toBeTruthy();
   });
 
   it("does not show category badge when category is null", () => {
     setQuest({ category: undefined });
-    render(<DailyQuestCard />);
+    renderWithSync(<DailyQuestCard />);
     expect(screen.queryByText("Health")).toBeNull();
   });
 
   it("shows claim button when completed and unclaimed", () => {
     setQuest({ current: 3, target: 3, claimed: false });
-    render(<DailyQuestCard />);
+    renderWithSync(<DailyQuestCard />);
     expect(screen.getByText(/Claim 10 coins/)).toBeTruthy();
   });
 
   it("does NOT show claim button when not completed", () => {
     setQuest({ current: 1, target: 3, claimed: false });
-    render(<DailyQuestCard />);
+    renderWithSync(<DailyQuestCard />);
     expect(screen.queryByText(/Claim/)).toBeNull();
   });
 
   it("does NOT show claim button when already claimed", () => {
     setQuest({ current: 3, target: 3, claimed: true });
-    render(<DailyQuestCard />);
+    renderWithSync(<DailyQuestCard />);
     // "Claimed" text appears in the claimed state, so use a more specific regex
     expect(screen.queryByText(/Claim \d+ coins/)).toBeNull();
   });
 
   it("calls claimDailyQuest when claim button is clicked", () => {
     setQuest({ current: 3, target: 3, claimed: false });
-    render(<DailyQuestCard />);
+    renderWithSync(<DailyQuestCard />);
     fireEvent.click(screen.getByText(/Claim \d+ coins/));
     expect(mockClaimDailyQuest).toHaveBeenCalledTimes(1);
   });
 
   it("shows claimed state when claimed is true", () => {
     setQuest({ current: 3, target: 3, claimed: true });
-    render(<DailyQuestCard />);
+    renderWithSync(<DailyQuestCard />);
     expect(screen.getByText(/Claimed/)).toBeTruthy();
   });
 
   it("shows 'Resets at midnight' when claimed", () => {
     setQuest({ current: 3, target: 3, claimed: true });
-    render(<DailyQuestCard />);
+    renderWithSync(<DailyQuestCard />);
     expect(screen.getByText(/Resets at midnight/)).toBeTruthy();
   });
 
-  it("calls refreshDailyQuest on mount", () => {
+  it("calls refreshDailyQuest on mount when sync is ready", () => {
     setQuest();
-    render(<DailyQuestCard />);
+    renderWithSync(<DailyQuestCard />);
     expect(mockRefreshDailyQuest).toHaveBeenCalledTimes(1);
   });
 
   it("renders progress bar with correct percentage", () => {
     setQuest({ current: 2, target: 4 });
-    const { container } = render(<DailyQuestCard />);
+    const { container } = renderWithSync(<DailyQuestCard />);
     const bar = container.querySelector('[data-testid="progress-bar"]');
     expect(bar?.getAttribute("data-value")).toBe("50");
   });

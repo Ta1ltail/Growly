@@ -22,15 +22,32 @@ export function useAuth() {
     const supabase = createClient();
     let cancelled = false;
 
-    // Get initial session
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (cancelled) return;
-      setUser(user);
-      setLoading(false);
-    }).catch(() => {
-      if (cancelled) return;
-      setLoading(false);
-    });
+    // Get initial session — try getUser() first for server-side token
+    // validation (catches revoked tokens), fall back to getSession() when
+    // offline (network error). This allows authenticated users to continue
+    // using the app without an internet connection.
+    supabase.auth.getUser()
+      .then(({ data: { user } }) => {
+        if (cancelled) return;
+        setUser(user);
+        setLoading(false);
+      })
+      .catch(async () => {
+        if (cancelled) return;
+        // Offline fallback: read session from client-side storage.
+        // getSession() does not require a network round-trip.
+        try {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (!cancelled) {
+            setUser(session?.user ?? null);
+            setLoading(false);
+          }
+        } catch {
+          if (!cancelled) {
+            setLoading(false);
+          }
+        }
+      });
 
     // Listen for auth state changes.
     // On SIGNED_OUT, clear local data immediately so the next user never sees

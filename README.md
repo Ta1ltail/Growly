@@ -173,7 +173,7 @@ npm start
 | **Linting** | ESLint 9 + Knip |
 | **CI** | GitHub Actions (quality → build → E2E) |
 | **Hosting** | Vercel (auto-deploy from Git) |
-| **Mobile** | Capacitor 7.x (Android APK wrapper) |
+| **Mobile** | Capacitor 8.x (Android APK wrapper) |
 
 ---
 

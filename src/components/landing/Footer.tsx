@@ -40,7 +40,7 @@ export function Footer() {
 
           {/* Version */}
           <p className="mt-3 w-full text-center font-mono text-[10px] text-faint sm:mt-0 sm:w-auto">
-            Growly – Habit Tracking Release v2.2.5
+            Growly – Habit Tracking Release v2.5.5
           </p>
         </div>
       </div>

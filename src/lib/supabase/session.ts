@@ -43,14 +43,19 @@ export async function updateSession(request: NextRequest) {
     },
   });
 
-  // IMPORTANT: getUser() verifies the session with Supabase Auth server.
-  // This refreshes the session if expired and returns null if invalid.
+  // Use getSession() instead of getUser() for offline-first support.
+  // getUser() makes a network round-trip to the Supabase Auth server to
+  // validate the JWT, which fails when offline. getSession() reads the
+  // session from SSR cookies without a network call, so it works offline.
+  // The trade-off: while offline we can't detect immediate token revocation,
+  // but session expiration is still enforced via cookie TTL, and the
+  // client-side auth hook (useAuth) still calls getUser() when online.
   let user = null;
   try {
-    const { data } = await supabase.auth.getUser();
-    user = data.user;
+    const { data: { session } } = await supabase.auth.getSession();
+    user = session?.user ?? null;
   } catch {
-    // If Supabase calls fail (network error, etc.), treat as unauthenticated
+    // If even getSession() fails (corrupted cookies, etc.), treat as unauthenticated
   }
 
   // ── Guest routes (login/register) — redirect authenticated users to dashboard ──

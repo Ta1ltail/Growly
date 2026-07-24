@@ -4,24 +4,29 @@
 // Tracks progress automatically when habits are marked done. User claims the
 // reward once the target is reached.
 
-import { useEffect } from "react";
+import { useContext, useEffect } from "react";
 import { Target, Coins, CheckCircle2, RotateCcw } from "lucide-react";
 import { useAppDataSelector, refreshDailyQuest, claimDailyQuest } from "@/lib/store";
+import { SyncContext } from "@/components/sync/SyncProvider";
 import { Card } from "@/components/ui/Card";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { Button } from "@/components/ui/Button";
 
 export function DailyQuestCard() {
   const quest = useAppDataSelector((d) => d.economy.currentQuest);
+  const { syncReady, timedOut } = useContext(SyncContext);
 
-  // Refresh quest if needed on mount — safe to call even without syncReady
-  // because refreshDailyQuest is idempotent: it only generates a new quest
-  // if today's quest hasn't been generated yet. If called before the initial
-  // sync completes, the quest will be generated on empty data and then
-  // re-generated on the next call when real data is available.
+  // Generate the daily quest once the data layer is ready. When sync completes
+  // (syncReady), the store has authoritative data from the server to generate
+  // the quest from. When the sync timeout fires (timedOut), the app has fallen
+  // back to local data and the quest should be generated from that instead.
+  // Guarding on these flags ensures the quest is never generated from empty or
+  // stale data during the initial sync window.
   useEffect(() => {
-    refreshDailyQuest();
-  }, []);
+    if (syncReady || timedOut) {
+      refreshDailyQuest();
+    }
+  }, [syncReady, timedOut]);
 
   if (!quest) return null;
 
