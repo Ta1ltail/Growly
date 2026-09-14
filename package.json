@@ -41,22 +41,22 @@
     "postcss": "8.5.16"
   },
   "devDependencies": {
-    "@babel/runtime": "^8.0.0",
-    "@capacitor/cli": "^8.4.1",
-    "@next/bundle-analyzer": "^16.2.9",
-    "@playwright/test": "^1.61.1",
+    "@babel/runtime": "^8.0.5",
+    "@capacitor/cli": "^8.5.1",
+    "@next/bundle-analyzer": "^16.3.4",
+    "@playwright/test": "^1.63.0",
     "@tailwindcss/postcss": "^4",
-    "@testing-library/react": "^16.3.2",
+    "@testing-library/react": "^16.3.3",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "dotenv": "^17.4.2",
     "eslint": "^9",
-    "eslint-config-next": "16.2.9",
-    "happy-dom": "^20.11.0",
+    "eslint-config-next": "16.3.4",
+    "happy-dom": "^20.14.3",
     "jsdom": "^29.1.1",
     "tailwindcss": "^4",
     "typescript": "^5",
-    "vitest": "^4.1.8"
+    "vitest": "^4.1.11"
   }
 }
